@@ -1,0 +1,8 @@
+[package]
+name = "evo-cpm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+indexmap = "2.9.0"
+rand = "0.9.1"
