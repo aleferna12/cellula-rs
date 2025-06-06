@@ -1,7 +1,4 @@
-use crate::pos::{Edge};
-
-mod lattice;
-mod pos;
+use evo_cpm::{lattice, pos};
 
 fn main() {
     let l = lattice::Lattice::<u32>::new(20, 20);
