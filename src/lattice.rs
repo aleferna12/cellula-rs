@@ -2,14 +2,14 @@ use std::cmp::min;
 use std::ops::Index;
 use indexmap::IndexSet;
 use rand::random_range;
-use rustc_hash::FxBuildHasher;
 use crate::pos::{Edge, Pos2D};
 
 pub struct Lattice<T> {
     pub width: usize,
     pub height: usize,
     array: Box<[T]>,
-    edge_set: IndexSet<Edge, FxBuildHasher>
+    // TODO: profile using this struct, I have no clue of whether it's fast enough
+    edge_set: IndexSet<Edge>
 }
 
 impl<T: Default + Clone> Lattice<T> {
@@ -18,7 +18,7 @@ impl<T: Default + Clone> Lattice<T> {
             width,
             height,
             array: vec![T::default(); width * height].into_boxed_slice(),
-            edge_set: IndexSet::with_hasher(FxBuildHasher::default())
+            edge_set: IndexSet::new()
         }
     }
 
@@ -40,12 +40,17 @@ impl<T: Default + Clone> Lattice<T> {
     }
 
     // TODO: this should take an rng
-    pub fn random_neighbour(&self, p: &Pos2D<usize>) -> Pos2D<usize> {
+    pub fn random_neighbour(&self, p: &Pos2D<usize>, neigh_r: u8) -> Pos2D<usize> {
         let oldp = (p.x as i32, p.y as i32);
         let mut newp = oldp;
+        let dist = neigh_r as i32;
         while oldp == newp {
-            newp.0 = oldp.0 + random_range(-min(1, oldp.0)..min(2, self.width as i32 - oldp.0));
-            newp.1 = oldp.1 + random_range(-min(1, oldp.1)..min(2, self.height as i32 - oldp.1));
+            newp.0 = oldp.0 + random_range(
+                -min(dist, oldp.0)..min(dist + 1, self.width as i32 - oldp.0)
+            );
+            newp.1 = oldp.1 + random_range(
+                -min(dist, oldp.1)..min(dist + 1, self.height as i32 - oldp.1)
+            );
         }
         Pos2D::new(newp.0 as usize, newp.1 as usize)
     }
@@ -72,11 +77,18 @@ mod tests {
     
     #[test]
     fn test_random_neighbour() {
-        let lat = Lattice::<u32>::new(20, 20);
-        for _ in 0..1000 {
-            let p1 = lat.random_pos();
-            let p2 = lat.random_neighbour(&p1);
-            assert!(Edge::new(p1, p2).is_ok())
+        let lat = Lattice::<u32>::new(100, 100);
+        for neigh_r in 1..4 {
+            let mut too_far = false;
+            for _ in 0..1000 {
+                let p1 = lat.random_pos();
+                let p2 = lat.random_neighbour(&p1, neigh_r);
+                assert!(Edge::new(p1, p2, neigh_r).is_ok());
+                if !too_far {
+                    too_far = Edge::new(p1, p2, neigh_r - 1).is_err()
+                }
+            }
+            assert!(too_far)
         }
     }
 }

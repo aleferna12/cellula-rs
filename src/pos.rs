@@ -21,6 +21,12 @@ impl<T> Pos2D<T> {
     }
 }
 
+impl Pos2D<usize> {
+    fn pack_u32(&self) -> u32 {
+        ((self.x as u32) << 16) | self.y as u32
+    }
+}
+
 // This is only used for indexing and therefore can be implemented for usize only
 impl Pos2D<usize> {
     #[inline]
@@ -36,35 +42,48 @@ impl<T> From<(T, T)> for Pos2D<T> {
 }
 
 // This currently only supports a Moore neighbourhood of 1
-#[derive(Eq, PartialEq)]
+#[derive(Eq)]
 pub struct Edge {
     p1: Pos2D<usize>,
     p2: Pos2D<usize>,
-    direction: usize,
+    /// Size of the Moore's neighbourhood
+    neigh_r: u8
 }
 
 impl Edge {
-    pub fn new(p1: Pos2D<usize>, p2: Pos2D<usize>) -> Result<Self, EdgeError> {
-        let dir = ((p1.x as i32 - p2.x as i32 + 1) * 3 + (p1.y as i32 - p2.y as i32) + 1) as usize;
-        match dir {
-            4 => Err(SamePosition),
-            9..usize::MAX => Err(NotNeighbours),
-            _ => Ok(Self { p1, p2, direction: dir }),
+    pub fn new(p1: Pos2D<usize>, p2: Pos2D<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
+        let cx = p1.x.abs_diff(p2.x);
+        let cy = p1.y.abs_diff(p2.y);
+        let sum = cx + cy;
+        if sum == 0 {
+            return Err(SamePosition);
         }
+        if sum > (neigh_r * 2) as usize {
+            return Err(NotNeighbours);
+        }
+        Ok(Self { p1, p2, neigh_r})
+    }
+
+    #[inline(always)]
+    fn hash_u64(&self) -> u64 {
+        let mut u1 = self.p1.pack_u32();
+        let mut u2 = self.p2.pack_u32();
+        if u1 > u2 {
+            mem::swap(&mut u1, &mut u2);
+        }
+        ((u1 as u64) << 32) | (u2 as u64)
     }
 }
 
-// TODO: test the perfect hash algorithm that steven sent me (mine was not faster)
+impl PartialEq for Edge {
+    fn eq(&self, other: &Self) -> bool {
+        self.hash_u64() == other.hash_u64()
+    }
+}
+
+// TODO: test the perfect hash algorithm that steven sent me (nothing else helped)
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut p1 = self.p1;
-        let mut p2 = self.p2;
-        if self.direction > 3 {
-            mem::swap(&mut p1, &mut p2);
-        }
-        // This is worse than just default implementation
-        // let index = p.row_major(20) + dir;
-        // index.hash(state);
-        (p1.x, p1.y, p2.x, p2.y).hash(state)
+        self.hash_u64().hash(state);
     }
 }
