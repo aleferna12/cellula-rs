@@ -1,5 +1,5 @@
-mod lattice_bench;
+mod dish_bench;
 
 use criterion::criterion_main;
 
-criterion_main!(lattice_bench::lattice);
+criterion_main!(dish_bench::dish);
