@@ -87,3 +87,10 @@ impl Hash for Edge {
         self.hash_u64().hash(state);
     }
 }
+
+pub struct Rect<T> (pub Pos2D<T>, pub Pos2D<T>);
+impl<T> Rect<T> {
+    pub fn new(p1: Pos2D<T>, p2: Pos2D<T>) -> Self {
+        Self(p1, p2)
+    }
+}

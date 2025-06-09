@@ -2,7 +2,7 @@ use std::cmp::min;
 use indexmap::IndexSet;
 use rand::Rng;
 use crate::lattice::Lattice;
-use crate::pos::{Edge, Pos2D};
+use crate::pos::{Edge, Pos2D, Rect};
 
 pub struct Dish {
     pub cell_lattice: Lattice<i32>,
@@ -19,6 +19,10 @@ impl Dish {
         }
     }
 
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> u32 {
+        todo!()
+    }
+
     pub fn n_edges(&self) -> usize { self.edge_set.len() }
 
     pub fn insert_edge(&mut self, edge: Edge) -> bool {
@@ -30,7 +34,6 @@ impl Dish {
         self.edge_set.swap_remove_index(index).unwrap()
     }
 
-    // TODO: this should take an rng
     pub fn random_neighbour(&self, p: &Pos2D<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos2D<usize> {
         let oldp = (p.x as i32, p.y as i32);
         let mut newp = oldp;
