@@ -72,6 +72,7 @@ impl<T> Index<(usize, usize)> for Lattice<T> {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     
