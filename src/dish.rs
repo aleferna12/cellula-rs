@@ -8,19 +8,37 @@ pub struct Dish {
     pub cell_lattice: Lattice<i32>,
     pub cell_vec: Vec<i32>,
     // TODO: profile using this struct, I have no clue of whether it's fast enough
-    pub edge_set: IndexSet<Edge>
+    pub edge_set: IndexSet<Edge>,
+    pub neigh_r: u8
 }
 impl Dish {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(width: usize, height: usize, neigh_r: u8) -> Self {
         Self {
             cell_lattice: Lattice::new(width, height),
             cell_vec: vec![],
-            edge_set: IndexSet::new()
+            edge_set: IndexSet::new(),
+            neigh_r
         }
     }
+    
+    pub fn n_cells(&self) -> usize {
+        self.cell_vec.len()
+    }
 
+    // TODO: finish
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> u32 {
-        todo!()
+        let c = 0usize;
+        for p in rect.iterate_pos() {
+            let at_p = &mut self.cell_lattice[p];
+            if *at_p != 0 {
+                continue;
+            }
+            *at_p = self.n_cells() as i32;
+            for neigh in self.cell_lattice.moore_neighs(&p, self.neigh_r) {
+                if *at_p
+            }
+        }
+        c as u32
     }
 
     pub fn n_edges(&self) -> usize { self.edge_set.len() }
@@ -58,12 +76,12 @@ mod tests {
 
     #[test]
     fn test_random_neighbour() {
-        let dish = Dish::new(100, 100);
+        let dish = Dish::new(100, 100, 1);
         let mut rng = Xoshiro256StarStar::from_os_rng();
         for neigh_r in 1..4 {
             let mut too_far = false;
             for _ in 0..1000 {
-                let p1 = dish.cell_lattice.random_pos();
+                let p1 = dish.cell_lattice.random_pos(&mut rng);
                 let p2 = dish.random_neighbour(&p1, neigh_r, &mut rng);
                 assert!(Edge::new(p1, p2, neigh_r).is_ok());
                 if !too_far {

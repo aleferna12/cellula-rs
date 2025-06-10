@@ -1,5 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::mem;
+use crate::moore::MOORE_NEIGHS;
 use crate::pos::EdgeError::{NotNeighbours, SamePosition};
 
 #[derive(Debug)]
@@ -25,10 +26,7 @@ impl Pos2D<usize> {
     fn pack_u32(&self) -> u32 {
         ((self.x as u32) << 16) | self.y as u32
     }
-}
 
-// This is only used for indexing and therefore can be implemented for usize only
-impl Pos2D<usize> {
     #[inline]
     pub fn row_major(&self, height: usize) -> usize {
         self.x * height + self.y
@@ -92,5 +90,44 @@ pub struct Rect<T> (pub Pos2D<T>, pub Pos2D<T>);
 impl<T> Rect<T> {
     pub fn new(p1: Pos2D<T>, p2: Pos2D<T>) -> Self {
         Self(p1, p2)
+    }
+}
+
+impl Rect<usize> {
+    pub fn iterate_pos(&self) -> RectAreaIt {
+        RectAreaIt::new(self)
+    }
+}
+
+pub struct RectAreaIt<'a> {
+    curr: Pos2D<usize>,
+    rect: &'a Rect<usize>
+}
+impl<'a> RectAreaIt<'a> {
+    fn new(rect: &'a Rect<usize>) -> Self {
+        let mut p = rect.0.clone();
+        p.x -= 1;
+        Self {
+            curr: p,
+            rect
+        }
+    }
+}
+
+impl Iterator for RectAreaIt<'_> {
+    type Item = Pos2D<usize>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let same_row = self.curr.x < self.rect.1.x;
+        if same_row {
+            self.curr.x += 1;
+            return Some(self.curr)
+        }
+        if self.curr.y < self.rect.1.y {
+            self.curr.x = self.rect.0.x - 1;
+            self.curr.y += 1;
+            return Some(self.curr);
+        }
+        None
     }
 }

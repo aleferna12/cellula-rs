@@ -20,7 +20,7 @@ fn replace_random_edges(n_edges: usize, dish: &mut Dish, rng: &mut impl Rng) {
 }
 
 fn random_edges(c: &mut Criterion) {
-    let mut dish = Dish::new(100, 100);
+    let mut dish = Dish::new(100, 100, 1);
     let mut rng = Xoshiro256StarStar::from_os_rng();
     for _ in 0..dish.cell_lattice.width * dish.cell_lattice.height / 2 {
         add_random_edge(&mut dish, &mut rng);

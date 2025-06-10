@@ -14,7 +14,8 @@ impl Model {
         Self {
             dish: Dish::new(
                 parameters.width,
-                parameters.height
+                parameters.height,
+                parameters.neigh_r
             ),
             rng: if parameters.seed == 0 { 
                 Xoshiro256StarStar::from_os_rng()

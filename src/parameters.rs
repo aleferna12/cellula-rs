@@ -9,7 +9,9 @@ pub struct Parameters {
     #[arg(long, default_value_t = 100)]
     pub height: usize,
     #[arg(long, default_value_t = 0)]
-    pub seed: u64
+    pub seed: u64,
+    #[arg(long, default_value_t = 1)]
+    pub neigh_r: u8
 }
 
 impl Display for Parameters {
