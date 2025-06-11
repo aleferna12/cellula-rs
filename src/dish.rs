@@ -1,14 +1,15 @@
 use std::cmp::min;
 use indexmap::IndexSet;
 use rand::Rng;
+use crate::cell::Cell;
 use crate::lattice::Lattice;
 use crate::pos::{Edge, Pos2D, Rect};
 
 pub struct Dish {
-    pub cell_lattice: Lattice<i32>,
-    pub cell_vec: Vec<i32>,
+    pub cell_lattice: Lattice<usize>,
+    cell_vec: Vec<Cell>,
     // TODO: profile using this struct, I have no clue of whether it's fast enough
-    pub edge_set: IndexSet<Edge>,
+    edge_set: IndexSet<Edge>,
     pub neigh_r: u8
 }
 impl Dish {
@@ -21,30 +22,47 @@ impl Dish {
         }
     }
     
+    pub fn get_cell(&self, sigma: usize) -> &Cell {
+        &self.cell_vec[sigma - 1]
+    }
+    
     pub fn n_cells(&self) -> usize {
         self.cell_vec.len()
     }
 
-    // TODO: finish
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> u32 {
-        let c = 0usize;
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<usize> {
+        let mut cell_area = 0usize;
+        let sigma = self.n_cells() + 1;
         for p in rect.iterate_pos() {
-            let at_p = &mut self.cell_lattice[p];
-            if *at_p != 0 {
+            if self.cell_lattice[p] != 0 {
                 continue;
             }
-            *at_p = self.n_cells() as i32;
+            self.cell_lattice[p] = sigma;
             for neigh in self.cell_lattice.moore_neighs(&p, self.neigh_r) {
-                if *at_p
+                let edge = Edge::new(p, neigh, self.neigh_r).unwrap();
+                if self.cell_lattice[neigh] != sigma {
+                    self.insert_edge(edge);
+                } else { 
+                    self.remove_edge(&edge);
+                }
             }
+            cell_area += 1;
         }
-        c as u32
+        if cell_area == 0 { 
+            return None;
+        }
+        self.cell_vec.push(Cell::new(cell_area as u32));
+        Some(sigma)
     }
 
     pub fn n_edges(&self) -> usize { self.edge_set.len() }
 
     pub fn insert_edge(&mut self, edge: Edge) -> bool {
         self.edge_set.insert(edge)
+    }
+
+    fn remove_edge(&mut self, edge: &Edge) {
+        self.edge_set.swap_remove(edge);
     }
 
     pub fn remove_random_edge(&mut self, rng: &mut impl Rng) -> Edge {
@@ -90,5 +108,25 @@ mod tests {
             }
             assert!(too_far)
         }
+    }
+    
+    #[test]
+    fn test_spawn_rect_cell() {
+        let mut dish = Dish::new(100, 100, 1);
+        let sigma1 = dish.spawn_rect_cell(
+            Rect::new(
+                Pos2D::new(10, 10), 
+                Pos2D::new(20, 20)
+            )
+        );
+        assert_eq!(dish.edge_set.len(), 8 * 4 * 3 + 4 * 5);
+        let sigma2 = dish.spawn_rect_cell(
+            Rect::new(
+                Pos2D::new(15, 15),
+                Pos2D::new(25, 25)
+            )
+        );
+        assert_eq!(dish.get_cell(sigma1.unwrap()).area, 100);
+        assert_eq!(dish.get_cell(sigma2.unwrap()).area, 75);
     }
 }

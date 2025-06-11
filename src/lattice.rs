@@ -1,5 +1,5 @@
 use std::ops::{Index, IndexMut};
-use rand::{random_range, Rng};
+use rand::Rng;
 use crate::moore::MOORE_NEIGHS;
 use crate::pos::Pos2D;
 

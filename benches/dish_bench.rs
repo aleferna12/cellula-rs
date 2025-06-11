@@ -6,7 +6,7 @@ use evo_cpm::dish::Dish;
 use evo_cpm::pos::Edge;
 
 fn add_random_edge(dish: &mut Dish, rng: &mut impl Rng) -> bool {
-    let p1 = dish.cell_lattice.random_pos();
+    let p1 = dish.cell_lattice.random_pos(rng);
     let e = Edge::new(p1, dish.random_neighbour(&p1, 1, rng), 1);
     if e.is_err() { return false }
     dish.insert_edge(e.unwrap())

@@ -1,6 +1,5 @@
 use std::hash::{Hash, Hasher};
 use std::mem;
-use crate::moore::MOORE_NEIGHS;
 use crate::pos::EdgeError::{NotNeighbours, SamePosition};
 
 #[derive(Debug)]
@@ -10,7 +9,7 @@ pub enum EdgeError {
 }
 
 /// 2D position in space.
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct Pos2D<T> {
     pub x: T,
     pub y: T
@@ -43,9 +42,7 @@ impl<T> From<(T, T)> for Pos2D<T> {
 #[derive(Eq)]
 pub struct Edge {
     p1: Pos2D<usize>,
-    p2: Pos2D<usize>,
-    /// Size of the Moore's neighbourhood
-    neigh_r: u8
+    p2: Pos2D<usize>
 }
 
 impl Edge {
@@ -59,7 +56,7 @@ impl Edge {
         if sum > (neigh_r * 2) as usize {
             return Err(NotNeighbours);
         }
-        Ok(Self { p1, p2, neigh_r})
+        Ok(Self { p1, p2})
     }
 
     #[inline(always)]
@@ -118,13 +115,13 @@ impl Iterator for RectAreaIt<'_> {
     type Item = Pos2D<usize>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let same_row = self.curr.x < self.rect.1.x;
+        let same_row = self.curr.x < self.rect.1.x - 1;
         if same_row {
             self.curr.x += 1;
             return Some(self.curr)
         }
-        if self.curr.y < self.rect.1.y {
-            self.curr.x = self.rect.0.x - 1;
+        if self.curr.y < self.rect.1.y - 1 {
+            self.curr.x = self.rect.0.x;
             self.curr.y += 1;
             return Some(self.curr);
         }
