@@ -42,10 +42,11 @@ mod tests {
     use rand::Rng;
     use crate::model::Model;
     use crate::parameters::Parameters;
+    use crate::utils::TEST_SEED;
 
     #[test]
     fn test_xoshiro() {
-        let mut model = Model::new(Parameters::parse_from(["", "--seed", "1241254152"]));
+        let mut model = Model::new(Parameters::parse_from(["", "--seed", &TEST_SEED.to_string()]));
         let s = (0..50)
             .map(|_| model.rng.random_range(0..9).to_string())
             .collect::<Vec<_>>()

@@ -4,4 +4,4 @@ pub mod parameters;
 pub mod model;
 pub mod environment;
 mod cell;
-mod moore;
+pub mod utils;

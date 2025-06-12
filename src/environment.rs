@@ -6,7 +6,7 @@ use crate::lattice::Lattice;
 use crate::pos::{Edge, Pos2D, Rect};
 
 enum NotCell {
-    Med
+    Medium
 }
 
 pub struct Environment {
@@ -47,10 +47,7 @@ impl Environment {
                 continue;
             }
             self.cell_lattice[p] = sigma;
-            let neighs: Vec<_> = self.cell_lattice
-                .filter_inbounds(p.moore_neighs(self.neigh_r))
-                .collect();
-            for neigh in neighs {
+            for neigh in self.cell_lattice.filter_inbounds(p.moore_neighs(self.neigh_r)) {
                 let edge = Edge::new(p, neigh, self.neigh_r).unwrap();
                 if self.cell_lattice[neigh] != sigma {
                     self.insert_edge(edge);
@@ -68,7 +65,7 @@ impl Environment {
     }
     
     pub fn is_cell(&self, sigma: usize) -> bool {
-        sigma != NotCell::Med as usize && sigma <= self.n_cells()
+        sigma != NotCell::Medium as usize && sigma <= self.n_cells()
     }
 
     // Edge bookkeeping functions
@@ -93,10 +90,10 @@ impl Environment {
         let dist = neigh_r as i32;
         while oldp == newp {
             newp.0 = oldp.0 + rng.random_range(
-                -min(dist, oldp.0)..min(dist + 1, self.cell_lattice.width as i32 - oldp.0)
+                -min(dist, oldp.0)..min(dist + 1, self.cell_lattice.width() as i32 - oldp.0)
             );
             newp.1 = oldp.1 + rng.random_range(
-                -min(dist, oldp.1)..min(dist + 1, self.cell_lattice.height as i32 - oldp.1)
+                -min(dist, oldp.1)..min(dist + 1, self.cell_lattice.height() as i32 - oldp.1)
             );
         }
         Pos2D::new(newp.0 as usize, newp.1 as usize)

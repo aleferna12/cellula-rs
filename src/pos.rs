@@ -1,7 +1,31 @@
 use std::hash::{Hash, Hasher};
 use std::mem;
-use crate::moore::MOORE_NEIGHS;
-use crate::pos::EdgeError::{NotNeighbours, SamePosition};
+use std::ops::{Mul, Sub};
+
+const MAX_NEIGH_R: u8 = 16;
+const NEIGHBOURHOOD_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
+const MOORE_NEIGHS: [(i16, i16); NEIGHBOURHOOD_SIZE] = {
+    let mut ret = [(0i16, 0i16); NEIGHBOURHOOD_SIZE];
+    let mut r = 1;
+    let mut flat_index = 0usize;
+    while r <= MAX_NEIGH_R as i16 {
+        let mut i = -r;
+        while i <= r {
+            let mut j = -r;
+            while j <= r {
+                let max_abs = if i.abs() > j.abs() { i.abs() } else { j.abs() };
+                if max_abs == r {
+                    ret[flat_index] = (i, j);
+                    flat_index += 1;
+                }
+                j += 1;
+            }
+            i += 1;
+        }
+        r += 1;
+    }
+    ret
+};
 
 #[derive(Debug)]
 pub enum EdgeError {
@@ -27,20 +51,18 @@ impl Pos2D<usize> {
         ((self.x as u32) << 16) | self.y as u32
     }
 
-    #[inline]
     pub fn row_major(&self, height: usize) -> usize {
         self.x * height + self.y
     }
 
-    #[inline(always)]
     pub fn moore_neighs(&self, neigh_r: u8) -> impl Iterator<Item = Pos2D<usize>> {
         let vec_size = 4 * neigh_r * (neigh_r + 1);
         MOORE_NEIGHS[..vec_size as usize]
             .iter()
             .map(|(i, j)| {
                 Pos2D::<usize>::new(
-                    (self.x as i32 + i) as usize,
-                    (self.y as i32 + j) as usize,
+                    (self.x as i16 + i) as usize,
+                    (self.y as i16 + j) as usize,
                 )
             })
     }
@@ -65,15 +87,14 @@ impl Edge {
         let cy = p1.y.abs_diff(p2.y);
         let sum = cx + cy;
         if sum == 0 {
-            return Err(SamePosition);
+            return Err(EdgeError::SamePosition);
         }
         if sum > (neigh_r * 2) as usize {
-            return Err(NotNeighbours);
+            return Err(EdgeError::NotNeighbours);
         }
         Ok(Self { p1, p2})
     }
 
-    #[inline(always)]
     fn hash_u64(&self) -> u64 {
         let mut u1 = self.p1.pack_u32();
         let mut u2 = self.p2.pack_u32();
@@ -97,10 +118,36 @@ impl Hash for Edge {
     }
 }
 
-pub struct Rect<T> (pub Pos2D<T>, pub Pos2D<T>);
-impl<T> Rect<T> {
-    pub fn new(p1: Pos2D<T>, p2: Pos2D<T>) -> Self {
-        Self(p1, p2)
+#[derive(Copy, Clone)]
+pub struct Rect<T> {
+    pub min: Pos2D<T>,
+    pub max: Pos2D<T>
+}
+impl<T> Rect<T>
+where
+    T: Sub<Output = T>
+        + Mul<Output = T>
+        + PartialOrd
+        + Copy
+{
+    pub fn new(min: Pos2D<T>, max: Pos2D<T>) -> Self {
+        Self{ min, max }
+    }
+
+    pub fn width(&self) -> T {
+        self.max.x - self.min.x
+    }
+
+    pub fn height(&self) -> T {
+        self.max.y - self.min.y
+    }
+    
+    pub fn area(&self) -> T {
+        self.width() * self.height()
+    }
+
+    pub fn inbounds(&self, pos: &Pos2D<T>) -> bool {
+        (self.min.x..self.max.x).contains(&pos.x) && (self.min.y..self.max.y).contains(&pos.y)
     }
 }
 
@@ -116,10 +163,8 @@ pub struct RectAreaIt<'a> {
 }
 impl<'a> RectAreaIt<'a> {
     fn new(rect: &'a Rect<usize>) -> Self {
-        let mut p = rect.0.clone();
-        p.x -= 1;
         Self {
-            curr: p,
+            curr: rect.min,
             rect
         }
     }
@@ -129,16 +174,34 @@ impl Iterator for RectAreaIt<'_> {
     type Item = Pos2D<usize>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let same_row = self.curr.x < self.rect.1.x - 1;
-        if same_row {
+        if self.curr.y >= self.rect.max.y {
+            return None;
+        }
+        let ret_pos = self.curr;
+        if self.curr.x < self.rect.max.x - 1 {
             self.curr.x += 1;
-            return Some(self.curr)
-        }
-        if self.curr.y < self.rect.1.y - 1 {
-            self.curr.x = self.rect.0.x;
+        } else {
+            self.curr.x = self.rect.min.x;
             self.curr.y += 1;
-            return Some(self.curr);
         }
-        None
+        Some(ret_pos)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::pos::{Rect, MOORE_NEIGHS};
+
+    #[test]
+    fn test_rect_area() {
+        let r = Rect::<usize>::new((0, 0).into(), (10, 10).into());
+        let v: Vec<_> = r.iterate_pos().collect();
+        assert_eq!(r.area(), v.len())
+    }
+    
+    #[test]
+    fn test_moore() {
+        let first_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
+        assert_eq!(first_8, MOORE_NEIGHS[..8]);
+    } 
 }
