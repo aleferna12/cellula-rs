@@ -26,23 +26,8 @@ impl<T: Default + Clone> Lattice<T> {
         (0..self.width).contains(&pos.x) && (0..self.height).contains(&pos.y)
     }
     
-    // TODO: implement this as an iterator to avoid heap allocation? Dont know if that is faster though
-    #[inline]
-    pub fn moore_neighs(&self, pos: &Pos2D<usize>, neigh_r: u8) -> Vec<Pos2D<usize>> {
-        let vec_size = 4 * neigh_r * (neigh_r + 1);
-        MOORE_NEIGHS[..vec_size as usize]
-            .iter()
-            .filter_map(|(i, j)| {
-                let p = Pos2D::<usize>::new(
-                    (pos.x as i32 + i) as usize,
-                    (pos.y as i32 + j) as usize,
-                );
-                if self.inbounds(&p) { 
-                    return Some(p) 
-                }
-                None
-            })
-            .collect()
+    pub fn filter_inbounds(&self, pos_it: impl Iterator<Item = Pos2D<usize>>) -> impl Iterator<Item = Pos2D<usize>> {
+        pos_it.filter(|pos| { self.inbounds(pos) })
     }
 }
 

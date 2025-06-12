@@ -1,5 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::mem;
+use crate::moore::MOORE_NEIGHS;
 use crate::pos::EdgeError::{NotNeighbours, SamePosition};
 
 #[derive(Debug)]
@@ -30,6 +31,19 @@ impl Pos2D<usize> {
     pub fn row_major(&self, height: usize) -> usize {
         self.x * height + self.y
     }
+
+    #[inline(always)]
+    pub fn moore_neighs(&self, neigh_r: u8) -> impl Iterator<Item = Pos2D<usize>> {
+        let vec_size = 4 * neigh_r * (neigh_r + 1);
+        MOORE_NEIGHS[..vec_size as usize]
+            .iter()
+            .map(|(i, j)| {
+                Pos2D::<usize>::new(
+                    (self.x as i32 + i) as usize,
+                    (self.y as i32 + j) as usize,
+                )
+            })
+    }
 }
 
 impl<T> From<(T, T)> for Pos2D<T> {
@@ -41,8 +55,8 @@ impl<T> From<(T, T)> for Pos2D<T> {
 // This currently only supports a Moore neighbourhood of 1
 #[derive(Eq)]
 pub struct Edge {
-    p1: Pos2D<usize>,
-    p2: Pos2D<usize>
+    pub p1: Pos2D<usize>,
+    pub p2: Pos2D<usize>
 }
 
 impl Edge {

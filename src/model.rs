@@ -1,18 +1,18 @@
 use std::env::args_os;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
-use crate::dish::Dish;
+use crate::environment::Environment;
 use crate::parameters::Parameters;
 
 pub struct Model {
-    pub dish: Dish,
+    pub env: Environment,
     pub rng: Xoshiro256StarStar,
     pub parameters: Parameters
 }
 impl Model {
     pub fn new(parameters: Parameters) -> Self {
         Self {
-            dish: Dish::new(
+            env: Environment::new(
                 parameters.width,
                 parameters.height,
                 parameters.neigh_r

@@ -1,5 +1,5 @@
-mod dish_bench;
+mod env_bench;
 
 use criterion::criterion_main;
 
-criterion_main!(dish_bench::dish);
+criterion_main!(env_bench::env);
