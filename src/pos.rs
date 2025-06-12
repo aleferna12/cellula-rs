@@ -190,7 +190,7 @@ impl Iterator for RectAreaIt<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::pos::{Rect, MOORE_NEIGHS};
+    use crate::pos::{Edge, Pos2D, Rect, MOORE_NEIGHS};
 
     #[test]
     fn test_rect_area() {
@@ -203,5 +203,15 @@ mod tests {
     fn test_moore() {
         let first_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
         assert_eq!(first_8, MOORE_NEIGHS[..8]);
-    } 
+    }
+
+    #[test]
+    fn test_neighbours_are_edges() {
+        let p1 = Pos2D::from((100, 100));
+        for r in 1..9 {
+            for p2 in p1.moore_neighs(r) {
+                assert!(Edge::new(p1, p2, r).is_ok());
+            }
+        }
+    }
 }

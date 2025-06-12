@@ -1,22 +1,41 @@
+use std::cmp::min;
 use std::hint::black_box;
 use criterion::{criterion_group, Criterion};
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use evo_cpm::environment::Environment;
-use evo_cpm::pos::Edge;
+use evo_cpm::pos::{Edge, Pos2D};
 use evo_cpm::utils::TEST_SEED;
+
+fn random_neighbour(env: &Environment, p: &Pos2D<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos2D<usize> {
+    let oldp = (p.x as i32, p.y as i32);
+    let mut newp = oldp;
+    let dist = neigh_r as i32;
+    while oldp == newp {
+        newp.0 = oldp.0 + rng.random_range(
+            -min(dist, oldp.0)..min(dist + 1, env.cell_lattice.width() as i32 - oldp.0)
+        );
+        newp.1 = oldp.1 + rng.random_range(
+            -min(dist, oldp.1)..min(dist + 1, env.cell_lattice.height() as i32 - oldp.1)
+        );
+    }
+    Pos2D::new(newp.0 as usize, newp.1 as usize)
+}
 
 fn add_random_edge(env: &mut Environment, rng: &mut impl Rng) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
-    let e = Edge::new(p1, env.random_neighbour(&p1, 1, rng), 1);
+    let e = Edge::new(p1, random_neighbour(&env, &p1, 1, rng), 1);
     if e.is_err() { return false }
     env.insert_edge(e.unwrap())
 }
 
 fn replace_random_edges(n_edges: usize, env: &mut Environment, rng: &mut impl Rng) {
     for _ in 0..n_edges {
-        let e = add_random_edge(env, rng);
-        if e { env.remove_random_edge(rng); }
+        let e1 = add_random_edge(env, rng);
+        if e1 {
+            let i = env.random_edge_index(rng);
+            env.remove_edge_at(i);
+        }
     }
 }
 
