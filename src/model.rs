@@ -3,6 +3,7 @@ use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use crate::environment::Environment;
 use crate::parameters::Parameters;
+use crate::pos::Rect;
 
 pub struct Model {
     pub env: Environment,
@@ -11,7 +12,7 @@ pub struct Model {
 }
 impl Model {
     pub fn new(parameters: Parameters) -> Self {
-        Self {
+         Self {
             env: Environment::new(
                 parameters.width,
                 parameters.height,
@@ -25,6 +26,27 @@ impl Model {
             parameters
         }
     }
+    
+    pub fn setup(&mut self) {
+        self.env.spawn_rect_cell(
+            Rect::new(
+                (10, 10).into(),
+                (20, 20).into()
+            ),
+            self.parameters.target_area
+        );
+    }
+    
+    pub fn run(&mut self, steps: u32) {
+        for _ in 0..steps {
+            self.step();
+        }
+    }
+    
+    pub fn step(&mut self) {
+        self.env.ca_step(&mut self.rng, self.parameters.size_lambda, self.parameters.boltz_t);
+    }
+    
     pub fn welcome(&self) {
         let command = args_os()
             .map(|s| s.into_string().unwrap())

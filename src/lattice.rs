@@ -32,8 +32,8 @@ impl<T> Lattice<T> {
         &self,
         pos_it: S
     ) -> impl Iterator<Item = Pos2D<usize>> + use<S, T> {
-    let rect = self.rect;
-    pos_it.filter(move |pos| { rect.inbounds(pos) })
+    let rect = self.rect.clone();
+    pos_it.filter(move |pos| { rect.inbounds(pos.clone()) })
     }
 }
 

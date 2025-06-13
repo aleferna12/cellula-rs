@@ -1,5 +1,3 @@
-use std::hash::{Hash, Hasher};
-use std::mem;
 use std::ops::{Mul, Sub};
 
 const MAX_NEIGH_R: u8 = 16;
@@ -47,7 +45,7 @@ impl<T> Pos2D<T> {
 }
 
 impl Pos2D<usize> {
-    fn pack_u32(&self) -> u32 {
+    pub(crate) fn pack_u32(&self) -> u32 {
         ((self.x as u32) << 16) | self.y as u32
     }
 
@@ -74,51 +72,7 @@ impl<T> From<(T, T)> for Pos2D<T> {
     }
 }
 
-// This currently only supports a Moore neighbourhood of 1
-#[derive(Eq)]
-pub struct Edge {
-    pub p1: Pos2D<usize>,
-    pub p2: Pos2D<usize>
-}
-
-impl Edge {
-    pub fn new(p1: Pos2D<usize>, p2: Pos2D<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
-        let cx = p1.x.abs_diff(p2.x);
-        let cy = p1.y.abs_diff(p2.y);
-        let sum = cx + cy;
-        if sum == 0 {
-            return Err(EdgeError::SamePosition);
-        }
-        if sum > (neigh_r * 2) as usize {
-            return Err(EdgeError::NotNeighbours);
-        }
-        Ok(Self { p1, p2})
-    }
-
-    fn hash_u64(&self) -> u64 {
-        let mut u1 = self.p1.pack_u32();
-        let mut u2 = self.p2.pack_u32();
-        if u1 > u2 {
-            mem::swap(&mut u1, &mut u2);
-        }
-        ((u1 as u64) << 32) | (u2 as u64)
-    }
-}
-
-impl PartialEq for Edge {
-    fn eq(&self, other: &Self) -> bool {
-        self.hash_u64() == other.hash_u64()
-    }
-}
-
-// TODO: test the perfect hash algorithm that steven sent me (nothing else helped)
-impl Hash for Edge {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.hash_u64().hash(state);
-    }
-}
-
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Rect<T> {
     pub min: Pos2D<T>,
     pub max: Pos2D<T>
@@ -146,7 +100,7 @@ where
         self.width() * self.height()
     }
 
-    pub fn inbounds(&self, pos: &Pos2D<T>) -> bool {
+    pub fn inbounds(&self, pos: Pos2D<T>) -> bool {
         (self.min.x..self.max.x).contains(&pos.x) && (self.min.y..self.max.y).contains(&pos.y)
     }
 }
@@ -190,7 +144,7 @@ impl Iterator for RectAreaIt<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::pos::{Edge, Pos2D, Rect, MOORE_NEIGHS};
+    use crate::pos::{Rect, MOORE_NEIGHS};
 
     #[test]
     fn test_rect_area() {
@@ -203,15 +157,5 @@ mod tests {
     fn test_moore() {
         let first_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
         assert_eq!(first_8, MOORE_NEIGHS[..8]);
-    }
-
-    #[test]
-    fn test_neighbours_are_edges() {
-        let p1 = Pos2D::from((100, 100));
-        for r in 1..9 {
-            for p2 in p1.moore_neighs(r) {
-                assert!(Edge::new(p1, p2, r).is_ok());
-            }
-        }
     }
 }
