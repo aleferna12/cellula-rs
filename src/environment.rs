@@ -85,25 +85,25 @@ impl Environment {
         let mut to_visit = self.edge_bk.len() as f32 / edge_per_pos;
         while 0f32 < to_visit {
             let edge_i = self.edge_bk.random_index(rng);
-            let edge_ref = self.edge_bk.at(edge_i);
+            let edge = self.edge_bk.at(edge_i);
             // TODO: is this really faster than just keeping both edges in the IndexSet? Benchmark
-            let edge = if rng.random::<f32>() < 0.5 { 
-                edge_ref.clone()
+            let (p1, p2) = if rng.random::<f32>() < 0.5 {
+                (edge.p1, edge.p2)
             } else {
-                Edge::new(edge_ref.p2, edge_ref.p1, self.neigh_r).unwrap()
+                (edge.p2, edge.p1)
             };
-            let sigma_from = self.cell_lattice[edge.p1];
-            let sigma_to = self.cell_lattice[edge.p2];
+            let sigma_from = self.cell_lattice[p1];
+            let sigma_to = self.cell_lattice[p2];
             let delta_h = self.delta_hamiltonian(sigma_from, sigma_to, size_lambda);
             if Environment::accept_copy(rng, delta_h, boltz_t) {
-                self.cell_lattice[edge.p2] = sigma_from;
+                self.cell_lattice[p2] = sigma_from;
                 if let Some(cell) = self.get_cell_mut(sigma_from) {
                     cell.area += 1;
                 }
                 if let Some(cell) = self.get_cell_mut(sigma_to) {
                     cell.area -= 1;
                 }
-                let (removed, added) = self.update_edges(edge.p2);
+                let (removed, added) = self.update_edges(p2);
                 // TODO: ensure this makes sense for neigh_r > 1
                 to_visit += (added as f32 - removed as f32) / edge_per_pos;
             }
