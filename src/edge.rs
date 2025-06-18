@@ -42,7 +42,11 @@ impl PartialEq for Edge {
     }
 }
 
-// TODO: test the perfect hash algorithm that steven sent me (nothing else helped)
+// TODO: test the perfect hash algorithm that steven sent me
+//       also test a perfect hash where we use row-major ordering to index a vector of all possible edges
+//       the vector has size 9 * width * height (since each position has 8 neighbours), and the hash function
+//       is: row_major(pos1, height) + row_major(pos2, 3)
+//       this would mean replacing edge_set with a Vec
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.hash_u64().hash(state);

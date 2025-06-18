@@ -2,12 +2,26 @@ use std::ops::{Index, IndexMut};
 use rand::Rng;
 use crate::pos::{Pos2D, Rect};
 
+#[derive(Debug)]
+pub enum LatticeEntity<C> {
+    Medium,
+    SomeCell(C)
+}
+impl<C: std::fmt::Debug> LatticeEntity<C> {
+    pub fn unwrap(self) -> C {
+        match self {
+            LatticeEntity::SomeCell(cell) => cell,
+            _ => panic!("called `LatticeEntity::unwrap()` on a `{:?}` value", self)
+        }
+    }
+}
+
 pub struct Lattice<T> {
     rect: Rect<usize>,
     array: Box<[T]>,
 }
 
-impl<T: Default + Clone> Lattice<T> {
+impl<T: Default + Copy> Lattice<T> {
     pub fn new(width: usize, height: usize) -> Self {
         Self {
             rect: Rect::new((0, 0).into(), (width, height).into()),
@@ -27,13 +41,30 @@ impl<T> Lattice<T> {
     pub fn random_pos(&self, rng: &mut impl Rng) -> Pos2D<usize> {
         Pos2D::new(rng.random_range(0..self.width() - 1), rng.random_range(0..self.height() - 1))
     }
-
-    pub fn filter_inbounds<S: Iterator<Item = Pos2D<usize>>>(
+    
+    /// Validates that positions are in bounds.
+    /// 
+    /// With fixed boundary conditions, that means filtering invalid positions.
+    pub fn validate<S: Iterator<Item = Pos2D<usize>>>(
         &self,
         pos_it: S
     ) -> impl Iterator<Item = Pos2D<usize>> + use<S, T> {
-    let rect = self.rect.clone();
-    pos_it.filter(move |pos| { rect.inbounds(pos.clone()) })
+        let rect = self.rect.clone();
+        pos_it.filter(move |pos| { rect.inbounds(pos.clone()) })
+    }
+
+    pub fn iter_positions(&self) -> impl Iterator<Item = Pos2D<usize>> {
+        self.rect.iter_positions()
+    }
+}
+
+impl<T: Copy> Lattice<T> {
+    pub fn iter_values(&self) -> impl Iterator<Item = T> {
+        self.rect
+            .iter_positions()
+            .map(|pos| {
+                self[pos]
+            })
     }
 }
 

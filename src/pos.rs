@@ -54,7 +54,7 @@ impl Pos2D<usize> {
     }
 
     pub fn moore_neighs(&self, neigh_r: u8) -> impl Iterator<Item = Pos2D<usize>> {
-        let vec_size = 4 * neigh_r * (neigh_r + 1);
+        let vec_size = 4 * neigh_r as u16 * (neigh_r as u16 + 1);
         MOORE_NEIGHS[..vec_size as usize]
             .iter()
             .map(|(i, j)| {
@@ -106,7 +106,7 @@ where
 }
 
 impl Rect<usize> {
-    pub fn iterate_pos(&self) -> RectAreaIt {
+    pub fn iter_positions(&self) -> RectAreaIt {
         RectAreaIt::new(self)
     }
 }
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn test_rect_area() {
         let r = Rect::<usize>::new((0, 0).into(), (10, 10).into());
-        let v: Vec<_> = r.iterate_pos().collect();
+        let v: Vec<_> = r.iter_positions().collect();
         assert_eq!(r.area(), v.len())
     }
     

@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Cell {
     pub area: u32,
     pub target_area: u32

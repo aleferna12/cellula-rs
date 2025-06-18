@@ -1,33 +1,39 @@
-use std::env::args_os;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
+use crate::ca::CA;
 use crate::environment::Environment;
 use crate::parameters::Parameters;
 use crate::pos::Rect;
 
 pub struct Model {
     pub env: Environment,
+    pub ca: CA,
     pub rng: Xoshiro256StarStar,
     pub parameters: Parameters
 }
 impl Model {
     pub fn new(parameters: Parameters) -> Self {
          Self {
-            env: Environment::new(
+             env: Environment::new(
                 parameters.width,
                 parameters.height,
                 parameters.neigh_r
-            ),
-            rng: if parameters.seed == 0 { 
-                Xoshiro256StarStar::from_os_rng()
-            } else {
-                Xoshiro256StarStar::seed_from_u64(parameters.seed) 
-            },
-            parameters
-        }
+             ),
+             ca: CA::new(
+                 parameters.boltz_t,
+                 parameters.size_lambda
+             ), 
+             rng: if parameters.seed == 0 { 
+                 Xoshiro256StarStar::from_os_rng()
+             } else {
+                 Xoshiro256StarStar::seed_from_u64(parameters.seed) 
+             },
+             parameters 
+         }
     }
     
     pub fn setup(&mut self) {
+        log::info!("Setting model up");
         self.env.spawn_rect_cell(
             Rect::new(
                 (10, 10).into(),
@@ -38,23 +44,14 @@ impl Model {
     }
     
     pub fn run(&mut self, steps: u32) {
+        log::info!("Starting simulation");
         for _ in 0..steps {
             self.step();
         }
     }
     
     pub fn step(&mut self) {
-        self.env.ca_step(&mut self.rng, self.parameters.size_lambda, self.parameters.boltz_t);
-    }
-    
-    pub fn welcome(&self) {
-        let command = args_os()
-            .map(|s| s.into_string().unwrap())
-            .collect::<Vec<_>>()
-            .join(" ");
-        println!("Model initialised with command: {}", command);
-        println!("Model parameters:");
-        println!("{:?}", self.parameters);
+        self.ca.step(&mut self.env, &mut self.rng);
     }
 }
 

@@ -1,4 +1,3 @@
-use std::fmt::{Display, Formatter};
 use clap::Parser;
 
 // TODO: implement Display
