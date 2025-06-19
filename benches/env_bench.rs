@@ -5,6 +5,7 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use evo_cpm::edge::Edge;
 use evo_cpm::environment::Environment;
+use evo_cpm::environment::LatticeEntity::*;
 use evo_cpm::pos::Pos2D;
 use evo_cpm::utils::TEST_SEED;
 
@@ -40,7 +41,7 @@ fn replace_random_edges(n_edges: usize, env: &mut Environment, rng: &mut impl Rn
     }
 }
 
-fn bench_random_edges(c: &mut Criterion) {
+fn bench_env(c: &mut Criterion) {
     let mut env = Environment::new(100, 100, 1);
     let mut rng = Xoshiro256StarStar::seed_from_u64(TEST_SEED);
     for _ in 0..env.cell_lattice.width() * env.cell_lattice.height() / 2 {
@@ -53,6 +54,12 @@ fn bench_random_edges(c: &mut Criterion) {
             black_box(&mut rng))
         )
     });
+    
+    c.bench_function("lattice_entity_discriminant", |b| b.iter(|| {
+        SomeCell(()).discriminant();
+        Medium.discriminant();
+        Solid.discriminant();
+    }));
 }
 
-criterion_group!(env, bench_random_edges);
+criterion_group!(env, bench_env);

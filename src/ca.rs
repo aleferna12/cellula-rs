@@ -58,13 +58,13 @@ impl CA {
         pos_to: Pos2D<usize>
     ) -> f64 {
         let sigma_to = env.cell_lattice[pos_to];
-        if sigma_to == -1 {
+        if sigma_to == Solid.discriminant() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let sigma_from = {
             let sigma = env.cell_lattice[pos_from];
-            if sigma == -1 { 0 } else { sigma }
+            if sigma == Solid.discriminant() { Medium.discriminant() } else { sigma }
         };
 
         let entity_from = env.get_entity(sigma_from);

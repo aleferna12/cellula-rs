@@ -35,26 +35,24 @@ impl Environment {
         self.cell_lattice.height()
     }
 
-    // Cell population functions
-    // For now there is some code repetition between get_cell and get_cell_mut that is basically unavoidable
-    // We can get rid of it if Cell holds it own sigma, bc then LatticeEntity::Into<usize> is trivial
-    // But I would like to avoid sigma being part of Cell unless it becomes essential
-    // TODO: I think we'll have to do it, otherwise I need to keep track of the discriminants in multiple places
-    //       For example, spawn_cell, spawn_solid, and update_edges also need it
     pub fn get_entity(&self, sigma: i16) -> LatticeEntity<&Cell> {
-        match sigma { 
-            0 => Medium,
-            -1 => Solid,
-            _ => SomeCell(&self.cell_vec[sigma as usize - 1])
+        if sigma == Medium.discriminant() {
+            return Medium;
         }
+        if sigma == Solid.discriminant() {
+            return Solid;
+        }
+        SomeCell(&self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
     }
-    
+
     pub fn get_entity_mut(&mut self, sigma: i16) -> LatticeEntity<&mut Cell> {
-        match sigma {
-            0 => Medium,
-            -1 => Solid,
-            _ => SomeCell(&mut self.cell_vec[sigma as usize - 1])
+        if sigma == Medium.discriminant() {
+            return Medium;
         }
+        if sigma == Solid.discriminant() {
+            return Solid;
+        }
+        SomeCell(&mut self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
     }
 
     // TODO: ensure this makes sense for neigh_r > 1
@@ -68,12 +66,9 @@ impl Environment {
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, target_area: u32) -> Option<&Cell> {
         let mut cell_area = 0u32;
-        let sigma = self.n_cells() as i16 + LatticeEntity::<()>::first_cell();
+        let sigma = self.n_cells() as i16 + LatticeEntity::first_sigma();
         for p in rect.iter_positions() {
-            if !self.cell_lattice.bound.inbounds(p) {
-                continue
-            }
-            if self.cell_lattice[p] != 0 {
+            if !self.cell_lattice.bound.inbounds(p) || self.cell_lattice[p] != Medium.discriminant() {
                 continue;
             }
             self.cell_lattice[p] = sigma;
@@ -97,10 +92,10 @@ impl Environment {
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
-            if self.cell_lattice[pos] != 0 {
+            if self.cell_lattice[pos] != Medium.discriminant() {
                 continue
             }
-            self.cell_lattice[pos] = -1;
+            self.cell_lattice[pos] = Solid.discriminant();
             area += 1;
         }
         area
@@ -140,7 +135,7 @@ impl Environment {
                 // Also representing the inverse edge
                 removed += 2;
             // Since we filtered Medium, Medium before, this should only be 0 when one sigma is 1 and the other -1
-            // Ideally we should test for the cases more explicitly, but I could figure out an easy way yo o that
+            // Ideally we should test for the cases more explicitly, but I couldnt figure out an easy way to do that
             } else if sigma + sigma_neigh >= 0 && self.edge_book.insert(edge) {
                 // Also representing the inverse edge
                 added += 2;
@@ -153,20 +148,33 @@ impl Environment {
 /// This enum represents anything that can be on the cell lattice.
 #[derive(Debug, Copy, Clone)]
 pub enum LatticeEntity<C> {
-    SomeCell(C),
+    Solid,
     Medium,
-    Solid
+    SomeCell(C),
 }
 impl<C> LatticeEntity<C> {
-    pub fn first_cell() -> i16 {
-        1
-    }
-
     pub fn map<D, F: FnOnce(C) -> D>(self, f: F) -> LatticeEntity<D> {
         match self {
             SomeCell(c) => SomeCell(f(c)),
             Medium => Medium,
             Solid => Solid,
+        }
+    }
+}
+
+impl LatticeEntity<()> {
+    pub fn first_sigma() -> i16 {
+        SomeCell(()).discriminant()
+    }
+
+    // There is another way to obtain these according to the docs:
+    // https://doc.rust-lang.org/core/mem/fn.discriminant.html
+    // I've benchmarked and it doesnt make a difference
+    pub fn discriminant(&self) -> i16 {
+        match self {
+            SomeCell(_) => 1,
+            Medium => 0,
+            Solid => -1
         }
     }
 }
@@ -214,5 +222,12 @@ mod tests {
         );
         assert_eq!(env.get_entity(1).unwrap_cell().area, 100);
         assert_eq!(env.get_entity(2).unwrap_cell().area, 75);
+    }
+    
+    #[test]
+    fn test_lattice_entity_discriminant() {
+        assert_eq!(1, SomeCell(()).discriminant());
+        assert_eq!(0, Medium.discriminant());
+        assert_eq!(-1, Solid.discriminant());
     }
 }

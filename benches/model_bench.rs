@@ -7,7 +7,9 @@ use evo_cpm::parameters::Parameters;
 use evo_cpm::utils::TEST_SEED;
 
 fn run_single_cell(steps: u32) {
-    let mut model = Model::new(Parameters::parse_from(["", "--seed", &TEST_SEED.to_string()]));
+    let mut model = Model::new(Parameters::parse_from([""]));
+    model.parameters.seed = TEST_SEED;
+    model.parameters.n_cells = 1;
     model.setup();
     model.run(steps);
 }
