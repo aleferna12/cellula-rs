@@ -170,6 +170,11 @@ impl LatticeEntity<()> {
     // There is another way to obtain these according to the docs:
     // https://doc.rust-lang.org/core/mem/fn.discriminant.html
     // I've benchmarked and it doesnt make a difference
+    // If in the future sigma becomes a cell property, we can implement `LatticeEntity<&Cell>::as_sigma()` and replace
+    // most references to this function with that.
+    /// This returns a unique `i16` discriminant for each possible type of `LatticeEntity`.
+    /// 
+    /// These values are used as sigmas in the cell lattice, except for the discriminant for `SomeCell`.
     pub fn discriminant(&self) -> i16 {
         match self {
             SomeCell(_) => 1,
