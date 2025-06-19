@@ -15,6 +15,10 @@ pub enum LatticeEntity<C> {
     Solid
 }
 impl<C> LatticeEntity<C> {
+    pub fn first_cell() -> i16 {
+        1
+    }
+    
     pub fn map<D, F: FnOnce(C) -> D>(self, f: F) -> LatticeEntity<D> {
         match self {
             SomeCell(c) => SomeCell(f(c)),
@@ -34,19 +38,21 @@ impl<C: std::fmt::Debug> LatticeEntity<C> {
 }
 
 pub struct Environment {
-    pub cell_lattice: Lattice<usize, FixedBoundary>,
+    pub cell_lattice: Lattice<i16, FixedBoundary>,
     cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
     pub neigh_r: u8
 }
 impl Environment {
     pub fn new(width: usize, height: usize, neigh_r: u8) -> Self {
-        Self {
+        let mut me = Self {
             cell_lattice: Lattice::new(FixedBoundary::new(width, height)),
             cell_vec: vec![],
             edge_book: EdgeBook::new(),
             neigh_r
-        }
+        };
+        me.make_border();
+        me
     }
 
     pub fn width(&self) -> usize {
@@ -62,20 +68,20 @@ impl Environment {
     // We can get rid of it if Cell holds it own sigma, bc then LatticeEntity::Into<usize> is trivial
     // But I would like to avoid sigma being part of Cell unless it becomes essential
     // TODO: I think we'll have to do it, otherwise I need to keep track of the discriminants in multiple places
-    //       For example, spawn_cell and spawn_solid also needs it
-    pub fn get_entity(&self, sigma: usize) -> LatticeEntity<&Cell> {
+    //       For example, spawn_cell, spawn_solid, and update_edges also need it
+    pub fn get_entity(&self, sigma: i16) -> LatticeEntity<&Cell> {
         match sigma { 
             0 => Medium,
-            1 => Solid,
-            _ => SomeCell(&self.cell_vec[sigma - 2])
+            -1 => Solid,
+            _ => SomeCell(&self.cell_vec[sigma as usize - 1])
         }
     }
     
-    pub fn get_entity_mut(&mut self, sigma: usize) -> LatticeEntity<&mut Cell> {
+    pub fn get_entity_mut(&mut self, sigma: i16) -> LatticeEntity<&mut Cell> {
         match sigma {
             0 => Medium,
-            1 => Solid,
-            _ => SomeCell(&mut self.cell_vec[sigma - 2])
+            -1 => Solid,
+            _ => SomeCell(&mut self.cell_vec[sigma as usize - 1])
         }
     }
     
@@ -83,9 +89,9 @@ impl Environment {
         self.cell_vec.len()
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, target_area: u32) -> Option<usize> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, target_area: u32) -> Option<&Cell> {
         let mut cell_area = 0u32;
-        let sigma = self.n_cells() + 1;
+        let sigma = self.n_cells() as i16 + LatticeEntity::<()>::first_cell();
         for p in rect.iter_positions() {
             if self.cell_lattice[p] != 0 {
                 continue;
@@ -105,7 +111,7 @@ impl Environment {
             return None;
         }
         self.cell_vec.push(Cell::new(cell_area, target_area));
-        Some(sigma)
+        Some(self.get_entity(sigma).unwrap_cell())
     }
     
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
@@ -114,10 +120,32 @@ impl Environment {
             if self.cell_lattice[pos] != 0 {
                 continue
             }
-            self.cell_lattice[pos] = 1;
+            self.cell_lattice[pos] = -1;
             area += 1;
         }
         area
+    }
+    
+    pub fn make_border(&mut self) {
+        let mut border_positions = Vec::<Pos2D<usize>>::new();
+        for x in 0..self.width() {
+            border_positions.push((x, 0).into());
+        }
+        for y in 1..self.height() {
+            border_positions.push((self.width() - 1, y).into());
+        }
+        if self.width() > 1 {
+            for y in (1..self.height() - 1).rev() {
+                border_positions.push((0, y).into());
+            }
+        }
+        if self.height() > 1 {
+            for x in (0..self.width() - 1).rev() {
+                border_positions.push((x, self.height() - 1).into());
+            }
+        }
+        
+        self.spawn_solid(border_positions.into_iter());
     }
     
     pub fn update_edges(&mut self, pos: Pos2D<usize>) -> (u16, u16) {
@@ -130,7 +158,7 @@ impl Environment {
             if sigma == sigma_neigh {
                 self.edge_book.remove(&edge);
                 removed += 1;
-            } else if self.edge_book.insert(edge) { 
+            } else if sigma_neigh != -1 && self.edge_book.insert(edge) { 
                 added += 1;
             }
         }

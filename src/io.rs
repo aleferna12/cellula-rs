@@ -19,7 +19,7 @@ pub fn welcome(parameters: &Parameters) {
 }
 
 pub fn simulation_frame(env: &Environment) -> RgbImage {
-    fn hash_sigma(sigma: usize) -> [u8; 3] {
+    fn hash_sigma(sigma: i16) -> [u8; 3] {
         if sigma == 0 {
             return [255, 255, 255]
         }
