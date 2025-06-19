@@ -4,8 +4,14 @@ use clap::Parser;
 #[derive(Parser, Debug, Default)]
 #[command(version, about, long_about = None)]
 pub struct Parameters {
-    #[arg(long, default_value_t = 100_000)]
+    #[arg(long, default_value_t = 1_000)]
     pub time_steps: u32,
+    #[arg(long, default_value_t = 100)]
+    pub n_cells: u16,
+    #[arg(long, default_value_t = 50)]
+    pub cell_area: u32,
+    #[arg(long, default_value_t = 50)]
+    pub cell_target_area: u32,
     #[arg(long, default_value_t = 100)]
     pub width: usize,
     #[arg(long, default_value_t = 100)]
@@ -14,12 +20,14 @@ pub struct Parameters {
     pub seed: u64,
     #[arg(long, default_value_t = 1)]
     pub neigh_r: u8,
-    #[arg(long, default_value_t = 12.0)]
-    pub boltz_t: f32,
-    #[arg(long, default_value_t = 1.0)]
-    pub size_lambda: f32,
-    #[arg(long, default_value_t = 50)]
-    pub target_area: u32,
-    #[arg(long, default_value_t = 10e6)]
-    pub solid_energy: f32
+    #[arg(long, default_value_t = 16.)]
+    pub boltz_t: f64,
+    #[arg(long, default_value_t = 1.)]
+    pub size_lambda: f64,
+    #[arg(long, default_value_t = 16.)]
+    pub cell_energy: f64,
+    #[arg(long, default_value_t = 16.)]
+    pub med_energy: f64,
+    #[arg(long, default_value_t = 16.)]
+    pub solid_energy: f64
 }

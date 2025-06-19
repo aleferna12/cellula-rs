@@ -1,52 +1,24 @@
-use crate::boundary::{FixedBoundary, LatticeBoundary};
+use crate::boundary::{FixedBoundary, Boundary};
 use crate::cell::Cell;
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::Lattice;
 use crate::pos::{Pos2D, Rect};
 
-/// This enum represents anything that can be on the cell lattice.
-///
-/// Currently, this can be either a cell or the medium.
-#[derive(Debug, Copy, Clone)]
-pub enum LatticeEntity<C> {
-    SomeCell(C),
-    Medium,
-    Solid
-}
-impl<C> LatticeEntity<C> {
-    pub fn first_cell() -> i16 {
-        1
-    }
-    
-    pub fn map<D, F: FnOnce(C) -> D>(self, f: F) -> LatticeEntity<D> {
-        match self {
-            SomeCell(c) => SomeCell(f(c)),
-            Medium => Medium,
-            Solid => Solid,
-        }
-    }
-}
-
-impl<C: std::fmt::Debug> LatticeEntity<C> {
-    pub fn unwrap_cell(self) -> C {
-        match self {
-            SomeCell(cell) => cell,
-            _ => panic!("called `LatticeEntity::unwrap_cell()` on a `{:?}` value", self)
-        }
-    }
-}
-
 pub struct Environment {
-    pub cell_lattice: Lattice<i16, FixedBoundary>,
+    pub cell_lattice: Lattice<i16, FixedBoundary<usize>>,
     cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
+    // TODO: this should be a MooreNeighbourhood field that implements Neighbourhood
     pub neigh_r: u8
 }
 impl Environment {
     pub fn new(width: usize, height: usize, neigh_r: u8) -> Self {
         let mut me = Self {
-            cell_lattice: Lattice::new(FixedBoundary::new(width, height)),
+            cell_lattice: Lattice::new(FixedBoundary::new(Rect::new(
+                (0, 0).into(),
+                (width, height).into()
+            ))),
             cell_vec: vec![],
             edge_book: EdgeBook::new(),
             neigh_r
@@ -84,6 +56,11 @@ impl Environment {
             _ => SomeCell(&mut self.cell_vec[sigma as usize - 1])
         }
     }
+
+    // TODO: ensure this makes sense for neigh_r > 1
+    pub fn edge_per_pos(&self) -> f64 {
+        self.neigh_r as f64
+    }
     
     pub fn n_cells(&self) -> usize {
         self.cell_vec.len()
@@ -93,6 +70,9 @@ impl Environment {
         let mut cell_area = 0u32;
         let sigma = self.n_cells() as i16 + LatticeEntity::<()>::first_cell();
         for p in rect.iter_positions() {
+            if !self.cell_lattice.bound.inbounds(p) {
+                continue
+            }
             if self.cell_lattice[p] != 0 {
                 continue;
             }
@@ -157,12 +137,46 @@ impl Environment {
             let sigma_neigh = self.cell_lattice[neigh];
             if sigma == sigma_neigh {
                 self.edge_book.remove(&edge);
-                removed += 1;
-            } else if sigma_neigh != -1 && self.edge_book.insert(edge) { 
-                added += 1;
+                // Also representing the inverse edge
+                removed += 2;
+            // Since we filtered Medium, Medium before, this should only be 0 when one sigma is 1 and the other -1
+            // Ideally we should test for the cases more explicitly, but I could figure out an easy way yo o that
+            } else if sigma + sigma_neigh >= 0 && self.edge_book.insert(edge) {
+                // Also representing the inverse edge
+                added += 2;
             }
         }
         (removed, added)
+    }
+}
+
+/// This enum represents anything that can be on the cell lattice.
+#[derive(Debug, Copy, Clone)]
+pub enum LatticeEntity<C> {
+    SomeCell(C),
+    Medium,
+    Solid
+}
+impl<C> LatticeEntity<C> {
+    pub fn first_cell() -> i16 {
+        1
+    }
+
+    pub fn map<D, F: FnOnce(C) -> D>(self, f: F) -> LatticeEntity<D> {
+        match self {
+            SomeCell(c) => SomeCell(f(c)),
+            Medium => Medium,
+            Solid => Solid,
+        }
+    }
+}
+
+impl<C: std::fmt::Debug> LatticeEntity<C> {
+    pub fn unwrap_cell(self) -> C {
+        match self {
+            SomeCell(cell) => cell,
+            _ => panic!("called `LatticeEntity::unwrap_cell()` on a `{:?}` value", self)
+        }
     }
 }
 

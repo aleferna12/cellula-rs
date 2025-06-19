@@ -22,6 +22,8 @@ impl Model {
              ca: CA::new(
                  parameters.boltz_t,
                  parameters.size_lambda,
+                 parameters.cell_energy,
+                 parameters.med_energy,
                  parameters.solid_energy
              ), 
              rng: if parameters.seed == 0 { 
@@ -35,13 +37,22 @@ impl Model {
     
     pub fn setup(&mut self) {
         log::info!("Setting model up");
-        self.env.spawn_rect_cell(
-            Rect::new(
-                (10, 10).into(),
-                (20, 20).into()
-            ),
-            self.parameters.target_area
-        );
+        let mut cell_count = 0;
+        let cell_side = (self.parameters.cell_area as f64).sqrt() as usize;
+        for _ in 0..self.parameters.n_cells {
+            let pos = self.env.cell_lattice.random_pos(&mut self.rng);
+            let cell = self.env.spawn_rect_cell(
+                Rect::new(
+                    pos,
+                    (pos.x + cell_side, pos.y + cell_side).into()
+                ),
+                self.parameters.cell_target_area
+            );
+            if let Some(_) = cell {
+                cell_count += 1;
+            }
+        }
+        log::info!("Created {} out of the {} cells requested", cell_count, self.parameters.n_cells);
     }
     
     pub fn run(&mut self, steps: u32) {

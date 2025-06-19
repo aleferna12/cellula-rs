@@ -1,7 +1,7 @@
-use std::f32::consts::E;
+use std::f64::consts::E;
 use std::ptr;
-use rand::{Rng, RngCore};
-use crate::boundary::LatticeBoundary;
+use rand::Rng;
+use crate::boundary::Boundary;
 use crate::cell::Cell;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
@@ -9,73 +9,106 @@ use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
 use crate::pos::Pos2D;
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
-// Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait
+// Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
+// that just implements `step()`
 pub struct CA {
-    pub boltz_t: f32,
-    pub size_lambda: f32,
-    pub solid_energy: f32
+    pub boltz_t: f64,
+    pub size_lambda: f64,
+    pub cell_energy: f64,
+    pub med_energy: f64,
+    pub solid_energy: f64
 }
 impl CA {
-    pub fn new(boltz_t: f32, size_lambda: f32, solid_energy: f32) -> CA {
+    pub fn new(boltz_t: f64, size_lambda: f64, cell_energy: f64, med_energy: f64, solid_energy: f64) -> CA {
         CA {
             boltz_t,
             size_lambda,
+            cell_energy,
+            med_energy,
             solid_energy
         }
     }
 
-    pub fn step(&self, env: &mut Environment, rng: &mut impl RngCore) {
-        // TODO: ensure this makes sense for neigh_r > 1
-        let edge_per_pos = env.neigh_r as f32 / 2.0;
-        let mut to_visit = env.edge_book.len() as f32 / edge_per_pos;
-        while 0.0 < to_visit {
+    pub fn step(&self, env: &mut Environment, rng: &mut impl Rng) {
+        let mut to_visit = env.edge_book.len() as f64 / env.edge_per_pos();
+        while 0. < to_visit {
             let edge_i = env.edge_book.random_index(rng);
             let edge = env.edge_book.at(edge_i);
             // TODO: is this really faster than just keeping both edges in the IndexSet? Benchmark
-            let (pos_from, pos_to) = if rng.random::<f32>() < 0.5 {
+            let (pos_from, pos_to) = if rng.random::<f64>() < 0.5 {
                 (edge.p1, edge.p2)
             } else {
                 (edge.p2, edge.p1)
             };
-            let delta_h = self.delta_hamiltonian(env, pos_from, pos_to);
-            if self.accept_copy(rng, delta_h) {
-                let sigma_from = env.cell_lattice[pos_from];
-                let sigma_to = env.cell_lattice[pos_to];
-                env.cell_lattice[pos_to] = sigma_from;
-                if let SomeCell(cell) = env.get_entity_mut(sigma_from) {
-                    cell.area += 1;
-                }
-                if let SomeCell(cell) = env.get_entity_mut(sigma_to) {
-                    cell.area -= 1;
-                }
-                let (removed, added) = env.update_edges(pos_to);
-                // TODO: ensure this makes sense for neigh_r > 1
-                to_visit += (added as f32 - removed as f32) / edge_per_pos;
-            }
-            to_visit -= 1.0;
+            to_visit += self.attempt_site_copy(env, rng, pos_from, pos_to);
+            to_visit -= 1.;
         }
     }
 
-    pub fn accept_copy(&self, rng: &mut impl Rng, delta_h: f32) -> bool {
-        delta_h < 0.0 || rng.random::<f32>() < E.powf(-delta_h / self.boltz_t)
-    }
-    
-    // TODO: should this just take the entities? think about what information deltaH should have access to
-    pub fn delta_hamiltonian(&self, env: &Environment, pos_from: Pos2D<usize>, pos_to: Pos2D<usize>) -> f32 {
-        let mut delta_h = 0.0;
-        let entity_from = env.get_entity(env.cell_lattice[pos_from]);
-        let entity_to = env.get_entity(env.cell_lattice[pos_to]);
-        delta_h += self.delta_hamiltonian_size(entity_from, entity_to);
-        let neighs = env.cell_lattice
+    /// Attempts to execute the selected site copy.
+    /// 
+    /// # Returns:
+    /// 
+    /// The number of extra updates that the copy attempt incurred (not whether it was successful or not!).
+    pub fn attempt_site_copy(
+        &self, 
+        env: &mut Environment, 
+        rng: &mut impl Rng,
+        pos_from: Pos2D<usize>,
+        pos_to: Pos2D<usize>
+    ) -> f64 {
+        let sigma_to = env.cell_lattice[pos_to];
+        if sigma_to == -1 {
+            return 0.;
+        }
+        // If was going to copy from a Solid, create a Medium cell instead 
+        let sigma_from = {
+            let sigma = env.cell_lattice[pos_from];
+            if sigma == -1 { 0 } else { sigma }
+        };
+
+        let entity_from = env.get_entity(sigma_from);
+        let entity_to = env.get_entity(sigma_to);
+        let neigh_entities = env.cell_lattice
             .bound
             .validate_positions(pos_to.moore_neighs(env.neigh_r))
             .map(|neigh_pos| env.get_entity(env.cell_lattice[neigh_pos]));
-        delta_h += self.delta_hamiltonian_adhesion(entity_from, entity_to, neighs);
+        
+        let delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
+        if !self.accept_site_copy(rng, delta_h) {
+            return 0.;
+        }
+        
+        // Executes the copy
+        env.cell_lattice[pos_to] = sigma_from;
+        if let SomeCell(cell) = env.get_entity_mut(sigma_from) {
+            cell.area += 1;
+        }
+        if let SomeCell(cell) = env.get_entity_mut(sigma_to) {
+            cell.area -= 1;
+        }
+        let (removed, added) = env.update_edges(pos_to);
+        (added as f64 - removed as f64) / env.edge_per_pos()
+    }
+
+    pub fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f64) -> bool {
+        delta_h < 0. || rng.random::<f64>() < E.powf(-delta_h / self.boltz_t)
+    }
+
+    pub fn delta_hamiltonian<'a>(
+        &self,
+        entity_from: LatticeEntity<&Cell>,
+        entity_to: LatticeEntity<&Cell>,
+        neigh_entities: impl Iterator<Item = LatticeEntity<&'a Cell>>
+    ) -> f64 {
+        let mut delta_h = 0.;
+        delta_h += self.delta_hamiltonian_size(entity_from, entity_to);
+        delta_h += self.delta_hamiltonian_adhesion(entity_from, entity_to, neigh_entities);
         delta_h
     }
     
-    pub fn delta_hamiltonian_size(&self, entity_from: LatticeEntity<&Cell>, entity_to: LatticeEntity<&Cell>) -> f32 {
-        let mut delta_h = 0.0;
+    pub fn delta_hamiltonian_size(&self, entity_from: LatticeEntity<&Cell>, entity_to: LatticeEntity<&Cell>) -> f64 {
+        let mut delta_h = 0.;
         if let SomeCell(cell) = entity_from {
             delta_h += self.size_energy_diff(true, cell.area, cell.target_area);
         }
@@ -85,37 +118,38 @@ impl CA {
         delta_h
     }
 
+    // TODO: test
     pub fn delta_hamiltonian_adhesion<'a>(
         &self,
         entity_from: LatticeEntity<&Cell>,
         entity_to: LatticeEntity<&Cell>,
-        neigh_cells: impl Iterator<Item = LatticeEntity<&'a Cell>>
-    ) -> f32 {
-        let mut energy = 0.0;
-        for neigh in neigh_cells {
+        neigh_entities: impl Iterator<Item = LatticeEntity<&'a Cell>>
+    ) -> f64 {
+        let mut energy = 0.;
+        for neigh in neigh_entities {
             energy -= self.adhesion_energy(entity_to, neigh);
             energy += self.adhesion_energy(entity_from, neigh);
         }
         energy
     }
 
-    pub fn size_energy_diff(&self, area_increased: bool, area: u32, target_area: u32) -> f32 {
-        let delta_area = if area_increased { 1.0 } else { -1.0 };
-        2.0 * self.size_lambda * delta_area * (area as f32 - target_area as f32) + self.size_lambda
+    pub fn size_energy_diff(&self, area_increased: bool, area: u32, target_area: u32) -> f64 {
+        let delta_area = if area_increased { 1. } else { -1. };
+        2. * self.size_lambda * delta_area * (area as f64 - target_area as f64) + self.size_lambda
     }
 
-    pub fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
+    pub fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f64 {
         match (entity1, entity2) {
             (SomeCell(c1), SomeCell(c2)) => {
                 if ptr::eq(c1, c2) {
-                    0.0
+                    0.
                 } else {
-                    10.0
+                    2. * self.cell_energy
                 }
             }
-            (SomeCell(_), Medium) | (Medium, SomeCell(_)) => 20.0,
+            (SomeCell(_), Medium) | (Medium, SomeCell(_)) => self.med_energy,
             (SomeCell(_), Solid) | (Solid, SomeCell(_)) => self.solid_energy,
-            _ => 0.0
+            _ => 0.
         }
     }
 }
@@ -126,10 +160,10 @@ mod tests {
 
     #[test]
     fn test_delta_hamiltonian_size() {
-        let ca = CA::new(12.0, 1.0, 100.0);
+        let ca = CA::new(12., 1., 10., 20., 20.);
         let cell1 = Cell::new(100, 100);
         let cell2 = Cell::new(100, 100);
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell1), SomeCell(&cell2));
-        assert_eq!(dh, 2.0);
+        assert_eq!(dh, 2.);
     }
 }

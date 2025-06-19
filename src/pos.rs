@@ -99,10 +99,6 @@ where
     pub fn area(&self) -> T {
         self.width() * self.height()
     }
-
-    pub fn inbounds(&self, pos: Pos2D<T>) -> bool {
-        (self.min.x..self.max.x).contains(&pos.x) && (self.min.y..self.max.y).contains(&pos.y)
-    }
 }
 
 impl Rect<usize> {
