@@ -9,7 +9,7 @@ pub struct Parameters {
     #[arg(long, default_value_t = 100)]
     pub n_cells: u16,
     #[arg(long, default_value_t = 50)]
-    pub cell_area: u32,
+    pub cell_start_area: u32,
     #[arg(long, default_value_t = 50)]
     pub cell_target_area: u32,
     #[arg(long, default_value_t = 100)]
@@ -27,7 +27,7 @@ pub struct Parameters {
     #[arg(long, default_value_t = 16.)]
     pub cell_energy: f64,
     #[arg(long, default_value_t = 16.)]
-    pub med_energy: f64,
+    pub medium_energy: f64,
     #[arg(long, default_value_t = 16.)]
     pub solid_energy: f64
 }

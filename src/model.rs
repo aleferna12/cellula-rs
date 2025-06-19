@@ -23,7 +23,7 @@ impl Model {
                  parameters.boltz_t,
                  parameters.size_lambda,
                  parameters.cell_energy,
-                 parameters.med_energy,
+                 parameters.medium_energy,
                  parameters.solid_energy
              ), 
              rng: if parameters.seed == 0 { 
@@ -38,7 +38,7 @@ impl Model {
     pub fn setup(&mut self) {
         log::info!("Setting model up");
         let mut cell_count = 0;
-        let cell_side = (self.parameters.cell_area as f64).sqrt() as usize;
+        let cell_side = (self.parameters.cell_start_area as f64).sqrt() as usize;
         for _ in 0..self.parameters.n_cells {
             let pos = self.env.cell_lattice.random_pos(&mut self.rng);
             let cell = self.env.spawn_rect_cell(
@@ -73,21 +73,15 @@ mod tests {
     use rand::Rng;
     use crate::model::Model;
     use crate::parameters::Parameters;
-    use crate::utils::TEST_SEED;
 
     #[test]
     fn test_xoshiro() {
-        let mut model = Model::new(Parameters::parse_from(["", "--seed", &TEST_SEED.to_string()]));
+        let mut model = Model::new(Parameters::parse_from(["", "--seed", &1241254152.to_string()]));
         let s = (0..50)
             .map(|_| model.rng.random_range(0..9).to_string())
             .collect::<Vec<_>>()
             .join("");
         let res = "15515320360704325727185856564110164830043067488704";
         assert_eq!(res, s);
-    }
-    
-    #[test]
-    fn test_run() {
-        todo!()
     }
 }

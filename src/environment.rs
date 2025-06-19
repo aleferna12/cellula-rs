@@ -56,8 +56,8 @@ impl Environment {
     }
 
     // TODO: ensure this makes sense for neigh_r > 1
-    pub fn edge_per_pos(&self) -> f64 {
-        self.neigh_r as f64
+    pub fn edge_per_pos(&self) -> u16 {
+        4 * self.neigh_r as u16 * (self.neigh_r as u16 + 1)
     }
     
     pub fn n_cells(&self) -> usize {
@@ -173,7 +173,7 @@ impl LatticeEntity<()> {
     // If in the future sigma becomes a cell property, we can implement `LatticeEntity<&Cell>::as_sigma()` and replace
     // most references to this function with that.
     /// This returns a unique `i16` discriminant for each possible type of `LatticeEntity`.
-    /// 
+    ///
     /// These values are used as sigmas in the cell lattice, except for the discriminant for `SomeCell`.
     pub fn discriminant(&self) -> i16 {
         match self {
@@ -228,7 +228,7 @@ mod tests {
         assert_eq!(env.get_entity(1).unwrap_cell().area, 100);
         assert_eq!(env.get_entity(2).unwrap_cell().area, 75);
     }
-    
+
     #[test]
     fn test_lattice_entity_discriminant() {
         assert_eq!(1, SomeCell(()).discriminant());

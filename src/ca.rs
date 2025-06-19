@@ -30,7 +30,7 @@ impl CA {
     }
 
     pub fn step(&self, env: &mut Environment, rng: &mut impl Rng) {
-        let mut to_visit = env.edge_book.len() as f64 / env.edge_per_pos();
+        let mut to_visit = env.edge_book.len() as f64 / env.edge_per_pos() as f64;
         while 0. < to_visit {
             let edge_i = env.edge_book.random_index(rng);
             let edge = env.edge_book.at(edge_i);
@@ -88,7 +88,7 @@ impl CA {
             cell.area -= 1;
         }
         let (removed, added) = env.update_edges(pos_to);
-        (added as f64 - removed as f64) / env.edge_per_pos()
+        (added as f64 - removed as f64) / env.edge_per_pos() as f64
     }
 
     pub fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f64) -> bool {
