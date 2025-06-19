@@ -11,6 +11,6 @@ fn main() {
     let mut model = Model::new(parameters);
     model.setup();
     io::simulation_frame(&model.env).save("./test1.png").unwrap();
-    model.run(1000);
+    model.run(10000);
     io::simulation_frame(&model.env).save("./test2.png").unwrap()
 }

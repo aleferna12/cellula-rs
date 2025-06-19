@@ -14,10 +14,12 @@ pub struct Parameters {
     pub seed: u64,
     #[arg(long, default_value_t = 1)]
     pub neigh_r: u8,
-    #[arg(long, default_value_t = 12f32)]
+    #[arg(long, default_value_t = 12.0)]
     pub boltz_t: f32,
-    #[arg(long, default_value_t = 1f32)]
+    #[arg(long, default_value_t = 1.0)]
     pub size_lambda: f32,
     #[arg(long, default_value_t = 50)]
     pub target_area: u32,
+    #[arg(long, default_value_t = 10e6)]
+    pub solid_energy: f32
 }

@@ -27,15 +27,15 @@ fn add_random_edge(env: &mut Environment, rng: &mut impl Rng) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
     let e = Edge::new(p1, random_neighbour(&env, p1, 1, rng), 1);
     if e.is_err() { return false }
-    env.edge_bk.insert(e.unwrap())
+    env.edge_book.insert(e.unwrap())
 }
 
 fn replace_random_edges(n_edges: usize, env: &mut Environment, rng: &mut impl Rng) {
     for _ in 0..n_edges {
         let e1 = add_random_edge(env, rng);
         if e1 {
-            let i = env.edge_bk.random_index(rng);
-            env.edge_bk.remove_at(i);
+            let i = env.edge_book.random_index(rng);
+            env.edge_book.remove_at(i);
         }
     }
 }

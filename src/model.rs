@@ -21,7 +21,8 @@ impl Model {
              ),
              ca: CA::new(
                  parameters.boltz_t,
-                 parameters.size_lambda
+                 parameters.size_lambda,
+                 parameters.solid_energy
              ), 
              rng: if parameters.seed == 0 { 
                  Xoshiro256StarStar::from_os_rng()

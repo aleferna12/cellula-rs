@@ -54,11 +54,11 @@ impl Hash for Edge {
 }
 
 /// This struct exists to book-keep the edges in a lattice.
-pub struct EdgeBookkeeper {
+pub struct EdgeBook {
     // TODO: profile using this crate, I have no clue of whether it's fast enough
     edge_set: IndexSet<Edge>,
 }
-impl EdgeBookkeeper {
+impl EdgeBook {
     pub fn new() -> Self {
         Self { edge_set: IndexSet::new() }
     }

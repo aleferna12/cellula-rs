@@ -8,3 +8,4 @@ pub mod utils;
 pub mod edge;
 pub mod ca;
 pub mod io;
+pub mod boundary;
