@@ -28,7 +28,7 @@ pub fn simulation_frame(env: &Environment) -> RgbImage {
         sigma.hash(&mut hasher);
         let hashed = hasher.finish();
         [
-            (hashed & 0xFF) as u8,
+            (hashed & 0xFF).try_into().unwrap(),
             (hashed >> 8 & 0xFF) as u8,
             (hashed >> 16 & 0xFF) as u8,
         ]

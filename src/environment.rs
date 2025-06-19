@@ -28,14 +28,17 @@ impl Environment {
     }
 
     // Cell population functions
-    pub fn get_cell(&self, sigma: usize) -> LatticeEntity<&Cell> {
+    // For now there is some code repetition between get_cell and get_cell_mut that is basically unavoidable
+    // We can get rid of it if Cell holds it own sigma, bc then LatticeEntity::Into<usize> is trivial
+    // But I would like to avoid sigma being part of Cell unless it becomes essential
+    pub fn get_entity(&self, sigma: usize) -> LatticeEntity<&Cell> {
         match sigma { 
             0 => LatticeEntity::Medium,
             _ => LatticeEntity::SomeCell(&self.cell_vec[sigma - 1])
         }
     }
     
-    pub fn get_cell_mut(&mut self, sigma: usize) -> LatticeEntity<&mut Cell> {
+    pub fn get_entity_mut(&mut self, sigma: usize) -> LatticeEntity<&mut Cell> {
         match sigma {
             0 => LatticeEntity::Medium,
             _ => LatticeEntity::SomeCell(&mut self.cell_vec[sigma - 1])
@@ -121,7 +124,7 @@ mod tests {
             ),
             10
         );
-        assert_eq!(env.get_cell(1).unwrap().area, 100);
-        assert_eq!(env.get_cell(2).unwrap().area, 75);
+        assert_eq!(env.get_entity(1).unwrap().area, 100);
+        assert_eq!(env.get_entity(2).unwrap().area, 75);
     }
 }

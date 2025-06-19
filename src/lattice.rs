@@ -2,11 +2,25 @@ use std::ops::{Index, IndexMut};
 use rand::Rng;
 use crate::pos::{Pos2D, Rect};
 
-#[derive(Debug)]
+/// This enum represents anything that can be on the lattice.
+/// 
+/// Currently, this can be either a cell or the medium.
+#[derive(Debug, Copy, Clone)]
 pub enum LatticeEntity<C> {
+    SomeCell(C),
     Medium,
-    SomeCell(C)
+    Border
 }
+impl<C> LatticeEntity<C> {
+    pub fn map<D, F: FnOnce(C) -> D>(self, f: F) -> LatticeEntity<D> {
+        match self {
+            LatticeEntity::SomeCell(c) => LatticeEntity::SomeCell(f(c)),
+            LatticeEntity::Medium => LatticeEntity::Medium,
+            LatticeEntity::Border => LatticeEntity::Border,
+        }
+    }
+}
+
 impl<C: std::fmt::Debug> LatticeEntity<C> {
     pub fn unwrap(self) -> C {
         match self {
@@ -50,7 +64,7 @@ impl<T> Lattice<T> {
         pos_it: S
     ) -> impl Iterator<Item = Pos2D<usize>> + use<S, T> {
         let rect = self.rect.clone();
-        pos_it.filter(move |pos| { rect.inbounds(pos.clone()) })
+        pos_it.filter(move |pos| { rect.inbounds(*pos) })
     }
 
     pub fn iter_positions(&self) -> impl Iterator<Item = Pos2D<usize>> {
