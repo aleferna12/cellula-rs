@@ -41,28 +41,41 @@ fn run_single_cell(steps: u32) {
     model.run(steps);
 }
 
-fn bench_model(c: &mut Criterion) {
-    c.bench_function("single_cell_1000", |b| {
+fn bench_model_1000mcs(c: &mut Criterion) {
+    c.bench_function("single_cell_1000mcs", |b| {
         b.iter(|| {
             run_single_cell(black_box(1_000))
         })
     });
-    c.bench_function("full_model_1000", |b| {
+    c.bench_function("full_model_1000mcs", |b| {
         b.iter(|| {
             run_full_model(black_box(1_000))
         })
     });
+    
 }
 
-fn config() -> Criterion {
-    Criterion::default()
-        .sample_size(10)
-        .measurement_time(Duration::from_secs(10))
+fn bench_model_1mcs(c: &mut Criterion) {
+    c.bench_function("single_cell_1mcs", |b| {
+        b.iter(|| {
+            run_single_cell(black_box(1))
+        })
+    });
+    c.bench_function("full_model_1mcs", |b| {
+        b.iter(|| {
+            run_full_model(black_box(1))
+        })
+    });
 }
 
 criterion_group!(
-    name = model_bench;
-    config = config();
-    targets = bench_model
+    name = model_1000mcs;
+    config = Criterion::default()
+        .sample_size(10)
+        .measurement_time(Duration::from_secs(10));
+    targets = bench_model_1000mcs
 );
-criterion_main!(model_bench);
+
+criterion_group!(model_1mcs, bench_model_1mcs);
+
+criterion_main!(model_1mcs, model_1000mcs);

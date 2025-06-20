@@ -1,4 +1,4 @@
-use std::f64::consts::E;
+use std::f32::consts::E;
 use std::ptr;
 use rand::Rng;
 use crate::boundary::Boundary;
@@ -12,14 +12,14 @@ use crate::pos::Pos2D;
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 pub struct CA {
-    pub boltz_t: f64,
-    pub size_lambda: f64,
-    pub cell_energy: f64,
-    pub med_energy: f64,
-    pub solid_energy: f64
+    pub boltz_t: f32,
+    pub size_lambda: f32,
+    pub cell_energy: f32,
+    pub med_energy: f32,
+    pub solid_energy: f32
 }
 impl CA {
-    pub fn new(boltz_t: f64, size_lambda: f64, cell_energy: f64, med_energy: f64, solid_energy: f64) -> CA {
+    pub fn new(boltz_t: f32, size_lambda: f32, cell_energy: f32, med_energy: f32, solid_energy: f32) -> CA {
         CA {
             boltz_t,
             size_lambda,
@@ -30,12 +30,12 @@ impl CA {
     }
 
     pub fn step(&self, env: &mut Environment, rng: &mut impl Rng) {
-        let mut to_visit = env.edge_book.len() as f64 / env.edge_per_pos() as f64;
+        let mut to_visit = env.edge_book.len() as f32 / env.edge_per_pos() as f32;
         while 0. < to_visit {
             let edge_i = env.edge_book.random_index(rng);
             let edge = env.edge_book.at(edge_i);
             // TODO: is this really faster than just keeping both edges in the IndexSet? Benchmark
-            let (pos_from, pos_to) = if rng.random::<f64>() < 0.5 {
+            let (pos_from, pos_to) = if rng.random::<f32>() < 0.5 {
                 (edge.p1, edge.p2)
             } else {
                 (edge.p2, edge.p1)
@@ -56,7 +56,7 @@ impl CA {
         rng: &mut impl Rng,
         pos_from: Pos2D<usize>,
         pos_to: Pos2D<usize>
-    ) -> f64 {
+    ) -> f32 {
         let sigma_to = env.cell_lattice[pos_to];
         if sigma_to == Solid.discriminant() {
             return 0.;
@@ -88,11 +88,11 @@ impl CA {
             cell.area -= 1;
         }
         let (removed, added) = env.update_edges(pos_to);
-        (added as f64 - removed as f64) / env.edge_per_pos() as f64
+        (added as f32 - removed as f32) / env.edge_per_pos() as f32
     }
 
-    pub fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f64) -> bool {
-        delta_h < 0. || rng.random::<f64>() < E.powf(-delta_h / self.boltz_t)
+    pub fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f32) -> bool {
+        delta_h < 0. || rng.random::<f32>() < E.powf(-delta_h / self.boltz_t)
     }
 
     pub fn delta_hamiltonian<'a>(
@@ -100,14 +100,14 @@ impl CA {
         entity_from: LatticeEntity<&Cell>,
         entity_to: LatticeEntity<&Cell>,
         neigh_entities: impl Iterator<Item = LatticeEntity<&'a Cell>>
-    ) -> f64 {
+    ) -> f32 {
         let mut delta_h = 0.;
         delta_h += self.delta_hamiltonian_size(entity_from, entity_to);
         delta_h += self.delta_hamiltonian_adhesion(entity_from, entity_to, neigh_entities);
         delta_h
     }
     
-    pub fn delta_hamiltonian_size(&self, entity_from: LatticeEntity<&Cell>, entity_to: LatticeEntity<&Cell>) -> f64 {
+    pub fn delta_hamiltonian_size(&self, entity_from: LatticeEntity<&Cell>, entity_to: LatticeEntity<&Cell>) -> f32 {
         let mut delta_h = 0.;
         if let SomeCell(cell) = entity_from {
             delta_h += self.size_energy_diff(true, cell.area, cell.target_area);
@@ -124,7 +124,7 @@ impl CA {
         entity_from: LatticeEntity<&Cell>,
         entity_to: LatticeEntity<&Cell>,
         neigh_entities: impl Iterator<Item = LatticeEntity<&'a Cell>>
-    ) -> f64 {
+    ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_entities {
             energy -= self.adhesion_energy(entity_to, neigh);
@@ -133,12 +133,12 @@ impl CA {
         energy
     }
 
-    pub fn size_energy_diff(&self, area_increased: bool, area: u32, target_area: u32) -> f64 {
+    pub fn size_energy_diff(&self, area_increased: bool, area: u32, target_area: u32) -> f32 {
         let delta_area = if area_increased { 1. } else { -1. };
-        2. * self.size_lambda * delta_area * (area as f64 - target_area as f64) + self.size_lambda
+        2. * self.size_lambda * delta_area * (area as f32 - target_area as f32) + self.size_lambda
     }
 
-    pub fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f64 {
+    pub fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
         match (entity1, entity2) {
             (SomeCell(c1), SomeCell(c2)) => {
                 if ptr::eq(c1, c2) {

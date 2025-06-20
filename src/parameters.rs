@@ -21,13 +21,13 @@ pub struct Parameters {
     #[arg(long, default_value_t = 1)]
     pub neigh_r: u8,
     #[arg(long, default_value_t = 16.)]
-    pub boltz_t: f64,
+    pub boltz_t: f32,
     #[arg(long, default_value_t = 1.)]
-    pub size_lambda: f64,
+    pub size_lambda: f32,
     #[arg(long, default_value_t = 16.)]
-    pub cell_energy: f64,
+    pub cell_energy: f32,
     #[arg(long, default_value_t = 16.)]
-    pub medium_energy: f64,
+    pub medium_energy: f32,
     #[arg(long, default_value_t = 16.)]
-    pub solid_energy: f64
+    pub solid_energy: f32
 }

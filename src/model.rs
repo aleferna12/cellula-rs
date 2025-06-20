@@ -38,7 +38,7 @@ impl Model {
     pub fn setup(&mut self) {
         log::info!("Setting model up");
         let mut cell_count = 0;
-        let cell_side = (self.parameters.cell_start_area as f64).sqrt() as usize;
+        let cell_side = (self.parameters.cell_start_area as f32).sqrt() as usize;
         for _ in 0..self.parameters.n_cells {
             let pos = self.env.cell_lattice.random_pos(&mut self.rng);
             let cell = self.env.spawn_rect_cell(
