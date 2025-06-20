@@ -4,8 +4,8 @@ use evo_cpm::parameters::Parameters;
 use evo_cpm::io;
 
 /*
-TODO!: 
-    - read params from config file 
+TODO!:
+    - read params from config file
     - finish IO 
         - images
         - cell info
