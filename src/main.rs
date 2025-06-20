@@ -2,7 +2,16 @@ use clap::Parser;
 use evo_cpm::model::Model;
 use evo_cpm::parameters::Parameters;
 use evo_cpm::io;
-// TODO: profile inlining core functions
+
+/*
+TODO!: 
+    - read params from config file 
+    - finish IO 
+        - images
+        - cell info
+        - backup
+    - periodic boundaries 
+ */
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();

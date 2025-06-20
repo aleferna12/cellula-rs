@@ -7,9 +7,9 @@ use evo_cpm::parameters::Parameters;
 
 /// This model should override all parameters that can have an effect on performance 
 /// (do not depend on changeable defaults).
-/// 
+///
 /// In the future, we can implement a test_config.toml with all of these.
-fn full_model() -> Model {
+pub fn test_parameters() -> Parameters {
     let mut params = Parameters::parse_from([""]);
     params.seed = 123451;
     params.n_cells = 100;
@@ -23,19 +23,20 @@ fn full_model() -> Model {
     params.cell_energy = 16.;
     params.medium_energy = 16.;
     params.solid_energy = 16.;
-    Model::new(params)
+    params
 }
 
 fn run_full_model(steps: u32) {
-    let mut model = full_model();
+    let mut model = Model::new(test_parameters());
     model.setup();
     model.run(1000);
     model.run(steps);
 } 
 
 fn run_single_cell(steps: u32) {
-    let mut model = full_model();
-    model.parameters.n_cells = 1;
+    let mut params = test_parameters();
+    params.n_cells = 1;
+    let mut model = Model::new(params);
     model.setup();
     model.run(1000);
     model.run(steps);
@@ -52,7 +53,6 @@ fn bench_model_1000mcs(c: &mut Criterion) {
             run_full_model(black_box(1_000))
         })
     });
-    
 }
 
 fn bench_model_1mcs(c: &mut Criterion) {

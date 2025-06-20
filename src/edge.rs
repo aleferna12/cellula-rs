@@ -12,7 +12,6 @@ pub struct Edge {
 }
 
 impl Edge {
-    // TODO: once we are confident that this is not error prone we can get rid of the checks
     pub fn new(p1: Pos2D<usize>, p2: Pos2D<usize>) -> Self {
         Self { p1, p2 }
     }

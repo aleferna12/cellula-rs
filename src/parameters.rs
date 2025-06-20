@@ -31,3 +31,13 @@ pub struct Parameters {
     #[arg(long, default_value_t = 16.)]
     pub solid_energy: f32
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_parse_cli() {
+        assert!(Parameters::try_parse_from([""]).is_ok());
+    }
+}

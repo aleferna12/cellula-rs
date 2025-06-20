@@ -34,7 +34,8 @@ impl CA {
         while 0. < to_visit {
             let edge_i = env.edge_book.random_index(rng);
             let edge = env.edge_book.at(edge_i);
-            // TODO: is this really faster than just keeping both edges in the IndexSet? Benchmark
+            // This is WAY faster than keeping the symmetric edge in EdgeBook (like 2x as fast!)
+            // or at least, this is the case when using IndexSet, I would assume its somewhat implementation-dependent
             let (pos_from, pos_to) = if rng.random::<f32>() < 0.5 {
                 (edge.p1, edge.p2)
             } else {
@@ -118,7 +119,7 @@ impl CA {
         delta_h
     }
 
-    // TODO: test
+    // TODO!: test
     pub fn delta_hamiltonian_adhesion<'a>(
         &self,
         entity_from: LatticeEntity<&Cell>,

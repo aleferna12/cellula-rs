@@ -9,7 +9,7 @@ pub struct Environment {
     pub cell_lattice: Lattice<i16, FixedBoundary<usize>>,
     cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
-    // TODO: this should be a MooreNeighbourhood field that implements Neighbourhood
+    // TODO!: this should be a MooreNeighbourhood field that implements Neighbourhood
     pub neigh_r: u8
 }
 impl Environment {
@@ -55,7 +55,6 @@ impl Environment {
         SomeCell(&mut self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
     }
 
-    // TODO: ensure this makes sense for neigh_r > 1
     pub fn edge_per_pos(&self) -> u16 {
         4 * self.neigh_r as u16 * (self.neigh_r as u16 + 1)
     }
@@ -194,11 +193,11 @@ impl<C: std::fmt::Debug> LatticeEntity<C> {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
 
     // Setup functions
-    fn empty_env() -> Environment {
+    pub fn empty_env() -> Environment {
         Environment::new(100, 100, 1)
     }
     
