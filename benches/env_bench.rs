@@ -1,6 +1,6 @@
 use std::cmp::min;
 use std::hint::black_box;
-use criterion::{criterion_group, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use evo_cpm::edge::Edge;
@@ -61,4 +61,5 @@ fn bench_env(c: &mut Criterion) {
     }));
 }
 
-criterion_group!(env, bench_env);
+criterion_group!(env_bench, bench_env);
+criterion_main!(env_bench);

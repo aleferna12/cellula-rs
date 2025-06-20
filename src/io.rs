@@ -8,7 +8,8 @@ use crate::parameters::Parameters;
 // TODO: license, hello etc
 /// Welcomes the user and spits out information about the model parameters.
 ///
-/// This should not require the model to be correctly initiated.
+/// This should not require the model to be correctly initialised 
+/// (initialising the parameters beforehand is ergonomic with how clap is set up).
 pub fn welcome(parameters: &Parameters) {
     let command = args()
         .collect::<Vec<_>>()
