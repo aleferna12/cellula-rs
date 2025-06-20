@@ -25,9 +25,8 @@ fn random_neighbour(env: &Environment, p: Pos2D<usize>, neigh_r: u8, rng: &mut i
 
 fn add_random_edge(env: &mut Environment, rng: &mut impl Rng) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
-    let e = Edge::new(p1, random_neighbour(&env, p1, 1, rng), 1);
-    if e.is_err() { return false }
-    env.edge_book.insert(e.unwrap())
+    let e = Edge::new(p1, random_neighbour(&env, p1, 1, rng));
+    env.edge_book.insert(e)
 }
 
 fn replace_random_edges(n_edges: usize, env: &mut Environment, rng: &mut impl Rng) {

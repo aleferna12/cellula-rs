@@ -13,7 +13,11 @@ pub struct Edge {
 
 impl Edge {
     // TODO: once we are confident that this is not error prone we can get rid of the checks
-    pub fn new(p1: Pos2D<usize>, p2: Pos2D<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
+    pub fn new(p1: Pos2D<usize>, p2: Pos2D<usize>) -> Self {
+        Self { p1, p2 }
+    }
+    
+    pub fn new_if_neighbour(p1: Pos2D<usize>, p2: Pos2D<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
         let cx = p1.x.abs_diff(p2.x);
         let cy = p1.y.abs_diff(p2.y);
         let sum = cx + cy;
@@ -23,7 +27,7 @@ impl Edge {
         if sum > (neigh_r * 2) as usize {
             return Err(EdgeError::NotNeighbours);
         }
-        Ok(Self { p1, p2})
+        Ok(Self { p1, p2 })
     }
 
     fn hash_u64(&self) -> u64 {
@@ -96,7 +100,7 @@ mod tests {
         let p1 = Pos2D::from((100, 100));
         for r in 1..9 {
             for p2 in p1.moore_neighs(r) {
-                assert!(Edge::new(p1, p2, r).is_ok());
+                assert!(Edge::new_if_neighbour(p1, p2, r).is_ok());
             }
         }
     }

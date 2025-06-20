@@ -73,7 +73,7 @@ impl Environment {
             }
             self.cell_lattice[p] = sigma;
             for neigh in self.cell_lattice.bound.validate_positions(p.moore_neighs(self.neigh_r)) {
-                let edge = Edge::new(p, neigh, self.neigh_r).unwrap();
+                let edge = Edge::new(p, neigh);
                 if self.cell_lattice[neigh] != sigma {
                     self.edge_book.insert(edge);
                 } else { 
@@ -128,7 +128,7 @@ impl Environment {
         let mut added = 0;
         let sigma = self.cell_lattice[pos];
         for neigh in self.cell_lattice.bound.validate_positions(pos.moore_neighs(self.neigh_r)) {
-            let edge = Edge::new(pos, neigh, self.neigh_r).unwrap();
+            let edge = Edge::new(pos, neigh);
             let sigma_neigh = self.cell_lattice[neigh];
             if sigma == sigma_neigh {
                 self.edge_book.remove(&edge);
