@@ -6,9 +6,9 @@ use rand_xoshiro::Xoshiro256StarStar;
 use evo_cpm::edge::Edge;
 use evo_cpm::environment::Environment;
 use evo_cpm::environment::LatticeEntity::*;
-use evo_cpm::pos::Pos2D;
+use evo_cpm::pos::{LatticeCoord, Pos2D};
 
-fn random_neighbour(env: &Environment, p: Pos2D<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos2D<usize> {
+fn random_neighbour(env: &Environment, p: Pos2D<LatticeCoord>, neigh_r: u8, rng: &mut impl Rng) -> Pos2D<LatticeCoord> {
     let oldp = (p.x as i32, p.y as i32);
     let mut newp = oldp;
     let dist = neigh_r as i32;
@@ -20,7 +20,7 @@ fn random_neighbour(env: &Environment, p: Pos2D<usize>, neigh_r: u8, rng: &mut i
             -min(dist, oldp.1)..min(dist + 1, env.cell_lattice.height() as i32 - oldp.1)
         );
     }
-    Pos2D::new(newp.0 as usize, newp.1 as usize)
+    Pos2D::new(newp.0 as LatticeCoord, newp.1 as LatticeCoord)
 }
 
 fn add_random_edge(env: &mut Environment, rng: &mut impl Rng) -> bool {

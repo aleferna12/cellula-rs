@@ -1,4 +1,13 @@
-use std::ops::{Mul, Sub};
+use std::ops::{AddAssign, Mul, Sub};
+
+/// This represents a position in the lattice. 
+/// 
+/// usize had the best performance.
+pub type LatticeCoord = usize;
+/// This represents a position that might be in the lattice.
+///
+/// Should have a similar magnitude to `LatticeCoord`.
+pub type GeneralCoord = isize;
 
 const MAX_NEIGH_R: u8 = 16;
 const NEIGHBOURHOOD_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
@@ -44,31 +53,47 @@ impl<T> Pos2D<T> {
     }
 }
 
-impl Pos2D<usize> {
-    pub(crate) fn pack_u32(&self) -> u32 {
+impl<T> From<(T, T)> for Pos2D<T> {
+    fn from(value: (T, T)) -> Self {
+        Pos2D::<T>::new(value.0, value.1)
+    }
+}
+
+impl Pos2D<LatticeCoord> {
+    pub(crate) fn pack_u32(self) -> u32 {
         ((self.x as u32) << 16) | self.y as u32
     }
 
-    pub fn row_major(&self, height: usize) -> usize {
+    pub fn row_major(self, height: usize) -> usize {
         self.x * height + self.y
     }
 
-    pub fn moore_neighs(&self, neigh_r: u8) -> impl Iterator<Item = Pos2D<usize>> {
+    pub fn moore_neighs(self, neigh_r: u8) -> impl Iterator<Item = Pos2D<GeneralCoord>> {
         let vec_size = 4 * neigh_r as u16 * (neigh_r as u16 + 1);
         MOORE_NEIGHS[..vec_size as usize]
             .iter()
-            .map(|(i, j)| {
-                Pos2D::<usize>::new(
-                    (self.x as i16 + i) as usize,
-                    (self.y as i16 + j) as usize,
+            .map(move |(i, j)| {
+                Pos2D::new(
+                    self.x as GeneralCoord + *i as GeneralCoord,
+                    self.y as GeneralCoord + *j as GeneralCoord,
                 )
             })
     }
 }
 
-impl<T> From<(T, T)> for Pos2D<T> {
-    fn from(value: (T, T)) -> Self {
-        Pos2D::<T>::new(value.0, value.1)
+impl From<Pos2D<LatticeCoord>> for Pos2D<GeneralCoord> {
+    fn from(value: Pos2D<LatticeCoord>) -> Self {
+        Pos2D::new(value.x as GeneralCoord, value.y as GeneralCoord)
+    }
+}
+
+impl From<Pos2D<GeneralCoord>> for Pos2D<LatticeCoord> {
+    fn from(value: Pos2D<GeneralCoord>) -> Self {
+        let message = "overflow when translating position from general to lattice coordinates";
+        Pos2D::new(
+            value.x.try_into().expect(message), 
+            value.y.try_into().expect(message)
+        )
     }
 }
 
@@ -80,9 +105,9 @@ pub struct Rect<T> {
 impl<T> Rect<T>
 where
     T: Sub<Output = T>
-        + Mul<Output = T>
-        + PartialOrd
-        + Copy
+    + Mul<Output = T>
+    + PartialOrd
+    + Copy
 {
     pub fn new(min: Pos2D<T>, max: Pos2D<T>) -> Self {
         Self{ min, max }
@@ -95,24 +120,22 @@ where
     pub fn height(&self) -> T {
         self.max.y - self.min.y
     }
-    
+
     pub fn area(&self) -> T {
         self.width() * self.height()
     }
-}
 
-impl Rect<usize> {
-    pub fn iter_positions(&self) -> RectAreaIt {
+    pub fn iter_positions(&self) -> RectAreaIt<T> {
         RectAreaIt::new(self)
     }
 }
 
-pub struct RectAreaIt<'a> {
-    curr: Pos2D<usize>,
-    rect: &'a Rect<usize>
+pub struct RectAreaIt<'a, T> {
+    curr: Pos2D<T>,
+    rect: &'a Rect<T>
 }
-impl<'a> RectAreaIt<'a> {
-    fn new(rect: &'a Rect<usize>) -> Self {
+impl<'a, T: Copy> RectAreaIt<'a, T> {
+    fn new(rect: &'a Rect<T>) -> Self {
         Self {
             curr: rect.min,
             rect
@@ -120,19 +143,26 @@ impl<'a> RectAreaIt<'a> {
     }
 }
 
-impl Iterator for RectAreaIt<'_> {
-    type Item = Pos2D<usize>;
+impl<T> Iterator for RectAreaIt<'_, T>
+where
+    T: PartialEq
+    + PartialOrd
+    + Copy
+    + From<u8>
+    + Sub<Output = T>
+    + AddAssign {
+    type Item = Pos2D<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.curr.y >= self.rect.max.y {
             return None;
         }
         let ret_pos = self.curr;
-        if self.curr.x < self.rect.max.x - 1 {
-            self.curr.x += 1;
+        if self.curr.x < self.rect.max.x - 1.into() {
+            self.curr.x += 1.into();
         } else {
             self.curr.x = self.rect.min.x;
-            self.curr.y += 1;
+            self.curr.y += 1.into();
         }
         Some(ret_pos)
     }
@@ -140,11 +170,11 @@ impl Iterator for RectAreaIt<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::pos::{Rect, MOORE_NEIGHS};
+    use crate::pos::{LatticeCoord, Rect, MOORE_NEIGHS};
 
     #[test]
     fn test_rect_area() {
-        let r = Rect::<usize>::new((0, 0).into(), (10, 10).into());
+        let r = Rect::<LatticeCoord>::new((0, 0).into(), (10, 10).into());
         let v: Vec<_> = r.iter_positions().collect();
         assert_eq!(r.area(), v.len())
     }

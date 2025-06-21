@@ -1,4 +1,5 @@
 use clap::Parser;
+use crate::pos::LatticeCoord;
 
 // TODO: implement Display
 #[derive(Parser, Debug, Default)]
@@ -13,9 +14,9 @@ pub struct Parameters {
     #[arg(long, default_value_t = 50)]
     pub cell_target_area: u32,
     #[arg(long, default_value_t = 100)]
-    pub width: usize,
+    pub width: LatticeCoord,
     #[arg(long, default_value_t = 100)]
-    pub height: usize,
+    pub height: LatticeCoord,
     #[arg(long, default_value_t = 0)]
     pub seed: u64,
     #[arg(long, default_value_t = 1)]
