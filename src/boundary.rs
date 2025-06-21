@@ -1,4 +1,4 @@
-use num_traits::{Euclid, Num};
+use std::ops::{Add, Sub};
 use crate::pos::{Pos2D, Rect};
 
 pub trait Boundary {
@@ -50,14 +50,27 @@ impl<T> PeriodicBoundary<T> {
 }
 impl<T> PeriodicBoundary<T>
 where
-    T: Copy + Num + Euclid {
+    T: Copy 
+        + PartialOrd 
+        + Add<Output = T> 
+        + Sub<Output = T> {
     fn wrap_scalar(val: T, min: T, max: T) -> T {
-        let range = max - min;
-        ((val - min).rem_euclid(&range)) + min
+        if val < min {
+            max - (min - val)
+        } else if val >= max { 
+            min + (val - max)
+        } else { 
+            val
+        }
     }
 }
 
-impl<T: PartialOrd + Copy + Num + Euclid> Boundary for PeriodicBoundary<T> {
+impl<T> Boundary for PeriodicBoundary<T>
+where
+    T: Copy
+        + PartialOrd
+        + Add<Output = T>
+        + Sub<Output = T> {
     type Coord = T;
 
     fn rect(&self) -> &Rect<T> {
