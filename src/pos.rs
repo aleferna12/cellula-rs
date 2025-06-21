@@ -1,14 +1,5 @@
 use std::ops::{AddAssign, Mul, Sub};
 
-/// This represents a position in the lattice. 
-/// 
-/// usize had the best performance.
-pub type LatticeCoord = usize;
-/// This represents a position that might be in the lattice.
-///
-/// Should have a similar magnitude to `LatticeCoord`.
-pub type GeneralCoord = isize;
-
 const MAX_NEIGH_R: u8 = 16;
 const NEIGHBOURHOOD_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
 const MOORE_NEIGHS: [(i16, i16); NEIGHBOURHOOD_SIZE] = {
@@ -59,7 +50,7 @@ impl<T> From<(T, T)> for Pos2D<T> {
     }
 }
 
-impl Pos2D<LatticeCoord> {
+impl Pos2D<usize> {
     pub(crate) fn pack_u32(self) -> u32 {
         ((self.x as u32) << 16) | self.y as u32
     }
@@ -68,27 +59,27 @@ impl Pos2D<LatticeCoord> {
         self.x * height + self.y
     }
 
-    pub fn moore_neighs(self, neigh_r: u8) -> impl Iterator<Item = Pos2D<GeneralCoord>> {
+    pub fn moore_neighs(self, neigh_r: u8) -> impl Iterator<Item = Pos2D<isize>> {
         let vec_size = 4 * neigh_r as u16 * (neigh_r as u16 + 1);
         MOORE_NEIGHS[..vec_size as usize]
             .iter()
             .map(move |(i, j)| {
                 Pos2D::new(
-                    self.x as GeneralCoord + *i as GeneralCoord,
-                    self.y as GeneralCoord + *j as GeneralCoord,
+                    self.x as isize + *i as isize,
+                    self.y as isize + *j as isize,
                 )
             })
     }
 }
 
-impl From<Pos2D<LatticeCoord>> for Pos2D<GeneralCoord> {
-    fn from(value: Pos2D<LatticeCoord>) -> Self {
-        Pos2D::new(value.x as GeneralCoord, value.y as GeneralCoord)
+impl From<Pos2D<usize>> for Pos2D<isize> {
+    fn from(value: Pos2D<usize>) -> Self {
+        Pos2D::new(value.x as isize, value.y as isize)
     }
 }
 
-impl From<Pos2D<GeneralCoord>> for Pos2D<LatticeCoord> {
-    fn from(value: Pos2D<GeneralCoord>) -> Self {
+impl From<Pos2D<isize>> for Pos2D<usize> {
+    fn from(value: Pos2D<isize>) -> Self {
         let message = "overflow when translating position from general to lattice coordinates";
         Pos2D::new(
             value.x.try_into().expect(message), 
@@ -97,7 +88,7 @@ impl From<Pos2D<GeneralCoord>> for Pos2D<LatticeCoord> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Rect<T> {
     pub min: Pos2D<T>,
     pub max: Pos2D<T>
@@ -170,11 +161,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::pos::{LatticeCoord, Rect, MOORE_NEIGHS};
+    use crate::pos::{Rect, MOORE_NEIGHS};
 
     #[test]
     fn test_rect_area() {
-        let r = Rect::<LatticeCoord>::new((0, 0).into(), (10, 10).into());
+        let r = Rect::<usize>::new((0, 0).into(), (10, 10).into());
         let v: Vec<_> = r.iter_positions().collect();
         assert_eq!(r.area(), v.len())
     }

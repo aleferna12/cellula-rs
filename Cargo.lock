@@ -438,6 +438,7 @@ dependencies = [
  "image",
  "indexmap",
  "log",
+ "num-traits",
  "rand 0.9.1",
  "rand_xoshiro",
 ]

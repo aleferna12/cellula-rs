@@ -3,27 +3,27 @@ use std::mem;
 use std::ops::Index;
 use indexmap::IndexSet;
 use rand::Rng;
-use crate::pos::{EdgeError, LatticeCoord, Pos2D};
+use crate::pos::{EdgeError, Pos2D};
 
 #[derive(Eq, Clone)]
 pub struct Edge {
-    pub p1: Pos2D<LatticeCoord>,
-    pub p2: Pos2D<LatticeCoord>
+    pub p1: Pos2D<usize>,
+    pub p2: Pos2D<usize>
 }
 
 impl Edge {
-    pub fn new(p1: Pos2D<LatticeCoord>, p2: Pos2D<LatticeCoord>) -> Self {
+    pub fn new(p1: Pos2D<usize>, p2: Pos2D<usize>) -> Self {
         Self { p1, p2 }
     }
     
-    pub fn new_if_neighbour(p1: Pos2D<LatticeCoord>, p2: Pos2D<LatticeCoord>, neigh_r: u8) -> Result<Self, EdgeError> {
+    pub fn new_if_neighbour(p1: Pos2D<usize>, p2: Pos2D<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
         let cx = p1.x.abs_diff(p2.x);
         let cy = p1.y.abs_diff(p2.y);
         let sum = cx + cy;
         if sum == 0 {
             return Err(EdgeError::SamePosition);
         }
-        if sum as LatticeCoord > (neigh_r * 2) as LatticeCoord {
+        if sum > (neigh_r * 2) as usize {
             return Err(EdgeError::NotNeighbours);
         }
         Ok(Self { p1, p2 })
@@ -67,6 +67,8 @@ impl EdgeBook {
     }
     
     pub fn len(&self) -> usize { self.edge_set.len() }
+    
+    pub fn is_empty(&self) -> bool { self.len() == 0 }
 
     pub fn at(&self, index: usize) -> &Edge {
         self.edge_set.index(index)
@@ -89,6 +91,12 @@ impl EdgeBook {
     }
 }
 
+impl Default for EdgeBook {
+    fn default() -> Self {
+        EdgeBook::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,7 +107,7 @@ mod tests {
         let p1 = Pos2D::from((100, 100));
         for r in 1..9 {
             for p2 in p1.moore_neighs(r) {
-                assert!(Edge::new_if_neighbour(p1, (p2.x as LatticeCoord, p2.y as LatticeCoord).into(), r).is_ok());
+                assert!(Edge::new_if_neighbour(p1, (p2.x as usize, p2.y as usize).into(), r).is_ok());
             }
         }
     }

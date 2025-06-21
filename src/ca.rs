@@ -6,7 +6,7 @@ use crate::cell::Cell;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
-use crate::pos::{LatticeCoord, Pos2D};
+use crate::pos::Pos2D;
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -55,8 +55,8 @@ impl CA {
         &self,
         env: &mut Environment,
         rng: &mut impl Rng,
-        pos_from: Pos2D<LatticeCoord>,
-        pos_to: Pos2D<LatticeCoord>
+        pos_from: Pos2D<usize>,
+        pos_to: Pos2D<usize>
     ) -> f32 {
         let sigma_to = env.cell_lattice[pos_to];
         if sigma_to == Solid.discriminant() {
@@ -70,12 +70,15 @@ impl CA {
 
         let entity_from = env.get_entity(sigma_from);
         let entity_to = env.get_entity(sigma_to);
-        let neigh_entities = env.cell_lattice
-            .bound
-            .validate_positions(pos_to.moore_neighs(env.neigh_r))
-            .map(|neigh_pos| env.get_entity(
-                env.cell_lattice[Pos2D::<LatticeCoord>::from(neigh_pos)]
-            ));
+        let neigh_entities = pos_to.moore_neighs(env.neigh_r)
+            .filter_map(|neighpos| {
+                match env.cell_lattice.bound.valid_pos(neighpos) { 
+                    None => None,
+                    Some(vpos) => Some(env.get_entity(
+                        env.cell_lattice[Pos2D::<usize>::from(vpos)]
+                    ))
+                }
+            });
         
         let delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if !self.accept_site_copy(rng, delta_h) {

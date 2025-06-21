@@ -1,3 +1,4 @@
+use num_traits::{Euclid, Num};
 use crate::pos::{Pos2D, Rect};
 
 pub trait Boundary {
@@ -6,15 +7,10 @@ pub trait Boundary {
     /// Expose the boundary as a `Rect`.
     fn rect(&self) -> &Rect<Self::Coord>;
     
-    fn inbounds(&self, pos: Pos2D<Self::Coord>) -> bool;
-
     /// Validates that positions are in bounds.
     ///
     /// With fixed boundary conditions, that means filtering invalid positions.
-    fn validate_positions(
-        &self,
-        pos_it: impl Iterator<Item = Pos2D<Self::Coord>>
-    ) -> impl Iterator<Item = Pos2D<Self::Coord>>;
+    fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>>;
 }
 
 pub struct FixedBoundary<T> {
@@ -33,17 +29,61 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
         &self.rect
     }
 
-    fn inbounds(&self, pos: Pos2D<T>) -> bool {
-        (self.rect.min.x..self.rect.max.x).contains(&pos.x) 
-            && (self.rect.min.y..self.rect.max.y).contains(&pos.y)
+    fn valid_pos(&self, pos: Pos2D<T>) -> Option<Pos2D<T>> {
+        if !(self.rect.min.x..self.rect.max.x).contains(&pos.x) {
+            return None;
+        } 
+        if !(self.rect.min.y..self.rect.max.y).contains(&pos.y) {
+            return None
+        }
+        Some(pos)
+    }
+}
+
+pub struct PeriodicBoundary<T> {
+    rect: Rect<T>
+}
+impl<T> PeriodicBoundary<T> {
+    pub fn new(rect: Rect<T>) -> Self {
+        Self { rect }
+    }
+}
+impl<T> PeriodicBoundary<T>
+where
+    T: Copy + Num + Euclid {
+    fn wrap_scalar(val: T, min: T, max: T) -> T {
+        let range = max - min;
+        ((val - min).rem_euclid(&range)) + min
+    }
+}
+
+impl<T: PartialOrd + Copy + Num + Euclid> Boundary for PeriodicBoundary<T> {
+    type Coord = T;
+
+    fn rect(&self) -> &Rect<T> {
+        &self.rect
     }
 
-    fn validate_positions(
-        &self,
-        pos_it: impl Iterator<Item = Pos2D<T>>
-    ) -> impl Iterator<Item = Pos2D<T>> {
-        pos_it.filter(|pos| { 
-            self.inbounds(*pos) 
-        })
+    // TODO: this is quite slow compared to FixedBoundary, try to implement wrap_scalar as if else statements 
+    fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>> {
+        let p = Pos2D::new(
+            Self::wrap_scalar(pos.x, self.rect.min.x, self.rect.max.x),
+            Self::wrap_scalar(pos.y, self.rect.min.y, self.rect.max.y)
+        );
+        Some(p)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_periodic() {
+        let per = PeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));
+        assert_eq!(per.valid_pos((1, 1).into()).unwrap(), (1, 1).into());
+        assert_eq!(per.valid_pos((-1, -1).into()).unwrap(), (9, 9).into());
+        assert_eq!(per.valid_pos((10, 10).into()).unwrap(), (0, 0).into());
+        assert_eq!(per.valid_pos((11, 11).into()).unwrap(), (1, 1).into());
     }
 }

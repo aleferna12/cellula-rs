@@ -3,7 +3,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 use crate::ca::CA;
 use crate::environment::Environment;
 use crate::parameters::Parameters;
-use crate::pos::{LatticeCoord, Rect};
+use crate::pos::Rect;
 
 pub struct Model {
     pub env: Environment,
@@ -38,7 +38,7 @@ impl Model {
     pub fn setup(&mut self) {
         log::info!("Setting model up");
         let mut cell_count = 0;
-        let cell_side = (self.parameters.cell_start_area as f32).sqrt() as LatticeCoord;
+        let cell_side = (self.parameters.cell_start_area as f32).sqrt() as usize;
         for _ in 0..self.parameters.n_cells {
             let pos = self.env.cell_lattice.random_pos(&mut self.rng);
             let cell = self.env.spawn_rect_cell(
@@ -48,7 +48,7 @@ impl Model {
                 ),
                 self.parameters.cell_target_area
             );
-            if let Some(_) = cell {
+            if cell.is_some() {
                 cell_count += 1;
             }
         }

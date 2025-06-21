@@ -1,14 +1,15 @@
 use std::ops::{Index, IndexMut};
 use rand::Rng;
 use crate::boundary::Boundary;
-use crate::pos::{GeneralCoord, LatticeCoord, Pos2D};
+use crate::pos::Pos2D;
 
-pub struct Lattice<T, B: Boundary<Coord = GeneralCoord>> {
+pub struct Lattice<T, B> {
     array: Box<[T]>,
     pub bound: B
 }
-
-impl<T: Default + Copy, B: Boundary<Coord = GeneralCoord>> Lattice<T, B> {
+// Since the lattice size is naturally usize, boundary coord should be isize to avoid overflow errors
+// Although technically it only has to be slightly larger than its defined size
+impl<T: Default + Copy, B: Boundary<Coord = isize>> Lattice<T, B> {
     pub fn new(bound: B) -> Self {
         Self {
             array: vec![T::default(); bound.rect().width() as usize * bound.rect().height() as usize]
@@ -17,25 +18,25 @@ impl<T: Default + Copy, B: Boundary<Coord = GeneralCoord>> Lattice<T, B> {
         }
     }
 
-    pub fn width(&self) -> LatticeCoord {
-        self.bound.rect().width() as LatticeCoord
+    pub fn width(&self) -> usize {
+        self.bound.rect().width() as usize
     }
 
-    pub fn height(&self) -> LatticeCoord {
-        self.bound.rect().height() as LatticeCoord
+    pub fn height(&self) -> usize {
+        self.bound.rect().height() as usize
     }
 
-    pub fn random_pos(&self, rng: &mut impl Rng) -> Pos2D<LatticeCoord> {
+    pub fn random_pos(&self, rng: &mut impl Rng) -> Pos2D<usize> {
         Pos2D::new(
-            rng.random_range(0..self.width() - 1) as LatticeCoord,
-            rng.random_range(0..self.height() - 1) as LatticeCoord
+            rng.random_range(0..self.width() - 1),
+            rng.random_range(0..self.height() - 1)
         )
     }
 
-    pub fn iter_positions(&self) -> impl Iterator<Item = Pos2D<LatticeCoord>> {
+    pub fn iter_positions(&self) -> impl Iterator<Item = Pos2D<usize>> {
         self.bound.rect().iter_positions().map(|p| Pos2D::new(
-            p.x as LatticeCoord,
-            p.y as LatticeCoord
+            p.x as usize,
+            p.y as usize
         ))
     }
 
@@ -47,28 +48,28 @@ impl<T: Default + Copy, B: Boundary<Coord = GeneralCoord>> Lattice<T, B> {
     }
 }
 
-impl<T: Default + Copy, B: Boundary<Coord = GeneralCoord>> Index<Pos2D<LatticeCoord>> for Lattice<T, B> {
+impl<T: Copy + Default, B: Boundary<Coord = isize>> Index<Pos2D<usize>> for Lattice<T, B> {
     type Output = T;
 
-    fn index(&self, pos: Pos2D<LatticeCoord>) -> &Self::Output {
+    fn index(&self, pos: Pos2D<usize>) -> &Self::Output {
         &self.array[pos.row_major(self.height())]
     }
 }
-impl<T: Default + Copy, B: Boundary<Coord = GeneralCoord>> Index<(LatticeCoord, LatticeCoord)> for Lattice<T, B> {
+impl<T: Copy + Default, B: Boundary<Coord = isize>> Index<(usize, usize)> for Lattice<T, B> {
     type Output = T;
 
-    fn index(&self, pos: (LatticeCoord, LatticeCoord)) -> &Self::Output {
-        &self[Pos2D::<LatticeCoord>::from(pos)]
+    fn index(&self, pos: (usize, usize)) -> &Self::Output {
+        &self[Pos2D::<usize>::from(pos)]
     }
 }
 
-impl<T: Default + Copy, B: Boundary<Coord = GeneralCoord>> IndexMut<Pos2D<LatticeCoord>> for Lattice<T, B> {
-    fn index_mut(&mut self, pos: Pos2D<LatticeCoord>) -> &mut Self::Output {
+impl<T: Copy + Default, B: Boundary<Coord = isize>> IndexMut<Pos2D<usize>> for Lattice<T, B> {
+    fn index_mut(&mut self, pos: Pos2D<usize>) -> &mut Self::Output {
         &mut self.array[pos.row_major(self.height())]
     }
 }
-impl<T: Default + Copy, B: Boundary<Coord = GeneralCoord>> IndexMut<(LatticeCoord, LatticeCoord)> for Lattice<T, B> {
-    fn index_mut(&mut self, pos: (LatticeCoord, LatticeCoord)) -> &mut Self::Output {
-        &mut self[Pos2D::<LatticeCoord>::from(pos)]
+impl<T: Copy + Default, B: Boundary<Coord = isize>> IndexMut<(usize, usize)> for Lattice<T, B> {
+    fn index_mut(&mut self, pos: (usize, usize)) -> &mut Self::Output {
+        &mut self[Pos2D::<usize>::from(pos)]
     }
 }

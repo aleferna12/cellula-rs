@@ -1,37 +1,35 @@
-use crate::boundary::{FixedBoundary, Boundary};
+use crate::boundary::{Boundary, PeriodicBoundary};
 use crate::cell::Cell;
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::Lattice;
-use crate::pos::{GeneralCoord, LatticeCoord, Pos2D, Rect};
+use crate::pos::{Pos2D, Rect};
 
 pub struct Environment {
-    pub cell_lattice: Lattice<i16, FixedBoundary<GeneralCoord>>,
+    pub cell_lattice: Lattice<i16, PeriodicBoundary<isize>>,
     cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
     // TODO!: this should be a MooreNeighbourhood field that implements Neighbourhood
     pub neigh_r: u8
 }
 impl Environment {
-    pub fn new(width: LatticeCoord, height: LatticeCoord, neigh_r: u8) -> Self {
-        let mut me = Self {
-            cell_lattice: Lattice::new(FixedBoundary::new(Rect::new(
+    pub fn new(width: usize, height: usize, neigh_r: u8) -> Self {
+        Self {
+            cell_lattice: Lattice::new(PeriodicBoundary::new(Rect::new(
                 (0, 0).into(),
-                (width as GeneralCoord, height as GeneralCoord).into()
+                (width as isize, height as isize).into()
             ))),
             cell_vec: vec![],
             edge_book: EdgeBook::new(),
             neigh_r
-        };
-        me.make_border();
-        me
+        }
     }
 
-    pub fn width(&self) -> LatticeCoord {
+    pub fn width(&self) -> usize {
         self.cell_lattice.width()
     }
 
-    pub fn height(&self) -> LatticeCoord {
+    pub fn height(&self) -> usize {
         self.cell_lattice.height()
     }
 
@@ -63,17 +61,26 @@ impl Environment {
         self.cell_vec.len()
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<LatticeCoord>, target_area: u32) -> Option<&Cell> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, target_area: u32) -> Option<&Cell> {
         let mut cell_area = 0u32;
         let sigma = self.n_cells() as i16 + LatticeEntity::first_sigma();
         for pos in rect.iter_positions() {
-            if !self.cell_lattice.bound.inbounds(pos.into()) || self.cell_lattice[pos] != Medium.discriminant() {
+            let trans_pos = self.cell_lattice.bound.valid_pos(pos.into());
+            if trans_pos.is_none() {
                 continue;
             }
-            self.cell_lattice[pos] = sigma;
-            for neigh in self.cell_lattice.bound.validate_positions(pos.moore_neighs(self.neigh_r)) {
+            let valid_pos: Pos2D<usize> = trans_pos.unwrap().into();
+            if self.cell_lattice[valid_pos] != Medium.discriminant() {
+                continue
+            }
+            self.cell_lattice[valid_pos] = sigma;
+            for neigh in valid_pos
+                .moore_neighs(self.neigh_r)
+                .filter_map(|neigh| { 
+                    self.cell_lattice.bound.valid_pos(neigh) 
+                }) {
                 let latt_neigh = neigh.into();
-                let edge = Edge::new(pos, latt_neigh);
+                let edge = Edge::new(valid_pos, latt_neigh);
                 if self.cell_lattice[latt_neigh] != sigma {
                     self.edge_book.insert(edge);
                 } else { 
@@ -89,7 +96,7 @@ impl Environment {
         Some(self.get_entity(sigma).unwrap_cell())
     }
     
-    pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<LatticeCoord>>) -> LatticeCoord {
+    pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
             if self.cell_lattice[pos] != Medium.discriminant() {
@@ -102,32 +109,36 @@ impl Environment {
     }
     
     pub fn make_border(&mut self) {
-        let mut border_positions = Vec::<Pos2D<LatticeCoord>>::new();
+        let mut border_positions = Vec::<Pos2D<usize>>::new();
         for x in 0..self.width() {
-            border_positions.push((x as LatticeCoord, 0).into());
+            border_positions.push((x, 0).into());
         }
         for y in 1..self.height() {
-            border_positions.push((self.width() as LatticeCoord - 1, y as LatticeCoord).into());
+            border_positions.push((self.width() - 1, y).into());
         }
         if self.width() > 1 {
             for y in (1..self.height() - 1).rev() {
-                border_positions.push((0, y as LatticeCoord).into());
+                border_positions.push((0, y).into());
             }
         }
         if self.height() > 1 {
             for x in (0..self.width() - 1).rev() {
-                border_positions.push((x as LatticeCoord, self.height() as LatticeCoord - 1).into());
+                border_positions.push((x, self.height() - 1).into());
             }
         }
         
         self.spawn_solid(border_positions.into_iter());
     }
     
-    pub fn update_edges(&mut self, pos: Pos2D<LatticeCoord>) -> (u16, u16) {
+    pub fn update_edges(&mut self, pos: Pos2D<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
         let sigma = self.cell_lattice[pos];
-        for neigh in self.cell_lattice.bound.validate_positions(pos.moore_neighs(self.neigh_r)) {
+        for neigh in pos
+            .moore_neighs(self.neigh_r)
+            .filter_map(|neigh| {
+                self.cell_lattice.bound.valid_pos(neigh)
+            }) {
             let latt_neigh = neigh.into();
             let edge = Edge::new(pos, latt_neigh);
             let sigma_neigh = self.cell_lattice[latt_neigh];
