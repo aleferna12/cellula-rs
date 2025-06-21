@@ -1,8 +1,9 @@
-use std::ops::{Add, Sub};
+use num::Num;
+use num::traits::Euclid;
 use crate::pos::{Pos2D, Rect};
 
 pub trait Boundary {
-    type Coord: Copy;
+    type Coord;
     
     /// Expose the boundary as a `Rect`.
     fn rect(&self) -> &Rect<Self::Coord>;
@@ -50,34 +51,24 @@ impl<T> PeriodicBoundary<T> {
 }
 impl<T> PeriodicBoundary<T>
 where
-    T: Copy 
-        + PartialOrd 
-        + Add<Output = T> 
-        + Sub<Output = T> {
+    T: Copy + Num + Euclid {
     fn wrap_scalar(val: T, min: T, max: T) -> T {
-        if val < min {
-            max - (min - val)
-        } else if val >= max { 
-            min + (val - max)
-        } else { 
-            val
-        }
+        let range = max - min;
+        let mut offset = val - min;
+        offset = offset.rem_euclid(&range);
+        min + offset
     }
 }
 
 impl<T> Boundary for PeriodicBoundary<T>
 where
-    T: Copy
-        + PartialOrd
-        + Add<Output = T>
-        + Sub<Output = T> {
+    T: Copy + Num + Euclid {
     type Coord = T;
 
     fn rect(&self) -> &Rect<T> {
         &self.rect
     }
-
-    // TODO: this is quite slow compared to FixedBoundary, try to implement wrap_scalar as if else statements 
+    
     fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>> {
         let p = Pos2D::new(
             Self::wrap_scalar(pos.x, self.rect.min.x, self.rect.max.x),
@@ -87,16 +78,71 @@ where
     }
 }
 
+pub struct UnsafePeriodicBoundary<T> {
+    bound: PeriodicBoundary<T>
+}
+impl<T> UnsafePeriodicBoundary<T>
+where
+    T: Copy
+        + Num 
+        + PartialOrd {
+    pub fn new(rect: Rect<T>) -> Self {
+        Self { bound: PeriodicBoundary::new(rect) }
+    }
+    
+    pub fn wrap_scalar(&self, val: T, min: T, max: T) -> T {
+        if val < min {
+            max - (min - val)
+        } else if val >= max {
+            min + (val - max)
+        } else {
+            val
+        }
+    }
+}
+
+impl<T> Boundary for UnsafePeriodicBoundary<T>
+where
+    T: Copy + Num + Euclid + PartialOrd {
+    type Coord = T;
+
+    fn rect(&self) -> &Rect<Self::Coord> {
+        self.bound.rect()
+    }
+
+    /// This wraps the position inside the boundary ONCE.
+    ///
+    /// If the position is more than `width()` or `height` away, this will not produce a valid position.
+    /// If you need this reassurance, use `PeriodicBoundary`, which is slower.
+    fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>> {
+        Some(Pos2D::new(
+            self.wrap_scalar(pos.x, self.rect().min.x, self.rect().max.x),
+            self.wrap_scalar(pos.y, self.rect().min.y, self.rect().max.y)
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     
     #[test]
-    fn test_periodic() {
+    fn test_periodic_boundary() {
         let per = PeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));
         assert_eq!(per.valid_pos((1, 1).into()).unwrap(), (1, 1).into());
         assert_eq!(per.valid_pos((-1, -1).into()).unwrap(), (9, 9).into());
         assert_eq!(per.valid_pos((10, 10).into()).unwrap(), (0, 0).into());
         assert_eq!(per.valid_pos((11, 11).into()).unwrap(), (1, 1).into());
+        assert_eq!(per.valid_pos((30, 30).into()).unwrap(), (0, 0).into())
+    }
+    
+    #[test]
+    fn test_unsafe_periodic_boundary() {
+        let unsafeper = UnsafePeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));
+        assert_eq!(unsafeper.valid_pos((1, 1).into()).unwrap(), (1, 1).into());
+        assert_eq!(unsafeper.valid_pos((-1, -1).into()).unwrap(), (9, 9).into());
+        assert_eq!(unsafeper.valid_pos((10, 10).into()).unwrap(), (0, 0).into());
+        assert_eq!(unsafeper.valid_pos((11, 11).into()).unwrap(), (1, 1).into());
+        assert_ne!(unsafeper.valid_pos((30, 30).into()).unwrap(), (0, 0).into())
     }
 }

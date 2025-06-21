@@ -4,13 +4,16 @@ use evo_cpm::parameters::Parameters;
 use evo_cpm::io;
 
 /*
-TODO!:
+TODO!: 
     - read params from config file
     - finish IO 
         - images
         - cell info
         - backup
     - periodic boundaries 
+    
+TODO:
+    - Check where we can make usage of the num crate to simplify the generics (Add and Sub are common places) 
  */
 
 fn main() {

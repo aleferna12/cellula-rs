@@ -1,4 +1,4 @@
-use crate::boundary::{Boundary, PeriodicBoundary};
+use crate::boundary::{Boundary, UnsafePeriodicBoundary};
 use crate::cell::Cell;
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
@@ -6,7 +6,7 @@ use crate::lattice::Lattice;
 use crate::pos::{Pos2D, Rect};
 
 pub struct Environment {
-    pub cell_lattice: Lattice<i16, PeriodicBoundary<isize>>,
+    pub cell_lattice: Lattice<i16, UnsafePeriodicBoundary<isize>>,
     cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
     // TODO!: this should be a MooreNeighbourhood field that implements Neighbourhood
@@ -15,7 +15,7 @@ pub struct Environment {
 impl Environment {
     pub fn new(width: usize, height: usize, neigh_r: u8) -> Self {
         Self {
-            cell_lattice: Lattice::new(PeriodicBoundary::new(Rect::new(
+            cell_lattice: Lattice::new(UnsafePeriodicBoundary::new(Rect::new(
                 (0, 0).into(),
                 (width as isize, height as isize).into()
             ))),
