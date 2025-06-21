@@ -28,8 +28,8 @@ impl<T: Default + Copy, B: Boundary<Coord = isize>> Lattice<T, B> {
 
     pub fn random_pos(&self, rng: &mut impl Rng) -> Pos2D<usize> {
         Pos2D::new(
-            rng.random_range(0..self.width() - 1),
-            rng.random_range(0..self.height() - 1)
+            rng.random_range(0..self.width()),
+            rng.random_range(0..self.height())
         )
     }
 
