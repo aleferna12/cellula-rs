@@ -1,30 +1,5 @@
 use std::ops::{AddAssign, Mul, Sub};
 
-const MAX_NEIGH_R: u8 = 16;
-const NEIGHBOURHOOD_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
-pub(crate) const MOORE_NEIGHS: [(i16, i16); NEIGHBOURHOOD_SIZE] = {
-    let mut ret = [(0i16, 0i16); NEIGHBOURHOOD_SIZE];
-    let mut r = 1;
-    let mut flat_index = 0usize;
-    while r <= MAX_NEIGH_R as i16 {
-        let mut i = -r;
-        while i <= r {
-            let mut j = -r;
-            while j <= r {
-                let max_abs = if i.abs() > j.abs() { i.abs() } else { j.abs() };
-                if max_abs == r {
-                    ret[flat_index] = (i, j);
-                    flat_index += 1;
-                }
-                j += 1;
-            }
-            i += 1;
-        }
-        r += 1;
-    }
-    ret
-};
-
 #[derive(Debug)]
 pub enum EdgeError {
     SamePosition,
@@ -149,18 +124,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::pos::{Rect, MOORE_NEIGHS};
+    use super::*;
 
     #[test]
     fn test_rect_area() {
         let r = Rect::<usize>::new((0, 0).into(), (10, 10).into());
         let v: Vec<_> = r.iter_positions().collect();
         assert_eq!(r.area(), v.len())
-    }
-    
-    #[test]
-    fn test_moore() {
-        let first_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
-        assert_eq!(first_8, MOORE_NEIGHS[..8]);
     }
 }
