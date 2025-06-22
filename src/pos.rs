@@ -2,7 +2,7 @@ use std::ops::{AddAssign, Mul, Sub};
 
 const MAX_NEIGH_R: u8 = 16;
 const NEIGHBOURHOOD_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
-const MOORE_NEIGHS: [(i16, i16); NEIGHBOURHOOD_SIZE] = {
+pub(crate) const MOORE_NEIGHS: [(i16, i16); NEIGHBOURHOOD_SIZE] = {
     let mut ret = [(0i16, 0i16); NEIGHBOURHOOD_SIZE];
     let mut r = 1;
     let mut flat_index = 0usize;
@@ -57,18 +57,6 @@ impl Pos2D<usize> {
 
     pub fn row_major(self, height: usize) -> usize {
         self.x * height + self.y
-    }
-
-    pub fn moore_neighs(self, neigh_r: u8) -> impl Iterator<Item = Pos2D<isize>> {
-        let vec_size = 4 * neigh_r as u16 * (neigh_r as u16 + 1);
-        MOORE_NEIGHS[..vec_size as usize]
-            .iter()
-            .map(move |(i, j)| {
-                Pos2D::new(
-                    self.x as isize + *i as isize,
-                    self.y as isize + *j as isize,
-                )
-            })
     }
 }
 

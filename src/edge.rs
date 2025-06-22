@@ -96,19 +96,3 @@ impl Default for EdgeBook {
         EdgeBook::new()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::pos::Pos2D;
-    
-    #[test]
-    fn test_neighbours_are_edges() {
-        let p1 = Pos2D::from((100, 100));
-        for r in 1..9 {
-            for p2 in p1.moore_neighs(r) {
-                assert!(Edge::new_if_neighbour(p1, (p2.x as usize, p2.y as usize).into(), r).is_ok());
-            }
-        }
-    }
-}

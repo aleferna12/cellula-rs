@@ -6,6 +6,7 @@ use crate::cell::Cell;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
+use crate::neighbourhood::Neighbourhood;
 use crate::pos::Pos2D;
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
@@ -70,15 +71,11 @@ impl CA {
 
         let entity_from = env.get_entity(sigma_from);
         let entity_to = env.get_entity(sigma_to);
-        let neigh_entities = pos_to.moore_neighs(env.neigh_r)
-            .filter_map(|neighpos| {
-                match env.cell_lattice.bound.valid_pos(neighpos) { 
-                    None => None,
-                    Some(vpos) => Some(env.get_entity(
-                        env.cell_lattice[Pos2D::<usize>::from(vpos)]
-                    ))
-                }
-            });
+        let neigh_entities = env.cell_lattice.bound.valid_positions(
+            env.neighbourhood.neighbours(pos_to.into())
+        ).map(|neigh| {
+            env.get_entity(env.cell_lattice[Pos2D::<usize>::from(neigh)])
+        });
         
         let delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if !self.accept_site_copy(rng, delta_h) {

@@ -17,7 +17,8 @@ impl Model {
              env: Environment::new(
                 parameters.width,
                 parameters.height,
-                parameters.neigh_r
+                parameters.neigh_r,
+                parameters.enclose
              ),
              ca: CA::new(
                  parameters.boltz_t,

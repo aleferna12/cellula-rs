@@ -3,26 +3,31 @@ use crate::cell::Cell;
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::Lattice;
+use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::pos::{Pos2D, Rect};
 
 pub struct Environment {
     pub cell_lattice: Lattice<i16, UnsafePeriodicBoundary<isize>>,
     cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
-    // TODO!: this should be a MooreNeighbourhood field that implements Neighbourhood
-    pub neigh_r: u8
+    pub neighbourhood: MooreNeighbourhood
 }
 impl Environment {
-    pub fn new(width: usize, height: usize, neigh_r: u8) -> Self {
-        Self {
-            cell_lattice: Lattice::new(UnsafePeriodicBoundary::new(Rect::new(
-                (0, 0).into(),
-                (width as isize, height as isize).into()
-            ))),
+    pub fn new(width: usize, height: usize, neigh_r: u8, enclose: bool) -> Self {
+        let rect = Rect::new(
+            (0, 0).into(),
+            (width as isize, height as isize).into()
+        );
+        let mut env = Self {
+            cell_lattice: Lattice::new(UnsafePeriodicBoundary::new(rect)),
             cell_vec: vec![],
             edge_book: EdgeBook::new(),
-            neigh_r
+            neighbourhood: MooreNeighbourhood::new(neigh_r)
+        };
+        if enclose {
+            env.make_border();
         }
+        env
     }
 
     pub fn width(&self) -> usize {
@@ -54,7 +59,7 @@ impl Environment {
     }
 
     pub fn edge_per_pos(&self) -> u16 {
-        4 * self.neigh_r as u16 * (self.neigh_r as u16 + 1)
+        self.neighbourhood.n_neighs()
     }
     
     pub fn n_cells(&self) -> usize {
@@ -74,14 +79,13 @@ impl Environment {
                 continue
             }
             self.cell_lattice[valid_pos] = sigma;
-            for neigh in valid_pos
-                .moore_neighs(self.neigh_r)
-                .filter_map(|neigh| { 
-                    self.cell_lattice.bound.valid_pos(neigh) 
-                }) {
-                let latt_neigh = neigh.into();
-                let edge = Edge::new(valid_pos, latt_neigh);
-                if self.cell_lattice[latt_neigh] != sigma {
+            let valid_neighs = self.cell_lattice
+                .bound
+                .valid_positions(self.neighbourhood.neighbours(pos.into()))
+                .map(|neigh| neigh.into());
+            for neigh in valid_neighs {
+                let edge = Edge::new(valid_pos, neigh);
+                if self.cell_lattice[neigh] != sigma {
                     self.edge_book.insert(edge);
                 } else { 
                     self.edge_book.remove(&edge);
@@ -134,14 +138,13 @@ impl Environment {
         let mut removed = 0;
         let mut added = 0;
         let sigma = self.cell_lattice[pos];
-        for neigh in pos
-            .moore_neighs(self.neigh_r)
-            .filter_map(|neigh| {
-                self.cell_lattice.bound.valid_pos(neigh)
-            }) {
-            let latt_neigh = neigh.into();
-            let edge = Edge::new(pos, latt_neigh);
-            let sigma_neigh = self.cell_lattice[latt_neigh];
+        let valid_neighs = self.cell_lattice
+            .bound
+            .valid_positions(self.neighbourhood.neighbours(pos.into()))
+            .map(|neigh| neigh.into());
+        for neigh in valid_neighs {
+            let edge = Edge::new(pos, neigh);
+            let sigma_neigh = self.cell_lattice[neigh];
             if sigma == sigma_neigh {
                 self.edge_book.remove(&edge);
                 // Also representing the inverse edge
@@ -211,7 +214,7 @@ pub mod tests {
 
     // Setup functions
     pub fn empty_env() -> Environment {
-        Environment::new(100, 100, 1)
+        Environment::new(100, 100, 1, false)
     }
     
     fn env_with_cell() -> Environment {

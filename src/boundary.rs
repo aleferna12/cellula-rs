@@ -12,6 +12,13 @@ pub trait Boundary {
     ///
     /// With fixed boundary conditions, that means filtering invalid positions.
     fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>>;
+    
+    fn valid_positions(
+        &self, 
+        positions: impl Iterator<Item = Pos2D<Self::Coord>>
+    ) -> impl Iterator<Item = Pos2D<Self::Coord>> {
+        positions.filter_map(|pos| self.valid_pos(pos))
+    }
 }
 
 pub struct FixedBoundary<T> {
@@ -114,7 +121,7 @@ where
     fn rect(&self) -> &Rect<Self::Coord> {
         &self.rect
     }
-    
+
     fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>> {
         Some(Pos2D::new(
             self.wrap_scalar(pos.x, self.rect().min.x, self.rect().max.x),

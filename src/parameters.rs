@@ -29,7 +29,9 @@ pub struct Parameters {
     #[arg(long, default_value_t = 16.)]
     pub medium_energy: f32,
     #[arg(long, default_value_t = 16.)]
-    pub solid_energy: f32
+    pub solid_energy: f32,
+    #[arg(long, action)]
+    pub enclose: bool
 }
 
 #[cfg(test)]
