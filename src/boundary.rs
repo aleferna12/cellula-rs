@@ -14,7 +14,7 @@ pub trait Boundary {
     fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>>;
     
     fn valid_positions(
-        &self, 
+        &self,
         positions: impl Iterator<Item = Pos2D<Self::Coord>>
     ) -> impl Iterator<Item = Pos2D<Self::Coord>> {
         positions.filter_map(|pos| self.valid_pos(pos))
@@ -75,7 +75,7 @@ where
     fn rect(&self) -> &Rect<T> {
         &self.rect
     }
-    
+
     fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>> {
         let p = Pos2D::new(
             Self::wrap_scalar(pos.x, self.rect.min.x, self.rect.max.x),
@@ -101,7 +101,7 @@ where
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
-    
+
     pub fn wrap_scalar(&self, val: T, min: T, max: T) -> T {
         if val < min {
             max - (min - val)

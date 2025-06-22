@@ -57,10 +57,6 @@ impl Environment {
         }
         SomeCell(&mut self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
     }
-
-    pub fn edge_per_pos(&self) -> u16 {
-        self.neighbourhood.n_neighs()
-    }
     
     pub fn n_cells(&self) -> usize {
         self.cell_vec.len()

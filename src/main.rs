@@ -20,6 +20,7 @@ fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     
     let parameters = Parameters::parse();
+    parameters.check_conflicts();
     io::welcome(&parameters);
     let mut model = Model::new(parameters);
     model.setup();

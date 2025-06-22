@@ -1,9 +1,11 @@
 use crate::pos::Pos2D;
 
+// TODO! test dynamic allocation instead of the const arrays
+
 const MAX_NEIGH_R: u8 = 16;
-const NEIGHBOURHOOD_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
-pub(crate) const MOORE_NEIGHS: [(i16, i16); NEIGHBOURHOOD_SIZE] = {
-    let mut ret = [(0i16, 0i16); NEIGHBOURHOOD_SIZE];
+const MOORE_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
+pub(crate) const MOORE_NEIGHS: [(i16, i16); MOORE_SIZE] = {
+    let mut ret = [(0i16, 0i16); MOORE_SIZE];
     let mut r = 1;
     let mut flat_index = 0usize;
     while r <= MAX_NEIGH_R as i16 {
@@ -24,6 +26,50 @@ pub(crate) const MOORE_NEIGHS: [(i16, i16); NEIGHBOURHOOD_SIZE] = {
     }
     ret
 };
+
+const VANNEUMANN_SIZE: usize = 2 * (MAX_NEIGH_R as usize) * (MAX_NEIGH_R as usize + 1);
+pub(crate) const VON_NEUMANN_NEIGHS: [(i16, i16); VANNEUMANN_SIZE] = {
+    let mut ret = [(0i16, 0i16); VANNEUMANN_SIZE];
+    let mut flat_index = 0usize;
+
+    let mut r = 1;
+    while r <= MAX_NEIGH_R as i16 {
+        let mut dx = -r;
+        while dx <= r {
+            let dy_abs = r - dx.abs();
+
+            if dy_abs == 0 {
+                ret[flat_index] = (dx, 0);
+                flat_index += 1;
+            } else {
+                ret[flat_index] = (dx, -dy_abs);
+                flat_index += 1;
+                ret[flat_index] = (dx, dy_abs);
+                flat_index += 1;
+            }
+
+            dx += 1;
+        }
+        r += 1;
+    }
+
+    ret
+};
+
+// NEVER REMOVE THIS INLINE
+#[inline(always)]
+fn fetch_neighs<'a>(
+    pos: Pos2D<isize>, 
+    neigh_array: impl Iterator<Item = &'a (i16, i16)>
+) -> impl Iterator<Item = Pos2D<isize>> {
+    neigh_array
+        .map(move |(i, j)| {
+            Pos2D::new(
+                pos.x + *i as isize,
+                pos.y + *j as isize,
+            )
+        })
+}
 
 pub trait Neighbourhood {
     fn radius(&self) -> u8;
@@ -47,20 +93,39 @@ impl Neighbourhood for MooreNeighbourhood {
         self.radius
     }
 
+    #[inline]
     fn n_neighs(&self) -> u16 {
         4 * self.radius as u16 * (self.radius as u16 + 1)
     }
 
+    #[inline]
     fn neighbours(&self, pos: Pos2D<isize>) -> impl Iterator<Item=Pos2D<isize>> {
-        let vec_size = 4 * self.radius as u16 * (self.radius as u16 + 1);
-        MOORE_NEIGHS[..vec_size as usize]
-            .iter()
-            .map(move |(i, j)| {
-                Pos2D::new(
-                    pos.x + *i as isize,
-                    pos.y + *j as isize,
-                )
-            })
+        fetch_neighs(pos, MOORE_NEIGHS[..self.n_neighs() as usize].iter())
+    }
+}
+
+pub struct VonNeumannNeighbourhood {
+    radius: u8,
+}
+impl VonNeumannNeighbourhood {
+    pub fn new(radius: u8) -> Self {
+        Self { radius }
+    }
+}
+
+impl Neighbourhood for VonNeumannNeighbourhood {
+    fn radius(&self) -> u8 {
+        self.radius
+    }
+
+    #[inline]
+    fn n_neighs(&self) -> u16 {
+        2 * self.radius as u16 * (self.radius as u16 + 1)
+    }
+
+    #[inline]
+    fn neighbours(&self, pos: Pos2D<isize>) -> impl Iterator<Item = Pos2D<isize>> {
+        fetch_neighs(pos, VON_NEUMANN_NEIGHS[..self.n_neighs() as usize].iter())
     }
 }
 

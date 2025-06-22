@@ -1,4 +1,5 @@
 use clap::Parser;
+use log::warn;
 
 // TODO: implement Display
 #[derive(Parser, Debug, Default)]
@@ -32,6 +33,15 @@ pub struct Parameters {
     pub solid_energy: f32,
     #[arg(long, action)]
     pub enclose: bool
+}
+impl Parameters {
+    pub fn check_conflicts(&self) {
+        if self.enclose && self.neigh_r > 1 {
+            warn!("`--enclose` can only be used when `--neigh-r` == 1 by default");
+            warn!("You can circumvent this issue by changing the `Boundary` type in `Environment` \
+                   from `UnsafePeriodicBoundary` to `FixedBoundary` in the code");
+        }
+    }
 }
 
 #[cfg(test)]
