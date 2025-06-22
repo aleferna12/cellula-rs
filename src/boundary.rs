@@ -33,7 +33,7 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
     fn valid_pos(&self, pos: Pos2D<T>) -> Option<Pos2D<T>> {
         if !(self.rect.min.x..self.rect.max.x).contains(&pos.x) {
             return None;
-        } 
+        }
         if !(self.rect.min.y..self.rect.max.y).contains(&pos.y) {
             return None
         }
@@ -78,8 +78,13 @@ where
     }
 }
 
+/// This struct can only validate positions that are at most one `width()` or `height()` away from the boundaries.
+///
+/// # Warning
+///
+/// Only use when you are confident that all input positions are close to the boundary.
 pub struct UnsafePeriodicBoundary<T> {
-    bound: PeriodicBoundary<T>
+    rect: Rect<T>
 }
 impl<T> UnsafePeriodicBoundary<T>
 where
@@ -87,7 +92,7 @@ where
         + Num 
         + PartialOrd {
     pub fn new(rect: Rect<T>) -> Self {
-        Self { bound: PeriodicBoundary::new(rect) }
+        Self { rect }
     }
     
     pub fn wrap_scalar(&self, val: T, min: T, max: T) -> T {
@@ -107,13 +112,9 @@ where
     type Coord = T;
 
     fn rect(&self) -> &Rect<Self::Coord> {
-        self.bound.rect()
+        &self.rect
     }
-
-    /// This wraps the position inside the boundary ONCE.
-    ///
-    /// If the position is more than `width()` or `height` away, this will not produce a valid position.
-    /// If you need this reassurance, use `PeriodicBoundary`, which is slower.
+    
     fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>> {
         Some(Pos2D::new(
             self.wrap_scalar(pos.x, self.rect().min.x, self.rect().max.x),
