@@ -10,10 +10,6 @@ TODO!:
         - images
         - cell info
         - backup
-    - periodic boundaries 
-    
-TODO:
-    - Check where we can make usage of the num crate to simplify the generics (Add and Sub are common places) 
  */
 
 fn main() {

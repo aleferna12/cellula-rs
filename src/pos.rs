@@ -1,4 +1,5 @@
-use std::ops::{AddAssign, Mul, Sub};
+use std::ops::AddAssign;
+use num::{Integer, Num};
 
 #[derive(Debug)]
 pub enum EdgeError {
@@ -58,9 +59,7 @@ pub struct Rect<T> {
 }
 impl<T> Rect<T>
 where
-    T: Sub<Output = T>
-    + Mul<Output = T>
-    + PartialOrd
+    T: Num
     + Copy
 {
     pub fn new(min: Pos2D<T>, max: Pos2D<T>) -> Self {
@@ -78,7 +77,7 @@ where
     pub fn area(&self) -> T {
         self.width() * self.height()
     }
-
+    
     pub fn iter_positions(&self) -> RectAreaIt<T> {
         RectAreaIt::new(self)
     }
@@ -99,11 +98,8 @@ impl<'a, T: Copy> RectAreaIt<'a, T> {
 
 impl<T> Iterator for RectAreaIt<'_, T>
 where
-    T: PartialEq
-    + PartialOrd
-    + Copy
-    + From<u8>
-    + Sub<Output = T>
+    T: Copy
+    + Integer
     + AddAssign {
     type Item = Pos2D<T>;
 
@@ -112,11 +108,11 @@ where
             return None;
         }
         let ret_pos = self.curr;
-        if self.curr.x < self.rect.max.x - 1.into() {
-            self.curr.x += 1.into();
+        if self.curr.x < self.rect.max.x - T::one() {
+            self.curr.x += T::one();
         } else {
             self.curr.x = self.rect.min.x;
-            self.curr.y += 1.into();
+            self.curr.y += T::one();
         }
         Some(ret_pos)
     }
