@@ -2,7 +2,7 @@ use std::env::args;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use image::RgbImage;
 use log;
-use crate::environment::Environment;
+use crate::environment::{Environment, Sigma};
 use crate::parameters::Parameters;
 
 // TODO: license, hello etc
@@ -20,7 +20,7 @@ pub fn welcome(parameters: &Parameters) {
 }
 
 pub fn simulation_frame(env: &Environment) -> RgbImage {
-    fn hash_sigma(sigma: i16) -> [u8; 3] {
+    fn hash_sigma(sigma: Sigma) -> [u8; 3] {
         if sigma == 0 {
             return [255, 255, 255]
         }

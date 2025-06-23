@@ -8,7 +8,7 @@ pub struct Parameters {
     #[arg(long, default_value_t = 1_000)]
     pub time_steps: u32,
     #[arg(long, default_value_t = 100)]
-    pub n_cells: u16,
+    pub n_cells: u32,
     #[arg(long, default_value_t = 50)]
     pub cell_start_area: u32,
     #[arg(long, default_value_t = 50)]

@@ -6,8 +6,10 @@ use crate::lattice::Lattice;
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::pos::{Pos2D, Rect};
 
+pub type Sigma = i32;
+
 pub struct Environment {
-    pub cell_lattice: Lattice<i16, UnsafePeriodicBoundary<isize>>,
+    pub cell_lattice: Lattice<Sigma, UnsafePeriodicBoundary<isize>>,
     cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood
@@ -38,7 +40,7 @@ impl Environment {
         self.cell_lattice.height()
     }
 
-    pub fn get_entity(&self, sigma: i16) -> LatticeEntity<&Cell> {
+    pub fn get_entity(&self, sigma: Sigma) -> LatticeEntity<&Cell> {
         if sigma == Medium.discriminant() {
             return Medium;
         }
@@ -48,7 +50,7 @@ impl Environment {
         SomeCell(&self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
     }
 
-    pub fn get_entity_mut(&mut self, sigma: i16) -> LatticeEntity<&mut Cell> {
+    pub fn get_entity_mut(&mut self, sigma: Sigma) -> LatticeEntity<&mut Cell> {
         if sigma == Medium.discriminant() {
             return Medium;
         }
@@ -64,7 +66,7 @@ impl Environment {
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, target_area: u32) -> Option<&Cell> {
         let mut cell_area = 0u32;
-        let sigma = self.n_cells() as i16 + LatticeEntity::first_sigma();
+        let sigma = self.n_cells() as Sigma + LatticeEntity::first_sigma();
         for pos in rect.iter_positions() {
             let trans_pos = self.cell_lattice.bound.valid_pos(pos.into());
             if trans_pos.is_none() {
@@ -174,7 +176,7 @@ impl<C> LatticeEntity<C> {
 }
 
 impl LatticeEntity<()> {
-    pub fn first_sigma() -> i16 {
+    pub fn first_sigma() -> Sigma {
         SomeCell(()).discriminant()
     }
 
@@ -186,7 +188,7 @@ impl LatticeEntity<()> {
     /// This returns a unique `i16` discriminant for each possible type of `LatticeEntity`.
     ///
     /// These values are used as sigmas in the cell lattice, except for the discriminant for `SomeCell`.
-    pub fn discriminant(&self) -> i16 {
+    pub fn discriminant(&self) -> Sigma {
         match self {
             SomeCell(_) => 1,
             Medium => 0,
