@@ -1,26 +1,25 @@
+use std::error::Error;
 use clap::Parser;
 use evo_cpm::model::Model;
 use evo_cpm::parameters::Parameters;
-use evo_cpm::io;
-
+use evo_cpm::io::welcome;
 /*
 TODO!: 
     - read params from config file
-    - finish IO 
-        - images
+    - finish IO
         - cell info
         - backup
  */
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     
     let parameters = Parameters::parse();
     parameters.check_conflicts();
-    io::welcome(&parameters);
+    welcome(&parameters);
+    
     let mut model = Model::new(parameters);
-    model.setup();
-    io::simulation_frame(&model.env).save("./test1.png").unwrap();
-    model.run(model.parameters.time_steps);
-    io::simulation_frame(&model.env).save("./test2.png").unwrap()
+    model.setup()?;
+    model.run(model.parameters.time_steps)?;
+    Ok(())
 }

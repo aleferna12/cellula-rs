@@ -4,7 +4,7 @@ use crate::pos::Pos2D;
 
 const MAX_NEIGH_R: u8 = 16;
 const MOORE_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
-pub(crate) const MOORE_NEIGHS: [(i16, i16); MOORE_SIZE] = {
+const MOORE_NEIGHS: [(i16, i16); MOORE_SIZE] = {
     let mut ret = [(0i16, 0i16); MOORE_SIZE];
     let mut r = 1;
     let mut flat_index = 0usize;
@@ -28,7 +28,7 @@ pub(crate) const MOORE_NEIGHS: [(i16, i16); MOORE_SIZE] = {
 };
 
 const VANNEUMANN_SIZE: usize = 2 * (MAX_NEIGH_R as usize) * (MAX_NEIGH_R as usize + 1);
-pub(crate) const VON_NEUMANN_NEIGHS: [(i16, i16); VANNEUMANN_SIZE] = {
+const VON_NEUMANN_NEIGHS: [(i16, i16); VANNEUMANN_SIZE] = {
     let mut ret = [(0i16, 0i16); VANNEUMANN_SIZE];
     let mut flat_index = 0usize;
 
@@ -60,9 +60,11 @@ pub(crate) const VON_NEUMANN_NEIGHS: [(i16, i16); VANNEUMANN_SIZE] = {
 #[inline(always)]
 fn fetch_neighs<'a>(
     pos: Pos2D<isize>, 
-    neigh_array: impl Iterator<Item = &'a (i16, i16)>
+    neigh_array: &[(i16, i16)],
+    n_neighs: u16
 ) -> impl Iterator<Item = Pos2D<isize>> {
-    neigh_array
+    neigh_array[..n_neighs.into()]
+        .iter()
         .map(move |(i, j)| {
             Pos2D::new(
                 pos.x + *i as isize,
@@ -82,6 +84,7 @@ pub trait Neighbourhood {
 pub struct MooreNeighbourhood {
     radius: u8
 }
+
 impl MooreNeighbourhood {
     pub fn new(radius: u8) -> Self {
         Self { radius }
@@ -100,13 +103,14 @@ impl Neighbourhood for MooreNeighbourhood {
 
     #[inline]
     fn neighbours(&self, pos: Pos2D<isize>) -> impl Iterator<Item=Pos2D<isize>> {
-        fetch_neighs(pos, MOORE_NEIGHS[..self.n_neighs() as usize].iter())
+        fetch_neighs(pos, &MOORE_NEIGHS, self.n_neighs())
     }
 }
 
 pub struct VonNeumannNeighbourhood {
     radius: u8,
 }
+
 impl VonNeumannNeighbourhood {
     pub fn new(radius: u8) -> Self {
         Self { radius }
@@ -125,7 +129,7 @@ impl Neighbourhood for VonNeumannNeighbourhood {
 
     #[inline]
     fn neighbours(&self, pos: Pos2D<isize>) -> impl Iterator<Item = Pos2D<isize>> {
-        fetch_neighs(pos, VON_NEUMANN_NEIGHS[..self.n_neighs() as usize].iter())
+        fetch_neighs(pos, &VON_NEUMANN_NEIGHS, self.n_neighs())
     }
 }
 

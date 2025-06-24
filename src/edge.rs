@@ -3,7 +3,13 @@ use std::mem;
 use std::ops::Index;
 use indexmap::IndexSet;
 use rand::Rng;
-use crate::pos::{EdgeError, Pos2D};
+use crate::pos::Pos2D;
+
+#[derive(Debug)]
+pub enum EdgeError {
+    SamePosition,
+    NotNeighbours
+}
 
 #[derive(Eq, Clone)]
 pub struct Edge {
@@ -61,6 +67,7 @@ pub struct EdgeBook {
     // TODO: profile using this crate, I have no clue of whether it's fast enough
     edge_set: IndexSet<Edge>,
 }
+
 impl EdgeBook {
     pub fn new() -> Self {
         Self { edge_set: IndexSet::new() }

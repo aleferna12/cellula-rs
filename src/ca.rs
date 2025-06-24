@@ -19,6 +19,7 @@ pub struct CA {
     pub med_energy: f32,
     pub solid_energy: f32
 }
+
 impl CA {
     pub fn new(boltz_t: f32, size_lambda: f32, cell_energy: f32, med_energy: f32, solid_energy: f32) -> CA {
         CA {

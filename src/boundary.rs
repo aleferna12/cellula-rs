@@ -24,6 +24,7 @@ pub trait Boundary {
 pub struct FixedBoundary<T> {
     rect: Rect<T>
 }
+
 impl<T> FixedBoundary<T> {
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
@@ -51,11 +52,13 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
 pub struct PeriodicBoundary<T> {
     rect: Rect<T>
 }
+
 impl<T> PeriodicBoundary<T> {
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
 }
+
 impl<T> PeriodicBoundary<T>
 where
     T: Copy + Num + Euclid {
@@ -87,12 +90,15 @@ where
 
 /// This struct can only validate positions that are at most one `width()` or `height()` away from the boundaries.
 ///
-/// # Warning
+/// <div class="warning">
 ///
 /// Only use when you are confident that all input positions are close to the boundary.
+///
+/// </div>
 pub struct UnsafePeriodicBoundary<T> {
     rect: Rect<T>
 }
+
 impl<T> UnsafePeriodicBoundary<T>
 where
     T: Copy

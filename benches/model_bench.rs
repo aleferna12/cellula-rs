@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::hint::black_box;
 use std::time::Duration;
 use clap::Parser;
@@ -12,7 +13,7 @@ use evo_cpm::parameters::Parameters;
 pub fn test_parameters() -> Parameters {
     let mut params = Parameters::parse_from([""]);
     params.seed = 123451;
-    params.n_cells = 100;
+    params.replace_outdir = true;
     params.width = 1000;
     params.height = 1000;
     params.cell_start_area = 50;
@@ -26,44 +27,49 @@ pub fn test_parameters() -> Parameters {
     params
 }
 
-fn run_full_model(steps: u32) {
+fn hundred_cells_model() -> Result<Model, Box<dyn Error>> {
     let mut model = Model::new(test_parameters());
-    model.setup();
-    model.run(1000);
-    model.run(steps);
+    model.setup()?;
+    model.run(1000)?;
+    Ok(model)
 } 
 
-fn run_single_cell(steps: u32) {
+fn single_cell_model() -> Result<Model, Box<dyn Error>> {
     let mut params = test_parameters();
     params.n_cells = 1;
     let mut model = Model::new(params);
-    model.setup();
-    model.run(1000);
-    model.run(steps);
+    model.setup()?;
+    Ok(model)
 }
 
 fn bench_model_1000mcs(c: &mut Criterion) {
+    let mut sc_model = single_cell_model().unwrap();
     c.bench_function("single_cell_1000mcs", |b| {
         b.iter(|| {
-            run_single_cell(black_box(1_000))
+            sc_model.run(black_box(1_000)).unwrap()
         })
     });
+
+    let mut f_model = hundred_cells_model().unwrap();
     c.bench_function("full_model_1000mcs", |b| {
         b.iter(|| {
-            run_full_model(black_box(1_000))
+            f_model.run(black_box(1_000)).unwrap()
         })
     });
 }
 
 fn bench_model_1mcs(c: &mut Criterion) {
+    let mut sc_model = single_cell_model().unwrap();
     c.bench_function("single_cell_1mcs", |b| {
         b.iter(|| {
-            run_single_cell(black_box(1))
+            sc_model.run(black_box(1)).unwrap()
         })
     });
+
+    let mut f_model = hundred_cells_model().unwrap();
     c.bench_function("full_model_1mcs", |b| {
         b.iter(|| {
-            run_full_model(black_box(1))
+            f_model.run(black_box(1)).unwrap()
         })
     });
 }

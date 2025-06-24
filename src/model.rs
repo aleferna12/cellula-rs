@@ -1,7 +1,11 @@
+use std::io;
+use std::path::Path;
+use image::ImageError;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use crate::ca::CA;
 use crate::environment::Environment;
+use crate::io::{create_directories, simulation_frame, IMAGES_PATH};
 use crate::parameters::Parameters;
 use crate::pos::Rect;
 
@@ -11,6 +15,7 @@ pub struct Model {
     pub rng: Xoshiro256StarStar,
     pub parameters: Parameters
 }
+
 impl Model {
     pub fn new(parameters: Parameters) -> Self {
          Self {
@@ -36,8 +41,10 @@ impl Model {
          }
     }
     
-    pub fn setup(&mut self) {
+    pub fn setup(&mut self) -> io::Result<()> {
         log::info!("Setting model up");
+        create_directories(&self.parameters.outdir, self.parameters.replace_outdir)?;
+        
         let mut cell_count = 0;
         let cell_side = (self.parameters.cell_start_area as f32).sqrt() as usize;
         for _ in 0..self.parameters.n_cells {
@@ -54,13 +61,23 @@ impl Model {
             }
         }
         log::info!("Created {} out of the {} cells requested", cell_count, self.parameters.n_cells);
+        
+        Ok(())
     }
     
-    pub fn run(&mut self, steps: u32) {
+    pub fn run(&mut self, steps: u32) -> Result<(), ImageError> {
         log::info!("Starting simulation");
-        for _ in 0..steps {
+        for i in 0..steps {
+            if i % self.parameters.image_period == 0 {
+                simulation_frame(&self.env)
+                    .save(Path::new(&self.parameters.outdir)
+                        .join(IMAGES_PATH)
+                        .join(format!("{i}.png")))?;
+            }
             self.step();
         }
+        
+        Ok(())
     }
     
     pub fn step(&mut self) {

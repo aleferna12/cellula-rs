@@ -1,12 +1,6 @@
 use std::ops::AddAssign;
 use num::{Integer, Num};
 
-#[derive(Debug)]
-pub enum EdgeError {
-    SamePosition,
-    NotNeighbours
-}
-
 /// 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct Pos2D<T> {
@@ -57,6 +51,7 @@ pub struct Rect<T> {
     pub min: Pos2D<T>,
     pub max: Pos2D<T>
 }
+
 impl<T> Rect<T>
 where
     T: Num
@@ -87,6 +82,7 @@ pub struct RectAreaIt<'a, T> {
     curr: Pos2D<T>,
     rect: &'a Rect<T>
 }
+
 impl<'a, T: Copy> RectAreaIt<'a, T> {
     fn new(rect: &'a Rect<T>) -> Self {
         Self {

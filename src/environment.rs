@@ -14,6 +14,7 @@ pub struct Environment {
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood
 }
+
 impl Environment {
     pub fn new(width: usize, height: usize, neigh_r: u8, enclose: bool) -> Self {
         let rect = Rect::new(
@@ -165,6 +166,7 @@ pub enum LatticeEntity<C> {
     Medium,
     SomeCell(C),
 }
+
 impl<C> LatticeEntity<C> {
     pub fn map<D, F: FnOnce(C) -> D>(self, f: F) -> LatticeEntity<D> {
         match self {
