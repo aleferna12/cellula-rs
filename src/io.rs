@@ -3,7 +3,6 @@ use std::fs::{create_dir_all, remove_dir_all};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::Path;
 use image::RgbImage;
-use log;
 use std::io;
 use crate::environment::{Environment, Sigma};
 use crate::parameters::Parameters;

@@ -1,8 +1,7 @@
 use clap::Parser;
-use log;
 
 // TODO: implement Display
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Parameters {
     // General parameters
@@ -74,12 +73,33 @@ pub struct Parameters {
 }
 
 impl Parameters {
+    // TODO!: 
+    //  come up with something to fix this.
+    //  problem is that no matter I want a complete type (no Option fields) after merging CLI and config file,
+    //  but there is no way of merging the two without having a partial representation of both.
+    //  i think ill have to byte the bullet and maintain a partial and complete version of the struct.
+    //  another option is to use .env files, but they are not system interoperable.
+    // pub fn parse_with_config() -> Result<Self, Box<dyn Error>> {
+    //     let cli_params = Self::parse();
+    //     let toml_str = read_to_string(&cli_params.config_file)?;
+    //     let config_params = toml::Value::from_str(&toml_str)?;
+    //     let merger_params = merge(config_params, toml::Value::try_from(cli_params)?).unwrap();
+    //     dbg!(&merger_params);
+    //     Ok(merger_params.try_into()?)
+    // }
+    
     pub fn check_conflicts(&self) {
         if self.enclose && self.neigh_r > 1 {
             log::warn!("`--enclose` can only be used when `--neigh-r` == 1 by default");
             log::warn!("You can circumvent this issue by changing the `Boundary` type in `Environment` \
                    from `UnsafePeriodicBoundary` to `FixedBoundary`");
         }
+    }
+}
+
+impl Default for Parameters {
+    fn default() -> Self {
+        Self::parse_from([""])
     }
 }
 
