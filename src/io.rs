@@ -1,5 +1,8 @@
-use std::env::args;
-use std::fs::{create_dir_all, remove_dir_all};
+// TODO!:
+//  Its time that this module gets a set of traits
+//  The outdir parameter of parameters need to be stored somewhere as an absolute path
+//  I also want to be able to both save images or display them in real time
+
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::Path;
 use image::RgbImage;
@@ -8,38 +11,38 @@ use crate::environment::{Environment, Sigma};
 use crate::parameters::Parameters;
 
 pub(crate) static IMAGES_PATH: &str = "images";
+pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
 
-// TODO: license, hello etc
-/// Welcomes the user and spits out information about the model parameters.
-///
-/// This should not require the model to be correctly initialised 
-/// (initialising the parameters beforehand is ergonomic with how `clap` is set up).
-pub fn welcome(parameters: &Parameters) {
-    let command = args()
-        .collect::<Vec<_>>()
-        .join(" ");
-    log::info!("Command used: {}", command);
-    log::info!("Model parameters:");
-    log::info!("{:?}", parameters);
+pub fn read_config(path: impl AsRef<Path>) -> Result<Parameters, config::ConfigError> {
+    let path = path.as_ref();
+    log::info!("Reading parameters from `{}` and environment", path.display());
+    let params = config::Config::builder()
+        .add_source(
+            config::File::from(path)
+        ).add_source(
+            // Converts an env CPM_TIME_STEPS to time-steps
+            config::Environment::with_prefix("CPM").convert_case(config::Case::Kebab)
+        ).build()?
+        .try_deserialize()?;
+    Ok(params)
 }
 
-pub fn create_directories<T>(outpath: T, replace_outdir: bool) -> io::Result<()>
-where
-    T: AsRef<Path> {
-    let outpath = outpath.as_ref(); // Convert to &Path
+pub fn create_directories(outpath: impl AsRef<Path>, replace_outdir: bool) -> io::Result<()> {
+    let outpath = outpath.as_ref();
     let outdir_exists = outpath.try_exists()?;
     if outdir_exists {
         if replace_outdir {
             log::info!("Cleaning contents of '{}'", outpath.display());
-            remove_dir_all(outpath)?;
+            std::fs::remove_dir_all(outpath)?;
         } else {
             return Err(io::Error::new(
-                io::ErrorKind::AlreadyExists, 
+                io::ErrorKind::AlreadyExists,
                 "`outdir` already exists and `replace_outdir` is `false`"
             ));
         }
     }
-    create_dir_all(outpath.join(IMAGES_PATH))
+    std::fs::create_dir_all(outpath)?;
+    std::fs::create_dir(outpath.join(IMAGES_PATH))
 }
 
 pub fn simulation_frame(env: &Environment) -> RgbImage {
@@ -79,7 +82,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_hash_sigma() {
+    fn test_sigma_to_rgb() {
         let mut tested = HashSet::<[u8; 3]>::default();
         // We can guarantee at least 5232 unique colors with this method
         for i in 0..5232 as Sigma {
@@ -87,5 +90,10 @@ mod tests {
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);
         }
+    }
+
+    #[test]
+    fn test_read_toml() {
+        read_config("../examples/64_cells.toml").unwrap();
     }
 }

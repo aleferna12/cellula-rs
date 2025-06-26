@@ -1,0 +1,57 @@
+########################
+## General parameters ##
+########################
+
+# How many MCS the simulation will run for.
+time-steps = 2048
+# Seed for the RNG.
+# Use `0` to pick a random seed.
+seed = 1241254152
+
+########
+## IO ##
+########
+
+# Output directory for files.
+outdir = "examples/64_cells"
+# Flag used to delete contents of `outdir` if it exists.
+replace-outdir = true
+# Period (in MCS) with which to save an image of the simulation.
+image-period = 2048
+
+#################
+## Environment ##
+#################
+
+# Width of the lattice.
+width = 128
+# Height of the lattice.
+height = 128
+# Whether to create a solid border around the cell lattice.
+# Should not be used with `neigh_r` > 1.
+enclose = false
+# Number of starting cells in the environment.
+n-cells = 64
+# Cell parameters
+# Starting cell area.
+cell-start-area = 64
+# Target cell area.
+cell-target-area = 64
+
+#######################
+## Cellular Automata ##
+#######################
+
+# Boltzmann temperature.
+# Increases likelihood of unfavourable copy attempts being accepted.
+boltz-t = 16
+# Radius of the neighbourhood.
+neigh-r = 1
+# Scaler constant for area deviation penalties.
+size-lambda = 1
+# Adhesion energy at cell-cell interfaces.
+cell-energy = 16
+# Adhesion energy at cell-medium interfaces.
+medium-energy = 16
+# Adhesion energy at cell-solid interfaces.
+solid-energy = 16

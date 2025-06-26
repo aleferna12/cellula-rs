@@ -1,8 +1,3 @@
-use std::error::Error;
-use clap::Parser;
-use evo_cpm::model::Model;
-use evo_cpm::parameters::Parameters;
-use evo_cpm::io::welcome;
 /*
 TODO!: 
     - read params from config file
@@ -10,13 +5,19 @@ TODO!:
         - cell info
         - backup
  */
+use std::error::Error;
+use clap::Parser;
+use evo_cpm::model::Model;
+use evo_cpm::parameters::Cli;
+use evo_cpm::io::read_config;
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
+    let cli = Cli::parse();
     
-    let parameters = Parameters::parse();
+    let parameters = read_config(&cli.config)?;
     parameters.check_conflicts();
-    welcome(&parameters);
     
     let mut model = Model::new(parameters);
     model.setup()?;
