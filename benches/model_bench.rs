@@ -1,78 +1,69 @@
-// TODO!: fix (should read from the example files)
-use std::error::Error;
+use std::cmp::max;
+use criterion::{Criterion, criterion_group, criterion_main, BenchmarkId, BatchSize};
+use evo_cpm::io::read_config;
+use evo_cpm::model::Model;
 use std::hint::black_box;
 use std::time::Duration;
-use clap::Parser;
-use criterion::{criterion_group, criterion_main, Criterion};
-use evo_cpm::model::Model;
 use evo_cpm::parameters::Parameters;
 
-/// This model should override all parameters that can have an effect on performance 
-/// (do not depend on changeable defaults).
-///
-/// In the future, we can implement a test_config.toml with all of these.
-pub fn test_parameters() -> Parameters {
-    let mut params = Parameters::parse_from([""]);
-    params.seed = 123451;
-    params.replace_outdir = true;
-    params.width = 1000;
-    params.height = 1000;
-    params.cell_start_area = 50;
-    params.cell_target_area = 50;
-    params.neigh_r = 1;
-    params.boltz_t = 16.;
-    params.size_lambda = 1.;
-    params.cell_energy = 16.;
-    params.medium_energy = 16.;
-    params.solid_energy = 16.;
-    params
+/// Builds all example models.
+fn get_example_models() -> Vec<(String, Parameters)> {
+    std::fs::read_dir("examples")
+        .unwrap()
+        .filter_map(|entry| match entry {
+            Ok(e) => {
+                let p = e.path();
+                if !p.is_file() || p.extension().unwrap().to_ascii_lowercase() != "toml" {
+                    return None;
+                }
+                let bench_name = p.file_stem()
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+                Some((
+                    bench_name.to_string(),
+                    read_config(p).unwrap(),
+                ))
+            }
+            _ => None,
+        })
+        .collect()
 }
 
-fn hundred_cells_model() -> Result<Model, Box<dyn Error>> {
-    let mut model = Model::new(test_parameters());
-    model.setup()?;
-    model.run(1000)?;
-    Ok(model)
-} 
-
-fn single_cell_model() -> Result<Model, Box<dyn Error>> {
-    let mut params = test_parameters();
-    params.n_cells = 1;
-    let mut model = Model::new(params);
-    model.setup()?;
-    Ok(model)
+fn bench_examples(c: &mut Criterion, time_steps: u32) {
+    for (example, parameters) in get_example_models() {
+        c.bench_with_input(
+            BenchmarkId::new("examples", format!("{}/{}mcs", example, time_steps)),
+            &parameters,
+            |b, parameters| {
+                b.iter_batched_ref(
+                    || {
+                        let mut params = parameters.clone();
+                        params.outdir = format!("benches/model_output/{}", params.outdir);
+                        // Ensures that a single image will be saved, 
+                        // either after the setup run or the whole simulation
+                        params.image_period = max(time_steps, 100);
+                        let mut model = Model::new(params);
+                        model.setup().unwrap();
+                        model.run(100);
+                        model
+                    },
+                    |model| {
+                        model.run(black_box(time_steps))
+                    },
+                    BatchSize::SmallInput
+                )
+            }
+        );
+    }
 }
 
-fn bench_model_1000mcs(c: &mut Criterion) {
-    let mut sc_model = single_cell_model().unwrap();
-    c.bench_function("single_cell_1000mcs", |b| {
-        b.iter(|| {
-            sc_model.run(black_box(1_000)).unwrap()
-        })
-    });
-
-    let mut f_model = hundred_cells_model().unwrap();
-    c.bench_function("full_model_1000mcs", |b| {
-        b.iter(|| {
-            f_model.run(black_box(1_000)).unwrap()
-        })
-    });
+fn bench_examples_1000mcs(c: &mut Criterion) {
+    bench_examples(c, 1000);
 }
 
-fn bench_model_1mcs(c: &mut Criterion) {
-    let mut sc_model = single_cell_model().unwrap();
-    c.bench_function("single_cell_1mcs", |b| {
-        b.iter(|| {
-            sc_model.run(black_box(1)).unwrap()
-        })
-    });
-
-    let mut f_model = hundred_cells_model().unwrap();
-    c.bench_function("full_model_1mcs", |b| {
-        b.iter(|| {
-            f_model.run(black_box(1)).unwrap()
-        })
-    });
+fn bench_examples_1mcs(c: &mut Criterion) {
+    bench_examples(c, 1);
 }
 
 criterion_group!(
@@ -80,9 +71,9 @@ criterion_group!(
     config = Criterion::default()
         .sample_size(10)
         .measurement_time(Duration::from_secs(10));
-    targets = bench_model_1000mcs
+    targets = bench_examples_1000mcs
 );
 
-criterion_group!(model_1mcs, bench_model_1mcs);
+criterion_group!(model_1mcs, bench_examples_1mcs);
 
 criterion_main!(model_1mcs, model_1000mcs);

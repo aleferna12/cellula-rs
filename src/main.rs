@@ -21,6 +21,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let mut model = Model::new(parameters);
     model.setup()?;
-    model.run(model.parameters.time_steps)?;
+    model.run(model.parameters().time_steps);
     Ok(())
 }

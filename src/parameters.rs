@@ -18,7 +18,7 @@ pub struct Cli {
 /// Parameters for the model.
 ///
 /// Documentation for each parameter is in `examples/64_cells.toml`
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct Parameters {
     pub time_steps: u32,

@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::path::Path;
-use image::ImageError;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use crate::ca::CA;
@@ -13,7 +12,7 @@ pub struct Model {
     pub env: Environment,
     pub ca: CA,
     pub rng: Xoshiro256StarStar,
-    pub parameters: Parameters
+    parameters: Parameters
 }
 
 impl Model {
@@ -39,6 +38,11 @@ impl Model {
              },
              parameters 
          }
+    }
+    
+    // Prevent from mutating, since values might have been used to set state already
+    pub fn parameters(&self) -> &Parameters {
+        &self.parameters
     }
     
     pub fn setup(&mut self) -> Result<(), Box<dyn Error>> {
@@ -77,19 +81,20 @@ impl Model {
         Ok(())
     }
     
-    pub fn run(&mut self, steps: u32) -> Result<(), ImageError> {
+    pub fn run(&mut self, steps: u32) {
         log::info!("Starting simulation");
         for i in 0..=steps {
             if i % self.parameters.image_period == 0 {
-                simulation_frame(&self.env)
+                let saved_image = simulation_frame(&self.env)
                     .save(Path::new(&self.parameters.outdir)
-                        .join(IMAGES_PATH)
-                        .join(format!("{i}.png")))?;
+                    .join(IMAGES_PATH)
+                    .join(format!("{i}.png")));
+                if let Err(e) = saved_image {
+                    log::warn!("Failed to save simulation frame at time step {} with error `{}`", i, e);
+                }
             }
             self.step();
         }
-        
-        Ok(())
     }
     
     pub fn step(&mut self) {
