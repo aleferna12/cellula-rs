@@ -58,7 +58,7 @@ const VON_NEUMANN_NEIGHS: [(i16, i16); VANNEUMANN_SIZE] = {
 
 // NEVER REMOVE THIS INLINE
 #[inline(always)]
-fn fetch_neighs<'a>(
+fn fetch_neighs(
     pos: Pos2D<isize>, 
     neigh_array: &[(i16, i16)],
     n_neighs: u16

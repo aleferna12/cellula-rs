@@ -88,7 +88,7 @@ impl Model {
                 let saved_image = simulation_frame(&self.env)
                     .save(Path::new(&self.parameters.outdir)
                     .join(IMAGES_PATH)
-                    .join(format!("{i}.png")));
+                    .join(format!("{i}.{}", &self.parameters.image_format.to_lowercase())));
                 if let Err(e) = saved_image {
                     log::warn!("Failed to save simulation frame at time step {} with error `{}`", i, e);
                 }

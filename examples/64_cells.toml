@@ -6,6 +6,7 @@
 time-steps = 2048
 # Seed for the RNG.
 # Use `0` to pick a random seed.
+# [default = 0]
 seed = 1241254152
 
 ########
@@ -15,9 +16,14 @@ seed = 1241254152
 # Output directory for files.
 outdir = "examples/64_cells"
 # Flag used to delete contents of `outdir` if it exists.
+# [default = false]
 replace-outdir = true
 # Period (in MCS) with which to save an image of the simulation.
 image-period = 2048
+# Format used to save images.
+# Supports any format supported by the `image` crate.
+# [default = "webp"]
+image-format = "webp"
 
 #################
 ## Environment ##
@@ -29,6 +35,7 @@ width = 128
 height = 128
 # Whether to create a solid border around the cell lattice.
 # Should not be used with `neigh_r` > 1.
+# [default = false]
 enclose = false
 # Number of starting cells in the environment.
 n-cells = 64

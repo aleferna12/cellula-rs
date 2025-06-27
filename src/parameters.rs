@@ -15,6 +15,7 @@ pub struct Cli {
     pub config: String
 }
 
+// When you add parameters, dont forgot to document them (and their defaults)
 /// Parameters for the model.
 ///
 /// Documentation for each parameter is in `examples/64_cells.toml`
@@ -22,13 +23,18 @@ pub struct Cli {
 #[serde(rename_all = "kebab-case")]
 pub struct Parameters {
     pub time_steps: u32,
+    #[serde(default = "param_defaults::seed")]
     pub seed: u64,
     pub outdir: String,
+    #[serde(default = "param_defaults::replace_outdir")]
     pub replace_outdir: bool,
     pub image_period: u32,
+    #[serde(default = "param_defaults::image_format")]
+    pub image_format: String,
 
     pub width: usize,
     pub height: usize,
+    #[serde(default = "param_defaults::enclose")]
     pub enclose: bool,
     pub n_cells: u32,
 
@@ -50,4 +56,12 @@ impl Parameters {
                    from `UnsafePeriodicBoundary` to `FixedBoundary`");
         }
     }
+}
+
+// This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
+mod param_defaults {
+    pub fn seed() -> u64 { 0 }
+    pub fn replace_outdir() -> bool { false }
+    pub fn image_format() -> String { "webp".to_string() }
+    pub fn enclose() -> bool { false }
 }
