@@ -8,24 +8,9 @@ use std::path::Path;
 use image::RgbImage;
 use std::io;
 use crate::environment::{Environment, Sigma};
-use crate::parameters::Parameters;
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
-
-pub fn read_config(path: impl AsRef<Path>) -> Result<Parameters, config::ConfigError> {
-    let path = path.as_ref();
-    log::info!("Reading parameters from `{}` and environment", path.display());
-    let params = config::Config::builder()
-        .add_source(
-            config::File::from(path)
-        ).add_source(
-            // Converts an env CPM_TIME_STEPS to time-steps
-            config::Environment::with_prefix("CPM").convert_case(config::Case::Kebab)
-        ).build()?
-        .try_deserialize()?;
-    Ok(params)
-}
 
 pub fn create_directories(outpath: impl AsRef<Path>, replace_outdir: bool) -> io::Result<()> {
     let outpath = outpath.as_ref();
@@ -90,10 +75,5 @@ mod tests {
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);
         }
-    }
-
-    #[test]
-    fn test_read_toml() {
-        read_config("../examples/64_cells.toml").unwrap();
     }
 }

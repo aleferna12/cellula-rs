@@ -1,6 +1,5 @@
 use std::cmp::max;
 use criterion::{Criterion, criterion_group, criterion_main, BenchmarkId, BatchSize};
-use evo_cpm::io::read_config;
 use evo_cpm::model::Model;
 use std::hint::black_box;
 use std::path::Path;
@@ -23,7 +22,7 @@ fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {
                     .unwrap();
                 Some((
                     bench_name.to_string(),
-                    read_config(p).unwrap(),
+                    Parameters::from_file(p).unwrap(),
                 ))
             }
             _ => None,

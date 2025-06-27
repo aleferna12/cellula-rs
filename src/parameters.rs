@@ -1,3 +1,4 @@
+use std::path::Path;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 
@@ -49,6 +50,20 @@ pub struct Parameters {
 }
 
 impl Parameters {
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Parameters, config::ConfigError> {
+        let path = path.as_ref();
+        log::info!("Reading parameters from `{}` and environment", path.display());
+        let params = config::Config::builder()
+            .add_source(
+                config::File::from(path)
+            ).add_source(
+            // Converts an env CPM_TIME_STEPS to time-steps
+            config::Environment::with_prefix("CPM").convert_case(config::Case::Kebab)
+        ).build()?
+            .try_deserialize()?;
+        Ok(params)
+    }
+    
     pub fn check_conflicts(&self) {
         if self.enclose && self.neigh_r > 1 {
             log::warn!("`--enclose` can only be used when `--neigh-r` == 1 by default");
@@ -64,4 +79,14 @@ mod param_defaults {
     pub fn replace_outdir() -> bool { false }
     pub fn image_format() -> String { "webp".to_string() }
     pub fn enclose() -> bool { false }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_from_file() {
+        assert!(Parameters::from_file("../examples/64_cells.toml").is_ok());
+    }
 }
