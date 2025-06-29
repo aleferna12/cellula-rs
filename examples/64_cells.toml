@@ -1,7 +1,4 @@
-########################
-## General parameters ##
-########################
-
+[general]
 # How many MCS the simulation will run for.
 time-steps = 2048
 # Seed for the RNG.
@@ -9,10 +6,7 @@ time-steps = 2048
 # [default = 0]
 seed = 1241254152
 
-########
-## IO ##
-########
-
+[io]
 # Output directory for files.
 outdir = "examples/64_cells"
 # Flag used to delete contents of `outdir` if it exists.
@@ -25,10 +19,7 @@ image-period = 2048
 # [default = "webp"]
 image-format = "webp"
 
-#################
-## Environment ##
-#################
-
+[environment]
 # Width of the lattice.
 width = 128
 # Height of the lattice.
@@ -37,23 +28,18 @@ height = 128
 # Should not be used with `neigh_r` > 1.
 # [default = false]
 enclose = false
+# Radius of the neighbourhood.
+neigh-r = 1
 # Number of starting cells in the environment.
 n-cells = 64
 # Cell parameters
 # Starting cell area.
 cell-start-area = 64
-# Target cell area.
-cell-target-area = 64
 
-#######################
-## Cellular Automata ##
-#######################
-
+[cellular-automata]
 # Boltzmann temperature.
 # Increases likelihood of unfavourable copy attempts being accepted.
 boltz-t = 16
-# Radius of the neighbourhood.
-neigh-r = 1
 # Scaler constant for area deviation penalties.
 size-lambda = 1
 # Adhesion energy at cell-cell interfaces.
@@ -62,3 +48,5 @@ cell-energy = 16
 medium-energy = 16
 # Adhesion energy at cell-solid interfaces.
 solid-energy = 16
+# Target cell area.
+cell-target-area = 64

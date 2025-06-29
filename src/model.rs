@@ -19,17 +19,17 @@ impl Model {
     pub fn new(parameters: Parameters) -> Self {
          Self {
              env: Environment::new(
-                parameters.env.width,
-                parameters.env.height,
-                parameters.env.neigh_r,
-                parameters.env.enclose
+                 parameters.environment.width,
+                 parameters.environment.height,
+                 parameters.environment.neigh_r,
+                 parameters.environment.enclose
              ),
              ca: CA::new(
-                 parameters.ca.boltz_t,
-                 parameters.ca.size_lambda,
-                 parameters.ca.cell_energy,
-                 parameters.ca.medium_energy,
-                 parameters.ca.solid_energy
+                 parameters.cellular_automata.boltz_t,
+                 parameters.cellular_automata.size_lambda,
+                 parameters.cellular_automata.cell_energy,
+                 parameters.cellular_automata.medium_energy,
+                 parameters.cellular_automata.solid_energy
              ), 
              rng: if parameters.general.seed == 0 { 
                  Xoshiro256StarStar::from_os_rng()
@@ -62,21 +62,21 @@ impl Model {
         )?;
         
         let mut cell_count = 0;
-        let cell_side = (self.parameters.env.cell_start_area as f32).sqrt() as usize;
-        for _ in 0..self.parameters.env.n_cells {
+        let cell_side = (self.parameters.environment.cell_start_area as f32).sqrt() as usize;
+        for _ in 0..self.parameters.environment.n_cells {
             let pos = self.env.cell_lattice.random_pos(&mut self.rng);
             let cell = self.env.spawn_rect_cell(
                 Rect::new(
                     pos,
                     (pos.x + cell_side, pos.y + cell_side).into()
                 ),
-                self.parameters.ca.cell_target_area
+                self.parameters.cellular_automata.cell_target_area
             );
             if cell.is_some() {
                 cell_count += 1;
             }
         }
-        log::info!("Created {} out of the {} cells requested", cell_count, self.parameters.env.n_cells);
+        log::info!("Created {} out of the {} cells requested", cell_count, self.parameters.environment.n_cells);
         
         Ok(())
     }

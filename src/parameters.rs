@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 static CLI_NOTES: &str = "\
     Model parameters are loaded from a TOML file specified by CONFIG.\n\
     You can also override any parameter from the CONFIG file with environmental variables \
-    (use the `CPM` prefix and UPPER_SNAKE_CASE, e.g. `CPM_TIME_STEPS`).\n\
+    (use `__` for the parameter section, e.g. `GENERAL__TIME_STEPS`).\n\
     Documentation for parameters can be found in `examples/64_cells.toml`.\n\
 ";
 
@@ -14,44 +14,6 @@ static CLI_NOTES: &str = "\
 pub struct Cli {
     #[arg(help = "Path to TOML file storing the model parameters")]
     pub config: String
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct GeneralParameters {
-    pub time_steps: u32,
-    #[serde(default = "param_defaults::seed")]
-    pub seed: u64,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct IoParameters {
-    pub outdir: String,
-    #[serde(default = "param_defaults::replace_outdir")]
-    pub replace_outdir: bool,
-    pub image_period: u32,
-    #[serde(default = "param_defaults::image_format")]
-    pub image_format: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct EnvironmentParameters {
-    pub width: usize,
-    pub height: usize,
-    #[serde(default = "param_defaults::enclose")]
-    pub enclose: bool,
-    pub n_cells: u32,
-    pub cell_start_area: u32,
-    pub neigh_r: u8,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct CellularAutomataParameters {
-    pub cell_target_area: u32,
-    pub boltz_t: f32,
-    pub size_lambda: f32,
-    pub cell_energy: f32,
-    pub medium_energy: f32,
-    pub solid_energy: f32,
 }
 
 // When you add parameters, dont forgot to document them (and their defaults)
@@ -63,8 +25,8 @@ pub struct CellularAutomataParameters {
 pub struct Parameters {
     pub general: GeneralParameters,
     pub io: IoParameters,
-    pub env: EnvironmentParameters,
-    pub ca: CellularAutomataParameters
+    pub environment: EnvironmentParameters,
+    pub cellular_automata: CellularAutomataParameters
 }
 
 impl Parameters {
@@ -75,20 +37,64 @@ impl Parameters {
             .add_source(
                 config::File::from(path)
             ).add_source(
-            // Converts an env CPM_TIME_STEPS to time-steps
-            config::Environment::with_prefix("CPM").convert_case(config::Case::Kebab)
-        ).build()?
-            .try_deserialize()?;
+                // Converts an env CPM_TIME_STEPS to time-steps
+                config::Environment::default()
+                    .separator("__")
+                    .convert_case(config::Case::Kebab)
+            ).build()?
+                .try_deserialize()?;
         Ok(params)
     }
     
     pub fn check_conflicts(&self) {
-        if self.env.enclose && self.env.neigh_r > 1 {
+        if self.environment.enclose && self.environment.neigh_r > 1 {
             log::warn!("`enclose` can only be used when `neigh-r` == 1 by default");
             log::warn!("You can circumvent this issue by changing the `Boundary` type in `Environment` \
                         from `UnsafePeriodicBoundary` to `FixedBoundary`");
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct GeneralParameters {
+    pub time_steps: u32,
+    #[serde(default = "param_defaults::seed")]
+    pub seed: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct IoParameters {
+    pub outdir: String,
+    #[serde(default = "param_defaults::replace_outdir")]
+    pub replace_outdir: bool,
+    pub image_period: u32,
+    #[serde(default = "param_defaults::image_format")]
+    pub image_format: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct EnvironmentParameters {
+    pub width: usize,
+    pub height: usize,
+    #[serde(default = "param_defaults::enclose")]
+    pub enclose: bool,
+    pub n_cells: u32,
+    pub cell_start_area: u32,
+    pub neigh_r: u8,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct CellularAutomataParameters {
+    pub cell_target_area: u32,
+    pub boltz_t: f32,
+    pub size_lambda: f32,
+    pub cell_energy: f32,
+    pub medium_energy: f32,
+    pub solid_energy: f32,
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
