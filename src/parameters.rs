@@ -16,6 +16,44 @@ pub struct Cli {
     pub config: String
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct GeneralParameters {
+    pub time_steps: u32,
+    #[serde(default = "param_defaults::seed")]
+    pub seed: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct IoParameters {
+    pub outdir: String,
+    #[serde(default = "param_defaults::replace_outdir")]
+    pub replace_outdir: bool,
+    pub image_period: u32,
+    #[serde(default = "param_defaults::image_format")]
+    pub image_format: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct EnvironmentParameters {
+    pub width: usize,
+    pub height: usize,
+    #[serde(default = "param_defaults::enclose")]
+    pub enclose: bool,
+    pub n_cells: u32,
+    pub cell_start_area: u32,
+    pub neigh_r: u8,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CellularAutomataParameters {
+    pub cell_target_area: u32,
+    pub boltz_t: f32,
+    pub size_lambda: f32,
+    pub cell_energy: f32,
+    pub medium_energy: f32,
+    pub solid_energy: f32,
+}
+
 // When you add parameters, dont forgot to document them (and their defaults)
 /// Parameters for the model.
 ///
@@ -23,30 +61,10 @@ pub struct Cli {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct Parameters {
-    pub time_steps: u32,
-    #[serde(default = "param_defaults::seed")]
-    pub seed: u64,
-    pub outdir: String,
-    #[serde(default = "param_defaults::replace_outdir")]
-    pub replace_outdir: bool,
-    pub image_period: u32,
-    #[serde(default = "param_defaults::image_format")]
-    pub image_format: String,
-
-    pub width: usize,
-    pub height: usize,
-    #[serde(default = "param_defaults::enclose")]
-    pub enclose: bool,
-    pub n_cells: u32,
-
-    pub cell_start_area: u32,
-    pub cell_target_area: u32,
-    pub boltz_t: f32,
-    pub neigh_r: u8,
-    pub size_lambda: f32,
-    pub cell_energy: f32,
-    pub medium_energy: f32,
-    pub solid_energy: f32,
+    pub general: GeneralParameters,
+    pub io: IoParameters,
+    pub env: EnvironmentParameters,
+    pub ca: CellularAutomataParameters
 }
 
 impl Parameters {
@@ -65,10 +83,10 @@ impl Parameters {
     }
     
     pub fn check_conflicts(&self) {
-        if self.enclose && self.neigh_r > 1 {
-            log::warn!("`--enclose` can only be used when `--neigh-r` == 1 by default");
+        if self.env.enclose && self.env.neigh_r > 1 {
+            log::warn!("`enclose` can only be used when `neigh-r` == 1 by default");
             log::warn!("You can circumvent this issue by changing the `Boundary` type in `Environment` \
-                   from `UnsafePeriodicBoundary` to `FixedBoundary`");
+                        from `UnsafePeriodicBoundary` to `FixedBoundary`");
         }
     }
 }
@@ -86,7 +104,8 @@ mod tests {
     use super::*;
     
     #[test]
-    fn test_from_file() {
-        assert!(Parameters::from_file("../examples/64_cells.toml").is_ok());
+    fn test_from_file() -> Result<(), config::ConfigError> {
+        Parameters::from_file("examples/64_cells.toml")?;
+        Ok(())
     }
 }

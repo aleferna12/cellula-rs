@@ -47,10 +47,10 @@ fn bench_param_files(
                 b.iter_batched_ref(
                     || {
                         let mut params = parameters.clone();
-                        params.outdir = format!("benches/model_outputs/{}", params.outdir);
+                        params.io.outdir = format!("benches/model_outputs/{}", params.io.outdir);
                         // Ensures that a single image will be saved, 
                         // either after the setup run or the whole simulation
-                        params.image_period = max(time_steps, 100);
+                        params.io.image_period = max(time_steps, 100);
                         let mut model = Model::new(params);
                         model.setup().unwrap();
                         model.run(100);
