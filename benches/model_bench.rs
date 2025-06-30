@@ -67,8 +67,8 @@ fn bench_param_files(
 }
 
 fn bench_param_files_1000mcs(c: &mut Criterion) {
-    bench_param_files(c, "example", "./examples", 1000);
-    bench_param_files(c, "model", "./benches/model_files", 1000);
+    bench_param_files(c, "examples", "./examples", 1000);
+    bench_param_files(c, "models", "./benches/model_files", 1000);
 }
 
 fn bench_param_files_1mcs(c: &mut Criterion) {

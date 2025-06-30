@@ -43,3 +43,9 @@ medium-energy = 16
 solid-energy = 16
 # Target cell area.
 cell-target-area = 50
+
+[movie]
+show = false
+width = 320
+height = 320
+frame-period = 50

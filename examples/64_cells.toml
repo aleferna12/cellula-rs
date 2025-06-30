@@ -6,19 +6,6 @@ time-steps = 2048
 # [default = 0]
 seed = 1241254152
 
-[io]
-# Output directory for files.
-outdir = "examples/64_cells"
-# Flag used to delete contents of `outdir` if it exists.
-# [default = false]
-replace-outdir = true
-# Period (in MCS) with which to save an image of the simulation.
-image-period = 2048
-# Format used to save images.
-# Supports any format supported by the `image` crate.
-# [default = "webp"]
-image-format = "webp"
-
 [environment]
 # Width of the lattice.
 width = 128
@@ -50,3 +37,28 @@ medium-energy = 16
 solid-energy = 16
 # Target cell area.
 cell-target-area = 64
+
+[io]
+# Output directory for files.
+outdir = "examples/64_cells"
+# Flag used to delete contents of `outdir` if it exists.
+# [default = false]
+replace-outdir = true
+# Period (in MCS) with which to save an image of the simulation.
+image-period = 2048
+# Format used to save images.
+# Supports any format supported by the `image` crate.
+# [default = "webp"]
+image-format = "webp"
+
+[movie]
+# Whether the real-time movie should be shown or not.
+# This will slow down the simulation a lot.
+# [default = false]
+show = false
+# Width of the movie window.
+width = 320
+# Height of the movie window.
+height = 320
+# How many time steps to skip between the displayed frames.
+frame-period = 50

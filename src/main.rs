@@ -3,6 +3,7 @@ TODO!:
     - finish IO
         - cell info
         - backup
+    - save_image is being called twice when image_period and frame_period match (implement counters)
  */
 use std::error::Error;
 use clap::Parser;

@@ -24,9 +24,10 @@ pub struct Cli {
 #[serde(rename_all = "kebab-case")]
 pub struct Parameters {
     pub general: GeneralParameters,
-    pub io: IoParameters,
     pub environment: EnvironmentParameters,
-    pub cellular_automata: CellularAutomataParameters
+    pub cellular_automata: CellularAutomataParameters,
+    pub io: IoParameters,
+    pub movie: MovieParameters
 }
 
 impl Parameters {
@@ -65,17 +66,6 @@ pub struct GeneralParameters {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
-pub struct IoParameters {
-    pub outdir: String,
-    #[serde(default = "param_defaults::replace_outdir")]
-    pub replace_outdir: bool,
-    pub image_period: u32,
-    #[serde(default = "param_defaults::image_format")]
-    pub image_format: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
 pub struct EnvironmentParameters {
     pub width: usize,
     pub height: usize,
@@ -97,12 +87,35 @@ pub struct CellularAutomataParameters {
     pub solid_energy: f32,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct IoParameters {
+    pub outdir: String,
+    #[serde(default = "param_defaults::replace_outdir")]
+    pub replace_outdir: bool,
+    pub image_period: u32,
+    #[serde(default = "param_defaults::image_format")]
+    pub image_format: String,
+}
+
+// TODO! docs
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct MovieParameters {
+    #[serde(default = "param_defaults::show")]
+    pub show: bool,
+    pub width: u32,
+    pub height: u32,
+    pub frame_period: u32
+}
+
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
 mod param_defaults {
     pub fn seed() -> u64 { 0 }
     pub fn replace_outdir() -> bool { false }
     pub fn image_format() -> String { "webp".to_string() }
     pub fn enclose() -> bool { false }
+    pub fn show() -> bool { false }
 }
 
 #[cfg(test)]

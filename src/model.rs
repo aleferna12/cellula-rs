@@ -4,7 +4,7 @@ use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use crate::ca::CA;
 use crate::environment::Environment;
-use crate::io::{create_directories, simulation_frame, IMAGES_PATH, CONFIG_COPY_PATH};
+use crate::io::{create_directories, simulation_image, IMAGES_PATH, CONFIG_COPY_PATH, MovieMaker};
 use crate::parameters::Parameters;
 use crate::pos::Rect;
 
@@ -12,6 +12,7 @@ pub struct Model {
     pub env: Environment,
     pub ca: CA,
     pub rng: Xoshiro256StarStar,
+    movie_maker: Option<MovieMaker>,
     parameters: Parameters
 }
 
@@ -36,6 +37,8 @@ impl Model {
              } else {
                  Xoshiro256StarStar::seed_from_u64(parameters.general.seed) 
              },
+             // Initialised in setup
+             movie_maker: None,
              parameters 
          }
     }
@@ -61,6 +64,17 @@ impl Model {
             )
         )?;
         
+        // Hopefully this prevents most compatibility problems
+        // A more extreme solution is to make minifb an optional dependency
+        if self.parameters.movie.show {
+            log::info!("Creating window for real-time movie display");
+            match MovieMaker::new(self.parameters.movie.width, self.parameters.movie.height) {
+                Ok(maker) => self.movie_maker = Some(maker),
+                Err(e) => log::warn!("Failed to initialise movie maker with error `{}`", e),
+            }
+        }
+        
+        log::info!("Creating cells");
         let mut cell_count = 0;
         let cell_side = (self.parameters.environment.cell_start_area as f32).sqrt() as usize;
         for _ in 0..self.parameters.environment.n_cells {
@@ -83,16 +97,41 @@ impl Model {
     
     pub fn run(&mut self, steps: u32) {
         log::info!("Starting simulation");
+
+        let mut issued_image_warning = false;
+        let mut issued_movie_warning = false;
         for i in 0..=steps {
             if i % self.parameters.io.image_period == 0 {
-                let saved_image = simulation_frame(&self.env)
-                    .save(Path::new(&self.parameters.io.outdir)
-                    .join(IMAGES_PATH)
-                    .join(format!("{i}.{}", &self.parameters.io.image_format.to_lowercase())));
-                if let Err(e) = saved_image {
-                    log::warn!("Failed to save simulation frame at time step {} with error `{}`", i, e);
+                let saved = simulation_image(&self.env).save(
+                    Path::new(&self.parameters.io.outdir)
+                        .join(IMAGES_PATH)
+                        .join(format!("{i}.{}", &self.parameters.io.image_format.to_lowercase()))
+                );
+                if let Err(e) = saved {
+                    if !issued_image_warning {
+                        log::warn!("Failed to save simulation frame at time step {} with error `{}`", i, e);
+                        issued_image_warning = true;
+                    }
                 }
             }
+
+            if let Some(mm) = &mut self.movie_maker {
+                if i % self.parameters.movie.frame_period == 0 && mm.window_works() {
+                    let resized = image::imageops::resize(
+                        &simulation_image(&self.env), 
+                        self.parameters.movie.width,
+                        self.parameters.movie.height, 
+                        image::imageops::Nearest
+                    );
+                    if let Err(e) = mm.update(&resized) {
+                        if !issued_movie_warning {
+                            log::warn!("Failed to display simulation frame at time step {} with error `{}`", i, e);
+                            issued_movie_warning = true;
+                        }
+                    }
+                }
+            }
+            
             self.step();
         }
     }
