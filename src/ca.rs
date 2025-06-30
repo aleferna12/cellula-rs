@@ -172,8 +172,8 @@ impl CA {
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_entities {
-            energy -= self.adhesion_energy(entity_to, neigh);
-            energy += self.adhesion_energy(entity_from, neigh);
+            energy -= self.adhesion.adhesion_energy(entity_to, neigh);
+            energy += self.adhesion.adhesion_energy(entity_from, neigh);
         }
         energy
     }
@@ -181,10 +181,6 @@ impl CA {
     pub fn size_energy_diff(&self, area_increased: bool, area: u32, target_area: u32) -> f32 {
         let delta_area = if area_increased { 1. } else { -1. };
         2. * self.size_lambda * delta_area * (area as f32 - target_area as f32) + self.size_lambda
-    }
-
-    pub fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
-        self.adhesion.adhesion_energy(entity1, entity2)
     }
 }
 

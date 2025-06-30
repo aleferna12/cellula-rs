@@ -37,3 +37,7 @@ harness = false
 [[bench]]
 name = "model_bench"
 harness = false
+
+[[bench]]
+name = "ca_bench"
+harness = false
