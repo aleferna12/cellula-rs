@@ -29,14 +29,17 @@ cell-start-area = 64
 boltz-t = 16
 # Scaler constant for area deviation penalties.
 size-lambda = 1
+# Target cell area.
+cell-target-area = 64
+
+[cellular-automata.adhesion]
+type = "static-adhesion"
 # Adhesion energy at cell-cell interfaces.
 cell-energy = 16
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16
 # Adhesion energy at cell-solid interfaces.
 solid-energy = 16
-# Target cell area.
-cell-target-area = 64
 
 [io]
 # Output directory for files.

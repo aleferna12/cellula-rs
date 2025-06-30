@@ -28,9 +28,7 @@ impl Model {
              ca: CA::new(
                  parameters.cellular_automata.boltz_t,
                  parameters.cellular_automata.size_lambda,
-                 parameters.cellular_automata.cell_energy,
-                 parameters.cellular_automata.medium_energy,
-                 parameters.cellular_automata.solid_energy
+                 parameters.cellular_automata.adhesion.clone().into()
              ), 
              rng: if parameters.general.seed == 0 { 
                  Xoshiro256StarStar::from_os_rng()

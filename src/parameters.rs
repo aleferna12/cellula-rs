@@ -82,9 +82,18 @@ pub struct CellularAutomataParameters {
     pub cell_target_area: u32,
     pub boltz_t: f32,
     pub size_lambda: f32,
-    pub cell_energy: f32,
-    pub medium_energy: f32,
-    pub solid_energy: f32,
+    pub adhesion: AdhesionParameters
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "kebab-case")]
+pub enum AdhesionParameters {
+    #[serde(rename_all = "kebab-case")]
+    StaticAdhesion {
+        cell_energy: f32,
+        medium_energy: f32,
+        solid_energy: f32,
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

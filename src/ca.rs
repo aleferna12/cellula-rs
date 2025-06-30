@@ -7,7 +7,52 @@ use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
 use crate::neighbourhood::Neighbourhood;
+use crate::parameters::AdhesionParameters;
 use crate::pos::Pos2D;
+
+pub trait AdhesionManager {
+    fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32;
+}
+
+pub struct StaticAdhesion {
+    pub cell_energy: f32,
+    pub medium_energy: f32,
+    pub solid_energy: f32
+}
+
+impl AdhesionManager for StaticAdhesion {
+    fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
+        match (entity1, entity2) {
+            (SomeCell(c1), SomeCell(c2)) => {
+                if ptr::eq(c1, c2) {
+                    0.
+                } else {
+                    2. * self.cell_energy
+                }
+            }
+            (SomeCell(_), Medium) | (Medium, SomeCell(_)) => self.medium_energy,
+            (SomeCell(_), Solid) | (Solid, SomeCell(_)) => self.solid_energy,
+            _ => 0.
+        }
+    }
+}
+
+impl From<AdhesionParameters> for Box<dyn AdhesionManager> {
+    fn from(params: AdhesionParameters) -> Self {
+        match params {
+            AdhesionParameters::StaticAdhesion {
+                cell_energy,
+                medium_energy,
+                solid_energy,
+            } => Box::new(StaticAdhesion {
+                cell_energy,
+                medium_energy,
+                solid_energy,
+            }),
+            // Other variants...
+        }
+    }
+}
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -15,19 +60,15 @@ use crate::pos::Pos2D;
 pub struct CA {
     pub boltz_t: f32,
     pub size_lambda: f32,
-    pub cell_energy: f32,
-    pub med_energy: f32,
-    pub solid_energy: f32
+    pub adhesion: Box<dyn AdhesionManager>
 }
 
 impl CA {
-    pub fn new(boltz_t: f32, size_lambda: f32, cell_energy: f32, med_energy: f32, solid_energy: f32) -> CA {
+    pub fn new(boltz_t: f32, size_lambda: f32, adhesion: Box<dyn AdhesionManager>) -> CA {
         CA {
             boltz_t,
             size_lambda,
-            cell_energy,
-            med_energy,
-            solid_energy
+            adhesion
         }
     }
 
@@ -143,18 +184,7 @@ impl CA {
     }
 
     pub fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
-        match (entity1, entity2) {
-            (SomeCell(c1), SomeCell(c2)) => {
-                if ptr::eq(c1, c2) {
-                    0.
-                } else {
-                    2. * self.cell_energy
-                }
-            }
-            (SomeCell(_), Medium) | (Medium, SomeCell(_)) => self.med_energy,
-            (SomeCell(_), Solid) | (Solid, SomeCell(_)) => self.solid_energy,
-            _ => 0.
-        }
+        self.adhesion.adhesion_energy(entity1, entity2)
     }
 }
 
@@ -164,7 +194,15 @@ mod tests {
 
     #[test]
     fn test_delta_hamiltonian_size() {
-        let ca = CA::new(12., 1., 10., 20., 20.);
+        let ca = CA::new(
+            12., 
+            1., 
+            AdhesionParameters::StaticAdhesion{
+                cell_energy: 10.,
+                medium_energy: 20., 
+                solid_energy: 20. 
+            }.into()
+        );
         let cell1 = Cell::new(100, 100);
         let cell2 = Cell::new(100, 100);
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell1), SomeCell(&cell2));
