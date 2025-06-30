@@ -21,8 +21,8 @@ pub struct CA {
 }
 
 impl CA {
-    pub fn new(boltz_t: f32, size_lambda: f32, cell_energy: f32, med_energy: f32, solid_energy: f32) -> CA {
-        CA {
+    pub fn new(boltz_t: f32, size_lambda: f32, cell_energy: f32, med_energy: f32, solid_energy: f32) -> Self {
+        Self {
             boltz_t,
             size_lambda,
             cell_energy,
