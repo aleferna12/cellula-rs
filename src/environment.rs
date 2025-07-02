@@ -9,7 +9,7 @@ use crate::pos::{Pos2D, Rect};
 
 pub struct Environment {
     pub cell_lattice: Lattice<Sigma, UnsafePeriodicBoundary<isize>>,
-    cell_vec: Vec<Cell>,
+    pub(crate) cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
     pub cell_target_area: u32,
@@ -75,8 +75,18 @@ impl Environment {
     }
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&Cell> {
-        let mut cell_area = 0u32;
         let sigma = self.n_cells() as Sigma + LatticeEntity::first_sigma();
+        let center = self.cell_lattice.bound.valid_pos(Pos2D::new(
+            (rect.min.x + rect.max.x) as isize / 2,
+            (rect.min.y + rect.max.y) as isize / 2
+        ));
+        
+        let mut cell = Cell::new(
+            sigma,
+            0,
+            self.cell_target_area,
+            Pos2D::new(center?.x as f32, center?.y as f32)
+        );
         for pos in rect.iter_positions() {
             let trans_pos = self.cell_lattice.bound.valid_pos(pos.into());
             if trans_pos.is_none() {
@@ -87,24 +97,14 @@ impl Environment {
                 continue
             }
             self.cell_lattice[valid_pos] = sigma;
-            let valid_neighs = self.cell_lattice
-                .bound
-                .valid_positions(self.neighbourhood.neighbours(pos.into()))
-                .map(|neigh| neigh.into());
-            for neigh in valid_neighs {
-                let edge = Edge::new(valid_pos, neigh);
-                if self.cell_lattice[neigh] != sigma {
-                    self.edge_book.insert(edge);
-                } else { 
-                    self.edge_book.remove(&edge);
-                }
-            }
-            cell_area += 1;
+            self.update_edges(valid_pos);
+            cell.add_position(valid_pos);
+            cell.area += 1;
         }
-        if cell_area == 0 { 
+        if cell.area == 0 { 
             return None;
         }
-        self.cell_vec.push(Cell::new(sigma, cell_area, self.cell_target_area));
+        self.cell_vec.push(cell);
         Some(self.get_entity(sigma).unwrap_cell())
     }
     

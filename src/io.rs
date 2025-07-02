@@ -33,11 +33,17 @@ pub fn simulation_image(env: &Environment) -> RgbImage {
         .iter_values()
         .flat_map(sigma_to_rgb)
         .collect();
-    RgbImage::from_vec(
+    
+    let mut image = RgbImage::from_vec(
         env.width() as u32,
         env.height() as u32,
         sigmas
-    ).unwrap()
+    ).unwrap();
+    
+    for cell in &env.cell_vec {
+        image.put_pixel(cell.center.x as u32, cell.center.y as u32, [0, 255, 0].into());
+    }
+    image
 }
 
 /// Converts a sigma into a unique color.

@@ -75,10 +75,10 @@ impl<A: AdhesionSystem> CA<A> {
         // Executes the copy
         env.cell_lattice[pos_to] = sigma_from;
         if let SomeCell(cell) = env.get_entity_mut(sigma_from) {
-            cell.area += 1;
+            cell.add_position(pos_to);
         }
         if let SomeCell(cell) = env.get_entity_mut(sigma_to) {
-            cell.area -= 1;
+            cell.remove_position(pos_to);
         }
         let (removed, added) = env.update_edges(pos_to);
         (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
@@ -158,8 +158,8 @@ mod tests {
             boltz_t: 16.,
             size_lambda: 1.
         }.into();
-        let cell1 = Cell::new(1, 100, 100);
-        let cell2 = Cell::new(2, 100, 100);
+        let cell1 = Cell::new(1, 100, 100, (0., 0.).into());
+        let cell2 = Cell::new(2, 100, 100, (0., 0.).into());
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell1), SomeCell(&cell2));
         assert_eq!(dh, 2.);
     }

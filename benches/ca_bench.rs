@@ -8,7 +8,7 @@ use evo_cpm::environment::LatticeEntity;
 fn bench_ca(c: &mut Criterion) {
     // These don't seem to be very reliable
     let mut group = c.benchmark_group("adhesion");
-    let cell = Cell::new(1, 10, 10);
+    let cell = Cell::new(1, 10, 10, (0., 0.).into());
     let some_cell = LatticeEntity::SomeCell(&cell);
     
     let unboxed_adh = StaticAdhesion { cell_energy: 16., medium_energy: 16., solid_energy: 16. };
