@@ -1,36 +1,45 @@
+use std::borrow::Borrow;
 use crate::boundary::{Boundary, UnsafePeriodicBoundary};
-use crate::cell::Cell;
+use crate::cell::{Cell, Sigma};
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::Lattice;
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::pos::{Pos2D, Rect};
 
-pub type Sigma = i32;
-
 pub struct Environment {
     pub cell_lattice: Lattice<Sigma, UnsafePeriodicBoundary<isize>>,
     cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
-    pub neighbourhood: MooreNeighbourhood
+    pub neighbourhood: MooreNeighbourhood,
+    pub cell_target_area: u32,
+    pub cell_growth_period: u32,
+    pub cell_div_area: u32
 }
 
 impl Environment {
-    pub fn new(width: usize, height: usize, neigh_r: u8, enclose: bool) -> Self {
+    pub fn new(
+        width: usize, 
+        height: usize, 
+        neigh_r: u8,
+        cell_target_area: u32,
+        cell_growth_period: u32,
+        cell_div_area: u32
+    ) -> Self {
         let rect = Rect::new(
             (0, 0).into(),
             (width as isize, height as isize).into()
         );
-        let mut env = Self {
+        
+         Self {
             cell_lattice: Lattice::new(UnsafePeriodicBoundary::new(rect)),
             cell_vec: vec![],
             edge_book: EdgeBook::new(),
-            neighbourhood: MooreNeighbourhood::new(neigh_r)
-        };
-        if enclose {
-            env.make_border();
+            neighbourhood: MooreNeighbourhood::new(neigh_r),
+             cell_target_area,
+             cell_div_area,
+             cell_growth_period
         }
-        env
     }
 
     pub fn width(&self) -> usize {
@@ -42,20 +51,20 @@ impl Environment {
     }
 
     pub fn get_entity(&self, sigma: Sigma) -> LatticeEntity<&Cell> {
-        if sigma == Medium.discriminant() {
+        if sigma == Medium::<&Cell>.sigma() {
             return Medium;
         }
-        if sigma == Solid.discriminant() {
+        if sigma == Solid::<&Cell>.sigma() {
             return Solid;
         }
         SomeCell(&self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
     }
 
     pub fn get_entity_mut(&mut self, sigma: Sigma) -> LatticeEntity<&mut Cell> {
-        if sigma == Medium.discriminant() {
+        if sigma == Medium::<&Cell>.sigma() {
             return Medium;
         }
-        if sigma == Solid.discriminant() {
+        if sigma == Solid::<&Cell>.sigma() {
             return Solid;
         }
         SomeCell(&mut self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
@@ -65,7 +74,7 @@ impl Environment {
         self.cell_vec.len()
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, target_area: u32) -> Option<&Cell> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&Cell> {
         let mut cell_area = 0u32;
         let sigma = self.n_cells() as Sigma + LatticeEntity::first_sigma();
         for pos in rect.iter_positions() {
@@ -74,7 +83,7 @@ impl Environment {
                 continue;
             }
             let valid_pos: Pos2D<usize> = trans_pos.unwrap().into();
-            if self.cell_lattice[valid_pos] != Medium.discriminant() {
+            if self.cell_lattice[valid_pos] != Medium::<&Cell>.sigma() {
                 continue
             }
             self.cell_lattice[valid_pos] = sigma;
@@ -95,17 +104,17 @@ impl Environment {
         if cell_area == 0 { 
             return None;
         }
-        self.cell_vec.push(Cell::new(cell_area, target_area));
+        self.cell_vec.push(Cell::new(sigma, cell_area, self.cell_target_area));
         Some(self.get_entity(sigma).unwrap_cell())
     }
     
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
-            if self.cell_lattice[pos] != Medium.discriminant() {
+            if self.cell_lattice[pos] != Medium::<&Cell>.sigma() {
                 continue
             }
-            self.cell_lattice[pos] = Solid.discriminant();
+            self.cell_lattice[pos] = Solid::<&Cell>.sigma();
             area += 1;
         }
         area
@@ -149,13 +158,32 @@ impl Environment {
                 // Also representing the inverse edge
                 removed += 2;
             // Since we filtered Medium, Medium before, this should only be 0 when one sigma is 1 and the other -1
-            // Ideally we should test for the cases more explicitly, but I couldnt figure out an easy way to do that
+            // Ideally we should test for the cases more explicitly, but I couldn't figure out an easy way to do that
             } else if sigma + sigma_neigh >= 0 && self.edge_book.insert(edge) {
                 // Also representing the inverse edge
                 added += 2;
             }
         }
         (removed, added)
+    }
+    
+    pub fn update_cells(&mut self) {
+        for cell in &mut self.cell_vec {
+            if cell.area < self.cell_div_area {
+                if cell.growth_timer >=  self.cell_growth_period {
+                    cell.target_area += 1;
+                    cell.growth_timer = 0;
+                } else { 
+                    cell.growth_timer += 1;
+                }
+            } else { // Divide
+                cell.target_area = self.cell_target_area;
+            }
+        }
+    }
+    
+    pub fn cell_center_of_mass(&self, cell: &Cell) {
+        
     }
 }
 
@@ -177,22 +205,10 @@ impl<C> LatticeEntity<C> {
     }
 }
 
-impl LatticeEntity<()> {
-    pub fn first_sigma() -> Sigma {
-        SomeCell(()).discriminant()
-    }
-
-    // There is another way to obtain these according to the docs:
-    // https://doc.rust-lang.org/core/mem/fn.discriminant.html
-    // I've benchmarked and it doesnt make a difference
-    // If in the future sigma becomes a cell property, we can implement `LatticeEntity<&Cell>::as_sigma()` and replace
-    // most references to this function with that.
-    /// This returns a unique `i16` discriminant for each possible type of `LatticeEntity`.
-    ///
-    /// These values are used as sigmas in the cell lattice, except for the discriminant for `SomeCell`.
-    pub fn discriminant(&self) -> Sigma {
+impl<C: Borrow<Cell>> LatticeEntity<C> {
+    pub fn sigma(&self) -> Sigma {
         match self {
-            SomeCell(_) => 1,
+            SomeCell(cell) => cell.borrow().sigma,
             Medium => 0,
             Solid => -1
         }
@@ -208,13 +224,19 @@ impl<C: std::fmt::Debug> LatticeEntity<C> {
     }
 }
 
+impl LatticeEntity<()> {
+    pub fn first_sigma() -> Sigma {
+        1
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
 
     // Setup functions
     pub fn empty_env() -> Environment {
-        Environment::new(100, 100, 1, false)
+        Environment::new(100, 100, 1, 0, 0, 0)
     }
     
     fn env_with_cell() -> Environment {
@@ -223,8 +245,7 @@ pub mod tests {
             Rect::new(
                 Pos2D::new(10, 10),
                 Pos2D::new(20, 20)
-            ),
-            100
+            )
         );
         env
     }
@@ -237,8 +258,7 @@ pub mod tests {
             Rect::new(
                 Pos2D::new(15, 15),
                 Pos2D::new(25, 25)
-            ),
-            10
+            )
         );
         assert_eq!(env.get_entity(1).unwrap_cell().area, 100);
         assert_eq!(env.get_entity(2).unwrap_cell().area, 75);
@@ -246,8 +266,8 @@ pub mod tests {
 
     #[test]
     fn test_lattice_entity_discriminant() {
-        assert_eq!(1, SomeCell(()).discriminant());
-        assert_eq!(0, Medium.discriminant());
-        assert_eq!(-1, Solid.discriminant());
+        assert_eq!(1, LatticeEntity::first_sigma());
+        assert_eq!(0, Medium::<&Cell>.sigma());
+        assert_eq!(-1, Solid::<&Cell>.sigma());
     }
 }

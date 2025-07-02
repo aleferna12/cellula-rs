@@ -72,28 +72,28 @@ pub struct EnvironmentParameters {
     #[serde(default = "param_defaults::enclose")]
     pub enclose: bool,
     pub n_cells: u32,
-    pub cell_start_area: u32,
     pub neigh_r: u8,
+    pub update_cells_period: u32,
+    pub cell_start_area: u32,
+    pub cell_target_area: u32,
+    pub cell_div_area: u32,
+    pub cell_growth_period: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct CellularAutomataParameters {
-    pub cell_target_area: u32,
     pub boltz_t: f32,
     pub size_lambda: f32,
-    pub adhesion: AdhesionParameters
+    pub adhesion: StaticAdhesionParameters
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "kebab-case")]
-pub enum AdhesionParameters {
-    #[serde(rename_all = "kebab-case")]
-    StaticAdhesion {
-        cell_energy: f32,
-        medium_energy: f32,
-        solid_energy: f32,
-    }
+pub struct StaticAdhesionParameters {
+    pub cell_energy: f32,
+    pub medium_energy: f32,
+    pub solid_energy: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

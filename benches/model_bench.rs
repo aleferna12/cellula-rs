@@ -51,7 +51,7 @@ fn bench_param_files(
                         // Ensures that a single image will be saved, 
                         // either after the setup run or the whole simulation
                         params.io.image_period = max(time_steps, 100);
-                        let mut model = Model::new(params);
+                        let mut model = Model::from(params);
                         model.setup().unwrap();
                         model.run(100);
                         model

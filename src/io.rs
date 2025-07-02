@@ -3,7 +3,8 @@ use std::path::Path;
 use image::{EncodableLayout, RgbImage};
 use std::io;
 use minifb::{Window, WindowOptions};
-use crate::environment::{Environment, LatticeEntity, Sigma};
+use crate::cell::{Cell, Sigma};
+use crate::environment::{Environment, LatticeEntity};
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -43,9 +44,9 @@ pub fn simulation_image(env: &Environment) -> RgbImage {
 ///
 /// This method guarantees 5232 unique colors, starting from this sigma the colors will repeat.
 fn sigma_to_rgb(sigma: Sigma) -> [u8; 3] {
-    if sigma == LatticeEntity::Medium.discriminant() {
+    if sigma == LatticeEntity::Medium::<&Cell>.sigma() {
         return [255, 255, 255];
-    } else if sigma == LatticeEntity::Solid.discriminant() {
+    } else if sigma == LatticeEntity::Solid::<&Cell>.sigma() {
         return [0, 0, 0]
     }
 

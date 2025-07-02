@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let parameters = Parameters::from_file(&cli.config)?;
     parameters.check_conflicts();
     
-    let mut model = Model::new(parameters);
+    let mut model = Model::from(parameters);
     model.setup()?;
     model.run(model.parameters().general.time_steps);
     Ok(())

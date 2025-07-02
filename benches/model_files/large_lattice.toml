@@ -7,7 +7,7 @@ seed = 1241254152
 
 [io]
 # Output directory for files.
-outdir = "examples/large_lattice"
+outdir = "benches/model_outputs/large_lattice"
 # Flag used to delete contents of `outdir` if it exists.
 replace-outdir = true
 # Period (in MCS) with which to save an image of the simulation.
@@ -26,6 +26,11 @@ n-cells = 300
 # Cell parameters
 # Starting cell area.
 cell-start-area = 50
+# Target cell area.
+cell-target-area = 64
+cell-div-area = 128
+cell-growth-period = 32
+update-cells-period = 32
 # Radius of the neighbourhood.
 neigh-r = 1
 
@@ -35,8 +40,6 @@ neigh-r = 1
 boltz-t = 16
 # Scaler constant for area deviation penalties.
 size-lambda = 1
-# Target cell area.
-cell-target-area = 64
 
 [cellular-automata.adhesion]
 type = "static-adhesion"

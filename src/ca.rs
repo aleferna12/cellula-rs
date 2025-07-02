@@ -1,77 +1,25 @@
 use std::f32::consts::E;
-use std::ptr;
 use rand::Rng;
+pub use crate::adhesion::AdhesionSystem;
 use crate::boundary::Boundary;
 use crate::cell::Cell;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
 use crate::neighbourhood::Neighbourhood;
-use crate::parameters::AdhesionParameters;
+use crate::parameters::{CellularAutomataParameters, StaticAdhesionParameters};
 use crate::pos::Pos2D;
-
-pub trait AdhesionManager {
-    fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32;
-}
-
-pub struct StaticAdhesion {
-    pub cell_energy: f32,
-    pub medium_energy: f32,
-    pub solid_energy: f32
-}
-
-impl AdhesionManager for StaticAdhesion {
-    fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
-        match (entity1, entity2) {
-            (SomeCell(c1), SomeCell(c2)) => {
-                if ptr::eq(c1, c2) {
-                    0.
-                } else {
-                    2. * self.cell_energy
-                }
-            }
-            (SomeCell(_), Medium) | (Medium, SomeCell(_)) => self.medium_energy,
-            (SomeCell(_), Solid) | (Solid, SomeCell(_)) => self.solid_energy,
-            _ => 0.
-        }
-    }
-}
-
-impl From<AdhesionParameters> for Box<dyn AdhesionManager> {
-    fn from(params: AdhesionParameters) -> Self {
-        match params {
-            AdhesionParameters::StaticAdhesion {
-                cell_energy,
-                medium_energy,
-                solid_energy,
-            } => Box::new(StaticAdhesion {
-                cell_energy,
-                medium_energy,
-                solid_energy,
-            }),
-            // Other variants...
-        }
-    }
-}
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
-pub struct CA {
+pub struct CA<A> {
     pub boltz_t: f32,
     pub size_lambda: f32,
-    pub adhesion: Box<dyn AdhesionManager>
+    pub adhesion: A
 }
 
-impl CA {
-    pub fn new(boltz_t: f32, size_lambda: f32, adhesion: Box<dyn AdhesionManager>) -> CA {
-        CA {
-            boltz_t,
-            size_lambda,
-            adhesion
-        }
-    }
-
+impl<A: AdhesionSystem> CA<A> {
     pub fn step(&self, env: &mut Environment, rng: &mut impl Rng) {
         let mut to_visit = env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
         while 0. < to_visit {
@@ -102,13 +50,13 @@ impl CA {
         pos_to: Pos2D<usize>
     ) -> f32 {
         let sigma_to = env.cell_lattice[pos_to];
-        if sigma_to == Solid.discriminant() {
+        if sigma_to == Solid::<&Cell>.sigma() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let sigma_from = {
             let sigma = env.cell_lattice[pos_from];
-            if sigma == Solid.discriminant() { Medium.discriminant() } else { sigma }
+            if sigma == Solid::<&Cell>.sigma() { Medium::<&Cell>.sigma() } else { sigma }
         };
 
         let entity_from = env.get_entity(sigma_from);
@@ -184,23 +132,34 @@ impl CA {
     }
 }
 
+impl<A: AdhesionSystem + From<StaticAdhesionParameters>> From<CellularAutomataParameters> for CA<A> {
+    fn from(params: CellularAutomataParameters) -> Self {
+        Self {
+            boltz_t: params.boltz_t,
+            size_lambda: params.size_lambda,
+            adhesion: params.adhesion.clone().into()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::adhesion::StaticAdhesion;
     use super::*;
 
     #[test]
     fn test_delta_hamiltonian_size() {
-        let ca = CA::new(
-            12., 
-            1., 
-            AdhesionParameters::StaticAdhesion{
+        let ca: CA<StaticAdhesion> = CellularAutomataParameters {
+            adhesion: StaticAdhesionParameters {
                 cell_energy: 10.,
-                medium_energy: 20., 
-                solid_energy: 20. 
-            }.into()
-        );
-        let cell1 = Cell::new(100, 100);
-        let cell2 = Cell::new(100, 100);
+                medium_energy: 20.,
+                solid_energy: 20.
+            },
+            boltz_t: 16.,
+            size_lambda: 1.
+        }.into();
+        let cell1 = Cell::new(1, 100, 100);
+        let cell2 = Cell::new(2, 100, 100);
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell1), SomeCell(&cell2));
         assert_eq!(dh, 2.);
     }

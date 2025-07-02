@@ -17,11 +17,18 @@ height = 128
 enclose = false
 # Radius of the neighbourhood.
 neigh-r = 1
+# Period with which to update cell parameters (area + genome)
+update-cells-period = 32
 # Number of starting cells in the environment.
 n-cells = 64
-# Cell parameters
 # Starting cell area.
 cell-start-area = 64
+# Target cell area.
+cell-target-area = 64
+# Cell area before division.
+cell-div-area = 128
+# Period with which the cell grows 1 area unit during division.
+cell-growth-period = 32
 
 [cellular-automata]
 # Boltzmann temperature.
@@ -29,11 +36,8 @@ cell-start-area = 64
 boltz-t = 16
 # Scaler constant for area deviation penalties.
 size-lambda = 1
-# Target cell area.
-cell-target-area = 64
 
 [cellular-automata.adhesion]
-type = "static-adhesion"
 # Adhesion energy at cell-cell interfaces.
 cell-energy = 16
 # Adhesion energy at cell-medium interfaces.
