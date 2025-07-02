@@ -25,7 +25,7 @@ enclose = false
 n-cells = 300
 # Cell parameters
 # Starting cell area.
-cell-start-area = 50
+cell-start-area = 64
 # Target cell area.
 cell-target-area = 64
 cell-div-area = 128
