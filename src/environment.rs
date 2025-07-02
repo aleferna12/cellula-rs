@@ -98,8 +98,7 @@ impl Environment {
             }
             self.cell_lattice[valid_pos] = sigma;
             self.update_edges(valid_pos);
-            cell.add_position(valid_pos);
-            cell.area += 1;
+            cell.add_position(pos);
         }
         if cell.area == 0 { 
             return None;

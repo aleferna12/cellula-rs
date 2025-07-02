@@ -3,8 +3,10 @@ use std::path::Path;
 use image::{EncodableLayout, RgbImage};
 use std::io;
 use minifb::{Window, WindowOptions};
+use crate::boundary::Boundary;
 use crate::cell::{Cell, Sigma};
 use crate::environment::{Environment, LatticeEntity};
+use crate::pos::Pos2D;
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -41,7 +43,11 @@ pub fn simulation_image(env: &Environment) -> RgbImage {
     ).unwrap();
     
     for cell in &env.cell_vec {
-        image.put_pixel(cell.center.x as u32, cell.center.y as u32, [0, 255, 0].into());
+        let center = env.cell_lattice.bound.valid_pos(Pos2D::new(
+            cell.center.x as isize,
+            cell.center.y as isize,
+        )).unwrap();
+        image.put_pixel(center.x as u32, center.y as u32, [0, 255, 0].into());
     }
     image
 }
