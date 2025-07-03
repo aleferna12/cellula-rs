@@ -58,7 +58,7 @@ impl Environment {
         if sigma == Solid::<&Cell>.sigma() {
             return Solid;
         }
-        SomeCell(&self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
+        SomeCell(&self.cell_vec[sigma as usize - LatticeEntity::first_cell_sigma() as usize])
     }
 
     pub fn get_entity_mut(&mut self, sigma: Sigma) -> LatticeEntity<&mut Cell> {
@@ -68,7 +68,7 @@ impl Environment {
         if sigma == Solid::<&Cell>.sigma() {
             return Solid;
         }
-        SomeCell(&mut self.cell_vec[sigma as usize - LatticeEntity::first_sigma() as usize])
+        SomeCell(&mut self.cell_vec[sigma as usize - LatticeEntity::first_cell_sigma() as usize])
     }
     
     pub fn n_cells(&self) -> usize {
@@ -76,7 +76,7 @@ impl Environment {
     }
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&Cell> {
-        let sigma = self.n_cells() as Sigma + LatticeEntity::first_sigma();
+        let sigma = self.n_cells() as Sigma + LatticeEntity::first_cell_sigma();
         let center = self.cell_lattice.bound.valid_pos(Pos2D::new(
             rect.min.x as isize,
             rect.min.y as isize
@@ -157,9 +157,12 @@ impl Environment {
                 self.edge_book.remove(&edge);
                 // Also representing the inverse edge
                 removed += 2;
-            // Since we filtered Medium, Medium before, this should only be 0 when one sigma is 1 and the other -1
-            // Ideally we should test for the cases more explicitly, but I couldn't figure out an easy way to do that
-            } else if sigma + sigma_neigh >= 0 && self.edge_book.insert(edge) {
+                continue;
+            }
+            if sigma < LatticeEntity::first_cell_sigma() &&  sigma_neigh < LatticeEntity::first_cell_sigma() {
+                continue;
+            }
+            if self.edge_book.insert(edge) {
                 // Also representing the inverse edge
                 added += 2;
             }
@@ -206,7 +209,7 @@ impl<C: Borrow<Cell>> LatticeEntity<C> {
         match self {
             SomeCell(cell) => cell.borrow().sigma,
             Medium => 0,
-            Solid => -1
+            Solid => 1
         }
     }
 }
@@ -221,8 +224,11 @@ impl<C: std::fmt::Debug> LatticeEntity<C> {
 }
 
 impl LatticeEntity<()> {
-    pub fn first_sigma() -> Sigma {
-        1
+    /// Returns the first sigma that corresponds to a cell.
+    /// 
+    /// This is required to be larger than `Medium::sigma()` and `Solid::sigma()`.
+    pub fn first_cell_sigma() -> Sigma {
+        2
     }
 }
 
@@ -256,14 +262,13 @@ pub mod tests {
                 Pos2D::new(25, 25)
             )
         );
-        assert_eq!(env.get_entity(1).unwrap_cell().area, 100);
-        assert_eq!(env.get_entity(2).unwrap_cell().area, 75);
+        assert_eq!(env.get_entity(LatticeEntity::first_cell_sigma()).unwrap_cell().area, 100);
+        assert_eq!(env.get_entity(LatticeEntity::first_cell_sigma() + 1).unwrap_cell().area, 75);
     }
 
     #[test]
-    fn test_lattice_entity_discriminant() {
-        assert_eq!(1, LatticeEntity::first_sigma());
-        assert_eq!(0, Medium::<&Cell>.sigma());
-        assert_eq!(-1, Solid::<&Cell>.sigma());
+    fn test_lattice_entity_sigma() {
+        assert!(LatticeEntity::first_cell_sigma() > Medium::<&Cell>.sigma());
+        assert!(LatticeEntity::first_cell_sigma() > Solid::<&Cell>.sigma());
     }
 }

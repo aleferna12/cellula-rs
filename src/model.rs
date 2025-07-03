@@ -15,8 +15,9 @@ use crate::pos::Rect;
 /// 
 /// `FixedBoundary` is approx. 16% faster than `UnsafePeriodicBoundary` (in total run time).
 pub type LatticeBoundaryType = UnsafePeriodicBoundary<isize>;
+
 /// Type of cell's sigmas (may also require changing the sigma function of `LatticeEntity`).
-pub type Sigma = i32;
+pub type Sigma = u32;
 
 pub struct Model {
     pub env: Environment,
