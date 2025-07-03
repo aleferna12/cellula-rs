@@ -1,10 +1,10 @@
 use crate::boundary::LatticeBoundary;
-use crate::model::Sigma;
+use crate::model::Spin;
 use crate::pos::{AngularProjection, Pos2D};
 
 #[derive(Debug)]
 pub struct Cell {
-    pub sigma: Sigma,
+    pub spin: Spin,
     pub area: u32,
     pub target_area: u32,
     pub growth_timer: u32,
@@ -12,14 +12,14 @@ pub struct Cell {
 }
 
 impl Cell {
-    pub fn new(sigma: Sigma, area: u32, target_area: u32, mut center: CellCenter) -> Self {
+    pub fn new(spin: Spin, area: u32, target_area: u32, mut center: CellCenter) -> Self {
         // Weights projection with current cell area
         center.projection.x_sin *= area as f32;
         center.projection.x_cos *= area as f32;
         center.projection.y_sin *= area as f32;
         center.projection.y_cos *= area as f32;
         Self {
-            sigma,
+            spin,
             area,
             target_area,
             center,

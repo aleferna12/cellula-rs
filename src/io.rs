@@ -6,7 +6,7 @@ use minifb::{Window, WindowOptions};
 use crate::boundary::Boundary;
 use crate::cell::Cell;
 use crate::environment::{Environment, LatticeEntity};
-use crate::model::Sigma;
+use crate::model::Spin;
 use crate::pos::Pos2D;
 
 pub(crate) static IMAGES_PATH: &str = "images";
@@ -31,16 +31,16 @@ pub fn create_directories(outpath: impl AsRef<Path>, replace_outdir: bool) -> io
 }
 
 pub fn simulation_image(env: &Environment) -> RgbImage {
-    let sigmas: Vec<_> = env
+    let spins: Vec<_> = env
         .cell_lattice
         .iter_values()
-        .flat_map(sigma_to_rgb)
+        .flat_map(spin_to_rgb)
         .collect();
     
     let mut image = RgbImage::from_vec(
         env.width() as u32,
         env.height() as u32,
-        sigmas
+        spins
     ).unwrap();
     
     for cell in &env.cell_vec {
@@ -55,18 +55,18 @@ pub fn simulation_image(env: &Environment) -> RgbImage {
     image
 }
 
-/// Converts a sigma into a unique color.
+/// Converts a spin into a unique color.
 ///
-/// This method guarantees 5232 unique colors, starting from this sigma the colors will repeat.
-fn sigma_to_rgb(sigma: Sigma) -> [u8; 3] {
-    if sigma == LatticeEntity::Medium::<&Cell>.sigma() {
+/// This method guarantees 5232 unique colors, starting from this spin the colors will repeat.
+fn spin_to_rgb(spin: Spin) -> [u8; 3] {
+    if spin == LatticeEntity::Medium::<&Cell>.spin() {
         return [255, 255, 255];
-    } else if sigma == LatticeEntity::Solid::<&Cell>.sigma() {
+    } else if spin == LatticeEntity::Solid::<&Cell>.spin() {
         return [0, 0, 0]
     }
 
     let mut hasher = DefaultHasher::new();
-    sigma.hash(&mut hasher);
+    spin.hash(&mut hasher);
     let hashed = hasher.finish();
     [
         (hashed & 0xFF).try_into().unwrap(),
@@ -118,11 +118,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_sigma_to_rgb() {
+    fn test_spin_to_rgb() {
         let mut tested = HashSet::<[u8; 3]>::default();
         // We can guarantee 5232 unique colors with this method, after that colors repeat
-        for i in 0..5232 as Sigma {
-            let rgb = sigma_to_rgb(i);
+        for i in 0..5232 as Spin {
+            let rgb = spin_to_rgb(i);
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);
         }

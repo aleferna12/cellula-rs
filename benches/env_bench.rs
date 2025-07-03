@@ -62,8 +62,8 @@ fn bench_env(c: &mut Criterion) {
     });
 
     c.bench_function("lattice_entity_discriminant", |b| b.iter(|| {
-        Medium::<&Cell>.sigma();
-        Solid::<&Cell>.sigma();
+        Medium::<&Cell>.spin();
+        Solid::<&Cell>.spin();
     }));
 }
 

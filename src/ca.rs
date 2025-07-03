@@ -50,18 +50,18 @@ impl<A: AdhesionSystem> CA<A> {
         pos_from: Pos2D<usize>,
         pos_to: Pos2D<usize>
     ) -> f32 {
-        let sigma_to = env.cell_lattice[pos_to];
-        if sigma_to == Solid::<&Cell>.sigma() {
+        let spin_to = env.cell_lattice[pos_to];
+        if spin_to == Solid::<&Cell>.spin() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
-        let sigma_from = {
-            let sigma = env.cell_lattice[pos_from];
-            if sigma == Solid::<&Cell>.sigma() { Medium::<&Cell>.sigma() } else { sigma }
+        let spin_from = {
+            let spin = env.cell_lattice[pos_from];
+            if spin == Solid::<&Cell>.spin() { Medium::<&Cell>.spin() } else { spin }
         };
 
-        let entity_from = env.get_entity(sigma_from);
-        let entity_to = env.get_entity(sigma_to);
+        let entity_from = env.get_entity(spin_from);
+        let entity_to = env.get_entity(spin_to);
         let neigh_entities = env.cell_lattice.bound.valid_positions(
             env.neighbourhood.neighbours(pos_to.into())
         ).map(|neigh| {
@@ -75,11 +75,11 @@ impl<A: AdhesionSystem> CA<A> {
         
         // Executes the copy
         let (width, height) = (env.width(), env.height());
-        env.cell_lattice[pos_to] = sigma_from;
-        if let SomeCell(cell) = env.get_entity_mut(sigma_from) {
+        env.cell_lattice[pos_to] = spin_from;
+        if let SomeCell(cell) = env.get_entity_mut(spin_from) {
             cell.shift_position::<LatticeBoundaryType>(pos_to, width, height, true);
         }
-        if let SomeCell(cell) = env.get_entity_mut(sigma_to) {
+        if let SomeCell(cell) = env.get_entity_mut(spin_to) {
             cell.shift_position::<LatticeBoundaryType>(pos_to, width, height, false);
         }
         let (removed, added) = env.update_edges(pos_to);

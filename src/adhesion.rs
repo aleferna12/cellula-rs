@@ -3,7 +3,7 @@ use std::ptr;
 use crate::cell::Cell;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::*;
-use crate::model::Sigma;
+use crate::model::Spin;
 use crate::parameters::StaticAdhesionParameters;
 
 pub trait AdhesionSystem {
@@ -12,14 +12,14 @@ pub trait AdhesionSystem {
 
 pub struct ClonalAdhesion {
     pub static_adhesion: StaticAdhesion,
-    // TODO!: should this be stored as an array in each cell (replacing sigma as a cell property)? Benchmark
+    // TODO!: should this be stored as an array in each cell (replacing spin as a cell property)? Benchmark
     //  the current implementation costs almost 25% of performance compared to StaticAdhesion
-    //  best solution is probably a big table in the heap that we can access with sigmas
-    pub clone_pairs: HashSet<(Sigma, Sigma)>
+    //  best solution is probably a big table in the heap that we can access with spins
+    pub clone_pairs: HashSet<(Spin, Spin)>
 }
 
 impl ClonalAdhesion {
-    fn canonicalize(pair: (Sigma, Sigma)) -> (Sigma, Sigma) {
+    fn canonicalize(pair: (Spin, Spin)) -> (Spin, Spin) {
         if pair.0 > pair.1 {
             return (pair.1, pair.0);
         }
@@ -30,7 +30,7 @@ impl ClonalAdhesion {
 impl AdhesionSystem for ClonalAdhesion {
     fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
         if let (SomeCell(c1), SomeCell(c2)) = (entity1, entity2) {
-            let canonical = Self::canonicalize((c1.sigma, c2.sigma));
+            let canonical = Self::canonicalize((c1.spin, c2.spin));
             if self.clone_pairs.contains(&canonical) {
                 return self.static_adhesion.cell_energy;
             }

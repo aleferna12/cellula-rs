@@ -4,12 +4,12 @@ use crate::cell::{Cell, CellCenter};
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::Lattice;
-use crate::model::{LatticeBoundaryType, Sigma};
+use crate::model::{LatticeBoundaryType, Spin};
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::pos::{Pos2D, Rect};
 
 pub struct Environment {
-    pub cell_lattice: Lattice<Sigma, LatticeBoundaryType>,
+    pub cell_lattice: Lattice<Spin, LatticeBoundaryType>,
     pub(crate) cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
@@ -51,24 +51,24 @@ impl Environment {
         self.cell_lattice.height()
     }
 
-    pub fn get_entity(&self, sigma: Sigma) -> LatticeEntity<&Cell> {
-        if sigma == Medium::<&Cell>.sigma() {
+    pub fn get_entity(&self, spin: Spin) -> LatticeEntity<&Cell> {
+        if spin == Medium::<&Cell>.spin() {
             return Medium;
         }
-        if sigma == Solid::<&Cell>.sigma() {
+        if spin == Solid::<&Cell>.spin() {
             return Solid;
         }
-        SomeCell(&self.cell_vec[sigma as usize - LatticeEntity::first_cell_sigma() as usize])
+        SomeCell(&self.cell_vec[spin as usize - LatticeEntity::first_cell_spin() as usize])
     }
 
-    pub fn get_entity_mut(&mut self, sigma: Sigma) -> LatticeEntity<&mut Cell> {
-        if sigma == Medium::<&Cell>.sigma() {
+    pub fn get_entity_mut(&mut self, spin: Spin) -> LatticeEntity<&mut Cell> {
+        if spin == Medium::<&Cell>.spin() {
             return Medium;
         }
-        if sigma == Solid::<&Cell>.sigma() {
+        if spin == Solid::<&Cell>.spin() {
             return Solid;
         }
-        SomeCell(&mut self.cell_vec[sigma as usize - LatticeEntity::first_cell_sigma() as usize])
+        SomeCell(&mut self.cell_vec[spin as usize - LatticeEntity::first_cell_spin() as usize])
     }
     
     pub fn n_cells(&self) -> usize {
@@ -76,13 +76,13 @@ impl Environment {
     }
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&Cell> {
-        let sigma = self.n_cells() as Sigma + LatticeEntity::first_cell_sigma();
+        let spin = self.n_cells() as Spin + LatticeEntity::first_cell_spin();
         let center = self.cell_lattice.bound.valid_pos(Pos2D::new(
             rect.min.x as isize,
             rect.min.y as isize
         ));
         let mut cell = Cell::new(
-            sigma,
+            spin,
             0,
             self.cell_target_area,
             CellCenter::new(Pos2D::new(center?.x as f32, center?.y as f32), self.width(), self.height())
@@ -94,10 +94,10 @@ impl Environment {
                 continue;
             }
             let valid_pos: Pos2D<usize> = trans_pos.unwrap().into();
-            if self.cell_lattice[valid_pos] != Medium::<&Cell>.sigma() {
+            if self.cell_lattice[valid_pos] != Medium::<&Cell>.spin() {
                 continue
             }
-            self.cell_lattice[valid_pos] = sigma;
+            self.cell_lattice[valid_pos] = spin;
             self.update_edges(valid_pos);
             cell.shift_position::<LatticeBoundaryType>(pos, self.width(), self.height(), true);
         }
@@ -105,16 +105,16 @@ impl Environment {
             return None;
         }
         self.cell_vec.push(cell);
-        Some(self.get_entity(sigma).unwrap_cell())
+        Some(self.get_entity(spin).unwrap_cell())
     }
     
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
-            if self.cell_lattice[pos] != Medium::<&Cell>.sigma() {
+            if self.cell_lattice[pos] != Medium::<&Cell>.spin() {
                 continue
             }
-            self.cell_lattice[pos] = Solid::<&Cell>.sigma();
+            self.cell_lattice[pos] = Solid::<&Cell>.spin();
             area += 1;
         }
         area
@@ -145,21 +145,21 @@ impl Environment {
     pub fn update_edges(&mut self, pos: Pos2D<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
-        let sigma = self.cell_lattice[pos];
+        let spin = self.cell_lattice[pos];
         let valid_neighs = self.cell_lattice
             .bound
             .valid_positions(self.neighbourhood.neighbours(pos.into()))
             .map(|neigh| neigh.into());
         for neigh in valid_neighs {
             let edge = Edge::new(pos, neigh);
-            let sigma_neigh = self.cell_lattice[neigh];
-            if sigma == sigma_neigh {
+            let spin_neigh = self.cell_lattice[neigh];
+            if spin == spin_neigh {
                 self.edge_book.remove(&edge);
                 // Also representing the inverse edge
                 removed += 2;
                 continue;
             }
-            if sigma < LatticeEntity::first_cell_sigma() &&  sigma_neigh < LatticeEntity::first_cell_sigma() {
+            if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
                 continue;
             }
             if self.edge_book.insert(edge) {
@@ -205,9 +205,10 @@ impl<C> LatticeEntity<C> {
 }
 
 impl<C: Borrow<Cell>> LatticeEntity<C> {
-    pub fn sigma(&self) -> Sigma {
+    /// Maps the `LatticeEntity` to a unique spin value.
+    pub fn spin(&self) -> Spin {
         match self {
-            SomeCell(cell) => cell.borrow().sigma,
+            SomeCell(cell) => cell.borrow().spin,
             Medium => 0,
             Solid => 1
         }
@@ -224,10 +225,10 @@ impl<C: std::fmt::Debug> LatticeEntity<C> {
 }
 
 impl LatticeEntity<()> {
-    /// Returns the first sigma that corresponds to a cell.
+    /// Returns the first spin that corresponds to a cell.
     /// 
-    /// This is required to be larger than `Medium::sigma()` and `Solid::sigma()`.
-    pub fn first_cell_sigma() -> Sigma {
+    /// This is required to be larger than `Medium::spin()` and `Solid::spin()`.
+    pub fn first_cell_spin() -> Spin {
         2
     }
 }
@@ -262,13 +263,13 @@ pub mod tests {
                 Pos2D::new(25, 25)
             )
         );
-        assert_eq!(env.get_entity(LatticeEntity::first_cell_sigma()).unwrap_cell().area, 100);
-        assert_eq!(env.get_entity(LatticeEntity::first_cell_sigma() + 1).unwrap_cell().area, 75);
+        assert_eq!(env.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell().area, 100);
+        assert_eq!(env.get_entity(LatticeEntity::first_cell_spin() + 1).unwrap_cell().area, 75);
     }
 
     #[test]
-    fn test_lattice_entity_sigma() {
-        assert!(LatticeEntity::first_cell_sigma() > Medium::<&Cell>.sigma());
-        assert!(LatticeEntity::first_cell_sigma() > Solid::<&Cell>.sigma());
+    fn test_lattice_entity_spin() {
+        assert!(LatticeEntity::first_cell_spin() > Medium::<&Cell>.spin());
+        assert!(LatticeEntity::first_cell_spin() > Solid::<&Cell>.spin());
     }
 }
