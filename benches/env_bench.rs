@@ -1,13 +1,14 @@
 use std::cmp::min;
 use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::BatchSize;
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use evo_cpm::cell::Cell;
 use evo_cpm::edge::Edge;
-use evo_cpm::environment::Environment;
+use evo_cpm::environment::{Environment, LatticeEntity};
 use evo_cpm::environment::LatticeEntity::*;
-use evo_cpm::pos::Pos2D;
+use evo_cpm::pos::{Pos2D, Rect};
 
 fn random_neighbour(env: &Environment, p: Pos2D<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos2D<usize> {
     let oldp = (p.x as i32, p.y as i32);
@@ -41,30 +42,39 @@ fn replace_random_edges(n_edges: usize, env: &mut Environment, rng: &mut impl Rn
 }
 
 fn bench_env(c: &mut Criterion) {
-    let mut env = Environment::new(
-        100, 
-        100, 
-        1, 
-        0, 
-        0, 
-        0
-    );
-    let mut rng = Xoshiro256StarStar::seed_from_u64(1241254152);
-    for _ in 0..env.cell_lattice.width() * env.cell_lattice.height() / 2 {
-        add_random_edge(&mut env, &mut rng);
-    }
-    c.bench_function("replace_edges", |b| {
-        b.iter(|| replace_random_edges(
-            black_box(100_000),
-            black_box(&mut env),
-            black_box(&mut rng))
-        )
-    });
-
     c.bench_function("lattice_entity_discriminant", |b| b.iter(|| {
         Medium::<&Cell>.spin();
         Solid::<&Cell>.spin();
     }));
+    
+    let mut env = Environment::empty_test(100, 100);
+    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()));
+    
+    c.bench_function("contiguous_cell_positions", |b| {
+        b.iter(|| {
+            let cell = env.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
+            env.contiguous_cell_positions(cell).count();
+        }) 
+    });
+
+    c.bench_function("replace_edges", |b| {
+        b.iter_batched_ref(
+            || {
+                let mut env = Environment::empty_test(100, 100);
+                let mut rng = Xoshiro256StarStar::seed_from_u64(1241254152);
+                for _ in 0..env.cell_lattice.width() * env.cell_lattice.height() / 2 {
+                    add_random_edge(&mut env, &mut rng);
+                }
+                (env, rng)
+            },
+            |(env, rng)| replace_random_edges(
+                black_box(100_000),
+                black_box(env),
+                black_box(rng)
+            ),
+            BatchSize::SmallInput
+        );
+    });
 }
 
 criterion_group!(env_bench, bench_env);

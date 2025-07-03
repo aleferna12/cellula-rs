@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use crate::boundary::Boundary;
 use crate::cell::{Cell, CellCenter};
 use crate::edge::{Edge, EdgeBook};
@@ -7,6 +6,10 @@ use crate::lattice::Lattice;
 use crate::model::{LatticeBoundaryType, Spin};
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::pos::{Pos2D, Rect};
+use std::borrow::Borrow;
+use std::collections::hash_map::Entry::Vacant;
+use std::collections::hash_map::IntoKeys;
+use std::collections::{HashMap, VecDeque};
 
 pub struct Environment {
     pub cell_lattice: Lattice<Spin, LatticeBoundaryType>,
@@ -24,8 +27,8 @@ impl Environment {
         height: usize, 
         neigh_r: u8,
         cell_target_area: u32,
+        cell_div_area: u32,
         cell_growth_period: u32,
-        cell_div_area: u32
     ) -> Self {
         let rect = Rect::new(
             (0, 0).into(),
@@ -184,6 +187,47 @@ impl Environment {
             }
         }
     }
+    
+    // TODO!: make a version where we iterate all positions in a large box and benchmark against this
+    pub fn contiguous_cell_positions(&self, cell: &Cell) -> IntoKeys<Pos2D<usize>, ()> {
+        let mut found = HashMap::<Pos2D<usize>, ()>::default();
+        let mut deque = VecDeque::from([Pos2D::new(
+            cell.center.pos.x as isize,
+            cell.center.pos.y as isize
+        )]);
+
+        while !deque.is_empty() {
+            let pos = deque.pop_front().unwrap();
+            let lat_pos = Pos2D::<usize>::from(pos);
+            if cell.spin != self.cell_lattice[lat_pos] {
+                continue;
+            }
+            
+            if let Vacant(entry) = found.entry(lat_pos) {
+                let neighs = self
+                    .cell_lattice
+                    .bound
+                    .valid_positions(self.neighbourhood.neighbours(pos));
+                for neigh in neighs {
+                    deque.push_back(neigh);
+                }
+                entry.insert(());
+            }
+        }
+        found.into_keys()
+    }
+    
+    /// Got tired of refactoring test and benchmark code
+    pub fn empty_test(width:usize, height: usize) -> Self {
+        Environment::new(
+            width,
+            height,
+            1,
+            64,
+            1,
+            64
+        )
+    }
 }
 
 /// This enum represents anything that can be on the cell lattice.
@@ -236,35 +280,33 @@ impl LatticeEntity<()> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-
-    // Setup functions
-    pub fn empty_env() -> Environment {
-        Environment::new(100, 100, 1, 0, 0, 0)
-    }
     
-    fn env_with_cell() -> Environment {
-        let mut env = empty_env();
+    #[test]
+    fn test_spawn_rect_cell() {
+        let mut env = Environment::empty_test(100, 100);
         env.spawn_rect_cell(
             Rect::new(
                 Pos2D::new(10, 10),
                 Pos2D::new(20, 20)
             )
         );
-        env
-    }
-    
-    #[test]
-    fn test_spawn_rect_cell() {
-        let mut env = env_with_cell();
         assert_eq!(env.edge_book.len(), 8 * 4 * 3 + 4 * 5);
+        let entity1 = env.get_entity(LatticeEntity::first_cell_spin());
+        assert!(matches!(entity1, SomeCell(_)));
+        
         env.spawn_rect_cell(
             Rect::new(
                 Pos2D::new(15, 15),
                 Pos2D::new(25, 25)
             )
         );
-        assert_eq!(env.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell().area, 100);
-        assert_eq!(env.get_entity(LatticeEntity::first_cell_spin() + 1).unwrap_cell().area, 75);
+        
+        let entity2 = env.get_entity(LatticeEntity::first_cell_spin() + 1);
+        assert!(matches!(entity2, SomeCell(_)));
+
+        let cell2 = entity2.unwrap_cell();
+        assert_eq!(cell2.area, 75);
+        assert_eq!(env.contiguous_cell_positions(cell2).count(), 75);
     }
 
     #[test]

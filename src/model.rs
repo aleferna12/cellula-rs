@@ -137,8 +137,8 @@ impl From<Parameters> for Model {
                 parameters.environment.height,
                 parameters.environment.neigh_r,
                 parameters.environment.cell_target_area,
-                parameters.environment.cell_growth_period,
                 parameters.environment.cell_div_area,
+                parameters.environment.cell_growth_period,
             ),
             ca: parameters.cellular_automata.clone().into(),
             rng: if parameters.general.seed == 0 {

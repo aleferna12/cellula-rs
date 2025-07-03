@@ -4,6 +4,7 @@ use num::{Integer, Num};
 
 /// 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
+#[derive(Hash)]
 pub struct Pos2D<T> {
     pub x: T,
     pub y: T
