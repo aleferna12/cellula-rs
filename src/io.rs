@@ -4,8 +4,9 @@ use image::{EncodableLayout, RgbImage};
 use std::io;
 use minifb::{Window, WindowOptions};
 use crate::boundary::Boundary;
-use crate::cell::{Cell, Sigma};
+use crate::cell::Cell;
 use crate::environment::{Environment, LatticeEntity};
+use crate::model::Sigma;
 use crate::pos::Pos2D;
 
 pub(crate) static IMAGES_PATH: &str = "images";
@@ -44,10 +45,12 @@ pub fn simulation_image(env: &Environment) -> RgbImage {
     
     for cell in &env.cell_vec {
         let center = env.cell_lattice.bound.valid_pos(Pos2D::new(
-            cell.center.x as isize,
-            cell.center.y as isize,
-        )).unwrap();
-        image.put_pixel(center.x as u32, center.y as u32, [0, 255, 0].into());
+            cell.center.pos().x as isize,
+            cell.center.pos().y as isize,
+        ));
+        if let Some(pos) = center {
+            image.put_pixel(pos.x as u32, pos.y as u32, [0, 255, 0].into());
+        }
     }
     image
 }

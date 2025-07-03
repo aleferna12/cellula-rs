@@ -50,7 +50,7 @@ impl Parameters {
     pub fn check_conflicts(&self) {
         if self.environment.enclose && self.environment.neigh_r > 1 {
             log::warn!("`enclose` can only be used when `neigh-r` == 1 by default");
-            log::warn!("You can circumvent this issue by changing the `Boundary` type in `Environment` \
+            log::warn!("You can circumvent this issue by changing `LatticeBoundaryType` in `Model` \
                         from `UnsafePeriodicBoundary` to `FixedBoundary`");
         }
     }

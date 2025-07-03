@@ -1,3 +1,4 @@
+use std::f32::consts::TAU;
 use std::ops::AddAssign;
 use num::{Integer, Num};
 
@@ -17,6 +18,17 @@ impl<T> Pos2D<T> {
 impl<T> From<(T, T)> for Pos2D<T> {
     fn from(value: (T, T)) -> Self {
         Pos2D::<T>::new(value.0, value.1)
+    }
+}
+
+impl Pos2D<f32> {
+    pub(crate) fn from_projection(proj: &AngularProjection, width: usize, height: usize) -> Self {
+        let angle_x = proj.x_sin.atan2(proj.x_cos);
+        let angle_y = proj.y_sin.atan2(proj.y_cos);
+        Self {
+            x: width as f32 * angle_x.rem_euclid(TAU) / TAU,
+            y: height as f32 * angle_y.rem_euclid(TAU) / TAU
+        }
     }
 }
 
@@ -43,6 +55,27 @@ impl From<Pos2D<isize>> for Pos2D<usize> {
             value.x.try_into().expect(message), 
             value.y.try_into().expect(message)
         )
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct AngularProjection {
+    pub(crate) x_sin: f32,
+    pub(crate) x_cos: f32,
+    pub(crate) y_sin: f32,
+    pub(crate) y_cos: f32
+}
+
+impl AngularProjection {
+    pub(crate) fn from_pos(pos: Pos2D<f32>, width: usize, height: usize) -> Self {
+        let cx = TAU * pos.x / width as f32;
+        let cy = TAU * pos.y  / height as f32;
+        Self {
+            x_sin: cx.sin(),
+            x_cos: cx.cos(),
+            y_sin: cy.sin(),
+            y_cos: cy.cos()
+        }
     }
 }
 

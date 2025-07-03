@@ -1,6 +1,7 @@
 use num::Num;
 use num::traits::Euclid;
-use crate::pos::{Pos2D, Rect};
+use crate::cell::Cell;
+use crate::pos::{AngularProjection, Pos2D, Rect};
 
 pub trait Boundary {
     type Coord;
@@ -19,6 +20,10 @@ pub trait Boundary {
     ) -> impl Iterator<Item = Pos2D<Self::Coord>> {
         positions.filter_map(|pos| self.valid_pos(pos))
     }
+}
+
+pub trait LatticeBoundary: Boundary<Coord = isize> {
+    fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, width: usize, height: usize, add: bool);
 }
 
 pub struct FixedBoundary<T> {
@@ -46,6 +51,18 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
             return None
         }
         Some(pos)
+    }
+}
+
+impl LatticeBoundary for FixedBoundary<isize> {
+    fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, _width: usize, _height: usize, add: bool) {
+        let shift = if add { 1. } else { -1. };
+        let area = cell.area as f32;
+        
+        cell.center.pos = Pos2D::new(
+            cell.center.pos.x + shift * (pos.x as f32 - cell.center.pos.x) / area,
+            cell.center.pos.y + shift * (pos.y as f32 - cell.center.pos.y) / area
+        );
     }
 }
 
@@ -88,6 +105,21 @@ where
     }
 }
 
+impl LatticeBoundary for PeriodicBoundary<isize> {
+    fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, width: usize, height: usize, add: bool) {
+        let shift = if add { 1. } else { -1. };
+
+        let proj = AngularProjection::from_pos(Pos2D::new(pos.x as f32, pos.y as f32), width, height);
+        let sum_proj = &mut cell.center.projection;
+        sum_proj.x_sin += shift * proj.x_sin;
+        sum_proj.x_cos += shift * proj.x_cos;
+        sum_proj.y_sin += shift * proj.y_sin;
+        sum_proj.y_cos += shift * proj.y_cos;
+        
+        cell.center.pos = Pos2D::from_projection(&cell.center.projection, width, height);
+    }
+}
+
 /// This struct can only validate positions that are at most one `width()` or `height()` away from the boundaries.
 ///
 /// <div class="warning">
@@ -116,6 +148,12 @@ where
         } else {
             val
         }
+    }
+}
+
+impl LatticeBoundary for UnsafePeriodicBoundary<isize> {
+    fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, width: usize, height: usize, add: bool) {
+        PeriodicBoundary::shift_cell_center(cell, pos, width, height, add)
     }
 }
 

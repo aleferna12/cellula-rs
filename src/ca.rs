@@ -6,6 +6,7 @@ use crate::cell::Cell;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
+use crate::model::LatticeBoundaryType;
 use crate::neighbourhood::Neighbourhood;
 use crate::parameters::{CellularAutomataParameters, StaticAdhesionParameters};
 use crate::pos::Pos2D;
@@ -73,12 +74,13 @@ impl<A: AdhesionSystem> CA<A> {
         }
         
         // Executes the copy
+        let (width, height) = (env.width(), env.height());
         env.cell_lattice[pos_to] = sigma_from;
         if let SomeCell(cell) = env.get_entity_mut(sigma_from) {
-            cell.add_position(pos_to);
+            cell.shift_position::<LatticeBoundaryType>(pos_to, width, height, true);
         }
         if let SomeCell(cell) = env.get_entity_mut(sigma_to) {
-            cell.remove_position(pos_to);
+            cell.shift_position::<LatticeBoundaryType>(pos_to, width, height, false);
         }
         let (removed, added) = env.update_edges(pos_to);
         (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
@@ -145,6 +147,7 @@ impl<A: AdhesionSystem + From<StaticAdhesionParameters>> From<CellularAutomataPa
 #[cfg(test)]
 mod tests {
     use crate::adhesion::StaticAdhesion;
+    use crate::cell::CellCenter;
     use super::*;
 
     #[test]
@@ -158,8 +161,8 @@ mod tests {
             boltz_t: 16.,
             size_lambda: 1.
         }.into();
-        let cell1 = Cell::new(1, 100, 100, (0., 0.).into());
-        let cell2 = Cell::new(2, 100, 100, (0., 0.).into());
+        let cell1 = Cell::new(1, 100, 100, CellCenter::origin());
+        let cell2 = Cell::new(2, 100, 100, CellCenter::origin());
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell1), SomeCell(&cell2));
         assert_eq!(dh, 2.);
     }

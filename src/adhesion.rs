@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 use std::ptr;
-use crate::cell::{Cell, Sigma};
+use crate::cell::Cell;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::*;
+use crate::model::Sigma;
 use crate::parameters::StaticAdhesionParameters;
 
 pub trait AdhesionSystem {
@@ -11,7 +12,7 @@ pub trait AdhesionSystem {
 
 pub struct ClonalAdhesion {
     pub static_adhesion: StaticAdhesion,
-    // TODO: should this be stored as an array in each cell (replacing sigma as a cell property)? Benchmark
+    // TODO!: should this be stored as an array in each cell (replacing sigma as a cell property)? Benchmark
     //  the current implementation costs almost 25% of performance compared to StaticAdhesion
     //  best solution is probably a big table in the heap that we can access with sigmas
     pub clone_pairs: HashSet<(Sigma, Sigma)>

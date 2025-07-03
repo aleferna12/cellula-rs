@@ -1,14 +1,15 @@
 use std::borrow::Borrow;
-use crate::boundary::{Boundary, UnsafePeriodicBoundary};
-use crate::cell::{Cell, Sigma};
+use crate::boundary::Boundary;
+use crate::cell::{Cell, CellCenter};
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::Lattice;
+use crate::model::{LatticeBoundaryType, Sigma};
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::pos::{Pos2D, Rect};
 
 pub struct Environment {
-    pub cell_lattice: Lattice<Sigma, UnsafePeriodicBoundary<isize>>,
+    pub cell_lattice: Lattice<Sigma, LatticeBoundaryType>,
     pub(crate) cell_vec: Vec<Cell>,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
@@ -32,7 +33,7 @@ impl Environment {
         );
         
          Self {
-            cell_lattice: Lattice::new(UnsafePeriodicBoundary::new(rect)),
+            cell_lattice: Lattice::new(LatticeBoundaryType::new(rect)),
             cell_vec: vec![],
             edge_book: EdgeBook::new(),
             neighbourhood: MooreNeighbourhood::new(neigh_r),
@@ -77,16 +78,16 @@ impl Environment {
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&Cell> {
         let sigma = self.n_cells() as Sigma + LatticeEntity::first_sigma();
         let center = self.cell_lattice.bound.valid_pos(Pos2D::new(
-            (rect.min.x + rect.max.x) as isize / 2,
-            (rect.min.y + rect.max.y) as isize / 2
+            rect.min.x as isize,
+            rect.min.y as isize
         ));
-        
         let mut cell = Cell::new(
             sigma,
             0,
             self.cell_target_area,
-            Pos2D::new(center?.x as f32, center?.y as f32)
+            CellCenter::new(Pos2D::new(center?.x as f32, center?.y as f32), self.width(), self.height())
         );
+        
         for pos in rect.iter_positions() {
             let trans_pos = self.cell_lattice.bound.valid_pos(pos.into());
             if trans_pos.is_none() {
@@ -98,7 +99,7 @@ impl Environment {
             }
             self.cell_lattice[valid_pos] = sigma;
             self.update_edges(valid_pos);
-            cell.add_position(pos);
+            cell.shift_position::<LatticeBoundaryType>(pos, self.width(), self.height(), true);
         }
         if cell.area == 0 { 
             return None;
@@ -179,10 +180,6 @@ impl Environment {
                 cell.target_area = self.cell_target_area;
             }
         }
-    }
-    
-    pub fn cell_center_of_mass(&self, cell: &Cell) {
-        
     }
 }
 
