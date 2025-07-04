@@ -108,17 +108,17 @@ where
     }
     
     pub fn iter_positions(&self) -> RectAreaIt<T> {
-        RectAreaIt::new(self)
+        RectAreaIt::new(self.clone())
     }
 }
 
-pub struct RectAreaIt<'a, T> {
+pub struct RectAreaIt<T> {
     curr: Pos2D<T>,
-    rect: &'a Rect<T>
+    rect: Rect<T>
 }
 
-impl<'a, T: Copy> RectAreaIt<'a, T> {
-    fn new(rect: &'a Rect<T>) -> Self {
+impl<T: Copy> RectAreaIt<T> {
+    fn new(rect: Rect<T>) -> Self {
         Self {
             curr: rect.min,
             rect
@@ -126,7 +126,7 @@ impl<'a, T: Copy> RectAreaIt<'a, T> {
     }
 }
 
-impl<T> Iterator for RectAreaIt<'_, T>
+impl<T> Iterator for RectAreaIt<T>
 where
     T: Copy
     + Integer

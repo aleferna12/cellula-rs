@@ -3,21 +3,11 @@ use std::path::Path;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use crate::adhesion::{ClonalAdhesion};
-use crate::boundary::UnsafePeriodicBoundary;
 use crate::ca::CA;
 use crate::environment::Environment;
 use crate::io::{create_directories, simulation_image, IMAGES_PATH, CONFIG_COPY_PATH, MovieMaker};
 use crate::parameters::Parameters;
 use crate::pos::Rect;
-
-// General type definitions
-/// Boundary type of the lattice.
-/// 
-/// `FixedBoundary` is approx. 16% faster than `UnsafePeriodicBoundary` (in total run time).
-pub type LatticeBoundaryType = UnsafePeriodicBoundary<isize>;
-
-/// Type of cell's spins (may also require changing the spin function of `LatticeEntity`).
-pub type Spin = u32;
 
 pub struct Model {
     pub env: Environment,

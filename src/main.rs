@@ -3,7 +3,8 @@ TODO!:
     - finish IO
         - cell info
         - backup
-    - save_image is being called twice when image_period and frame_period match (implement counters)
+    - save_image is being called twice when image_period and frame_period match
+    - seed is not saved with the model when its 0
  */
 use std::error::Error;
 use clap::Parser;

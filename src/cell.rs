@@ -1,5 +1,5 @@
 use crate::boundary::LatticeBoundary;
-use crate::model::Spin;
+use crate::constants::Spin;
 use crate::pos::{AngularProjection, Pos2D};
 
 #[derive(Debug)]

@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 use std::ptr;
 use crate::cell::Cell;
+use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::*;
-use crate::model::Spin;
 use crate::parameters::StaticAdhesionParameters;
 
 pub trait AdhesionSystem {

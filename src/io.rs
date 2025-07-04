@@ -5,8 +5,8 @@ use std::io;
 use minifb::{Window, WindowOptions};
 use crate::boundary::Boundary;
 use crate::cell::Cell;
+use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
-use crate::model::Spin;
 use crate::pos::Pos2D;
 
 pub(crate) static IMAGES_PATH: &str = "images";

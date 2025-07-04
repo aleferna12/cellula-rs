@@ -1,7 +1,7 @@
-use std::ops::{Index, IndexMut};
-use rand::Rng;
-use crate::boundary::Boundary;
+use crate::boundary::LatticeBoundary;
 use crate::pos::Pos2D;
+use rand::Rng;
+use std::ops::{Index, IndexMut};
 
 pub struct Lattice<T, B> {
     array: Box<[T]>,
@@ -9,7 +9,7 @@ pub struct Lattice<T, B> {
 }
 // Since the lattice size is naturally usize, boundary coord should be isize to avoid overflow errors
 // Although technically it only has to be slightly larger than its defined size
-impl<T: Default + Copy, B: Boundary<Coord = isize>> Lattice<T, B> {
+impl<T: Default + Copy, B: LatticeBoundary> Lattice<T, B> {
     pub fn new(bound: B) -> Self {
         Self {
             array: vec![T::default(); bound.rect().width() as usize * bound.rect().height() as usize]
@@ -48,7 +48,7 @@ impl<T: Default + Copy, B: Boundary<Coord = isize>> Lattice<T, B> {
     }
 }
 
-impl<T: Copy + Default, B: Boundary<Coord = isize>> Index<Pos2D<usize>> for Lattice<T, B> {
+impl<T: Copy + Default, B: LatticeBoundary> Index<Pos2D<usize>> for Lattice<T, B> {
     type Output = T;
 
     fn index(&self, pos: Pos2D<usize>) -> &Self::Output {
@@ -56,7 +56,7 @@ impl<T: Copy + Default, B: Boundary<Coord = isize>> Index<Pos2D<usize>> for Latt
     }
 }
 
-impl<T: Copy + Default, B: Boundary<Coord = isize>> Index<(usize, usize)> for Lattice<T, B> {
+impl<T: Copy + Default, B: LatticeBoundary> Index<(usize, usize)> for Lattice<T, B> {
     type Output = T;
 
     fn index(&self, pos: (usize, usize)) -> &Self::Output {
@@ -64,13 +64,13 @@ impl<T: Copy + Default, B: Boundary<Coord = isize>> Index<(usize, usize)> for La
     }
 }
 
-impl<T: Copy + Default, B: Boundary<Coord = isize>> IndexMut<Pos2D<usize>> for Lattice<T, B> {
+impl<T: Copy + Default, B: LatticeBoundary> IndexMut<Pos2D<usize>> for Lattice<T, B> {
     fn index_mut(&mut self, pos: Pos2D<usize>) -> &mut Self::Output {
         &mut self.array[pos.row_major(self.height())]
     }
 }
 
-impl<T: Copy + Default, B: Boundary<Coord = isize>> IndexMut<(usize, usize)> for Lattice<T, B> {
+impl<T: Copy + Default, B: LatticeBoundary> IndexMut<(usize, usize)> for Lattice<T, B> {
     fn index_mut(&mut self, pos: (usize, usize)) -> &mut Self::Output {
         &mut self[Pos2D::<usize>::from(pos)]
     }

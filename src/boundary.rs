@@ -26,6 +26,7 @@ pub trait LatticeBoundary: Boundary<Coord = isize> {
     fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, width: usize, height: usize, add: bool);
 }
 
+#[derive(Clone)]
 pub struct FixedBoundary<T> {
     rect: Rect<T>
 }
@@ -66,6 +67,7 @@ impl LatticeBoundary for FixedBoundary<isize> {
     }
 }
 
+#[derive(Clone)]
 pub struct PeriodicBoundary<T> {
     rect: Rect<T>
 }
@@ -127,6 +129,7 @@ impl LatticeBoundary for PeriodicBoundary<isize> {
 /// Only use when you are confident that all input positions are close to the boundary.
 ///
 /// </div>
+#[derive(Clone)]
 pub struct UnsafePeriodicBoundary<T> {
     rect: Rect<T>
 }

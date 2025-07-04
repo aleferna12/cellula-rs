@@ -10,3 +10,4 @@ pub mod io;
 pub mod boundary;
 pub mod neighbourhood;
 pub mod adhesion;
+pub mod constants;

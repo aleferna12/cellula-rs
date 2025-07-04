@@ -3,13 +3,12 @@ use crate::cell::{Cell, CellCenter};
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::Lattice;
-use crate::model::{LatticeBoundaryType, Spin};
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::pos::{Pos2D, Rect};
 use std::borrow::Borrow;
-use std::collections::hash_map::Entry::Vacant;
-use std::collections::hash_map::IntoKeys;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
+use std::f32::consts::TAU;
+use crate::constants::{LatticeBoundaryType, Spin};
 
 pub struct Environment {
     pub cell_lattice: Lattice<Spin, LatticeBoundaryType>,
@@ -187,36 +186,88 @@ impl Environment {
             }
         }
     }
-    
-    // TODO!: make a version where we iterate all positions in a large box and benchmark against this
-    pub fn contiguous_cell_positions(&self, cell: &Cell) -> IntoKeys<Pos2D<usize>, ()> {
-        let mut found = HashMap::<Pos2D<usize>, ()>::default();
-        let mut deque = VecDeque::from([Pos2D::new(
+
+    // This function returns a Vec so that we can check that the site number matches
+    /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
+    /// 
+    /// May fail if `radius_scaler` is too small.
+    pub fn box_cell_positions(&self, cell: &Cell, radius_scaler: f32) -> Vec<Pos2D<usize>> {
+        let search_radius = (radius_scaler * (cell.area as f32 / TAU).sqrt()) as isize;
+        let center = Pos2D::new(
+            cell.center.pos.x as isize,
+            cell.center.pos.y as isize
+        );
+        let rect = Rect::new(
+            (center.x - search_radius, center.y - search_radius).into(),
+            (center.x + search_radius, center.y + search_radius).into(),
+        );
+        let found: Vec<_> = self.cell_lattice.bound
+            .valid_positions(rect.iter_positions())
+            .filter_map(|pos| {
+                let lat_pos = Pos2D::<usize>::from(pos);
+                if self.cell_lattice[lat_pos] == cell.spin {
+                    return Some(lat_pos);
+                }
+                None
+            })
+            .collect();
+        if found.len() != cell.area as usize {
+            log::warn!(
+                "Only found {} positions out of the {} expected for cell with spin {} \
+                (try to increase `radius_scaler`)", 
+                found.len(),
+                cell.area,
+                cell.spin
+            )
+        }
+        found
+    }
+
+    /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
+    /// 
+    /// Is considerably slower than `box_cell_positions()` and may fail if cell is not contiguous 
+    /// or if the cell center is not a cell position.
+    pub fn contiguous_cell_positions(&self, cell: &Cell) -> Vec<Pos2D<usize>> {
+        let mut visited = Lattice::<bool, _>::new(self.cell_lattice.bound.clone());
+        let mut found = Vec::with_capacity(cell.area as usize);
+        let mut queue = VecDeque::from([Pos2D::new(
             cell.center.pos.x as isize,
             cell.center.pos.y as isize
         )]);
 
-        while !deque.is_empty() {
-            let pos = deque.pop_front().unwrap();
-            let lat_pos = Pos2D::<usize>::from(pos);
+        while !queue.is_empty() {
+            let pos = queue.pop_front().unwrap();
+            let lat_pos = Pos2D::from(pos);
             if cell.spin != self.cell_lattice[lat_pos] {
                 continue;
             }
-            
-            if let Vacant(entry) = found.entry(lat_pos) {
-                let neighs = self
-                    .cell_lattice
-                    .bound
-                    .valid_positions(self.neighbourhood.neighbours(pos));
-                for neigh in neighs {
-                    deque.push_back(neigh);
+            let neighs = self
+                .cell_lattice
+                .bound
+                .valid_positions(self.neighbourhood.neighbours(pos));
+            for neigh in neighs {
+                let lat_neigh = Pos2D::from(neigh);
+                if !visited[lat_neigh] {
+                    visited[lat_neigh] = true;
+                    queue.push_back(neigh);
                 }
-                entry.insert(());
             }
+            visited[lat_pos] = true;
+            found.push(lat_pos);
         }
-        found.into_keys()
+        
+        if found.len() != cell.area as usize {
+            log::warn!(
+                "Only found {} positions out of the {} expected for cell with spin {} \
+                (cell might be discontiguous)", 
+                found.len(),
+                cell.area,
+                cell.spin
+            )
+        }
+        found
     }
-    
+
     /// Got tired of refactoring test and benchmark code
     pub fn empty_test(width:usize, height: usize) -> Self {
         Environment::new(
@@ -280,7 +331,7 @@ impl LatticeEntity<()> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    
+
     #[test]
     fn test_spawn_rect_cell() {
         let mut env = Environment::empty_test(100, 100);
@@ -293,20 +344,27 @@ pub mod tests {
         assert_eq!(env.edge_book.len(), 8 * 4 * 3 + 4 * 5);
         let entity1 = env.get_entity(LatticeEntity::first_cell_spin());
         assert!(matches!(entity1, SomeCell(_)));
-        
+
         env.spawn_rect_cell(
             Rect::new(
                 Pos2D::new(15, 15),
                 Pos2D::new(25, 25)
             )
         );
-        
+
         let entity2 = env.get_entity(LatticeEntity::first_cell_spin() + 1);
         assert!(matches!(entity2, SomeCell(_)));
 
         let cell2 = entity2.unwrap_cell();
         assert_eq!(cell2.area, 75);
-        assert_eq!(env.contiguous_cell_positions(cell2).count(), 75);
+        assert_eq!(
+            env.contiguous_cell_positions(cell2).len(),
+            75
+        );
+        assert_eq!(
+            env.box_cell_positions(cell2, 2.).len(),
+            75
+        );
     }
 
     #[test]

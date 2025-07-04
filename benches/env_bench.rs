@@ -46,16 +46,6 @@ fn bench_env(c: &mut Criterion) {
         Medium::<&Cell>.spin();
         Solid::<&Cell>.spin();
     }));
-    
-    let mut env = Environment::empty_test(100, 100);
-    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()));
-    
-    c.bench_function("contiguous_cell_positions", |b| {
-        b.iter(|| {
-            let cell = env.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
-            env.contiguous_cell_positions(cell).count();
-        }) 
-    });
 
     c.bench_function("replace_edges", |b| {
         b.iter_batched_ref(
@@ -74,6 +64,29 @@ fn bench_env(c: &mut Criterion) {
             ),
             BatchSize::SmallInput
         );
+    });
+
+    let mut env = Environment::empty_test(100, 100);
+    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()));
+
+    let mut group = c.benchmark_group("cell_positions");
+    group.bench_function("contiguous_cell_positions", |b| {
+        b.iter(|| {
+            let cell = env.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
+            assert_eq!(
+                env.contiguous_cell_positions(cell).len(),
+                cell.area as usize
+            );
+        })
+    });
+    group.bench_function("box_cell_positions", |b| {
+        b.iter(|| {
+            let cell = env.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
+            assert_eq!(
+                env.box_cell_positions(cell, 2.).len(),
+                cell.area as usize
+            );
+        })
     });
 }
 
