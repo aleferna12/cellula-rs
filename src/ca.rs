@@ -2,14 +2,14 @@ use std::f32::consts::E;
 use rand::Rng;
 pub use crate::adhesion::AdhesionSystem;
 use crate::boundary::Boundary;
-use crate::cell::Cell;
+use crate::cell::{Cell, CellCenter};
 use crate::constants::LatticeBoundaryType;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
 use crate::neighbourhood::Neighbourhood;
 use crate::parameters::{CellularAutomataParameters, StaticAdhesionParameters};
-use crate::pos::Pos2D;
+use crate::pos::{AngularProjection, Pos2D};
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -17,6 +17,7 @@ use crate::pos::Pos2D;
 pub struct CA<A> {
     pub boltz_t: f32,
     pub size_lambda: f32,
+    pub chemotaxis_mu: f32,
     pub adhesion: A
 }
 
@@ -68,7 +69,10 @@ impl<A: AdhesionSystem> CA<A> {
             env.cells.get_entity(env.cell_lattice.lat[Pos2D::<usize>::from(neigh)])
         });
         
-        let delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
+        let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
+        if let SomeCell(cell) = entity_from {
+            delta_h += self.chemotaxis_bias(self.chemotaxis_mu, &cell.center, pos_to, env.width(), env.height());
+        }
         if !self.accept_site_copy(rng, delta_h) {
             return 0.;
         }
@@ -84,6 +88,33 @@ impl<A: AdhesionSystem> CA<A> {
         }
         let (removed, added) = env.update_edges(pos_to);
         (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
+    }
+    
+    /// Currently attracts cells to the center of the lattice
+    pub fn chemotaxis_bias(
+        &self, 
+        chemotaxis_mu: f32, 
+        cell_center: &CellCenter,
+        pos_to: Pos2D<usize>, 
+        width: usize,
+        height: usize
+    ) -> f32 {
+        let proj_to = AngularProjection::from_pos(
+            Pos2D::new(pos_to.x as f32, pos_to.y as f32),
+            width,
+            height
+        );
+        let proj_center = AngularProjection::from_pos(
+            Pos2D::new((width / 2) as f32, (height / 2) as f32),
+            width,
+            height
+        );
+        let copy_angle = cell_center.projection.delta_angles(&proj_to);
+        let to_center = cell_center.projection.delta_angles(&proj_center);
+        let dot = copy_angle.0 * to_center.0 + copy_angle.1 * to_center.1;
+        let mag_v = copy_angle.0 * copy_angle.0 + copy_angle.1 * copy_angle.1;
+        let mag_w = to_center.0 * to_center.0 + to_center.1 * to_center.1;
+        -chemotaxis_mu * (dot / (mag_v * mag_w)).clamp(-1., 1.)
     }
 
     pub fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f32) -> bool {
@@ -139,6 +170,7 @@ impl<A: AdhesionSystem + From<StaticAdhesionParameters>> From<CellularAutomataPa
         Self {
             boltz_t: params.boltz_t,
             size_lambda: params.size_lambda,
+            chemotaxis_mu: params.chemotaxis_mu,
             adhesion: params.adhesion.clone().into()
         }
     }
@@ -159,7 +191,8 @@ mod tests {
                 solid_energy: 20.
             },
             boltz_t: 16.,
-            size_lambda: 1.
+            size_lambda: 1.,
+            chemotaxis_mu: 1.
         }.into();
         let cell1 = Cell::new(1, 100, 100, CellCenter::origin());
         let cell2 = Cell::new(2, 100, 100, CellCenter::origin());

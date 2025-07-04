@@ -35,6 +35,8 @@ cell-update-period = 32
 boltz-t = 16
 # Scaler constant for area deviation penalties.
 size-lambda = 1
+# Scaler constant for chemotaxis bias.
+chemotaxis-mu = 4
 
 [cellular-automata.adhesion]
 # Adhesion energy at cell-cell interfaces.

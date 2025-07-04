@@ -84,6 +84,7 @@ pub struct EnvironmentParameters {
 pub struct CellularAutomataParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
+    pub chemotaxis_mu: f32,
     pub adhesion: StaticAdhesionParameters
 }
 
