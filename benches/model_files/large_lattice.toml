@@ -39,6 +39,8 @@ neigh-r = 1
 boltz-t = 16
 # Scaler constant for area deviation penalties.
 size-lambda = 1
+# Scaler constant for chemotaxis bias.
+chemotaxis-mu = 4
 
 [cellular-automata.adhesion]
 type = "static-adhesion"
