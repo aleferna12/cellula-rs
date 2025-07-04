@@ -67,23 +67,23 @@ fn bench_env(c: &mut Criterion) {
     });
 
     let mut env = Environment::empty_test(100, 100);
-    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()));
+    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()), 0);
 
     let mut group = c.benchmark_group("cell_positions");
     group.bench_function("contiguous_cell_positions", |b| {
         b.iter(|| {
-            let cell = env.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
+            let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
             assert_eq!(
-                env.contiguous_cell_positions(cell).len(),
+                env.cell_lattice.contiguous_cell_positions(cell, &env.neighbourhood).len(),
                 cell.area as usize
             );
         })
     });
     group.bench_function("box_cell_positions", |b| {
         b.iter(|| {
-            let cell = env.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
+            let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
             assert_eq!(
-                env.box_cell_positions(cell, 2.).len(),
+                env.cell_lattice.box_cell_positions(cell, 2.).len(),
                 cell.area as usize
             );
         })

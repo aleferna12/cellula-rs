@@ -50,22 +50,22 @@ impl<A: AdhesionSystem> CA<A> {
         pos_from: Pos2D<usize>,
         pos_to: Pos2D<usize>
     ) -> f32 {
-        let spin_to = env.cell_lattice[pos_to];
+        let spin_to = env.cell_lattice.lat[pos_to];
         if spin_to == Solid::<&Cell>.spin() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_from = {
-            let spin = env.cell_lattice[pos_from];
+            let spin = env.cell_lattice.lat[pos_from];
             if spin == Solid::<&Cell>.spin() { Medium::<&Cell>.spin() } else { spin }
         };
 
-        let entity_from = env.get_entity(spin_from);
-        let entity_to = env.get_entity(spin_to);
-        let neigh_entities = env.cell_lattice.bound.valid_positions(
+        let entity_from = env.cells.get_entity(spin_from);
+        let entity_to = env.cells.get_entity(spin_to);
+        let neigh_entities = env.cell_lattice.lat.bound.valid_positions(
             env.neighbourhood.neighbours(pos_to.into())
         ).map(|neigh| {
-            env.get_entity(env.cell_lattice[Pos2D::<usize>::from(neigh)])
+            env.cells.get_entity(env.cell_lattice.lat[Pos2D::<usize>::from(neigh)])
         });
         
         let delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
@@ -75,11 +75,11 @@ impl<A: AdhesionSystem> CA<A> {
         
         // Executes the copy
         let (width, height) = (env.width(), env.height());
-        env.cell_lattice[pos_to] = spin_from;
-        if let SomeCell(cell) = env.get_entity_mut(spin_from) {
+        env.cell_lattice.lat[pos_to] = spin_from;
+        if let SomeCell(cell) = env.cells.get_entity_mut(spin_from) {
             cell.shift_position::<LatticeBoundaryType>(pos_to, width, height, true);
         }
-        if let SomeCell(cell) = env.get_entity_mut(spin_to) {
+        if let SomeCell(cell) = env.cells.get_entity_mut(spin_to) {
             cell.shift_position::<LatticeBoundaryType>(pos_to, width, height, false);
         }
         let (removed, added) = env.update_edges(pos_to);

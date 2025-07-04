@@ -2,12 +2,11 @@ use crate::boundary::LatticeBoundary;
 use crate::constants::Spin;
 use crate::pos::{AngularProjection, Pos2D};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Cell {
     pub spin: Spin,
     pub area: u32,
     pub target_area: u32,
-    pub growth_timer: u32,
     pub center: CellCenter
 }
 
@@ -22,8 +21,7 @@ impl Cell {
             spin,
             area,
             target_area,
-            center,
-            growth_timer: 0,
+            center
         }
     }
     
@@ -39,7 +37,7 @@ impl Cell {
         B::shift_cell_center(self, pos, width, height, add);
     }
     
-    pub(crate) fn shift_area(&mut self, add: bool) {
+    pub fn shift_area(&mut self, add: bool) {
         if add {
             self.area += 1;
         } else {
@@ -48,7 +46,7 @@ impl Cell {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CellCenter {
     pub(crate) pos: Pos2D<f32>,
     pub(crate) projection: AngularProjection

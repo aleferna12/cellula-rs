@@ -73,11 +73,10 @@ pub struct EnvironmentParameters {
     pub enclose: bool,
     pub n_cells: u32,
     pub neigh_r: u8,
-    pub update_cells_period: u32,
     pub cell_start_area: u32,
     pub cell_target_area: u32,
     pub cell_div_area: u32,
-    pub cell_growth_period: u32,
+    pub cell_update_period: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

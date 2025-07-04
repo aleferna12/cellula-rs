@@ -29,8 +29,7 @@ cell-start-area = 64
 # Target cell area.
 cell-target-area = 64
 cell-div-area = 128
-update-cells-period = 32
-cell-growth-period = 32
+cell-update-period = 1000000
 # Radius of the neighbourhood.
 neigh-r = 1
 

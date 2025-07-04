@@ -23,12 +23,12 @@ impl<T> From<(T, T)> for Pos2D<T> {
 }
 
 impl Pos2D<f32> {
+    /// Unwraps the `AngularProjection` into a position.
     pub(crate) fn from_projection(proj: &AngularProjection, width: usize, height: usize) -> Self {
-        let angle_x = proj.x_sin.atan2(proj.x_cos);
-        let angle_y = proj.y_sin.atan2(proj.y_cos);
+        let (angle_x, angle_y) = proj.angles();
         Self {
-            x: width as f32 * angle_x.rem_euclid(TAU) / TAU,
-            y: height as f32 * angle_y.rem_euclid(TAU) / TAU
+            x: width as f32 * angle_x / TAU,
+            y: height as f32 * angle_y / TAU
         }
     }
 }
@@ -59,7 +59,7 @@ impl From<Pos2D<isize>> for Pos2D<usize> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct AngularProjection {
     pub(crate) x_sin: f32,
     pub(crate) x_cos: f32,
@@ -77,6 +77,20 @@ impl AngularProjection {
             y_sin: cy.sin(),
             y_cos: cy.cos()
         }
+    }
+    
+    /// Returns the angles associated with this projection.
+    pub(crate) fn angles(&self) -> (f32, f32) {
+        (self.x_sin.atan2(self.x_cos).rem_euclid(TAU), self.y_sin.atan2(self.y_cos).rem_euclid(TAU))
+    }
+    
+    pub(crate) fn delta_angles(&self, other: &AngularProjection) -> (f32, f32) {
+        // This avoids unecessary multiple calls to rem_euclid
+        let x = (self.x_sin * other.x_cos - self.x_cos * other.x_sin)
+            .atan2(self.x_cos * other.x_cos + self.x_sin * other.x_sin);
+        let y = (self.y_sin * other.y_cos - self.y_cos * other.y_sin)
+            .atan2(self.y_cos * other.y_cos + self.y_sin * other.y_sin);
+        (x, y)
     }
 }
 

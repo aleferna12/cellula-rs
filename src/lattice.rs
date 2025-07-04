@@ -1,7 +1,12 @@
+use std::collections::VecDeque;
+use std::f32::consts::TAU;
 use crate::boundary::LatticeBoundary;
-use crate::pos::Pos2D;
+use crate::pos::{Pos2D, Rect};
 use rand::Rng;
-use std::ops::{Index, IndexMut};
+use std::ops::{Deref, DerefMut, Index, IndexMut};
+use crate::cell::Cell;
+use crate::constants::Spin;
+use crate::neighbourhood::Neighbourhood;
 
 pub struct Lattice<T, B> {
     array: Box<[T]>,
@@ -73,5 +78,110 @@ impl<T: Copy + Default, B: LatticeBoundary> IndexMut<Pos2D<usize>> for Lattice<T
 impl<T: Copy + Default, B: LatticeBoundary> IndexMut<(usize, usize)> for Lattice<T, B> {
     fn index_mut(&mut self, pos: (usize, usize)) -> &mut Self::Output {
         &mut self[Pos2D::<usize>::from(pos)]
+    }
+}
+
+pub struct CellLattice<B> {
+    pub lat: Lattice<Spin, B>
+}
+
+impl<B: LatticeBoundary + Clone> CellLattice<B> {
+    pub fn new(bound: B) -> Self {
+        Self { lat: Lattice::new(bound) }
+    }
+    
+    // This function returns a Vec so that we can check that the site number matches
+    /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
+    ///
+    /// May fail if `radius_scaler` is too small.
+    pub fn box_cell_positions(&self, cell: &Cell, radius_scaler: f32) -> Vec<Pos2D<usize>> {
+        let search_radius = (radius_scaler * (cell.area as f32 / TAU).sqrt()) as isize;
+        let center = Pos2D::new(
+            cell.center.pos.x as isize,
+            cell.center.pos.y as isize
+        );
+        let rect = Rect::new(
+            (center.x - search_radius, center.y - search_radius).into(),
+            (center.x + search_radius, center.y + search_radius).into(),
+        );
+        let found: Vec<_> = self.bound
+            .valid_positions(rect.iter_positions())
+            .filter_map(|pos| {
+                let lat_pos = Pos2D::<usize>::from(pos);
+                if self[lat_pos] == cell.spin {
+                    return Some(lat_pos);
+                }
+                None
+            })
+            .collect();
+        if found.len() != cell.area as usize {
+            log::warn!(
+                "Only found {} positions out of the {} expected for cell with spin {} \
+                (try to increase `radius_scaler`)", 
+                found.len(),
+                cell.area,
+                cell.spin
+            )
+        }
+        found
+    }
+    
+    /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
+    ///
+    /// Is considerably slower than `box_cell_positions()` and may fail if cell is not contiguous 
+    /// or if the cell center is not a cell position.
+    pub fn contiguous_cell_positions<N: Neighbourhood>(&self, cell: &Cell, neighbourhood: &N) -> Vec<Pos2D<usize>> {
+        let mut visited = Lattice::<bool, _>::new(self.bound.clone());
+        let mut found = Vec::with_capacity(cell.area as usize);
+        let mut queue = VecDeque::from([Pos2D::new(
+            cell.center.pos.x as isize,
+            cell.center.pos.y as isize
+        )]);
+
+        while !queue.is_empty() {
+            let pos = queue.pop_front().unwrap();
+            let lat_pos = Pos2D::from(pos);
+            if cell.spin != self[lat_pos] {
+                continue;
+            }
+            let neighs = self
+                
+                .bound
+                .valid_positions(neighbourhood.neighbours(pos));
+            for neigh in neighs {
+                let lat_neigh = Pos2D::from(neigh);
+                if !visited[lat_neigh] {
+                    visited[lat_neigh] = true;
+                    queue.push_back(neigh);
+                }
+            }
+            visited[lat_pos] = true;
+            found.push(lat_pos);
+        }
+
+        if found.len() != cell.area as usize {
+            log::warn!(
+                "Only found {} positions out of the {} expected for cell with spin {} \
+                (cell might be discontiguous)", 
+                found.len(),
+                cell.area,
+                cell.spin
+            )
+        }
+        found
+    }
+}
+
+impl<B> Deref for CellLattice<B> {
+    type Target = Lattice<Spin, B>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.lat
+    }
+}
+
+impl<B> DerefMut for CellLattice<B> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.lat
     }
 }

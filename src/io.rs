@@ -43,7 +43,7 @@ pub fn simulation_image(env: &Environment) -> RgbImage {
         spins
     ).unwrap();
     
-    for cell in &env.cell_vec {
+    for cell in &env.cells {
         let center = env.cell_lattice.bound.valid_pos(Pos2D::new(
             cell.center.pos().x as isize,
             cell.center.pos().y as isize,

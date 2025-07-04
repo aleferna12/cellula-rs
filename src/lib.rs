@@ -11,3 +11,4 @@ pub mod boundary;
 pub mod neighbourhood;
 pub mod adhesion;
 pub mod constants;
+pub mod cell_container;

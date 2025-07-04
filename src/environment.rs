@@ -1,33 +1,27 @@
 use crate::boundary::Boundary;
 use crate::cell::{Cell, CellCenter};
+use crate::cell_container::CellContainer;
+use crate::constants::{LatticeBoundaryType, Spin};
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
-use crate::lattice::Lattice;
+use crate::lattice::CellLattice;
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
-use crate::pos::{Pos2D, Rect};
+use crate::pos::{AngularProjection, Pos2D, Rect};
 use std::borrow::Borrow;
-use std::collections::VecDeque;
-use std::f32::consts::TAU;
-use crate::constants::{LatticeBoundaryType, Spin};
+use crate::environment::DivisionError::{NewCellTooBig, NewCellTooSmall};
 
 pub struct Environment {
-    pub cell_lattice: Lattice<Spin, LatticeBoundaryType>,
-    pub(crate) cell_vec: Vec<Cell>,
+    pub cell_lattice: CellLattice<LatticeBoundaryType>,
+    pub cells: CellContainer,
     pub edge_book: EdgeBook,
-    pub neighbourhood: MooreNeighbourhood,
-    pub cell_target_area: u32,
-    pub cell_growth_period: u32,
-    pub cell_div_area: u32
+    pub neighbourhood: MooreNeighbourhood
 }
 
 impl Environment {
     pub fn new(
         width: usize, 
         height: usize, 
-        neigh_r: u8,
-        cell_target_area: u32,
-        cell_div_area: u32,
-        cell_growth_period: u32,
+        neigh_r: u8
     ) -> Self {
         let rect = Rect::new(
             (0, 0).into(),
@@ -35,13 +29,10 @@ impl Environment {
         );
         
          Self {
-            cell_lattice: Lattice::new(LatticeBoundaryType::new(rect)),
-            cell_vec: vec![],
-            edge_book: EdgeBook::new(),
-            neighbourhood: MooreNeighbourhood::new(neigh_r),
-             cell_target_area,
-             cell_div_area,
-             cell_growth_period
+             cell_lattice: CellLattice::new(LatticeBoundaryType::new(rect)),
+             cells: CellContainer::new(),
+             edge_book: EdgeBook::new(),
+             neighbourhood: MooreNeighbourhood::new(neigh_r)
         }
     }
 
@@ -53,32 +44,8 @@ impl Environment {
         self.cell_lattice.height()
     }
 
-    pub fn get_entity(&self, spin: Spin) -> LatticeEntity<&Cell> {
-        if spin == Medium::<&Cell>.spin() {
-            return Medium;
-        }
-        if spin == Solid::<&Cell>.spin() {
-            return Solid;
-        }
-        SomeCell(&self.cell_vec[spin as usize - LatticeEntity::first_cell_spin() as usize])
-    }
-
-    pub fn get_entity_mut(&mut self, spin: Spin) -> LatticeEntity<&mut Cell> {
-        if spin == Medium::<&Cell>.spin() {
-            return Medium;
-        }
-        if spin == Solid::<&Cell>.spin() {
-            return Solid;
-        }
-        SomeCell(&mut self.cell_vec[spin as usize - LatticeEntity::first_cell_spin() as usize])
-    }
-    
-    pub fn n_cells(&self) -> usize {
-        self.cell_vec.len()
-    }
-
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&Cell> {
-        let spin = self.n_cells() as Spin + LatticeEntity::first_cell_spin();
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, cell_target_area: u32) -> Option<&Cell> {
+        let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
         let center = self.cell_lattice.bound.valid_pos(Pos2D::new(
             rect.min.x as isize,
             rect.min.y as isize
@@ -86,7 +53,7 @@ impl Environment {
         let mut cell = Cell::new(
             spin,
             0,
-            self.cell_target_area,
+            cell_target_area,
             CellCenter::new(Pos2D::new(center?.x as f32, center?.y as f32), self.width(), self.height())
         );
         
@@ -106,8 +73,8 @@ impl Environment {
         if cell.area == 0 { 
             return None;
         }
-        self.cell_vec.push(cell);
-        Some(self.get_entity(spin).unwrap_cell())
+        self.cells.push(cell);
+        Some(self.cells.get_entity(spin).unwrap_cell())
     }
     
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
@@ -172,100 +139,76 @@ impl Environment {
         (removed, added)
     }
     
-    pub fn update_cells(&mut self) {
-        for cell in &mut self.cell_vec {
-            if cell.area < self.cell_div_area {
-                if cell.growth_timer >=  self.cell_growth_period {
-                    cell.target_area += 1;
-                    cell.growth_timer = 0;
-                } else { 
-                    cell.growth_timer += 1;
-                }
-            } else { // Divide
-                cell.target_area = self.cell_target_area;
+    pub fn reproduce(&mut self, cell_target_area: u32, cell_div_area: u32) {
+        let mut divide = vec![];
+        for cell in &self.cells {
+            if cell.area >= cell_div_area {
+                divide.push(cell.spin);
+            }
+        }
+        for spin in divide {
+            if let Err(e) = self.divide_cell(spin, cell_target_area) {
+                log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e);
             }
         }
     }
-
-    // This function returns a Vec so that we can check that the site number matches
-    /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
-    /// 
-    /// May fail if `radius_scaler` is too small.
-    pub fn box_cell_positions(&self, cell: &Cell, radius_scaler: f32) -> Vec<Pos2D<usize>> {
-        let search_radius = (radius_scaler * (cell.area as f32 / TAU).sqrt()) as isize;
-        let center = Pos2D::new(
-            cell.center.pos.x as isize,
-            cell.center.pos.y as isize
+    
+    // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
+    pub fn divide_cell(&mut self, spin: Spin, cell_target_area: u32) -> Result<&Cell, DivisionError> {
+        let new_spin = self.cells.next_spin();
+        let mom_cell = self
+            .cells
+            .get_entity_mut(spin)
+            .expect_cell(&format!("passed non-cell with spin {} to `divide_cel()`", spin));
+        let mut mom_clone = mom_cell.clone();
+        
+        let mut new_cell = Cell::new(
+            new_spin,
+            0,
+            cell_target_area,
+            CellCenter::origin()
         );
-        let rect = Rect::new(
-            (center.x - search_radius, center.y - search_radius).into(),
-            (center.x + search_radius, center.y + search_radius).into(),
-        );
-        let found: Vec<_> = self.cell_lattice.bound
-            .valid_positions(rect.iter_positions())
-            .filter_map(|pos| {
-                let lat_pos = Pos2D::<usize>::from(pos);
-                if self.cell_lattice[lat_pos] == cell.spin {
-                    return Some(lat_pos);
-                }
-                None
+        let new_positions: Vec<_> = self
+            .cell_lattice
+            // TODO!: parameterise search radius
+            .box_cell_positions(&mom_cell, 2.5)
+            .into_iter()
+            .filter(|pos| { 
+                let proj = AngularProjection::from_pos(
+                    Pos2D::new(pos.x as f32, pos.y as f32),
+                    self.cell_lattice.width(),
+                    self.cell_lattice.height()
+                );
+                // TODO!: use principal component to determine division axis
+                //  current algorithm hands out all x positions to the right of the cell centre to the new cell
+                proj.delta_angles(&mom_cell.center.projection).0 > 0.
             })
             .collect();
-        if found.len() != cell.area as usize {
-            log::warn!(
-                "Only found {} positions out of the {} expected for cell with spin {} \
-                (try to increase `radius_scaler`)", 
-                found.len(),
-                cell.area,
-                cell.spin
-            )
-        }
-        found
-    }
-
-    /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
-    /// 
-    /// Is considerably slower than `box_cell_positions()` and may fail if cell is not contiguous 
-    /// or if the cell center is not a cell position.
-    pub fn contiguous_cell_positions(&self, cell: &Cell) -> Vec<Pos2D<usize>> {
-        let mut visited = Lattice::<bool, _>::new(self.cell_lattice.bound.clone());
-        let mut found = Vec::with_capacity(cell.area as usize);
-        let mut queue = VecDeque::from([Pos2D::new(
-            cell.center.pos.x as isize,
-            cell.center.pos.y as isize
-        )]);
-
-        while !queue.is_empty() {
-            let pos = queue.pop_front().unwrap();
-            let lat_pos = Pos2D::from(pos);
-            if cell.spin != self.cell_lattice[lat_pos] {
-                continue;
+        for pos in new_positions {
+            if mom_cell.area == 1 {
+                return Err(NewCellTooBig);
             }
-            let neighs = self
-                .cell_lattice
-                .bound
-                .valid_positions(self.neighbourhood.neighbours(pos));
-            for neigh in neighs {
-                let lat_neigh = Pos2D::from(neigh);
-                if !visited[lat_neigh] {
-                    visited[lat_neigh] = true;
-                    queue.push_back(neigh);
-                }
-            }
-            visited[lat_pos] = true;
-            found.push(lat_pos);
+            self.cell_lattice[pos] = new_spin;
+            new_cell.shift_position::<LatticeBoundaryType>(
+                pos,
+                self.cell_lattice.width(),
+                self.cell_lattice.height(),
+                true
+            );
+            mom_clone.shift_position::<LatticeBoundaryType>(
+                pos,
+                self.cell_lattice.width(),
+                self.cell_lattice.height(),
+                false
+            );
         }
-        
-        if found.len() != cell.area as usize {
-            log::warn!(
-                "Only found {} positions out of the {} expected for cell with spin {} \
-                (cell might be discontiguous)", 
-                found.len(),
-                cell.area,
-                cell.spin
-            )
+        if new_cell.area > 0 {
+            mom_clone.target_area = cell_target_area;
+            self.cells.replace(mom_clone);
+            Ok(self.cells.push(new_cell))
+        } else { 
+            Err(NewCellTooSmall)
         }
-        found
     }
 
     /// Got tired of refactoring test and benchmark code
@@ -273,12 +216,15 @@ impl Environment {
         Environment::new(
             width,
             height,
-            1,
-            64,
-            1,
-            64
+            1
         )
     }
+}
+
+#[derive(Debug)]
+pub enum DivisionError {
+    NewCellTooSmall,
+    NewCellTooBig
 }
 
 /// This enum represents anything that can be on the cell lattice.
@@ -317,6 +263,13 @@ impl<C: std::fmt::Debug> LatticeEntity<C> {
             _ => panic!("called `LatticeEntity::unwrap_cell()` on a `{:?}` value", self)
         }
     }
+
+    pub fn expect_cell(self, message: &str) -> C {
+        match self {
+            SomeCell(cell) => cell,
+            _ => panic!("{}", message)
+        }
+    }
 }
 
 impl LatticeEntity<()> {
@@ -339,30 +292,32 @@ pub mod tests {
             Rect::new(
                 Pos2D::new(10, 10),
                 Pos2D::new(20, 20)
-            )
+            ),
+            0
         );
         assert_eq!(env.edge_book.len(), 8 * 4 * 3 + 4 * 5);
-        let entity1 = env.get_entity(LatticeEntity::first_cell_spin());
+        let entity1 = env.cells.get_entity(LatticeEntity::first_cell_spin());
         assert!(matches!(entity1, SomeCell(_)));
 
         env.spawn_rect_cell(
             Rect::new(
                 Pos2D::new(15, 15),
                 Pos2D::new(25, 25)
-            )
+            ),
+            0
         );
 
-        let entity2 = env.get_entity(LatticeEntity::first_cell_spin() + 1);
+        let entity2 = env.cells.get_entity(LatticeEntity::first_cell_spin() + 1);
         assert!(matches!(entity2, SomeCell(_)));
 
         let cell2 = entity2.unwrap_cell();
         assert_eq!(cell2.area, 75);
         assert_eq!(
-            env.contiguous_cell_positions(cell2).len(),
+            env.cell_lattice.contiguous_cell_positions(cell2, &env.neighbourhood).len(),
             75
         );
         assert_eq!(
-            env.box_cell_positions(cell2, 2.).len(),
+            env.cell_lattice.box_cell_positions(cell2, 2.).len(),
             75
         );
     }

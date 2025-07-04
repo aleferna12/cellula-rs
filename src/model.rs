@@ -53,7 +53,8 @@ impl Model {
                 Rect::new(
                     pos,
                     (pos.x + cell_side, pos.y + cell_side).into()
-                )
+                ),
+                self.parameters.environment.cell_target_area
             );
             if cell.is_some() {
                 cell_count += 1;
@@ -112,8 +113,12 @@ impl Model {
             }
 
             self.ca.step(&mut self.env, &mut self.rng);
-            if i % self.parameters.environment.update_cells_period == 0 {
-                self.env.update_cells();
+            if i % self.parameters.environment.cell_update_period == 0 {
+                self.env.cells.update_cells(self.parameters.environment.cell_div_area);
+                self.env.reproduce(
+                    self.parameters.environment.cell_target_area, 
+                    self.parameters.environment.cell_div_area
+                );
             }
         }
     }
@@ -125,10 +130,7 @@ impl From<Parameters> for Model {
             env: Environment::new(
                 parameters.environment.width,
                 parameters.environment.height,
-                parameters.environment.neigh_r,
-                parameters.environment.cell_target_area,
-                parameters.environment.cell_div_area,
-                parameters.environment.cell_growth_period,
+                parameters.environment.neigh_r
             ),
             ca: parameters.cellular_automata.clone().into(),
             rng: if parameters.general.seed == 0 {
