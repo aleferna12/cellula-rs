@@ -84,6 +84,8 @@ impl AngularProjection {
         (self.x_sin.atan2(self.x_cos).rem_euclid(TAU), self.y_sin.atan2(self.y_cos).rem_euclid(TAU))
     }
     
+    // TODO!: this can be optimised to not require atan2 
+    //  (and has a significant impact in performance due to hot call in CA)
     pub(crate) fn delta_angles(&self, other: &AngularProjection) -> (f32, f32) {
         // This avoids unecessary multiple calls to rem_euclid
         let x = (self.x_sin * other.x_cos - self.x_cos * other.x_sin)
