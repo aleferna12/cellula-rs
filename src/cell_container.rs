@@ -25,7 +25,7 @@ impl CellContainer {
         self.vec.push(RelCell {
             spin: new_spin,
             mom: mom_spin.unwrap_or(new_spin),
-            free_cell: cell
+            cell: cell
         });
         self.vec.last().unwrap()
     }

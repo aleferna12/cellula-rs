@@ -7,24 +7,38 @@ use crate::pos::{AngularProjection, Pos2D};
 /// Represents a cell that is bound to an `Environment`.
 ///
 /// Functions that do not need information about a cell's relational operators 
-/// (`spin` and `mom`) should take `Cell` as an argument instead.
+/// (`spin` and `mom`) should take `&Cell` as an argument instead.
 ///
-/// Derefs into `Cell`.
+/// Implements `Deref<Cell>`.
 #[derive(Debug, Clone)]
 pub struct RelCell {
     pub spin: Spin,
     pub mom: Spin,
-    pub(crate) free_cell: Cell
+    pub(crate) cell: Cell
 }
 
 impl RelCell {
     /// Creates a mock cell with spin and mom = `LatticeEntity<()>::first_cell_spin()` for testing.
-    pub fn mock(free_cell: Cell) -> Self {
+    pub fn mock(cell: Cell) -> Self {
         RelCell {
             spin: LatticeEntity::first_cell_spin(),
             mom: LatticeEntity::first_cell_spin(),
-            free_cell
+            cell
         }
+    }
+}
+
+impl Deref for RelCell {
+    type Target = Cell;
+
+    fn deref(&self) -> &Self::Target {
+        &self.cell
+    }
+}
+
+impl DerefMut for RelCell {
+    fn deref_mut(&mut self) -> &mut <Self as Deref>::Target {
+        &mut self.cell
     }
 }
 
@@ -69,20 +83,6 @@ impl Cell {
         }
     }
     
-}
-
-impl Deref for RelCell {
-    type Target = Cell;
-
-    fn deref(&self) -> &Self::Target {
-        &self.free_cell
-    }
-}
-
-impl DerefMut for RelCell {
-    fn deref_mut(&mut self) -> &mut <Self as Deref>::Target { 
-        &mut self.free_cell
-    }
 }
 
 #[derive(Debug, Clone)]
