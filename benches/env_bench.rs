@@ -50,7 +50,7 @@ fn bench_env(c: &mut Criterion) {
     c.bench_function("replace_edges", |b| {
         b.iter_batched_ref(
             || {
-                let mut env = Environment::empty_test(100, 100);
+                let mut env = Environment::new_empty_test(100, 100);
                 let mut rng = Xoshiro256StarStar::seed_from_u64(1241254152);
                 for _ in 0..env.cell_lattice.width() * env.cell_lattice.height() / 2 {
                     add_random_edge(&mut env, &mut rng);
@@ -66,8 +66,8 @@ fn bench_env(c: &mut Criterion) {
         );
     });
 
-    let mut env = Environment::empty_test(100, 100);
-    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()), 0);
+    let mut env = Environment::new_empty_test(100, 100);
+    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()));
 
     let mut group = c.benchmark_group("cell_positions");
     group.bench_function("contiguous_cell_positions", |b| {

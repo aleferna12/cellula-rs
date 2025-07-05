@@ -71,13 +71,19 @@ pub struct EnvironmentParameters {
     pub height: usize,
     #[serde(default = "param_defaults::enclose")]
     pub enclose: bool,
-    pub n_cells: u32,
     pub neigh_r: u8,
+    pub n_cells: u32,
     pub cell_start_area: u32,
-    pub cell_target_area: u32,
-    pub cell_div_area: u32,
-    pub cell_update_period: u32,
-    pub cells_grow: bool
+    pub update_period: u32,
+    pub cell: CellParameters
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct CellParameters {
+    pub target_area: u32,
+    pub div_area: u32,
+    pub grow: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -21,13 +21,17 @@ neigh-r = 1
 n-cells = 64
 # Starting cell area.
 cell-start-area = 64
+# Period (in MCS) with which the environment is updated.
+# This includes cell growth (by 1 area unit), genomic parameters, and reproduction.
+update-period = 32
+
+[environment.cell]
 # Target cell area.
-cell-target-area = 64
+target-area = 64
 # Cell area before division.
-cell-div-area = 128
-# Period (in MCS) with which the cell parameters are updated.
-# This includes growth (by 1 area unit), genomic parameters, and cell reproduction.
-cell-update-period = 32
+div-area = 128
+# Whether cells are allowed to grow leading to division.
+grow = false
 
 [cellular-automata]
 # Boltzmann temperature.

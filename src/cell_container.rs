@@ -2,17 +2,16 @@ use crate::cell::Cell;
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
+use crate::parameters::CellParameters;
 
-#[derive(Default)]
 pub struct CellContainer {
+    pub target_area: u32,
+    pub div_area: u32,
+    pub grow: bool,
     vec: Vec<Cell>
 }
 
 impl CellContainer {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn n_cells(&self) -> usize {
         self.vec.len()
     }
@@ -60,11 +59,22 @@ impl CellContainer {
     }
 
     // TODO: move to Cell?
-    pub fn update_cells(&mut self, cell_div_area: u32, cells_grow: bool) {
-        for cell in self {
-            if cells_grow && cell.target_area < cell_div_area {
+    pub fn update_cells(&mut self) {
+        for cell in &mut self.vec {
+            if self.grow && cell.target_area < self.div_area {
                 cell.target_area += 1;
             }
+        }
+    }
+}
+
+impl From<CellParameters> for CellContainer {
+    fn from(params: CellParameters) -> Self {
+        Self {
+            target_area: params.target_area,
+            div_area: params.div_area,
+            grow: params.grow,
+            vec: vec![],
         }
     }
 }

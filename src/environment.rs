@@ -8,34 +8,95 @@ use crate::lattice::CellLattice;
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::pos::{AngularProjection, Pos2D, Rect};
 use std::borrow::Borrow;
+use rand::Rng;
 use crate::environment::DivisionError::{NewCellTooBig, NewCellTooSmall};
+use crate::parameters::{CellParameters, EnvironmentParameters};
 
 pub struct Environment {
     pub cell_lattice: CellLattice<LatticeBoundaryType>,
     pub cells: CellContainer,
     pub edge_book: EdgeBook,
-    pub neighbourhood: MooreNeighbourhood
+    pub neighbourhood: MooreNeighbourhood,
+    pub update_period: u32
 }
 
 impl Environment {
-    pub fn new(
-        width: usize, 
-        height: usize, 
-        neigh_r: u8
+    pub fn new(params: EnvironmentParameters, rng: &mut impl Rng) -> Self {
+        let mut env = Self::new_empty(
+            params.width,
+            params.height,
+            params.neigh_r,
+            params.update_period,
+            params.cell
+        );
+
+        if params.enclose {
+            log::info!("Enclosing environment with a border");
+            env.make_border();
+        }
+
+        log::info!("Creating cells");
+        let mut cell_count = 0;
+        let cell_side = (params.cell_start_area as f32).sqrt() as usize;
+        for _ in 0..params.n_cells {
+            let pos = env.cell_lattice.random_pos(rng);
+            let cell = env.spawn_rect_cell(
+                Rect::new(
+                    pos,
+                    (pos.x + cell_side, pos.y + cell_side).into()
+                ),
+            );
+            if cell.is_some() {
+                cell_count += 1;
+            }
+        }
+        log::info!("Created {} out of the {} cells requested", cell_count, params.n_cells);
+        
+        env
+    }
+
+    pub fn new_empty(
+        width: usize,
+        height: usize,
+        neigh_r: u8,
+        cell_update_period: u32,
+        cell_parameters: CellParameters
     ) -> Self {
         let rect = Rect::new(
             (0, 0).into(),
             (width as isize, height as isize).into()
         );
-        
-         Self {
-             cell_lattice: CellLattice::new(LatticeBoundaryType::new(rect)),
-             cells: CellContainer::new(),
-             edge_book: EdgeBook::new(),
-             neighbourhood: MooreNeighbourhood::new(neigh_r)
+
+        Self {
+            cell_lattice: CellLattice::new(LatticeBoundaryType::new(rect)),
+            cells: CellContainer::from(cell_parameters),
+            edge_book: EdgeBook::new(),
+            neighbourhood: MooreNeighbourhood::new(neigh_r),
+            update_period: cell_update_period
         }
     }
 
+    /// Empty environment with arbitrary cell parameters for testing purposes.
+    /// 
+    /// Do not use this in production, no cells can be added to an environment created through this method.
+    pub fn new_empty_test(width:usize, height: usize) -> Self {
+        Environment::new_empty(
+            width,
+            height,
+            1,
+            0,
+            CellParameters {
+                target_area: 0,
+                div_area: 0,
+                grow: false,
+            },
+        )
+    }
+
+    pub fn time_to_update(&self, time_step: u32) -> bool {
+        time_step % self.update_period == 0
+    }
+    
     pub fn width(&self) -> usize {
         self.cell_lattice.width()
     }
@@ -44,7 +105,7 @@ impl Environment {
         self.cell_lattice.height()
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, cell_target_area: u32) -> Option<&Cell> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&Cell> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
         let center = self.cell_lattice.bound.valid_pos(Pos2D::new(
             rect.min.x as isize,
@@ -53,7 +114,7 @@ impl Environment {
         let mut cell = Cell::new(
             spin,
             0,
-            cell_target_area,
+            self.cells.target_area,
             CellCenter::new(Pos2D::new(center?.x as f32, center?.y as f32), self.width(), self.height())
         );
         
@@ -139,23 +200,24 @@ impl Environment {
         (removed, added)
     }
     
-    pub fn reproduce(&mut self, cell_target_area: u32, cell_div_area: u32) {
+    pub fn reproduce(&mut self) {
         let mut divide = vec![];
         for cell in &self.cells {
-            if cell.area >= cell_div_area {
+            if cell.area >= self.cells.div_area {
                 divide.push(cell.spin);
             }
         }
         for spin in divide {
-            if let Err(e) = self.divide_cell(spin, cell_target_area) {
+            if let Err(e) = self.divide_cell(spin) {
                 log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e);
             }
         }
     }
     
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin, cell_target_area: u32) -> Result<&Cell, DivisionError> {
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&Cell, DivisionError> {
         let new_spin = self.cells.next_spin();
+        let cell_target_area = self.cells.target_area;
         let mom_cell = self
             .cells
             .get_entity_mut(spin)
@@ -171,7 +233,7 @@ impl Environment {
         let new_positions: Vec<_> = self
             .cell_lattice
             // TODO!: parameterise search radius
-            .box_cell_positions(&mom_cell, 2.5)
+            .box_cell_positions(mom_cell, 2.5)
             .into_iter()
             .filter(|pos| { 
                 let proj = AngularProjection::from_pos(
@@ -209,15 +271,6 @@ impl Environment {
         } else { 
             Err(NewCellTooSmall)
         }
-    }
-
-    /// Got tired of refactoring test and benchmark code
-    pub fn empty_test(width:usize, height: usize) -> Self {
-        Environment::new(
-            width,
-            height,
-            1
-        )
     }
 }
 
@@ -287,13 +340,12 @@ pub mod tests {
 
     #[test]
     fn test_spawn_rect_cell() {
-        let mut env = Environment::empty_test(100, 100);
+        let mut env = Environment::new_empty_test(100, 100);
         env.spawn_rect_cell(
             Rect::new(
                 Pos2D::new(10, 10),
                 Pos2D::new(20, 20)
-            ),
-            0
+            )
         );
         assert_eq!(env.edge_book.len(), 8 * 4 * 3 + 4 * 5);
         let entity1 = env.cells.get_entity(LatticeEntity::first_cell_spin());
@@ -303,8 +355,7 @@ pub mod tests {
             Rect::new(
                 Pos2D::new(15, 15),
                 Pos2D::new(25, 25)
-            ),
-            0
+            )
         );
 
         let entity2 = env.cells.get_entity(LatticeEntity::first_cell_spin() + 1);

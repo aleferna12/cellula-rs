@@ -21,17 +21,22 @@ height = 128
 # Whether to create a solid border around the cell lattice.
 # Should not be used with `neigh_r` > 1.
 enclose = false
+neigh-r = 1
 # Number of starting cells in the environment.
 n-cells = 1024
-# Cell parameters
 # Starting cell area.
 cell-start-area = 64
+# Period (in MCS) with which the environment is updated.
+# This includes cell growth (by 1 area unit), genomic parameters, and reproduction.
+update-period = 32
+
+[environment.cell]
 # Target cell area.
-cell-target-area = 64
-cell-div-area = 128
-cell-update-period = 1000000
-# Radius of the neighbourhood.
-neigh-r = 1
+target-area = 64
+# Cell area before division.
+div-area = 128
+# Whether cells are allowed to grow leading to division.
+grow = false
 
 [cellular-automata]
 # Boltzmann temperature.
