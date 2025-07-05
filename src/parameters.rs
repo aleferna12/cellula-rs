@@ -77,6 +77,7 @@ pub struct EnvironmentParameters {
     pub cell_target_area: u32,
     pub cell_div_area: u32,
     pub cell_update_period: u32,
+    pub cells_grow: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]

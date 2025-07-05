@@ -114,7 +114,10 @@ impl Model {
 
             self.ca.step(&mut self.env, &mut self.rng);
             if i % self.parameters.environment.cell_update_period == 0 {
-                self.env.cells.update_cells(self.parameters.environment.cell_div_area);
+                self.env.cells.update_cells(
+                    self.parameters.environment.cell_div_area,
+                    self.parameters.environment.cells_grow
+                );
                 self.env.reproduce(
                     self.parameters.environment.cell_target_area, 
                     self.parameters.environment.cell_div_area

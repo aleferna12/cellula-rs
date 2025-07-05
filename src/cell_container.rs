@@ -60,9 +60,9 @@ impl CellContainer {
     }
 
     // TODO: move to Cell?
-    pub fn update_cells(&mut self, cell_div_area: u32) {
+    pub fn update_cells(&mut self, cell_div_area: u32, cells_grow: bool) {
         for cell in self {
-            if cell.target_area < cell_div_area {
+            if cells_grow && cell.target_area < cell_div_area {
                 cell.target_area += 1;
             }
         }
