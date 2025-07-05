@@ -90,7 +90,8 @@ impl<A: AdhesionSystem> CA<A> {
         (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
     }
     
-    /// Currently attracts cells to the center of the lattice
+    // TODO!: This currently just attracts cells to a fix point
+    //  It also only works for periodic boundaries (and is very slow due to delta_angles)
     pub fn chemotaxis_bias(
         &self, 
         chemotaxis_mu: f32, 
@@ -104,6 +105,7 @@ impl<A: AdhesionSystem> CA<A> {
             width,
             height
         );
+        // Attracts cells to the center of lattice
         let proj_center = AngularProjection::from_pos(
             Pos2D::new((width / 2) as f32, (height / 2) as f32),
             width,
