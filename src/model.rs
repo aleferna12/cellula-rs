@@ -60,7 +60,7 @@ impl Model {
             }
 
             self.ca.step(&mut self.env, &mut self.rng);
-            if self.env.time_to_update(i) {
+            if self.env.time_to_update(i) { 
                 self.env.cells.update_cells();
                 self.env.reproduce();
             }
@@ -113,7 +113,7 @@ impl TryFrom<Parameters> for Model {
                 Err(e) => log::warn!("Failed to initialise movie maker with error `{}`", e),
             }
         };
-        
+
         Ok(model)
     }
 }

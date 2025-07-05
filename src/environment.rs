@@ -199,7 +199,7 @@ impl Environment {
         (removed, added)
     }
     
-    pub fn reproduce(&mut self) {
+    pub fn reproduce(&mut self) -> Vec<Spin> {
         let mut divide = vec![];
         for cell in &self.cells {
             if cell.area >= self.cells.div_area {
@@ -213,6 +213,7 @@ impl Environment {
                 Ok(cell) => divided.push(cell.spin)
             }
         }
+        divided
     }
     
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
