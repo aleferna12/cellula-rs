@@ -1,6 +1,7 @@
 use std::path::Path;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
+use crate::constants::Spin;
 
 static CLI_NOTES: &str = "\
     Model parameters are loaded from a TOML file specified by CONFIG.\n\
@@ -72,7 +73,7 @@ pub struct EnvironmentParameters {
     #[serde(default = "param_defaults::enclose")]
     pub enclose: bool,
     pub neigh_r: u8,
-    pub n_cells: u32,
+    pub n_cells: Spin,
     pub cell_start_area: u32,
     pub update_period: u32,
     pub cell: CellParameters
