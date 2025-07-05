@@ -1,7 +1,7 @@
-use num::Num;
-use num::traits::Euclid;
 use crate::cell::Cell;
 use crate::pos::{AngularProjection, Pos2D, Rect};
+use num::traits::Euclid;
+use num::Num;
 
 pub trait Boundary {
     type Coord;
@@ -180,7 +180,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_periodic_boundary() {
         let per = PeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));

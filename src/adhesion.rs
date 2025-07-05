@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 use std::ptr;
-use crate::cell::Cell;
+use crate::cell::RelCell;
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::*;
 use crate::parameters::StaticAdhesionParameters;
 
 pub trait AdhesionSystem {
-    fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32;
+    fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32;
 }
 
 pub struct ClonalAdhesion {
@@ -28,7 +28,7 @@ impl ClonalAdhesion {
 }
 
 impl AdhesionSystem for ClonalAdhesion {
-    fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
+    fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32 {
         if let (SomeCell(c1), SomeCell(c2)) = (entity1, entity2) {
             let canonical = Self::canonicalize((c1.spin, c2.spin));
             if self.clone_pairs.contains(&canonical) {
@@ -56,7 +56,7 @@ pub struct StaticAdhesion {
 }
 
 impl AdhesionSystem for StaticAdhesion {
-    fn adhesion_energy(&self, entity1: LatticeEntity<&Cell>, entity2: LatticeEntity<&Cell>) -> f32 {
+    fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32 {
         match (entity1, entity2) {
             (SomeCell(c1), SomeCell(c2)) => {
                 if ptr::eq(c1, c2) {

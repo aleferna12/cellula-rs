@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use criterion::BatchSize;
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
-use evo_cpm::cell::Cell;
+use evo_cpm::cell::RelCell;
 use evo_cpm::edge::Edge;
 use evo_cpm::environment::{Environment, LatticeEntity};
 use evo_cpm::environment::LatticeEntity::*;
@@ -43,8 +43,8 @@ fn replace_random_edges(n_edges: usize, env: &mut Environment, rng: &mut impl Rn
 
 fn bench_env(c: &mut Criterion) {
     c.bench_function("lattice_entity_discriminant", |b| b.iter(|| {
-        Medium::<&Cell>.spin();
-        Solid::<&Cell>.spin();
+        Medium::<&RelCell>.spin();
+        Solid::<&RelCell>.spin();
     }));
 
     c.bench_function("replace_edges", |b| {

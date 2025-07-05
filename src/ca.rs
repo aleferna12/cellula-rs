@@ -2,7 +2,7 @@ use std::f32::consts::E;
 use rand::Rng;
 pub use crate::adhesion::AdhesionSystem;
 use crate::boundary::Boundary;
-use crate::cell::{Cell, CellCenter};
+use crate::cell::{RelCell, CellCenter};
 use crate::constants::LatticeBoundaryType;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
@@ -52,13 +52,13 @@ impl<A: AdhesionSystem> CA<A> {
         pos_to: Pos2D<usize>
     ) -> f32 {
         let spin_to = env.cell_lattice.lat[pos_to];
-        if spin_to == Solid::<&Cell>.spin() {
+        if spin_to == Solid::<&RelCell>.spin() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_from = {
             let spin = env.cell_lattice.lat[pos_from];
-            if spin == Solid::<&Cell>.spin() { Medium::<&Cell>.spin() } else { spin }
+            if spin == Solid::<&RelCell>.spin() { Medium::<&RelCell>.spin() } else { spin }
         };
 
         let entity_from = env.cells.get_entity(spin_from);
@@ -128,9 +128,9 @@ impl<A: AdhesionSystem> CA<A> {
 
     pub fn delta_hamiltonian<'a>(
         &self,
-        entity_from: LatticeEntity<&Cell>,
-        entity_to: LatticeEntity<&Cell>,
-        neigh_entities: impl Iterator<Item = LatticeEntity<&'a Cell>>
+        entity_from: LatticeEntity<&RelCell>,
+        entity_to: LatticeEntity<&RelCell>,
+        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell>>
     ) -> f32 {
         let mut delta_h = 0.;
         delta_h += self.delta_hamiltonian_size(entity_from, entity_to);
@@ -138,7 +138,7 @@ impl<A: AdhesionSystem> CA<A> {
         delta_h
     }
     
-    pub fn delta_hamiltonian_size(&self, entity_from: LatticeEntity<&Cell>, entity_to: LatticeEntity<&Cell>) -> f32 {
+    pub fn delta_hamiltonian_size(&self, entity_from: LatticeEntity<&RelCell>, entity_to: LatticeEntity<&RelCell>) -> f32 {
         let mut delta_h = 0.;
         if let SomeCell(cell) = entity_from {
             delta_h += self.size_energy_diff(true, cell.area, cell.target_area);
@@ -152,9 +152,9 @@ impl<A: AdhesionSystem> CA<A> {
     // TODO!: test
     pub fn delta_hamiltonian_adhesion<'a>(
         &self,
-        entity_from: LatticeEntity<&Cell>,
-        entity_to: LatticeEntity<&Cell>,
-        neigh_entities: impl Iterator<Item = LatticeEntity<&'a Cell>>
+        entity_from: LatticeEntity<&RelCell>,
+        entity_to: LatticeEntity<&RelCell>,
+        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell>>
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_entities {
@@ -184,7 +184,7 @@ impl<A: AdhesionSystem + From<StaticAdhesionParameters>> From<CellularAutomataPa
 #[cfg(test)]
 mod tests {
     use crate::adhesion::StaticAdhesion;
-    use crate::cell::CellCenter;
+    use crate::cell::{Cell, CellCenter};
     use super::*;
 
     #[test]
@@ -199,9 +199,8 @@ mod tests {
             size_lambda: 1.,
             chemotaxis_mu: 1.
         }.into();
-        let cell1 = Cell::new(1, 100, 100, CellCenter::origin());
-        let cell2 = Cell::new(2, 100, 100, CellCenter::origin());
-        let dh = ca.delta_hamiltonian_size(SomeCell(&cell1), SomeCell(&cell2));
+        let cell = RelCell::mock(Cell::new(100, 100, CellCenter::origin()));
+        let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }
 }

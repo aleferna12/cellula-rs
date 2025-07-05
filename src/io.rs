@@ -4,7 +4,7 @@ use image::{EncodableLayout, RgbImage};
 use std::io;
 use minifb::{Window, WindowOptions};
 use crate::boundary::Boundary;
-use crate::cell::Cell;
+use crate::cell::RelCell;
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::pos::Pos2D;
@@ -59,9 +59,9 @@ pub fn simulation_image(env: &Environment) -> RgbImage {
 ///
 /// This method guarantees 5232 unique colors, starting from this spin the colors will repeat.
 fn spin_to_rgb(spin: Spin) -> [u8; 3] {
-    if spin == LatticeEntity::Medium::<&Cell>.spin() {
+    if spin == LatticeEntity::Medium::<&RelCell>.spin() {
         return [255, 255, 255];
-    } else if spin == LatticeEntity::Solid::<&Cell>.spin() {
+    } else if spin == LatticeEntity::Solid::<&RelCell>.spin() {
         return [0, 0, 0]
     }
 

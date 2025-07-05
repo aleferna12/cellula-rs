@@ -1,5 +1,5 @@
 use crate::boundary::Boundary;
-use crate::cell::{Cell, CellCenter};
+use crate::cell::{RelCell, Cell, CellCenter};
 use crate::cell_container::CellContainer;
 use crate::constants::{LatticeBoundaryType, Spin};
 use crate::edge::{Edge, EdgeBook};
@@ -105,14 +105,13 @@ impl Environment {
         self.cell_lattice.height()
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&Cell> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
         let center = self.cell_lattice.bound.valid_pos(Pos2D::new(
             rect.min.x as isize,
             rect.min.y as isize
         ));
         let mut cell = Cell::new(
-            spin,
             0,
             self.cells.target_area,
             CellCenter::new(Pos2D::new(center?.x as f32, center?.y as f32), self.width(), self.height())
@@ -124,7 +123,7 @@ impl Environment {
                 continue;
             }
             let valid_pos: Pos2D<usize> = trans_pos.unwrap().into();
-            if self.cell_lattice[valid_pos] != Medium::<&Cell>.spin() {
+            if self.cell_lattice[valid_pos] != Medium::<&RelCell>.spin() {
                 continue
             }
             self.cell_lattice[valid_pos] = spin;
@@ -134,17 +133,17 @@ impl Environment {
         if cell.area == 0 { 
             return None;
         }
-        self.cells.push(cell);
+        self.cells.push(cell, None);
         Some(self.cells.get_entity(spin).unwrap_cell())
     }
     
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
-            if self.cell_lattice[pos] != Medium::<&Cell>.spin() {
+            if self.cell_lattice[pos] != Medium::<&RelCell>.spin() {
                 continue
             }
-            self.cell_lattice[pos] = Solid::<&Cell>.spin();
+            self.cell_lattice[pos] = Solid::<&RelCell>.spin();
             area += 1;
         }
         area
@@ -207,25 +206,27 @@ impl Environment {
                 divide.push(cell.spin);
             }
         }
+        let mut divided = vec![];
         for spin in divide {
-            if let Err(e) = self.divide_cell(spin) {
-                log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e);
+            match self.divide_cell(spin) { 
+                Err(e) => log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e),
+                Ok(cell) => divided.push(cell.spin)
             }
         }
     }
     
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&Cell, DivisionError> {
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell, DivisionError> {
         let new_spin = self.cells.next_spin();
         let cell_target_area = self.cells.target_area;
         let mom_cell = self
             .cells
             .get_entity_mut(spin)
             .expect_cell(&format!("passed non-cell with spin {} to `divide_cel()`", spin));
+        // We modify this mock cell to allow the division to be cancelled in the case of an error
         let mut mom_clone = mom_cell.clone();
         
         let mut new_cell = Cell::new(
-            new_spin,
             0,
             cell_target_area,
             CellCenter::origin()
@@ -265,10 +266,11 @@ impl Environment {
             );
         }
         if new_cell.area > 0 {
+            let mom_spin = mom_cell.spin;
             mom_clone.target_area = cell_target_area;
             self.cells.replace(mom_clone);
-            Ok(self.cells.push(new_cell))
-        } else { 
+            Ok(self.cells.push(new_cell, Some(mom_spin)))
+        } else {
             Err(NewCellTooSmall)
         }
     }
@@ -298,7 +300,7 @@ impl<C> LatticeEntity<C> {
     }
 }
 
-impl<C: Borrow<Cell>> LatticeEntity<C> {
+impl<C: Borrow<RelCell>> LatticeEntity<C> {
     /// Maps the `LatticeEntity` to a unique spin value.
     pub fn spin(&self) -> Spin {
         match self {
@@ -375,7 +377,7 @@ pub mod tests {
 
     #[test]
     fn test_lattice_entity_spin() {
-        assert!(LatticeEntity::first_cell_spin() > Medium::<&Cell>.spin());
-        assert!(LatticeEntity::first_cell_spin() > Solid::<&Cell>.spin());
+        assert!(LatticeEntity::first_cell_spin() > Medium::<&RelCell>.spin());
+        assert!(LatticeEntity::first_cell_spin() > Solid::<&RelCell>.spin());
     }
 }

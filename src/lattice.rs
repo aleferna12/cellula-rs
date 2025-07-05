@@ -4,7 +4,7 @@ use crate::boundary::LatticeBoundary;
 use crate::pos::{Pos2D, Rect};
 use rand::Rng;
 use std::ops::{Deref, DerefMut, Index, IndexMut};
-use crate::cell::Cell;
+use crate::cell::RelCell;
 use crate::constants::Spin;
 use crate::neighbourhood::Neighbourhood;
 
@@ -94,7 +94,7 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
     ///
     /// May fail if `radius_scaler` is too small.
-    pub fn box_cell_positions(&self, cell: &Cell, radius_scaler: f32) -> Vec<Pos2D<usize>> {
+    pub fn box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> Vec<Pos2D<usize>> {
         let search_radius = (radius_scaler * (cell.area as f32 / TAU).sqrt()) as isize;
         let center = Pos2D::new(
             cell.center.pos.x as isize,
@@ -130,7 +130,7 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
     ///
     /// Is considerably slower than `box_cell_positions()` and may fail if cell is not contiguous 
     /// or if the cell center is not a cell position.
-    pub fn contiguous_cell_positions<N: Neighbourhood>(&self, cell: &Cell, neighbourhood: &N) -> Vec<Pos2D<usize>> {
+    pub fn contiguous_cell_positions<N: Neighbourhood>(&self, cell: &RelCell, neighbourhood: &N) -> Vec<Pos2D<usize>> {
         let mut visited = Lattice::<bool, _>::new(self.bound.clone());
         let mut found = Vec::with_capacity(cell.area as usize);
         let mut queue = VecDeque::from([Pos2D::new(
