@@ -71,7 +71,10 @@ impl<A: AdhesionSystem> CA<A> {
         
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if let SomeCell(cell) = entity_from {
-            delta_h += self.chemotaxis_bias(self.chemotaxis_mu, &cell.center, pos_to, env.width(), env.height());
+            // TODO! Remove, this was arbitrary for testing
+            if cell.spin % 2 == 0 {
+                delta_h += self.chemotaxis_bias(self.chemotaxis_mu, &cell.center, pos_to, env.width(), env.height());
+            }
         }
         if !self.accept_site_copy(rng, delta_h) {
             return 0.;
