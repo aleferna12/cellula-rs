@@ -1,0 +1,77 @@
+[general]
+# How many MCS the simulation will run for.
+time-steps = 30000
+# Seed for the RNG.
+# Use `0` to pick a random seed.
+# [default = 0]
+seed = 124125415
+
+[environment]
+# Width of the lattice.
+width = 128
+# Height of the lattice.
+height = 128
+# Whether to create a solid border around the cell lattice.
+# Should not be used with `neigh_r` > 1.
+# [default = false]
+enclose = false
+# Radius of the neighbourhood.
+neigh-r = 1
+# Number of starting cells in the environment.
+n-cells = 1
+# Starting cell area.
+cell-start-area = 64
+# Period (in MCS) with which the environment is updated.
+# This includes cell growth (by 1 area unit), genomic parameters, and reproduction.
+update-period = 64
+
+[environment.cell]
+# Target cell area.
+target-area = 64
+# Cell area before division.
+div-area = 128
+# Whether cells are allowed to grow leading to division.
+# [default = true]
+grow = true
+
+[cellular-automata]
+# Boltzmann temperature.
+# Increases likelihood of unfavourable copy attempts being accepted.
+boltz-t = 16
+# Scaler constant for area deviation penalties.
+size-lambda = 1
+# Scaler constant for chemotaxis bias.
+chemotaxis-mu = 4
+
+[cellular-automata.adhesion]
+# Adhesion energy at cell-cell interfaces.
+cell-energy = 8
+# Adhesion energy at cell-medium interfaces.
+medium-energy = 16
+# Adhesion energy at cell-solid interfaces.
+solid-energy = 16
+
+[io]
+# Output directory for files.
+outdir = "examples/1_cell"
+# Flag used to delete contents of `outdir` if it exists.
+# [default = false]
+replace-outdir = true
+# Period (in MCS) with which to save an image of the simulation.
+image-period = 2048
+# Format used to save images.
+# Supports any format supported by the `image` crate.
+# [default = "webp"]
+image-format = "webp"
+
+[movie]
+# Whether the real-time movie should be shown or not.
+# This will slow down the simulation a lot.
+# [default = false]
+show = true
+# Width of the movie window.
+width = 320
+# Height of the movie window.
+height = 320
+# How many MCS to skip between the displayed frames.
+frame-period = 50

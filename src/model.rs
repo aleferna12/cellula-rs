@@ -62,8 +62,14 @@ impl Model {
             self.ca.step(&mut self.env, &mut self.rng);
             if self.env.time_to_update(i) { 
                 self.env.cells.update_cells();
-                // TODO! now we need to use this to update ca.adhesion
                 let new_spins = self.env.reproduce();
+                self.ca.adhesion.update_clones(
+                    new_spins.iter().flat_map(|spin| {
+                        let new_cell = self.env.cells.get_entity(*spin).unwrap_cell();
+                        [new_cell, self.env.cells.get_entity(new_cell.mom).unwrap_cell()]
+                    }),
+                    &self.env.cell_lattice
+                )
             }
         }
     }
