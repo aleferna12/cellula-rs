@@ -31,7 +31,8 @@ target-area = 64
 # Cell area before division.
 div-area = 128
 # Whether cells are allowed to grow leading to division.
-grow = false
+# [default = true]
+grow = true
 
 [cellular-automata]
 # Boltzmann temperature.

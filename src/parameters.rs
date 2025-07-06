@@ -70,7 +70,7 @@ pub struct GeneralParameters {
 pub struct EnvironmentParameters {
     pub width: usize,
     pub height: usize,
-    #[serde(default = "param_defaults::enclose")]
+    #[serde(default = "param_defaults::false_flag")]
     pub enclose: bool,
     pub neigh_r: u8,
     pub n_cells: Spin,
@@ -84,6 +84,7 @@ pub struct EnvironmentParameters {
 pub struct CellParameters {
     pub target_area: u32,
     pub div_area: u32,
+    #[serde(default = "param_defaults::true_flag")]
     pub grow: bool
 }
 
@@ -108,7 +109,7 @@ pub struct StaticAdhesionParameters {
 #[serde(rename_all = "kebab-case")]
 pub struct IoParameters {
     pub outdir: String,
-    #[serde(default = "param_defaults::replace_outdir")]
+    #[serde(default = "param_defaults::false_flag")]
     pub replace_outdir: bool,
     pub image_period: u32,
     #[serde(default = "param_defaults::image_format")]
@@ -119,7 +120,7 @@ pub struct IoParameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct MovieParameters {
-    #[serde(default = "param_defaults::show")]
+    #[serde(default = "param_defaults::false_flag")]
     pub show: bool,
     pub width: u32,
     pub height: u32,
@@ -129,10 +130,9 @@ pub struct MovieParameters {
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
 mod param_defaults {
     pub fn seed() -> u64 { 0 }
-    pub fn replace_outdir() -> bool { false }
+    pub fn false_flag() -> bool { false }
+    pub fn true_flag() -> bool { true }
     pub fn image_format() -> String { "webp".to_string() }
-    pub fn enclose() -> bool { false }
-    pub fn show() -> bool { false }
 }
 
 #[cfg(test)]
