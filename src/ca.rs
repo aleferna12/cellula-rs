@@ -1,5 +1,5 @@
 // TODO!: restrict type access of most functions.
-//  No function should have access to Environment
+//  No function besides step should have access to Environment
 //  Instead, they should at max receive a CopyAttempt struct containing the cells and positions
 use std::f32::consts::E;
 use rand::Rng;
