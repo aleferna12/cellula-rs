@@ -144,17 +144,15 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
             if cell.spin != self[lat_pos] {
                 continue;
             }
-            let neighs = self
-                
-                .bound
-                .valid_positions(neighbourhood.neighbours(pos));
-            for neigh in neighs {
-                let lat_neigh = Pos2D::from(neigh);
-                if !visited[lat_neigh] {
-                    visited[lat_neigh] = true;
-                    queue.push_back(neigh);
-                }
-            }
+            self.bound
+                .valid_positions(neighbourhood.neighbours(pos))
+                .for_each(|neigh| {
+                    let lat_neigh = Pos2D::from(neigh);
+                    if !visited[lat_neigh] {
+                        visited[lat_neigh] = true;
+                        queue.push_back(neigh);
+                    }
+                });
             visited[lat_pos] = true;
             found.push(lat_pos);
         }
