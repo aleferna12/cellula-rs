@@ -7,9 +7,17 @@ use crate::environment::LatticeEntity::*;
 use crate::parameters::StaticAdhesionParameters;
 
 pub trait AdhesionSystem {
+    // This arguably should receive info about which specific site is being copied 
+    // It would be useful for hybrid models where adhesion properties depend on concentration of proteins etc
+    // See https://compucell3dreferencemanual.readthedocs.io/en/latest/adhesion_flex_plugin.html
+    // Although, in a puritan interpretation of CPM, the Hamiltonian is a property of the system and anything that is 
+    // copy-attempt-dependent should be a bias...
     fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32;
 }
 
+// TODO!: Start by modeling adhesion based on whether two cells shared a boundary when they were born
+//  To better maintain cluster shape, this can be extended to both determine normal adhesion and also have springs
+//  connecting the two clonal cells
 pub struct ClonalAdhesion {
     pub static_adhesion: StaticAdhesion,
     // TODO!: should this be stored as an array in each cell (replacing spin as a cell property)? Benchmark

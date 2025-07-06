@@ -62,7 +62,8 @@ impl Model {
             self.ca.step(&mut self.env, &mut self.rng);
             if self.env.time_to_update(i) { 
                 self.env.cells.update_cells();
-                self.env.reproduce();
+                // TODO! now we need to use this to update ca.adhesion
+                let new_spins = self.env.reproduce();
             }
         }
     }
