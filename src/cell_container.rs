@@ -7,7 +7,7 @@ use crate::parameters::CellParameters;
 pub struct CellContainer {
     pub target_area: u32,
     pub div_area: u32,
-    pub grow: bool,
+    pub divide: bool,
     vec: Vec<RelCell>
 }
 
@@ -25,7 +25,7 @@ impl CellContainer {
         self.vec.push(RelCell {
             spin: new_spin,
             mom: mom_spin.unwrap_or(new_spin),
-            cell: cell
+            cell
         });
         self.vec.last().unwrap()
     }
@@ -59,7 +59,7 @@ impl CellContainer {
     // TODO: move to Cell?
     pub fn update_cells(&mut self) {
         for cell in &mut self.vec {
-            if self.grow && cell.target_area < self.div_area {
+            if cell.target_area < self.div_area {
                 cell.target_area += 1;
             }
         }
@@ -71,7 +71,7 @@ impl From<CellParameters> for CellContainer {
         Self {
             target_area: params.target_area,
             div_area: params.div_area,
-            grow: params.grow,
+            divide: params.divide,
             vec: vec![],
         }
     }

@@ -26,6 +26,10 @@ neigh-r = 1
 n-cells = 300
 # Starting cell area.
 cell-start-area = 64
+# How many times the cell putative radius will be scaled when searching for the cell's positions.
+# Decreasing this parameter improves performance but may lead to critical warnings reporting that not
+# cell postitions could be found.
+cell-search-radius = 2.5
 # Period (in MCS) with which the environment is updated.
 # This includes cell growth (by 1 area unit), genomic parameters, and reproduction.
 update-period = 32
@@ -35,8 +39,9 @@ update-period = 32
 target-area = 64
 # Cell area before division.
 div-area = 128
-# Whether cells are allowed to grow leading to division.
-grow = false
+# Set to `false` to disable division.
+# [default = true]
+divide = true
 
 [cellular-automata]
 # Boltzmann temperature.

@@ -1,6 +1,3 @@
-// TODO!: restrict type access of most functions.
-//  No function besides step should have access to Environment
-//  Instead, they should at max receive a CopyAttempt struct containing the cells and positions
 use std::f32::consts::E;
 use rand::Rng;
 pub use crate::adhesion::AdhesionSystem;
@@ -99,26 +96,26 @@ impl<A: AdhesionSystem> CA<A> {
     // TODO!: This currently just attracts cells to a fix point
     //  It also only works for periodic boundaries (and is very slow due to delta_angles)
     pub fn chemotaxis_bias(
-        &self, 
-        chemotaxis_mu: f32, 
-        cell_center: &CellCenter,
-        pos_to: Pos2D<usize>, 
-        width: usize,
-        height: usize
+        &self,
+        chemotaxis_mu: f32,
+        cell_center_from: &CellCenter,
+        pos_to: Pos2D<usize>,
+        lattice_width: usize,
+        lattice_height: usize
     ) -> f32 {
         let proj_to = AngularProjection::from_pos(
             Pos2D::new(pos_to.x as f32, pos_to.y as f32),
-            width,
-            height
+            lattice_width,
+            lattice_height
         );
         // Attracts cells to the center of lattice
         let proj_center = AngularProjection::from_pos(
-            Pos2D::new((width / 2) as f32, (height / 2) as f32),
-            width,
-            height
+            Pos2D::new((lattice_width / 2) as f32, (lattice_height / 2) as f32),
+            lattice_width,
+            lattice_height
         );
-        let copy_angle = cell_center.projection.delta_angles(&proj_to);
-        let to_center = cell_center.projection.delta_angles(&proj_center);
+        let copy_angle = cell_center_from.projection.delta_angles(&proj_to);
+        let to_center = cell_center_from.projection.delta_angles(&proj_center);
         let dot = copy_angle.0 * to_center.0 + copy_angle.1 * to_center.1;
         let mag_v = copy_angle.0 * copy_angle.0 + copy_angle.1 * copy_angle.1;
         let mag_w = to_center.0 * to_center.0 + to_center.1 * to_center.1;

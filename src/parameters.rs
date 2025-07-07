@@ -75,6 +75,7 @@ pub struct EnvironmentParameters {
     pub neigh_r: u8,
     pub n_cells: Spin,
     pub cell_start_area: u32,
+    pub cell_search_radius: f32,
     pub update_period: u32,
     pub cell: CellParameters
 }
@@ -85,7 +86,7 @@ pub struct CellParameters {
     pub target_area: u32,
     pub div_area: u32,
     #[serde(default = "param_defaults::true_flag")]
-    pub grow: bool
+    pub divide: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]

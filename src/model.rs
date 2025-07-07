@@ -74,7 +74,7 @@ impl Model {
                             cell.spin,
                             self.env.cell_lattice.cell_neighbours(
                                 cell, 
-                                2.5,
+                                self.env.cell_search_radius,
                                 &self.env.neighbourhood
                             ).into_iter()
                         )

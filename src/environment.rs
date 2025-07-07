@@ -17,7 +17,8 @@ pub struct Environment {
     pub cells: CellContainer,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
-    pub update_period: u32
+    pub update_period: u32,
+    pub cell_search_radius: f32
 }
 
 impl Environment {
@@ -27,6 +28,7 @@ impl Environment {
             params.height,
             params.neigh_r,
             params.update_period,
+            params.cell_search_radius,
             params.cell
         );
 
@@ -59,7 +61,8 @@ impl Environment {
         width: usize,
         height: usize,
         neigh_r: u8,
-        cell_update_period: u32,
+        update_period: u32,
+        cell_search_radius: f32,
         cell_parameters: CellParameters
     ) -> Self {
         let rect = Rect::new(
@@ -72,7 +75,8 @@ impl Environment {
             cells: CellContainer::from(cell_parameters),
             edge_book: EdgeBook::new(),
             neighbourhood: MooreNeighbourhood::new(neigh_r),
-            update_period: cell_update_period
+            update_period,
+            cell_search_radius
         }
     }
 
@@ -85,10 +89,11 @@ impl Environment {
             height,
             1,
             0,
+            0.,
             CellParameters {
                 target_area: 0,
                 div_area: 0,
-                grow: false,
+                divide: false,
             },
         )
     }
@@ -202,7 +207,7 @@ impl Environment {
     pub fn reproduce(&mut self) -> impl Iterator<Item = Spin> {
         let mut divide = vec![];
         for cell in &self.cells {
-            if cell.area >= self.cells.div_area {
+            if self.cells.divide && cell.area >= self.cells.div_area {
                 divide.push(cell.spin);
             }
         }
@@ -212,7 +217,6 @@ impl Environment {
                     log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e);
                     None
                 },
-                // This can fail catastrophically if divide_cell() invalidates any references so please dont do that
                 Ok(cell) => Some(cell.spin)
             }
         })
@@ -237,7 +241,7 @@ impl Environment {
         let new_positions: Vec<_> = self
             .cell_lattice
             // TODO!: parameterise search radius
-            .box_cell_positions(mom_cell, 2.5)
+            .box_cell_positions(mom_cell, self.cell_search_radius)
             .into_iter()
             .filter(|pos| { 
                 let proj = AngularProjection::from_pos(
