@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::f32::consts::TAU;
 use crate::boundary::LatticeBoundary;
 use crate::pos::{Pos2D, Rect};
@@ -90,11 +90,11 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
         Self { lat: Lattice::new(bound) }
     }
     
-    // This function returns a Vec so that we can check that the site number matches
-    /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
-    ///
-    /// May fail if `radius_scaler` is too small.
-    pub fn box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> Vec<Pos2D<usize>> {
+    /// This is the fastest cell search function possible, but it is NOT SAFE.
+    /// 
+    /// Prefer `box_cell_positions()`, which warns about missing values.
+    /// This function should only be used when not all positions are required to be found.
+    pub fn iter_box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> impl Iterator<Item = Pos2D<usize>> {
         let search_radius = (radius_scaler * (cell.area as f32 / TAU).sqrt()) as isize;
         let center = Pos2D::new(
             cell.center.pos.x as isize,
@@ -104,7 +104,7 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
             (center.x - search_radius, center.y - search_radius).into(),
             (center.x + search_radius, center.y + search_radius).into(),
         );
-        let found: Vec<_> = self.bound
+        self.bound
             .valid_positions(rect.iter_positions())
             .filter_map(|pos| {
                 let lat_pos = Pos2D::<usize>::from(pos);
@@ -113,7 +113,14 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
                 }
                 None
             })
-            .collect();
+    }
+    
+    // This function returns a Vec so that we can check that the site number matches
+    /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
+    ///
+    /// May fail if `radius_scaler` is too small.
+    pub fn box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> Vec<Pos2D<usize>> {
+        let found: Vec<_> = self.iter_box_cell_positions(cell, radius_scaler).collect();
         if found.len() != cell.area as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with spin {} \
@@ -138,8 +145,7 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
             cell.center.pos.y as isize
         )]);
 
-        while !queue.is_empty() {
-            let pos = queue.pop_front().unwrap();
+        while let Some(pos) = queue.pop_front() {
             let lat_pos = Pos2D::from(pos);
             if cell.spin != self[lat_pos] {
                 continue;
@@ -167,6 +173,55 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
             )
         }
         found
+    }
+
+    pub fn cell_neighbours<N: Neighbourhood>(
+        &self, 
+        cell: &RelCell, 
+        search_radius: f32, 
+        neighbourhood: &N
+    ) -> HashSet<Spin> {
+        let mut neighs = HashSet::default();
+        let mut border_pos = None;
+        for pos in self.iter_box_cell_positions(cell, search_radius) {
+            if let Some(neigh) = self.bound.valid_pos(Pos2D::new((pos.x - 1) as isize, pos.y as isize)) {
+                if self[pos] != self[Pos2D::<usize>::from(neigh)] {
+                    border_pos = Some(pos);
+                    break
+                }
+            }
+        }
+        if border_pos.is_none() {
+            return neighs;
+        }
+
+        let mut visited = Lattice::<bool, _>::new(self.bound.clone());
+        let mut queue = VecDeque::from([border_pos.unwrap().into()]);
+        while let Some(pos) = queue.pop_front() {
+            let spin = self[Pos2D::<usize>::from(pos)];
+            let mut same_spin_neighs = Vec::new();
+            let mut has_diff_neighbor = false;
+            for neigh in self.bound.valid_positions(neighbourhood.neighbours(pos)) {
+                let neigh_pos = Pos2D::from(neigh);
+                if visited[neigh_pos] {
+                    continue;
+                }
+                visited[neigh_pos] = true;
+
+                let neigh_spin = self[neigh_pos];
+                if neigh_spin != spin {
+                    has_diff_neighbor = true;
+                    neighs.insert(neigh_spin);
+                } else {
+                    same_spin_neighs.push(neigh);
+                }
+            }
+
+            if has_diff_neighbor {
+                queue.extend(same_spin_neighs);
+            }
+        }
+        neighs
     }
 }
 

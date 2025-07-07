@@ -199,21 +199,23 @@ impl Environment {
         (removed, added)
     }
     
-    pub fn reproduce(&mut self) -> Vec<Spin> {
+    pub fn reproduce(&mut self) -> impl Iterator<Item = Spin> {
         let mut divide = vec![];
         for cell in &self.cells {
             if cell.area >= self.cells.div_area {
                 divide.push(cell.spin);
             }
         }
-        let mut divided = vec![];
-        for spin in divide {
-            match self.divide_cell(spin) { 
-                Err(e) => log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e),
-                Ok(cell) => divided.push(cell.spin)
+        divide.into_iter().filter_map(|spin| {
+            match self.divide_cell(spin) {
+                Err(e) => {
+                    log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e);
+                    None
+                },
+                // This can fail catastrophically if divide_cell() invalidates any references so please dont do that
+                Ok(cell) => Some(cell.spin)
             }
-        }
-        divided
+        })
     }
     
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)

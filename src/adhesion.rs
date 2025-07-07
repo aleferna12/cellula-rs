@@ -1,13 +1,10 @@
 use std::collections::HashSet;
 use std::ptr;
-use crate::boundary::Boundary;
 use crate::cell::RelCell;
-use crate::constants::{LatticeBoundaryType, Spin};
+use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::*;
-use crate::lattice::CellLattice;
 use crate::parameters::StaticAdhesionParameters;
-use crate::pos::Pos2D;
 
 pub trait AdhesionSystem {
     // This arguably should receive info about which specific site is being copied 
@@ -37,27 +34,20 @@ impl ClonalAdhesion {
         pair
     }
     
-    // TODO!: refactor all of this, its so bad and inefficient and prob shouldnt even be in this struct
-    pub(crate) fn update_clones<'a>(
-        &mut self,
-        cells: impl Iterator<Item = &'a RelCell>,
-        cell_lattice: &CellLattice<LatticeBoundaryType>
-    ) {
-        for cell in cells {
-            for pair in self.clone_pairs.iter().copied().collect::<Vec<_>>() {
-                if pair.0 == cell.spin || pair.1 == cell.spin {
-                    self.clone_pairs.remove(&pair);
-                }
+    // TODO!: This is horrible and doesnt work.
+    //  we need to check that mom was a clone with neighbour before inserting the clone
+    //  otherwise cells can attach to new groups by being neighbours
+    pub fn update_clones(&mut self, spin: Spin, neigh_spins: impl Iterator<Item = Spin>) {
+        for pair in self.clone_pairs.iter().copied().collect::<Vec<_>>() {
+            if pair.0 == spin || pair.1 == spin {
+                self.clone_pairs.remove(&pair);
             }
-            
-            for pos in cell_lattice.box_cell_positions(cell, 5.) {
-                if let Some(pos) = cell_lattice.bound.valid_pos(Pos2D::new((pos.x - 1) as isize, pos.y as isize)) {
-                    let neigh_spin: Spin = cell_lattice[Pos2D::<usize>::from(pos)];
-                    if neigh_spin != cell.spin && neigh_spin > LatticeEntity::first_cell_spin() {
-                        self.clone_pairs.insert(Self::canonicalize((cell.spin, neigh_spin)));
-                    }
-                }
+        }
+        for neigh_spin in neigh_spins {
+            if neigh_spin < LatticeEntity::first_cell_spin() {
+                continue
             }
+            self.clone_pairs.insert(Self::canonicalize((spin, neigh_spin)));
         }
     }
 }

@@ -62,14 +62,23 @@ impl Model {
             self.ca.step(&mut self.env, &mut self.rng);
             if self.env.time_to_update(i) { 
                 self.env.cells.update_cells();
-                let new_spins = self.env.reproduce();
-                self.ca.adhesion.update_clones(
-                    new_spins.iter().flat_map(|spin| {
-                        let new_cell = self.env.cells.get_entity(*spin).unwrap_cell();
-                        [new_cell, self.env.cells.get_entity(new_cell.mom).unwrap_cell()]
-                    }),
-                    &self.env.cell_lattice
-                )
+                let new_spins: Vec<_> = self.env.reproduce().collect();
+                new_spins
+                    .into_iter()
+                    .flat_map(|spin| {
+                        let cell = self.env.cells.get_entity(spin).unwrap_cell();
+                        [cell, self.env.cells.get_entity(cell.mom).unwrap_cell()]
+                    })
+                    .for_each(|cell| {
+                        self.ca.adhesion.update_clones(
+                            cell.spin,
+                            self.env.cell_lattice.cell_neighbours(
+                                cell, 
+                                2.5,
+                                &self.env.neighbourhood
+                            ).into_iter()
+                        )
+                    })
             }
         }
     }
