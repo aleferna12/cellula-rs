@@ -32,7 +32,7 @@ cell-start-area = 64
 cell-search-radius = 2.5
 # Period (in MCS) with which the environment is updated.
 # This includes cell growth (by 1 area unit), genomic parameters, and reproduction.
-update-period = 32
+update-period = 16
 
 [environment.cell]
 # Target cell area.
