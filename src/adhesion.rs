@@ -49,12 +49,14 @@ impl ClonalAdhesion {
         let cell = entity.unwrap_cell();
         let cell_neighs = env.cell_lattice.cell_neighbours(
             cell,
+            env.cell_search_radius,
             &env.neighbourhood
         );
         
         let mom_cell = env.cells.get_entity(cell.mom).expect_cell("cell's mom is not a cell");
         let mom_neighs = env.cell_lattice.cell_neighbours(
             mom_cell,
+            env.cell_search_radius,
             &env.neighbourhood
         );
         

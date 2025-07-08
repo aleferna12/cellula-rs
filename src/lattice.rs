@@ -178,12 +178,12 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
     pub fn cell_neighbours<N: Neighbourhood>(
         &self, 
         cell: &RelCell,
+        radius_scaler: f32,
         neighbourhood: &N
     ) -> HashSet<Spin> {
         let mut neighs = HashSet::default();
         let mut border_pos = None;
-        // We can get away with a rather small radius_scaler here
-        for pos in self.iter_box_cell_positions(cell, 1.5) {
+        for pos in self.iter_box_cell_positions(cell, radius_scaler) {
             if let Some(neigh) = self.bound.valid_pos(Pos2D::new(pos.x as isize - 1, pos.y as isize)) {
                 if self[pos] != self[Pos2D::from(neigh)] {
                     border_pos = Some(pos);
