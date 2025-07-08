@@ -13,6 +13,7 @@ clap = { version = "4.5.39", features = ["derive"] }
 config = "0.15.11"
 env_logger = "0.11.8"
 image = "0.25.6"
+imageproc = "0.25.0"
 indexmap = "2.9.0"
 lebe = "0.5.2"
 log = "0.4.27"

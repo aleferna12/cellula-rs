@@ -1,6 +1,6 @@
 [general]
 # How many MCS the simulation will run for.
-time-steps = 2048
+time-steps = 4096
 # Seed for the RNG.
 # Use `0` to pick a random seed.
 # [default = 0]
@@ -37,6 +37,9 @@ div-area = 128
 # Set to `false` to disable division.
 # [default = true]
 divide = true
+# Set to `false` to disable migration.
+# [default = false]
+migrate = false
 
 [cellular-automata]
 # Boltzmann temperature.
@@ -67,12 +70,18 @@ image-period = 2048
 # Supports any format supported by the `image` crate.
 # [default = "webp"]
 image-format = "webp"
+# Whether to show the center of cells in images.
+# [default = false]
+show-cell-centers = false
+# Whether to show which cells are clonally attached with a line.
+# [default = false]
+show-attached-cells = false
 
-[movie]
+[io.movie]
 # Whether the real-time movie should be shown or not.
 # This will slow down the simulation a lot.
 # [default = false]
-show = false
+show = true
 # Width of the movie window.
 width = 320
 # Height of the movie window.

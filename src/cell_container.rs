@@ -8,6 +8,7 @@ pub struct CellContainer {
     pub target_area: u32,
     pub div_area: u32,
     pub divide: bool,
+    pub migrate: bool,
     vec: Vec<RelCell>
 }
 
@@ -72,6 +73,7 @@ impl From<CellParameters> for CellContainer {
             target_area: params.target_area,
             div_area: params.div_area,
             divide: params.divide,
+            migrate: params.migrate,
             vec: vec![],
         }
     }

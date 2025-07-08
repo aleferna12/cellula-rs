@@ -27,8 +27,7 @@ pub struct Parameters {
     pub general: GeneralParameters,
     pub environment: EnvironmentParameters,
     pub cellular_automata: CellularAutomataParameters,
-    pub io: IoParameters,
-    pub movie: MovieParameters
+    pub io: IoParameters
 }
 
 impl Parameters {
@@ -86,7 +85,10 @@ pub struct CellParameters {
     pub target_area: u32,
     pub div_area: u32,
     #[serde(default = "param_defaults::true_flag")]
-    pub divide: bool
+    pub divide: bool,
+    // TODO: change to true when migration is properly implemented (its currently quite buggy)
+    #[serde(default = "param_defaults::false_flag")]
+    pub migrate: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -99,7 +101,7 @@ pub struct CellularAutomataParameters {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(tag = "type", rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case")]
 pub struct StaticAdhesionParameters {
     pub cell_energy: f32,
     pub medium_energy: f32,
@@ -115,6 +117,11 @@ pub struct IoParameters {
     pub image_period: u32,
     #[serde(default = "param_defaults::image_format")]
     pub image_format: String,
+    #[serde(default = "param_defaults::false_flag")]
+    pub show_cell_centers: bool,
+    #[serde(default = "param_defaults::false_flag")]
+    pub show_attached_cells: bool,
+    pub movie: MovieParameters
 }
 
 // TODO! docs

@@ -1,12 +1,12 @@
 use crate::boundary::Boundary;
-use crate::cell::{RelCell, Cell, CellCenter};
+use crate::cell::{RelCell, Cell};
 use crate::cell_container::CellContainer;
 use crate::constants::{LatticeBoundaryType, Spin};
 use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::CellLattice;
 use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
-use crate::pos::{AngularProjection, Pos2D, Rect};
+use crate::pos::{AngularProjection, Pos2D, Rect, WrappedPos};
 use std::borrow::Borrow;
 use rand::Rng;
 use crate::environment::DivisionError::{NewCellTooBig, NewCellTooSmall};
@@ -94,6 +94,7 @@ impl Environment {
                 target_area: 0,
                 div_area: 0,
                 divide: false,
+                migrate: false
             },
         )
     }
@@ -119,7 +120,7 @@ impl Environment {
         let mut cell = Cell::new(
             0,
             self.cells.target_area,
-            CellCenter::new(Pos2D::new(center?.x as f32, center?.y as f32), self.width(), self.height())
+            WrappedPos::new(Pos2D::new(center?.x as f32, center?.y as f32), self.width(), self.height())
         );
         
         for pos in rect.iter_positions() {
@@ -204,6 +205,10 @@ impl Environment {
         (removed, added)
     }
     
+    // With some unsafe code we can return Vec<&RelCell> from this function, but it would
+    // require that self.divide_cell never invalidates any references to self.cells
+    // we need thorough testing of self.divide_cells to make this change, and the performance
+    // gain is minimal (although the ergonomic gains are significant)
     pub fn reproduce(&mut self) -> impl Iterator<Item = Spin> {
         let mut divide = vec![];
         for cell in &self.cells {
@@ -236,7 +241,7 @@ impl Environment {
         let mut new_cell = Cell::new(
             0,
             cell_target_area,
-            CellCenter::origin()
+            WrappedPos::origin()
         );
         let new_positions: Vec<_> = self
             .cell_lattice

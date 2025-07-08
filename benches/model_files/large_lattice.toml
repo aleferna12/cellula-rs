@@ -61,7 +61,7 @@ medium-energy = 16
 # Adhesion energy at cell-solid interfaces.
 solid-energy = 16
 
-[movie]
+[io.movie]
 show = false
 width = 320
 height = 320

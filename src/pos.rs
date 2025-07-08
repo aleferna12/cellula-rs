@@ -60,6 +60,38 @@ impl From<Pos2D<isize>> for Pos2D<usize> {
 }
 
 #[derive(Debug, Clone)]
+pub struct WrappedPos {
+    pub(crate) pos: Pos2D<f32>,
+    pub(crate) projection: AngularProjection
+}
+
+impl WrappedPos {
+    pub fn new(pos: Pos2D<f32>, width: usize, height: usize) -> Self {
+        Self {
+            pos,
+            projection: AngularProjection::from_pos(pos, width, height)
+        }
+    }
+
+    /// Represents the origin of the lattice, at 0, 0.
+    pub fn origin() -> Self {
+        Self {
+            pos: (0., 0.).into(),
+            projection: AngularProjection {
+                x_sin: 0.,
+                x_cos: 1.,
+                y_sin: 0.,
+                y_cos: 1.,
+            }
+        }
+    }
+
+    pub fn pos(&self) -> Pos2D<f32> {
+        self.pos
+    }
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct AngularProjection {
     pub(crate) x_sin: f32,
     pub(crate) x_cos: f32,

@@ -2,13 +2,14 @@ use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, Criterion};
 use evo_cpm::ca::AdhesionSystem;
 use evo_cpm::adhesion::StaticAdhesion;
-use evo_cpm::cell::{RelCell, Cell, CellCenter};
+use evo_cpm::cell::{RelCell, Cell};
 use evo_cpm::environment::LatticeEntity;
+use evo_cpm::pos::WrappedPos;
 
 fn bench_ca(c: &mut Criterion) {
     // These don't seem to be very reliable
     let mut group = c.benchmark_group("adhesion");
-    let cell = RelCell::mock(Cell::new(10, 10, CellCenter::origin()));
+    let cell = RelCell::mock(Cell::new(10, 10, WrappedPos::origin()));
     let some_cell = LatticeEntity::SomeCell(&cell);
     
     let unboxed_adh = StaticAdhesion { cell_energy: 16., medium_energy: 16., solid_energy: 16. };

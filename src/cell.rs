@@ -1,8 +1,8 @@
-use std::ops::{Deref, DerefMut};
 use crate::boundary::LatticeBoundary;
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::pos::{AngularProjection, Pos2D};
+use crate::pos::{Pos2D, WrappedPos};
+use std::ops::{Deref, DerefMut};
 
 /// Represents a cell that is bound to an `Environment`.
 ///
@@ -46,11 +46,11 @@ impl DerefMut for RelCell {
 pub struct Cell {
     pub area: u32,
     pub target_area: u32,
-    pub center: CellCenter
+    pub center: WrappedPos
 }
 
 impl Cell {
-    pub fn new(area: u32, target_area: u32, mut center: CellCenter) -> Self {
+    pub fn new(area: u32, target_area: u32, mut center: WrappedPos) -> Self {
         // Weights projection with current cell area
         center.projection.x_sin *= area as f32;
         center.projection.x_cos *= area as f32;
@@ -83,36 +83,4 @@ impl Cell {
         }
     }
     
-}
-
-#[derive(Debug, Clone)]
-pub struct CellCenter {
-    pub(crate) pos: Pos2D<f32>,
-    pub(crate) projection: AngularProjection
-}
-
-impl CellCenter {
-    pub fn new(pos: Pos2D<f32>, width: usize, height: usize) -> Self {
-        Self {
-            pos,
-            projection: AngularProjection::from_pos(pos, width, height)
-        }
-    }
-
-    /// Represents the origin of the lattice, at 0, 0.
-    pub fn origin() -> Self {
-        Self {
-            pos: (0., 0.).into(),
-            projection: AngularProjection {
-                x_sin: 0.,
-                x_cos: 1.,
-                y_sin: 0.,
-                y_cos: 1.,
-            }
-        }
-    }
-    
-    pub fn pos(&self) -> Pos2D<f32> {
-        self.pos
-    }
 }

@@ -2,14 +2,14 @@ use std::f32::consts::E;
 use rand::Rng;
 pub use crate::adhesion::AdhesionSystem;
 use crate::boundary::Boundary;
-use crate::cell::{RelCell, CellCenter};
+use crate::cell::RelCell;
 use crate::constants::LatticeBoundaryType;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
 use crate::neighbourhood::Neighbourhood;
 use crate::parameters::{CellularAutomataParameters, StaticAdhesionParameters};
-use crate::pos::{AngularProjection, Pos2D};
+use crate::pos::{AngularProjection, Pos2D, WrappedPos};
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -71,8 +71,7 @@ impl<A: AdhesionSystem> CA<A> {
         
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if let SomeCell(cell) = entity_from {
-            // TODO! Remove, this was arbitrary for testing
-            if cell.spin % 2 == 0 {
+            if env.cells.migrate {
                 delta_h += self.chemotaxis_bias(self.chemotaxis_mu, &cell.center, pos_to, env.width(), env.height());
             }
         }
@@ -98,7 +97,7 @@ impl<A: AdhesionSystem> CA<A> {
     pub fn chemotaxis_bias(
         &self,
         chemotaxis_mu: f32,
-        cell_center_from: &CellCenter,
+        cell_center_from: &WrappedPos,
         pos_to: Pos2D<usize>,
         lattice_width: usize,
         lattice_height: usize
@@ -184,7 +183,8 @@ impl<A: AdhesionSystem + From<StaticAdhesionParameters>> From<CellularAutomataPa
 #[cfg(test)]
 mod tests {
     use crate::adhesion::StaticAdhesion;
-    use crate::cell::{Cell, CellCenter};
+    use crate::cell::Cell;
+    use crate::pos::WrappedPos;
     use super::*;
 
     #[test]
@@ -199,7 +199,7 @@ mod tests {
             size_lambda: 1.,
             chemotaxis_mu: 1.
         }.into();
-        let cell = RelCell::mock(Cell::new(100, 100, CellCenter::origin()));
+        let cell = RelCell::mock(Cell::new(100, 100, WrappedPos::origin()));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }

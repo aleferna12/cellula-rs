@@ -177,15 +177,15 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
 
     pub fn cell_neighbours<N: Neighbourhood>(
         &self, 
-        cell: &RelCell, 
-        search_radius: f32, 
+        cell: &RelCell,
         neighbourhood: &N
     ) -> HashSet<Spin> {
         let mut neighs = HashSet::default();
         let mut border_pos = None;
-        for pos in self.iter_box_cell_positions(cell, search_radius) {
-            if let Some(neigh) = self.bound.valid_pos(Pos2D::new((pos.x - 1) as isize, pos.y as isize)) {
-                if self[pos] != self[Pos2D::<usize>::from(neigh)] {
+        // We can get away with a rather small radius_scaler here
+        for pos in self.iter_box_cell_positions(cell, 1.5) {
+            if let Some(neigh) = self.bound.valid_pos(Pos2D::new(pos.x as isize - 1, pos.y as isize)) {
+                if self[pos] != self[Pos2D::from(neigh)] {
                     border_pos = Some(pos);
                     break
                 }
@@ -198,21 +198,18 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
         let mut visited = Lattice::<bool, _>::new(self.bound.clone());
         let mut queue = VecDeque::from([border_pos.unwrap().into()]);
         while let Some(pos) = queue.pop_front() {
-            let spin = self[Pos2D::<usize>::from(pos)];
+            let spin = self[Pos2D::from(pos)];
             let mut same_spin_neighs = Vec::new();
             let mut has_diff_neighbor = false;
             for neigh in self.bound.valid_positions(neighbourhood.neighbours(pos)) {
                 let neigh_pos = Pos2D::from(neigh);
-                if visited[neigh_pos] {
-                    continue;
-                }
-                visited[neigh_pos] = true;
 
                 let neigh_spin = self[neigh_pos];
                 if neigh_spin != spin {
                     has_diff_neighbor = true;
                     neighs.insert(neigh_spin);
-                } else {
+                } else if !visited[neigh_pos] {
+                    visited[neigh_pos] = true;
                     same_spin_neighs.push(neigh);
                 }
             }

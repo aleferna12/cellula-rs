@@ -1,8 +1,7 @@
 use std::collections::HashSet;
-use std::ptr;
 use crate::cell::RelCell;
 use crate::constants::Spin;
-use crate::environment::LatticeEntity;
+use crate::environment::{Environment, LatticeEntity};
 use crate::environment::LatticeEntity::*;
 use crate::parameters::StaticAdhesionParameters;
 
@@ -20,9 +19,9 @@ pub trait AdhesionSystem {
 //  connecting the two clonal cells
 pub struct ClonalAdhesion {
     pub static_adhesion: StaticAdhesion,
-    // TODO!: should this be stored as an array in each cell (replacing spin as a cell property)? Benchmark
+    // TODO!: should this be stored as an array or **set** in each cell? Benchmark
     //  the current implementation costs almost 25% of performance compared to StaticAdhesion
-    //  best solution is probably a big table in the heap that we can access with spins
+    //  othe possible solution a big table in the heap that we can access with spins
     pub clone_pairs: HashSet<(Spin, Spin)>
 }
 
@@ -37,28 +36,63 @@ impl ClonalAdhesion {
     // TODO!: This is horrible and doesnt work.
     //  we need to check that mom was a clone with neighbour before inserting the clone
     //  otherwise cells can attach to new groups by being neighbours
-    pub fn update_clones(&mut self, spin: Spin, neigh_spins: impl Iterator<Item = Spin>) {
-        for pair in self.clone_pairs.iter().copied().collect::<Vec<_>>() {
-            if pair.0 == spin || pair.1 == spin {
-                self.clone_pairs.remove(&pair);
-            }
+    pub fn update_clones(
+        &mut self,
+        cell_spin: Spin,
+        env: &Environment
+    ) -> Option<Vec<Spin>> {
+        let entity = env.cells.get_entity(cell_spin);
+        if entity.spin() < LatticeEntity::first_cell_spin() {
+            return None;
         }
-        for neigh_spin in neigh_spins {
-            if neigh_spin < LatticeEntity::first_cell_spin() {
-                continue
-            }
-            self.clone_pairs.insert(Self::canonicalize((spin, neigh_spin)));
+        
+        let cell = entity.unwrap_cell();
+        let cell_neighs = env.cell_lattice.cell_neighbours(
+            cell,
+            &env.neighbourhood
+        );
+        
+        let mom_cell = env.cells.get_entity(cell.mom).expect_cell("cell's mom is not a cell");
+        let mom_neighs = env.cell_lattice.cell_neighbours(
+            mom_cell,
+            &env.neighbourhood
+        );
+        
+        let mom_clones = HashSet::from_iter(self
+            .clone_pairs
+            .iter()
+            .filter_map(|pair| {
+                if pair.0 == mom_cell.spin {
+                    Some(pair.1)
+                } else if pair.1 == mom_cell.spin { 
+                    Some(pair.0)
+                } else { 
+                    None
+                }
+            }));
+        for spin in mom_clones.difference(&mom_neighs) {
+            self.clone_pairs.remove(&Self::canonicalize((mom_cell.spin, *spin)));
         }
+        let clones: Vec<_> = cell_neighs.intersection(&mom_clones).copied().collect();
+        for spin in &clones {
+            self.clone_pairs.insert(Self::canonicalize((cell.spin, *spin)));
+        }
+        self.clone_pairs.insert(Self::canonicalize((cell.spin, mom_cell.spin)));
+        Some(clones)
     }
 }
 
 impl AdhesionSystem for ClonalAdhesion {
     fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32 {
         if let (SomeCell(c1), SomeCell(c2)) = (entity1, entity2) {
+            if c1.spin == c2.spin {
+                return 0.
+            }
             let canonical = Self::canonicalize((c1.spin, c2.spin));
             if self.clone_pairs.contains(&canonical) {
-                return self.static_adhesion.cell_energy;
+                return 2. * self.static_adhesion.cell_energy;
             }
+            return 2. * self.static_adhesion.medium_energy;
         }
         // Handle all other cases
         self.static_adhesion.adhesion_energy(entity1, entity2)
@@ -84,7 +118,7 @@ impl AdhesionSystem for StaticAdhesion {
     fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32 {
         match (entity1, entity2) {
             (SomeCell(c1), SomeCell(c2)) => {
-                if ptr::eq(c1, c2) {
+                if c1.spin == c2.spin {
                     0.
                 } else {
                     2. * self.cell_energy
