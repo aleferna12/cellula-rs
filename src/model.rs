@@ -34,7 +34,7 @@ impl Model {
         self.ca.step(&mut self.env, &mut self.rng);
         if self.env.time_to_update(time_step) {
             self.env.cells.update_cells();
-            let new_spins: Vec<_> = self.env.reproduce().collect();
+            let new_spins = self.env.reproduce();
             for spin in new_spins {
                 self.ca.adhesion.update_clones(spin, &self.env);
             }

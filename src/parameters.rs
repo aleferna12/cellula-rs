@@ -49,7 +49,7 @@ impl Parameters {
     
     pub fn check_conflicts(&self) {
         if self.environment.enclose && self.environment.neigh_r > 1 {
-            log::warn!("`enclose` can only be used when `neigh-r` == 1 by default");
+            log::warn!("`enclose` can only be used when `neigh-r=1` by default");
             log::warn!("You can circumvent this issue by changing `LatticeBoundaryType` in `Model` \
                         from `UnsafePeriodicBoundary` to `FixedBoundary`");
         }
@@ -72,7 +72,8 @@ pub struct EnvironmentParameters {
     #[serde(default = "param_defaults::false_flag")]
     pub enclose: bool,
     pub neigh_r: u8,
-    pub n_cells: Spin,
+    pub starting_cells: Spin,
+    pub max_cells: Spin,
     pub cell_start_area: u32,
     pub cell_search_radius: f32,
     pub update_period: u32,

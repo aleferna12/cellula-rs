@@ -23,7 +23,10 @@ height = 2000
 enclose = false
 neigh-r = 1
 # Number of starting cells in the environment.
-n-cells = 300
+starting-cells = 300
+# Maximum number of cells allowed in the simulation.
+# Cell division is prevented if it would cause the cell population to exceed this threshold.
+max-cells = 1024
 # Starting cell area.
 cell-start-area = 64
 # How many times the cell putative radius will be scaled when searching for the cell's positions.

@@ -124,7 +124,7 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
         if found.len() != cell.area as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with spin {} \
-                (try to increase `radius_scaler`)", 
+                (try to increase `search-radius`)", 
                 found.len(),
                 cell.area,
                 cell.spin

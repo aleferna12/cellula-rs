@@ -18,7 +18,9 @@ pub struct Environment {
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
     pub update_period: u32,
-    pub cell_search_radius: f32
+    pub cell_search_radius: f32,
+    pub population_exploded: bool,
+    pub max_cells: Spin
 }
 
 impl Environment {
@@ -29,6 +31,7 @@ impl Environment {
             params.neigh_r,
             params.update_period,
             params.cell_search_radius,
+            params.max_cells,
             params.cell
         );
 
@@ -40,7 +43,7 @@ impl Environment {
         log::info!("Creating cells");
         let mut cell_count = 0;
         let cell_side = (params.cell_start_area as f32).sqrt() as usize;
-        for _ in 0..params.n_cells {
+        for _ in 0..params.starting_cells {
             let pos = env.cell_lattice.random_pos(rng);
             let cell = env.spawn_rect_cell(
                 Rect::new(
@@ -52,7 +55,7 @@ impl Environment {
                 cell_count += 1;
             }
         }
-        log::info!("Created {} out of the {} cells requested", cell_count, params.n_cells);
+        log::info!("Created {} out of the {} cells requested", cell_count, params.starting_cells);
         
         env
     }
@@ -63,6 +66,7 @@ impl Environment {
         neigh_r: u8,
         update_period: u32,
         cell_search_radius: f32,
+        max_cells: Spin,
         cell_parameters: CellParameters
     ) -> Self {
         let rect = Rect::new(
@@ -75,8 +79,10 @@ impl Environment {
             cells: CellContainer::from(cell_parameters),
             edge_book: EdgeBook::new(),
             neighbourhood: MooreNeighbourhood::new(neigh_r),
+            max_cells,
             update_period,
-            cell_search_radius
+            cell_search_radius,
+            population_exploded: false
         }
     }
 
@@ -90,6 +96,7 @@ impl Environment {
             1,
             0,
             0.,
+            0,
             CellParameters {
                 target_area: 0,
                 div_area: 0,
@@ -209,7 +216,7 @@ impl Environment {
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
     // gain is minimal (although the ergonomic gains are significant)
-    pub fn reproduce(&mut self) -> impl Iterator<Item = Spin> {
+    pub fn reproduce(&mut self) -> Vec<Spin> {
         let mut divide = vec![];
         for cell in &self.cells {
             if self.cells.divide && cell.area >= self.cells.div_area {
@@ -217,6 +224,17 @@ impl Environment {
             }
         }
         divide.into_iter().filter_map(|spin| {
+            if self.cells.n_cells() >= self.max_cells {
+                if !self.population_exploded {
+                    log::warn!(
+                        "Population exceeded maximum threshold `max-cells={}` during cell division", 
+                        {self.max_cells}
+                    );
+                    log::warn!("This warning will be suppressed from now on");
+                    self.population_exploded = true;
+                }
+                return None;
+            }
             match self.divide_cell(spin) {
                 Err(e) => {
                     log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e);
@@ -224,7 +242,7 @@ impl Environment {
                 },
                 Ok(cell) => Some(cell.spin)
             }
-        })
+        }).collect()
     }
     
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)

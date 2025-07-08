@@ -13,8 +13,8 @@ pub struct CellContainer {
 }
 
 impl CellContainer {
-    pub fn n_cells(&self) -> usize {
-        self.vec.len()
+    pub fn n_cells(&self) -> Spin {
+        self.vec.len().try_into().expect("there are more cells than supported by the type `Spin`")
     }
     
     pub fn next_spin(&self) -> Spin {

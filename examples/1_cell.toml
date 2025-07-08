@@ -18,7 +18,10 @@ enclose = false
 # Radius of the neighbourhood.
 neigh-r = 1
 # Number of starting cells in the environment.
-n-cells = 1
+starting-cells = 1
+# Maximum number of cells allowed in the simulation.
+# Cell division is prevented if it would cause the cell population to exceed this threshold.
+max-cells = 4
 # Starting cell area.
 cell-start-area = 64
 # How many times the cell putative radius will be scaled when searching for the cell's positions.
