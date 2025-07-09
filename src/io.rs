@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::Path;
-use image::{EncodableLayout, RgbImage};
 use std::io;
+use image::{EncodableLayout, RgbImage};
 use imageproc::drawing::draw_line_segment_mut;
 use crate::boundary::Boundary;
 use crate::cell::RelCell;
@@ -89,17 +89,11 @@ impl IoManager {
     }
 
     pub fn simulation_image(&self, env: &Environment, clone_pairs: &HashSet<(Spin, Spin)>) -> RgbImage {
-        let spins: Vec<_> = env
-            .cell_lattice
-            .iter_values()
-            .flat_map(Self::spin_to_rgb)
-            .collect();
-
-        let mut image = RgbImage::from_vec(
+        let mut image = RgbImage::from_pixel(
             env.width() as u32,
             env.height() as u32,
-            spins
-        ).unwrap();
+            [255, 255, 255].into()
+        );
 
         if self.show_cell_centers {
             for cell in &env.cells {
@@ -127,26 +121,6 @@ impl IoManager {
             }
         }
         image
-    }
-
-    /// Converts a spin into a unique color.
-    ///
-    /// This method guarantees 5232 unique colors, starting from this spin the colors will repeat.
-    fn spin_to_rgb(spin: Spin) -> [u8; 3] {
-        if spin == LatticeEntity::Medium::<&RelCell>.spin() {
-            return [255, 255, 255];
-        } else if spin == LatticeEntity::Solid::<&RelCell>.spin() {
-            return [0, 0, 0]
-        }
-
-        let mut hasher = DefaultHasher::new();
-        spin.hash(&mut hasher);
-        let hashed = hasher.finish();
-        [
-            (hashed & 0xFF).try_into().unwrap(),
-            (hashed >> 8 & 0xFF) as u8,
-            (hashed >> 16 & 0xFF) as u8,
-        ]
     }
 }
 
@@ -223,17 +197,17 @@ impl TryFrom<MovieParameters> for MovieMaker {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
     use super::*;
-
+    
     #[test]
-    fn test_spin_to_rgb() {
-        let mut tested = HashSet::<[u8; 3]>::default();
-        // We can guarantee 5232 unique colors with this method, after that colors repeat
-        for i in 0..5232 as Spin {
-            let rgb = IoManager::spin_to_rgb(i);
-            assert!(!tested.contains(&rgb));
-            tested.insert(rgb);
-        }
+    fn test_window() {
+        let window = minifb::Window::new(
+            "test", 
+            100, 
+            100, 
+            minifb::WindowOptions::default()
+        );
+        assert!(window.is_ok());
+        window.unwrap().update();
     }
 }
