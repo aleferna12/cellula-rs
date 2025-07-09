@@ -1,6 +1,6 @@
 [general]
 # How many MCS the simulation will run for.
-time-steps = 8192
+time-steps = 16384
 # Seed for the RNG.
 # Use `0` to pick a random seed.
 # [default = 0]
