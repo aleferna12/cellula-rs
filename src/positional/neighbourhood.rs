@@ -1,5 +1,4 @@
-use crate::pos::Pos2D;
-
+use crate::positional::pos::Pos2D;
 // TODO! test dynamic allocation instead of the const arrays
 
 const MAX_NEIGH_R: u8 = 16;
@@ -135,9 +134,8 @@ impl Neighbourhood for VonNeumannNeighbourhood {
 
 #[cfg(test)]
 mod tests {
-    use crate::edge::Edge;
     use super::*;
-    use crate::pos::Pos2D;
+    use crate::positional::edge::Edge;
 
     #[test]
     fn test_neighbours_are_edges() {

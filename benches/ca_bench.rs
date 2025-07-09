@@ -1,10 +1,9 @@
 use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, Criterion};
-use evo_cpm::ca::AdhesionSystem;
-use evo_cpm::adhesion::StaticAdhesion;
+use evo_cpm::adhesion::{AdhesionSystem, StaticAdhesion};
 use evo_cpm::cell::{RelCell, Cell};
 use evo_cpm::environment::LatticeEntity;
-use evo_cpm::pos::WrappedPos;
+use evo_cpm::positional::pos::WrappedPos;
 
 fn bench_ca(c: &mut Criterion) {
     // These don't seem to be very reliable

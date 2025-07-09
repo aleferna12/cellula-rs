@@ -1,4 +1,4 @@
-use crate::boundary::UnsafePeriodicBoundary;
+use crate::positional::boundary::UnsafePeriodicBoundary;
 
 /// Boundary type of the lattice.
 ///

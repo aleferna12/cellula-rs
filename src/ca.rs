@@ -1,15 +1,15 @@
 use std::f32::consts::E;
 use rand::Rng;
-pub use crate::adhesion::AdhesionSystem;
-use crate::boundary::Boundary;
+use crate::adhesion::AdhesionSystem;
 use crate::cell::RelCell;
 use crate::constants::LatticeBoundaryType;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
-use crate::neighbourhood::Neighbourhood;
 use crate::parameters::{CellularAutomataParameters, StaticAdhesionParameters};
-use crate::pos::{AngularProjection, Pos2D, WrappedPos};
+use crate::positional::boundary::Boundary;
+use crate::positional::neighbourhood::Neighbourhood;
+use crate::positional::pos::{AngularProjection, Pos2D, WrappedPos};
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -184,7 +184,6 @@ impl<A: AdhesionSystem + From<StaticAdhesionParameters>> From<CellularAutomataPa
 mod tests {
     use crate::adhesion::StaticAdhesion;
     use crate::cell::Cell;
-    use crate::pos::WrappedPos;
     use super::*;
 
     #[test]

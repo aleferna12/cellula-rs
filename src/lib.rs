@@ -1,15 +1,11 @@
 pub mod lattice;
-pub mod pos;
+pub mod positional;
 pub mod parameters;
 pub mod model;
 pub mod environment;
 pub mod cell;
-pub mod edge;
 pub mod ca;
 pub mod io;
-pub mod boundary;
-pub mod neighbourhood;
 pub mod adhesion;
 pub mod constants;
 pub mod cell_container;
-pub mod plotter;

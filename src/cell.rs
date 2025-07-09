@@ -1,8 +1,8 @@
-use crate::boundary::LatticeBoundary;
+use std::ops::{Deref, DerefMut};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::pos::{Pos2D, WrappedPos};
-use std::ops::{Deref, DerefMut};
+use crate::positional::pos::{Pos2D, WrappedPos};
+use crate::positional::boundary::LatticeBoundary;
 
 /// Represents a cell that is bound to an `Environment`.
 ///

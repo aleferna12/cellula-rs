@@ -1,16 +1,18 @@
+use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use image::RgbImage;
+use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
 use crate::cell::RelCell;
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
+use crate::positional::boundary::Boundary;
+use crate::positional::pos::Pos2D;
 
 pub trait Plotter {
     fn plot(&self, image: &mut RgbImage, env: &Environment);
 }
 
-struct SpinPlotter {
-
-}
+pub struct SpinPlotter {}
 
 impl SpinPlotter {
     /// Converts a spin into a unique color.
@@ -42,6 +44,42 @@ impl Plotter for SpinPlotter {
                 continue;
             }
             image.put_pixel(pos.x as u32, pos.y as u32, Self::spin_to_rgb(spin).into());
+        }
+    }
+}
+
+pub struct CellCenterPlotter {}
+
+impl Plotter for CellCenterPlotter {
+    fn plot(&self, image: &mut RgbImage, env: &Environment) {
+        for cell in &env.cells {
+            let center = env.cell_lattice.bound.valid_pos(Pos2D::new(
+                cell.center.pos().x as isize,
+                cell.center.pos().y as isize,
+            ));
+            if let Some(pos) = center {
+                draw_cross_mut(image, [0, 255, 0].into(), pos.x as i32, pos.y as i32);
+            }
+        }
+    }
+}
+
+pub struct ClonesPlotter<'a> {
+    pub(crate) clone_pairs: &'a HashSet<(Spin, Spin)>
+}
+
+impl Plotter for ClonesPlotter<'_> {
+    fn plot(&self, image: &mut RgbImage, env: &Environment) {
+        for (spin1, spin2) in self.clone_pairs.iter().copied() {
+            let message = "non-cell stored as clone";
+            let center1 = env.cells.get_entity(spin1).expect_cell(message).center.pos;
+            let center2 = env.cells.get_entity(spin2).expect_cell(message).center.pos;
+            draw_line_segment_mut(
+                image,
+                (center1.x, center1.y),
+                (center2.x, center2.y),
+                [255, 0, 0].into()
+            )
         }
     }
 }

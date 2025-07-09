@@ -5,10 +5,11 @@ use criterion::BatchSize;
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use evo_cpm::cell::RelCell;
-use evo_cpm::edge::Edge;
 use evo_cpm::environment::{Environment, LatticeEntity};
 use evo_cpm::environment::LatticeEntity::*;
-use evo_cpm::pos::{Pos2D, Rect};
+use evo_cpm::positional::edge::Edge;
+use evo_cpm::positional::pos::Pos2D;
+use evo_cpm::positional::rect::Rect;
 
 fn random_neighbour(env: &Environment, p: Pos2D<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos2D<usize> {
     let oldp = (p.x as i32, p.y as i32);

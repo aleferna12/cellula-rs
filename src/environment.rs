@@ -1,16 +1,18 @@
-use crate::boundary::Boundary;
+use std::borrow::Borrow;
+use rand::Rng;
 use crate::cell::{RelCell, Cell};
 use crate::cell_container::CellContainer;
 use crate::constants::{LatticeBoundaryType, Spin};
-use crate::edge::{Edge, EdgeBook};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::CellLattice;
-use crate::neighbourhood::{MooreNeighbourhood, Neighbourhood};
-use crate::pos::{AngularProjection, Pos2D, Rect, WrappedPos};
-use std::borrow::Borrow;
-use rand::Rng;
 use crate::environment::DivisionError::{NewCellTooBig, NewCellTooSmall};
 use crate::parameters::{CellParameters, EnvironmentParameters};
+use crate::positional::boundary::Boundary;
+use crate::positional::edge::Edge;
+use crate::positional::edge_book::EdgeBook;
+use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
+use crate::positional::pos::{AngularProjection, Pos2D, WrappedPos};
+use crate::positional::rect::Rect;
 
 pub struct Environment {
     pub cell_lattice: CellLattice<LatticeBoundaryType>,

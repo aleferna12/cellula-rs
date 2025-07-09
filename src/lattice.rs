@@ -1,12 +1,13 @@
 use std::collections::{HashSet, VecDeque};
 use std::f32::consts::TAU;
-use crate::boundary::LatticeBoundary;
-use crate::pos::{Pos2D, Rect};
 use rand::Rng;
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 use crate::cell::RelCell;
 use crate::constants::Spin;
-use crate::neighbourhood::Neighbourhood;
+use crate::positional::boundary::LatticeBoundary;
+use crate::positional::neighbourhood::Neighbourhood;
+use crate::positional::pos::Pos2D;
+use crate::positional::rect::Rect;
 
 pub struct Lattice<T, B> {
     array: Box<[T]>,

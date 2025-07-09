@@ -1,11 +1,10 @@
 use std::error::Error;
-use std::path::Path;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use crate::adhesion::{ClonalAdhesion};
 use crate::ca::CA;
 use crate::environment::Environment;
-use crate::io::{CONFIG_COPY_PATH, IoManager};
+use crate::io::io_manager::IoManager;
 use crate::parameters::Parameters;
 
 pub struct Model {
@@ -63,19 +62,9 @@ impl TryFrom<Parameters> for Model {
         };
 
         log::info!("Setting model up");
-        log::info!("Creating output directory");
+        log::info!("Creating output directory and copy of parameter file");
         model.io_manager.create_directories()?;
-
-        let params_copy = Path::new(&model.parameters.io.outdir).join(CONFIG_COPY_PATH);
-        log::info!("Saving copy of parameters to `{}`", &params_copy.display());
-        std::fs::write(
-            params_copy,
-            format!(
-                "{}\n{}",
-                "# This is a copy of the parameters used in the simulation",
-                toml::to_string(&model.parameters)?
-            )
-        )?;
+        model.io_manager.create_parameters_file(&model.parameters)?;
 
         Ok(model)
     }

@@ -1,7 +1,8 @@
-use crate::cell::Cell;
-use crate::pos::{AngularProjection, Pos2D, Rect};
 use num::traits::Euclid;
 use num::Num;
+use crate::cell::Cell;
+use crate::positional::pos::{AngularProjection, Pos2D};
+use crate::positional::rect::Rect;
 
 pub trait Boundary {
     type Coord;
