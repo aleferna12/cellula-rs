@@ -87,7 +87,7 @@ pub struct CellParameters {
     pub div_area: u32,
     #[serde(default = "param_defaults::true_flag")]
     pub divide: bool,
-    // TODO: change to true when migration is properly implemented (its currently quite buggy)
+    // TODO: change to true when migration is properly implemented (its currently an unstable feature)
     #[serde(default = "param_defaults::false_flag")]
     pub migrate: bool
 }
@@ -125,7 +125,6 @@ pub struct IoParameters {
     pub movie: MovieParameters
 }
 
-// TODO! docs
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct MovieParameters {

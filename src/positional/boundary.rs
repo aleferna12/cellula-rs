@@ -25,6 +25,8 @@ pub trait Boundary {
 
 pub trait LatticeBoundary: Boundary<Coord = isize> {
     fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, width: usize, height: usize, add: bool);
+    // TODO!: this can make FixedBoundary quite a lot faster
+    // fn delta_angle();
 }
 
 #[derive(Clone)]

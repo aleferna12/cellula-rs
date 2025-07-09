@@ -33,9 +33,6 @@ impl ClonalAdhesion {
         pair
     }
     
-    // TODO!: This is horrible and doesnt work.
-    //  we need to check that mom was a clone with neighbour before inserting the clone
-    //  otherwise cells can attach to new groups by being neighbours
     pub fn update_clones(
         &mut self,
         cell_spin: Spin,

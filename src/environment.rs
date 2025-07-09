@@ -276,6 +276,7 @@ impl Environment {
                 );
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
+                //  it also might be worth writing a faster implementation for FixedBoundary (LatticeBoundary)
                 proj.delta_angles(&mom_cell.center.projection).0 > 0.
             })
             .collect();

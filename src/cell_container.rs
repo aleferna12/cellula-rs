@@ -57,7 +57,6 @@ impl CellContainer {
         SomeCell(&mut self.vec[(spin - LatticeEntity::first_cell_spin()) as usize])
     }
 
-    // TODO: move to Cell?
     pub fn update_cells(&mut self) {
         for cell in &mut self.vec {
             if cell.target_area < self.div_area {
