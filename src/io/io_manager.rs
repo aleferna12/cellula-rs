@@ -5,7 +5,7 @@ use crate::constants::Spin;
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_rgb, CenterPlot, ClonesPlot, Plot, SpinPlot};
+use crate::io::plot::{hex_to_rgb, AreaPlot, CenterPlot, ClonesPlot, Plot, SpinPlot};
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -93,6 +93,9 @@ impl IoManager {
                         clone_pairs, 
                         hex_to_rgb(&self.plots.clones_color).expect("`clones-color` is not a valid rgb")
                     ).plot(&mut image)
+                },
+                PlotType::Area => {
+                    AreaPlot::new(env).plot(&mut image)
                 }
             }
         }

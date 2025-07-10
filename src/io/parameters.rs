@@ -153,7 +153,8 @@ pub struct PlotParameters {
 pub enum PlotType {
     Spin,
     Center,
-    Clones
+    Clones,
+    Area
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

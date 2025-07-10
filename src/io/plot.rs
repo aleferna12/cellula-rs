@@ -106,6 +106,44 @@ impl Plot for ClonesPlot<'_> {
     }
 }
 
+pub struct AreaPlot<'e> {
+    env: &'e Environment
+}
+
+impl<'e> AreaPlot<'e> {
+    pub fn new(env: &'e Environment) -> Self {
+        Self { env }
+    }
+}
+
+impl Plot for AreaPlot<'_> {
+    fn plot(&self, image: &mut RgbaImage) {
+        let mut min = u32::MAX;
+        let mut max = 0;
+        for cell in &self.env.cells {
+            if cell.area < min {
+                min = cell.area
+            }
+            if cell.area > max {
+                max = cell.area
+            }
+        }
+        for pos in self.env.cell_lattice.iter_positions() {
+            let entity = self.env.cells.get_entity(self.env.cell_lattice[pos]);
+            if let LatticeEntity::SomeCell(cell) = entity {
+                let frac = lerp(cell.area as f32, min as f32, max as f32);
+                let gray = (255. * frac) as u8;
+                image.put_pixel(pos.x as u32, pos.y as u32, [gray, gray, gray, 255].into());
+            }
+        }
+    }
+}
+
+pub fn lerp(value: f32, min: f32, max: f32) -> f32 {
+    let num = value - min;
+    if num == 0.0 { num } else { num / (max - min) }
+}
+
 pub fn hex_to_rgb(hex: &str) -> Result<Rgb<u8>, Box<dyn Error>> {
     if !hex.starts_with("#") {
         return Err("`hex` must start with `#`".into());
