@@ -91,7 +91,8 @@ impl IoManager {
                     ClonesPlot::new(
                         env, 
                         clone_pairs, 
-                        hex_to_rgb(&self.plots.clones_color).expect("`clones-color` is not a valid rgb")
+                        hex_to_rgb(&self.plots.clones_color).expect("`clones-color` is not a valid rgb"),
+                        self.plots.all_clones
                     ).plot(&mut image)
                 },
                 PlotType::Area => {

@@ -81,12 +81,13 @@ impl Plot for CenterPlot<'_> {
 pub struct ClonesPlot<'a> {
     env: &'a Environment,
     clone_pairs: &'a HashSet<(Spin, Spin)>,
-    color: Rgb<u8>
+    color: Rgb<u8>,
+    all_clones: bool
 }
 
 impl<'a> ClonesPlot<'a> {
-    pub fn new(env: &'a Environment, clone_pairs: &'a HashSet<(Spin, Spin)>, color: Rgb<u8>) -> Self {
-        Self { env, clone_pairs, color }
+    pub fn new(env: &'a Environment, clone_pairs: &'a HashSet<(Spin, Spin)>, color: Rgb<u8>, all_clones: bool) -> Self {
+        Self { env, clone_pairs, color, all_clones }
     }
 }
 
@@ -94,14 +95,26 @@ impl Plot for ClonesPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for (spin1, spin2) in self.clone_pairs.iter().copied() {
             let message = "non-cell stored as clone";
-            let center1 = self.env.cells.get_entity(spin1).expect_cell(message).center.pos;
-            let center2 = self.env.cells.get_entity(spin2).expect_cell(message).center.pos;
-            draw_line_segment_mut(
-                image,
-                (center1.x, center1.y),
-                (center2.x, center2.y),
-                self.color.to_rgba()
-            )
+            let cell1 = self.env.cells.get_entity(spin1).expect_cell(message);
+            let cell2 = self.env.cells.get_entity(spin2).expect_cell(message);
+            let center1 = cell1.center.pos;
+            let center2 = cell2.center.pos;
+            let mut draw = true;
+            if !self.all_clones {
+                let dist2 = (center1.x - center2.x).powf(2.) + (center1.y - center2.y).powf(2.);
+                let mean_area2 = (cell1.area + cell2.area).pow(2);
+                if dist2 > mean_area2 as f32 {
+                    draw = false
+                }
+            }
+            if draw {
+                draw_line_segment_mut(
+                    image,
+                    (center1.x, center1.y),
+                    (center2.x, center2.y),
+                    self.color.to_rgba()
+                )
+            }
         }
     }
 }

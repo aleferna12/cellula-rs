@@ -146,6 +146,8 @@ pub struct PlotParameters {
     pub medium_color: Option<String>,
     pub center_color: String,
     pub clones_color: String,
+    #[serde(default = "param_defaults::false_flag")]
+    pub all_clones: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]
