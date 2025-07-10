@@ -4,7 +4,7 @@ use evo_cpm::model::Model;
 use std::hint::black_box;
 use std::path::Path;
 use std::time::Duration;
-use evo_cpm::parameters::Parameters;
+use evo_cpm::io::parameters::Parameters;
 
 /// Builds all example models.
 fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {

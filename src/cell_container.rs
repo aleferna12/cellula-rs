@@ -2,7 +2,7 @@ use crate::cell::{RelCell, Cell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
-use crate::parameters::CellParameters;
+use crate::io::parameters::CellParameters;
 
 pub struct CellContainer {
     pub target_area: u32,
@@ -38,20 +38,20 @@ impl CellContainer {
     }
 
     pub fn get_entity(&self, spin: Spin) -> LatticeEntity<&RelCell> {
-        if spin == Medium::<&RelCell>.spin() {
+        if spin == Medium.spin() {
             return Medium;
         }
-        if spin == Solid::<&RelCell>.spin() {
+        if spin == Solid.spin() {
             return Solid;
         }
         SomeCell(&self.vec[(spin - LatticeEntity::first_cell_spin()) as usize])
     }
 
     pub fn get_entity_mut(&mut self, spin: Spin) -> LatticeEntity<&mut RelCell> {
-        if spin == Medium::<&RelCell>.spin() {
+        if spin == Medium.spin() {
             return Medium;
         }
-        if spin == Solid::<&RelCell>.spin() {
+        if spin == Solid.spin() {
             return Solid;
         }
         SomeCell(&mut self.vec[(spin - LatticeEntity::first_cell_spin()) as usize])

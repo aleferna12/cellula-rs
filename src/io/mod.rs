@@ -1,3 +1,4 @@
 pub mod io_manager;
 pub mod movie_maker;
-pub mod plotter;
+pub mod plot;
+pub mod parameters;

@@ -3,7 +3,7 @@ use crate::cell::RelCell;
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::environment::LatticeEntity::*;
-use crate::parameters::StaticAdhesionParameters;
+use crate::io::parameters::StaticAdhesionParameters;
 
 pub trait AdhesionSystem {
     // This arguably should receive info about which specific site is being copied 

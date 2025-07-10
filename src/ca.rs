@@ -6,7 +6,7 @@ use crate::constants::LatticeBoundaryType;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
-use crate::parameters::{CellularAutomataParameters, StaticAdhesionParameters};
+use crate::io::parameters::{CellularAutomataParameters, StaticAdhesionParameters};
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::{AngularProjection, Pos2D, WrappedPos};
@@ -52,13 +52,13 @@ impl<A: AdhesionSystem> CA<A> {
         pos_to: Pos2D<usize>
     ) -> f32 {
         let spin_to = env.cell_lattice.lat[pos_to];
-        if spin_to == Solid::<&RelCell>.spin() {
+        if spin_to == Solid.spin() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_from = {
             let spin = env.cell_lattice.lat[pos_from];
-            if spin == Solid::<&RelCell>.spin() { Medium::<&RelCell>.spin() } else { spin }
+            if spin == Solid.spin() { Medium.spin() } else { spin }
         };
 
         let entity_from = env.cells.get_entity(spin_from);

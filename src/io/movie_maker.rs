@@ -1,5 +1,5 @@
-use image::{EncodableLayout, RgbImage};
-use crate::parameters::MovieParameters;
+use crate::io::parameters::MovieParameters;
+use image::{EncodableLayout, RgbaImage};
 
 pub struct MovieMaker {
     pub width: u32,
@@ -13,12 +13,12 @@ impl MovieMaker {
         self.window.is_open() && !self.window.is_key_down(minifb::Key::Escape)
     }
 
-    pub fn update(&mut self, image: &RgbImage) -> minifb::Result<()> {
+    pub fn update(&mut self, image: &RgbaImage) -> minifb::Result<()> {
         let buffer: Vec<_> = image
             .as_bytes()
-            .chunks_exact(3)
-            .map(|rgb| {
-                u32::from_le_bytes([rgb[2], rgb[1], rgb[0], 255])
+            .chunks_exact(4)
+            .map(|rgba| {
+                u32::from_le_bytes([rgba[2], rgba[1], rgba[0], rgba[3]])
             })
             .collect();
         self.window.update_with_buffer(&buffer, self.width as usize, self.height as usize)

@@ -5,7 +5,7 @@ use crate::adhesion::{ClonalAdhesion};
 use crate::ca::CA;
 use crate::environment::Environment;
 use crate::io::io_manager::IoManager;
-use crate::parameters::Parameters;
+use crate::io::parameters::Parameters;
 
 pub struct Model {
     pub env: Environment,

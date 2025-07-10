@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use rand::Rng;
 use crate::cell::{RelCell, Cell};
 use crate::cell_container::CellContainer;
@@ -6,7 +5,7 @@ use crate::constants::{LatticeBoundaryType, Spin};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::CellLattice;
 use crate::environment::DivisionError::{NewCellTooBig, NewCellTooSmall};
-use crate::parameters::{CellParameters, EnvironmentParameters};
+use crate::io::parameters::{CellParameters, EnvironmentParameters};
 use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
@@ -138,7 +137,7 @@ impl Environment {
                 continue;
             }
             let valid_pos: Pos2D<usize> = trans_pos.unwrap().into();
-            if self.cell_lattice[valid_pos] != Medium::<&RelCell>.spin() {
+            if self.cell_lattice[valid_pos] != Medium.spin() {
                 continue
             }
             self.cell_lattice[valid_pos] = spin;
@@ -155,10 +154,10 @@ impl Environment {
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
-            if self.cell_lattice[pos] != Medium::<&RelCell>.spin() {
+            if self.cell_lattice[pos] != Medium.spin() {
                 continue
             }
-            self.cell_lattice[pos] = Solid::<&RelCell>.spin();
+            self.cell_lattice[pos] = Solid.spin();
             area += 1;
         }
         area
@@ -333,11 +332,11 @@ impl<C> LatticeEntity<C> {
     }
 }
 
-impl<C: Borrow<RelCell>> LatticeEntity<C> {
+impl LatticeEntity<&RelCell> {
     /// Maps the `LatticeEntity` to a unique spin value.
     pub fn spin(&self) -> Spin {
         match self {
-            SomeCell(cell) => cell.borrow().spin,
+            SomeCell(cell) => cell.spin,
             Medium => 0,
             Solid => 1
         }
@@ -410,7 +409,7 @@ pub mod tests {
 
     #[test]
     fn test_lattice_entity_spin() {
-        assert!(LatticeEntity::first_cell_spin() > Medium::<&RelCell>.spin());
-        assert!(LatticeEntity::first_cell_spin() > Solid::<&RelCell>.spin());
+        assert!(LatticeEntity::first_cell_spin() > Medium.spin());
+        assert!(LatticeEntity::first_cell_spin() > Solid.spin());
     }
 }

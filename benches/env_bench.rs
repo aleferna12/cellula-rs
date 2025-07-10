@@ -1,15 +1,14 @@
-use std::cmp::min;
-use std::hint::black_box;
-use criterion::{criterion_group, criterion_main, Criterion};
 use criterion::BatchSize;
-use rand::{Rng, SeedableRng};
-use rand_xoshiro::Xoshiro256StarStar;
-use evo_cpm::cell::RelCell;
-use evo_cpm::environment::{Environment, LatticeEntity};
+use criterion::{criterion_group, criterion_main, Criterion};
 use evo_cpm::environment::LatticeEntity::*;
+use evo_cpm::environment::{Environment, LatticeEntity};
 use evo_cpm::positional::edge::Edge;
 use evo_cpm::positional::pos::Pos2D;
 use evo_cpm::positional::rect::Rect;
+use rand::{Rng, SeedableRng};
+use rand_xoshiro::Xoshiro256StarStar;
+use std::cmp::min;
+use std::hint::black_box;
 
 fn random_neighbour(env: &Environment, p: Pos2D<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos2D<usize> {
     let oldp = (p.x as i32, p.y as i32);
@@ -44,8 +43,8 @@ fn replace_random_edges(n_edges: usize, env: &mut Environment, rng: &mut impl Rn
 
 fn bench_env(c: &mut Criterion) {
     c.bench_function("lattice_entity_discriminant", |b| b.iter(|| {
-        Medium::<&RelCell>.spin();
-        Solid::<&RelCell>.spin();
+        Medium.spin();
+        Solid.spin();
     }));
 
     c.bench_function("replace_edges", |b| {

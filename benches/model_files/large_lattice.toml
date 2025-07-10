@@ -13,6 +13,23 @@ replace-outdir = true
 # Period (in MCS) with which to save an image of the simulation.
 image-period = 2048
 
+[io.plots]
+# Defines which plots to make and in what order.
+# Options are:
+#   - "spin":   Plots lattice spins.
+#   - "center": Plots cell centers.
+#   - "clones": Plots will cells are attached.
+order = ["spin"]
+# With which color to plot solid objects.
+solid-color = [0, 0, 0]
+# With which color to plot the medium.
+# Ommit to make the medium transparent.
+# medium-color = [255, 255, 255]
+# With which color to plot the centers of cells.
+center-color = [0, 255, 0]
+# With which color to plot the connections between cell clones.
+clones-color = [255, 0, 0]
+
 [environment]
 # Width of the lattice.
 width = 2000

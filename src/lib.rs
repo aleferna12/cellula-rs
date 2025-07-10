@@ -1,6 +1,5 @@
 pub mod lattice;
 pub mod positional;
-pub mod parameters;
 pub mod model;
 pub mod environment;
 pub mod cell;

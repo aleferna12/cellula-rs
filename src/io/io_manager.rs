@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
-use image::RgbImage;
+use image::RgbaImage;
 use crate::constants::Spin;
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
-use crate::io::plotter::{CellCenterPlotter, ClonesPlotter, Plotter, SpinPlotter};
-use crate::parameters::{IoParameters, MovieParameters, Parameters};
+use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
+use crate::io::plot::{CenterPlot, ClonesPlot, Plot, SpinPlot};
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -13,11 +13,10 @@ pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
 pub struct IoManager {
     pub outdir: PathBuf,
     pub replace_outdir: bool,
-    pub show_attached_cells: bool,
-    pub show_cell_centers: bool,
     pub image_period: u32,
     pub image_format: String,
-    pub movie_maker: Option<MovieMaker>
+    pub movie_maker: Option<MovieMaker>,
+    pub plots: PlotParameters
 }
 
 impl IoManager {
@@ -66,18 +65,27 @@ impl IoManager {
         }
     }
 
-    pub fn simulation_image(&self, env: &Environment, clone_pairs: &HashSet<(Spin, Spin)>) -> RgbImage {
-        let mut image = RgbImage::from_pixel(
+    pub fn simulation_image(&self, env: &Environment, clone_pairs: &HashSet<(Spin, Spin)>) -> RgbaImage {
+        let mut image = RgbaImage::new(
             env.width() as u32,
-            env.height() as u32,
-            [255, 255, 255].into()
+            env.height() as u32
         );
-        SpinPlotter{ env }.plot(&mut image);
-        if self.show_cell_centers {
-            CellCenterPlotter{ env }.plot(&mut image);
-        }
-        if self.show_attached_cells {
-            ClonesPlotter { env, clone_pairs }.plot(&mut image);
+        for plot in self.plots.order.clone() {
+            match plot {
+                PlotType::Spin => {
+                    SpinPlot::new(
+                        env, 
+                        self.plots.solid_color.into(),
+                        self.plots.medium_color.map(|rgb| rgb.into())
+                    ).plot(&mut image)
+                }
+                PlotType::Center => {
+                    CenterPlot::new(env, self.plots.center_color.into()).plot(&mut image)
+                }
+                PlotType::Clones => {
+                    ClonesPlot::new(env, clone_pairs, self.plots.clones_color.into()).plot(&mut image)
+                }
+            }
         }
         image
     }
@@ -119,8 +127,6 @@ impl TryFrom<IoParameters> for IoManager {
         Ok(Self {
             outdir: PathBuf::from(params.outdir),
             replace_outdir: params.replace_outdir,
-            show_attached_cells: params.show_attached_cells,
-            show_cell_centers: params.show_cell_centers,
             image_period: params.image_period,
             image_format: params.image_format,
             movie_maker: if params.movie.show {
@@ -137,6 +143,7 @@ impl TryFrom<IoParameters> for IoManager {
             } else {
                 None
             },
+            plots: params.plots
         })
     }
 }

@@ -42,6 +42,9 @@ impl Parameters {
                 config::Environment::default()
                     .separator("__")
                     .convert_case(config::Case::Kebab)
+                    .list_separator(",")
+                    .with_list_parse_key("io.plots.order")
+                    .try_parsing(true)
             ).build()?
                 .try_deserialize()?;
         Ok(params)
@@ -60,7 +63,7 @@ impl Parameters {
 #[serde(rename_all = "kebab-case")]
 pub struct GeneralParameters {
     pub time_steps: u32,
-    #[serde(default = "param_defaults::seed")]
+    #[serde(default = "param_defaults::zero")]
     pub seed: u64,
 }
 
@@ -116,13 +119,10 @@ pub struct IoParameters {
     #[serde(default = "param_defaults::false_flag")]
     pub replace_outdir: bool,
     pub image_period: u32,
-    #[serde(default = "param_defaults::image_format")]
+    #[serde(default = "param_defaults::webp")]
     pub image_format: String,
-    #[serde(default = "param_defaults::false_flag")]
-    pub show_cell_centers: bool,
-    #[serde(default = "param_defaults::false_flag")]
-    pub show_attached_cells: bool,
-    pub movie: MovieParameters
+    pub movie: MovieParameters,
+    pub plots: PlotParameters
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -135,12 +135,31 @@ pub struct MovieParameters {
     pub frame_period: u32
 }
 
+// We flatten the parameters here to allow order to be an env variable
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct PlotParameters {
+    pub order: Vec<PlotType>, 
+    pub solid_color: [u8; 3],
+    pub medium_color: Option<[u8; 3]>,
+    pub center_color: [u8; 3],
+    pub clones_color: [u8; 3],
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub enum PlotType {
+    Spin,
+    Center,
+    Clones
+}
+
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
 mod param_defaults {
-    pub fn seed() -> u64 { 0 }
+    pub fn zero() -> u64 { 0 }
     pub fn false_flag() -> bool { false }
     pub fn true_flag() -> bool { true }
-    pub fn image_format() -> String { "webp".to_string() }
+    pub fn webp() -> String { "webp".to_string() }
 }
 
 #[cfg(test)]
