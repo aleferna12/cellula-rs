@@ -1,6 +1,7 @@
 use image::{Pixel, Rgb, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
 use std::collections::HashSet;
+use std::error::Error;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
@@ -105,6 +106,18 @@ impl Plot for ClonesPlot<'_> {
     }
 }
 
+pub fn hex_to_rgb(hex: &str) -> Result<Rgb<u8>, Box<dyn Error>> {
+    if !hex.starts_with("#") {
+        return Err("`hex` must start with `#`".into());
+    }
+    if hex.len() != 7 {
+        return Err("`hex` must be six characters long, excluding `#`".into());
+    }
+    let hexu32 = hex.replace("#", "00");
+    let bytes = u32::from_str_radix(&hexu32, 16)?.to_be_bytes();
+    Ok([bytes[1], bytes[2], bytes[3]].into())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -119,5 +132,10 @@ mod tests {
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);
         }
+    }
+
+    #[test]
+    fn test_hex_to_rgb() {
+        assert_eq!(hex_to_rgb("#ff00ff").unwrap(), [255, 0, 255].into());
     }
 }

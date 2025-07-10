@@ -7,6 +7,8 @@ static CLI_NOTES: &str = "\
     Model parameters are loaded from a TOML file specified by CONFIG.\n\
     You can also override any parameter from the CONFIG file with environmental variables \
     (use `__` for the parameter section, e.g. `GENERAL__TIME_STEPS`).\n\
+    Use commas to pass parameters that expect lists (e.g. `IO__PLOT__ORDER=spin,center`).
+    \n\
     Documentation for parameters can be found in `examples/64_cells.toml`.\n\
 ";
 
@@ -140,10 +142,10 @@ pub struct MovieParameters {
 #[serde(rename_all = "kebab-case")]
 pub struct PlotParameters {
     pub order: Vec<PlotType>, 
-    pub solid_color: [u8; 3],
-    pub medium_color: Option<[u8; 3]>,
-    pub center_color: [u8; 3],
-    pub clones_color: [u8; 3],
+    pub solid_color: String,
+    pub medium_color: Option<String>,
+    pub center_color: String,
+    pub clones_color: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

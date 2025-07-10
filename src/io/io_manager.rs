@@ -5,7 +5,7 @@ use crate::constants::Spin;
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
-use crate::io::plot::{CenterPlot, ClonesPlot, Plot, SpinPlot};
+use crate::io::plot::{hex_to_rgb, CenterPlot, ClonesPlot, Plot, SpinPlot};
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -75,15 +75,24 @@ impl IoManager {
                 PlotType::Spin => {
                     SpinPlot::new(
                         env, 
-                        self.plots.solid_color.into(),
-                        self.plots.medium_color.map(|rgb| rgb.into())
+                        hex_to_rgb(&self.plots.solid_color).expect("`solid-color` is not a valid rgb"),
+                        self.plots.medium_color.clone().map(|ref rgb| { 
+                            hex_to_rgb(rgb).expect("`medium-color` is not a valid rgb")
+                        })
                     ).plot(&mut image)
                 }
                 PlotType::Center => {
-                    CenterPlot::new(env, self.plots.center_color.into()).plot(&mut image)
+                    CenterPlot::new(
+                        env,
+                        hex_to_rgb(&self.plots.center_color).expect("`center-color` is not a valid rgb")
+                    ).plot(&mut image)
                 }
                 PlotType::Clones => {
-                    ClonesPlot::new(env, clone_pairs, self.plots.clones_color.into()).plot(&mut image)
+                    ClonesPlot::new(
+                        env, 
+                        clone_pairs, 
+                        hex_to_rgb(&self.plots.clones_color).expect("`clones-color` is not a valid rgb")
+                    ).plot(&mut image)
                 }
             }
         }
