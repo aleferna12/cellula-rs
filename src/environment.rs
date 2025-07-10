@@ -264,7 +264,6 @@ impl Environment {
         );
         let new_positions: Vec<_> = self
             .cell_lattice
-            // TODO!: parameterise search radius
             .box_cell_positions(mom_cell, self.cell_search_radius)
             .into_iter()
             .filter(|pos| { 

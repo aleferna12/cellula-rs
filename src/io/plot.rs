@@ -6,6 +6,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::positional::boundary::Boundary;
+use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos2D;
 
 pub trait Plot {
@@ -141,12 +142,46 @@ impl Plot for AreaPlot<'_> {
                 max = cell.area
             }
         }
+        // TODO: might be faster to iterate cells instead
         for pos in self.env.cell_lattice.iter_positions() {
             let entity = self.env.cells.get_entity(self.env.cell_lattice[pos]);
             if let LatticeEntity::SomeCell(cell) = entity {
                 let frac = lerp(cell.area as f32, min as f32, max as f32);
                 let gray = (255. * frac) as u8;
                 image.put_pixel(pos.x as u32, pos.y as u32, [gray, gray, gray, 255].into());
+            }
+        }
+    }
+}
+
+pub struct BorderPlot<'e> {
+    env: &'e Environment,
+    color: Rgb<u8>
+}
+
+impl<'e> BorderPlot<'e> {
+    pub fn new(env: &'e Environment, color: Rgb<u8>) -> Self {
+        Self { env, color }
+    }
+}
+
+impl Plot for BorderPlot<'_> {
+    fn plot(&self, image: &mut RgbaImage) {
+        for cell in &self.env.cells {
+            // TODO!: this gives lots of not all positions found warning (that i get nowhere else)
+            //  why??
+            for pos in self.env.cell_lattice.box_cell_positions(cell, self.env.cell_search_radius) {
+                let is_border = self.env
+                    .cell_lattice
+                    .bound
+                    .valid_positions(self.env.neighbourhood.neighbours(Pos2D::from(pos)))
+                    .any(|neigh| {
+                        let neigh_spin = self.env.cell_lattice[Pos2D::from(neigh)];
+                        neigh_spin != cell.spin
+                    });
+                if is_border {
+                    image.put_pixel(pos.x as u32, pos.y as u32, self.color.to_rgba());
+                }
             }
         }
     }

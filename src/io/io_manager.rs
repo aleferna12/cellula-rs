@@ -5,7 +5,7 @@ use crate::constants::Spin;
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_rgb, AreaPlot, CenterPlot, ClonesPlot, Plot, SpinPlot};
+use crate::io::plot::{hex_to_rgb, AreaPlot, BorderPlot, CenterPlot, ClonesPlot, Plot, SpinPlot};
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -97,6 +97,12 @@ impl IoManager {
                 },
                 PlotType::Area => {
                     AreaPlot::new(env).plot(&mut image)
+                },
+                PlotType::Border => {
+                    BorderPlot::new(
+                        env,
+                        hex_to_rgb(&self.plots.border_color).expect("`border-color` is not a valid rgb")
+                    ).plot(&mut image)
                 }
             }
         }
