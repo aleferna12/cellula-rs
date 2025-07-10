@@ -72,12 +72,12 @@ impl IoManager {
             env.height() as u32,
             [255, 255, 255].into()
         );
-        SpinPlotter{}.plot(&mut image, env);
+        SpinPlotter{ env }.plot(&mut image);
         if self.show_cell_centers {
-            CellCenterPlotter{}.plot(&mut image, env);
+            CellCenterPlotter{ env }.plot(&mut image);
         }
         if self.show_attached_cells {
-            ClonesPlotter { clone_pairs }.plot(&mut image, env);
+            ClonesPlotter { env, clone_pairs }.plot(&mut image);
         }
         image
     }

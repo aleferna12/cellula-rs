@@ -9,12 +9,14 @@ use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos2D;
 
 pub trait Plotter {
-    fn plot(&self, image: &mut RgbImage, env: &Environment);
+    fn plot(&self, image: &mut RgbImage);
 }
 
-pub struct SpinPlotter {}
+pub struct SpinPlotter<'e> {
+    pub(crate) env: &'e Environment
+}
 
-impl SpinPlotter {
+impl SpinPlotter<'_> {
     /// Converts a spin into a unique color.
     ///
     /// This method guarantees 5232 unique colors, starting from this spin the colors will repeat.
@@ -36,10 +38,10 @@ impl SpinPlotter {
     }
 }
 
-impl Plotter for SpinPlotter {
-    fn plot(&self, image: &mut RgbImage, env: &Environment) {
-        for pos in env.cell_lattice.iter_positions() {
-            let spin = env.cell_lattice[pos];
+impl Plotter for SpinPlotter<'_> {
+    fn plot(&self, image: &mut RgbImage) {
+        for pos in self.env.cell_lattice.iter_positions() {
+            let spin = self.env.cell_lattice[pos];
             if spin < LatticeEntity::first_cell_spin() {
                 continue;
             }
@@ -48,12 +50,14 @@ impl Plotter for SpinPlotter {
     }
 }
 
-pub struct CellCenterPlotter {}
+pub struct CellCenterPlotter<'e> {
+    pub(crate) env: &'e Environment
+}
 
-impl Plotter for CellCenterPlotter {
-    fn plot(&self, image: &mut RgbImage, env: &Environment) {
-        for cell in &env.cells {
-            let center = env.cell_lattice.bound.valid_pos(Pos2D::new(
+impl Plotter for CellCenterPlotter<'_> {
+    fn plot(&self, image: &mut RgbImage) {
+        for cell in &self.env.cells {
+            let center = self.env.cell_lattice.bound.valid_pos(Pos2D::new(
                 cell.center.pos().x as isize,
                 cell.center.pos().y as isize,
             ));
@@ -65,15 +69,16 @@ impl Plotter for CellCenterPlotter {
 }
 
 pub struct ClonesPlotter<'a> {
+    pub(crate) env: &'a Environment,
     pub(crate) clone_pairs: &'a HashSet<(Spin, Spin)>
 }
 
 impl Plotter for ClonesPlotter<'_> {
-    fn plot(&self, image: &mut RgbImage, env: &Environment) {
+    fn plot(&self, image: &mut RgbImage) {
         for (spin1, spin2) in self.clone_pairs.iter().copied() {
             let message = "non-cell stored as clone";
-            let center1 = env.cells.get_entity(spin1).expect_cell(message).center.pos;
-            let center2 = env.cells.get_entity(spin2).expect_cell(message).center.pos;
+            let center1 = self.env.cells.get_entity(spin1).expect_cell(message).center.pos;
+            let center2 = self.env.cells.get_entity(spin2).expect_cell(message).center.pos;
             draw_line_segment_mut(
                 image,
                 (center1.x, center1.y),
