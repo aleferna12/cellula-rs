@@ -1,6 +1,6 @@
 use std::cmp::max;
 use std::collections::{HashSet, VecDeque};
-use std::f32::consts::TAU;
+use std::f32::consts::PI;
 use rand::Rng;
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 use crate::cell::RelCell;
@@ -97,7 +97,7 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
     /// Prefer `box_cell_positions()`, which warns about missing values.
     /// This function should only be used when not all positions are required to be found.
     pub fn iter_box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> impl Iterator<Item = Pos2D<usize>> {
-        let search_radius = (radius_scaler * (max(cell.target_area, cell.area) as f32 / TAU).sqrt()) as isize;
+        let search_radius = (radius_scaler * (max(cell.target_area, cell.area) as f32 / PI).sqrt()) as isize;
         let center = Pos2D::new(
             cell.center.pos.x as isize,
             cell.center.pos.y as isize

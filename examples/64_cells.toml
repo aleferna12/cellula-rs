@@ -27,7 +27,7 @@ cell-start-area = 64
 # How many times the cell putative radius will be scaled when searching for the cell's positions.
 # Decreasing this parameter improves performance but may lead to critical warnings reporting that not
 # cell postitions could be found.
-cell-search-radius = 2.5
+cell-search-radius = 3
 # Period (in MCS) with which the environment is updated.
 # This includes cell growth (by 1 area unit), genomic parameters, and reproduction.
 update-period = 32
@@ -88,6 +88,8 @@ solid-color = "#000000"
 # medium-color = "#ffffff"
 # With which color to plot the centers of cells.
 center-color = "#00ff00"
+# With which color to plot the border of cells.
+border-color = "#0000ff"
 # With which color to plot the connections between cell clones.
 clones-color = "#ff0000"
 # Set to true to display all clone pairs, even those span across the lattice due to periodic boundaries.

@@ -167,21 +167,21 @@ impl<'e> BorderPlot<'e> {
 
 impl Plot for BorderPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for cell in &self.env.cells {
-            // TODO!: this gives lots of not all positions found warning (that i get nowhere else)
-            //  why??
-            for pos in self.env.cell_lattice.box_cell_positions(cell, self.env.cell_search_radius) {
-                let is_border = self.env
-                    .cell_lattice
-                    .bound
-                    .valid_positions(self.env.neighbourhood.neighbours(Pos2D::from(pos)))
-                    .any(|neigh| {
-                        let neigh_spin = self.env.cell_lattice[Pos2D::from(neigh)];
-                        neigh_spin != cell.spin
-                    });
-                if is_border {
-                    image.put_pixel(pos.x as u32, pos.y as u32, self.color.to_rgba());
-                }
+        for pos in self.env.cell_lattice.iter_positions() {
+            let spin = self.env.cell_lattice[pos];
+            if spin < LatticeEntity::first_cell_spin() {
+                continue
+            }
+            let is_border = self.env
+                .cell_lattice
+                .bound
+                .valid_positions(self.env.neighbourhood.neighbours(Pos2D::from(pos)))
+                .any(|neigh| {
+                    let neigh_spin = self.env.cell_lattice[Pos2D::from(neigh)];
+                    neigh_spin != spin
+                });
+            if is_border {
+                image.put_pixel(pos.x as u32, pos.y as u32, self.color.to_rgba());
             }
         }
     }
