@@ -4,6 +4,7 @@ use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::environment::LatticeEntity::*;
 use crate::io::parameters::StaticAdhesionParameters;
+use crate::spin_table::SpinTable;
 
 pub trait AdhesionSystem {
     // This arguably should receive info about which specific site is being copied 
@@ -22,15 +23,15 @@ pub struct ClonalAdhesion {
     // TODO!: should this be stored as an array or **set** in each cell? Benchmark
     //  the current implementation costs almost 25% of performance compared to StaticAdhesion
     //  othe possible solution a big table in the heap that we can access with spins
-    pub clone_pairs: HashSet<(Spin, Spin)>
+    pub clone_pairs: SpinTable<bool>
 }
 
 impl ClonalAdhesion {
-    fn canonicalize(pair: (Spin, Spin)) -> (Spin, Spin) {
-        if pair.0 > pair.1 {
-            return (pair.1, pair.0);
+    pub fn new(params: StaticAdhesionParameters, max_spin: Spin) -> Self {
+        Self {
+            static_adhesion: StaticAdhesion::from(params),
+            clone_pairs: SpinTable::new(max_spin)
         }
-        pair
     }
     
     pub fn update_clones(
@@ -59,7 +60,7 @@ impl ClonalAdhesion {
         
         let mom_clones = HashSet::from_iter(self
             .clone_pairs
-            .iter()
+            .iter_pairs()
             .filter_map(|pair| {
                 if pair.0 == mom_cell.spin {
                     Some(pair.1)
@@ -70,13 +71,13 @@ impl ClonalAdhesion {
                 }
             }));
         for spin in mom_clones.difference(&mom_neighs) {
-            self.clone_pairs.remove(&Self::canonicalize((mom_cell.spin, *spin)));
+            self.clone_pairs[(mom_cell.spin, *spin)] = false;
         }
         let clones: Vec<_> = cell_neighs.intersection(&mom_clones).copied().collect();
         for spin in &clones {
-            self.clone_pairs.insert(Self::canonicalize((cell.spin, *spin)));
+            self.clone_pairs[(cell.spin, *spin)] = true;
         }
-        self.clone_pairs.insert(Self::canonicalize((cell.spin, mom_cell.spin)));
+        self.clone_pairs[(cell.spin, mom_cell.spin)] = true;
         Some(clones)
     }
 }
@@ -87,23 +88,13 @@ impl AdhesionSystem for ClonalAdhesion {
             if c1.spin == c2.spin {
                 return 0.
             }
-            let canonical = Self::canonicalize((c1.spin, c2.spin));
-            if self.clone_pairs.contains(&canonical) {
+            if self.clone_pairs[(c1.spin, c2.spin)] == true {
                 return 2. * self.static_adhesion.cell_energy;
             }
             return 2. * self.static_adhesion.medium_energy;
         }
         // Handle all other cases
         self.static_adhesion.adhesion_energy(entity1, entity2)
-    }
-}
-
-impl From<StaticAdhesionParameters> for ClonalAdhesion {
-    fn from(params: StaticAdhesionParameters) -> Self {
-        Self {
-            static_adhesion: params.into(),
-            clone_pairs: HashSet::default()
-        }
     }
 }
 

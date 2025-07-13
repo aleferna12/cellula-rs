@@ -2,14 +2,14 @@ use std::error::Error;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use crate::adhesion::{ClonalAdhesion};
-use crate::ca::CA;
+use crate::ca::Ca;
 use crate::environment::Environment;
 use crate::io::io_manager::IoManager;
 use crate::io::parameters::Parameters;
 
 pub struct Model {
     pub env: Environment,
-    pub ca: CA<ClonalAdhesion>,
+    pub ca: Ca<ClonalAdhesion>,
     pub rng: Xoshiro256StarStar,
     pub io_manager: IoManager,
     parameters: Parameters
@@ -55,7 +55,13 @@ impl TryFrom<Parameters> for Model {
                 parameters.environment.clone(),
                 &mut rng
             ),
-            ca: parameters.cellular_automata.clone().into(),
+            ca: Ca::new(
+                parameters.cellular_automata.clone(),
+                ClonalAdhesion::new(
+                    parameters.cellular_automata.adhesion.clone(),
+                    parameters.environment.max_cells
+                )
+            ),
             io_manager: IoManager::try_from(parameters.io.clone())?,
             rng,
             parameters

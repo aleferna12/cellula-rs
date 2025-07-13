@@ -63,23 +63,9 @@ impl<T: Copy + Default, B: LatticeBoundary> Index<Pos2D<usize>> for Lattice<T, B
     }
 }
 
-impl<T: Copy + Default, B: LatticeBoundary> Index<(usize, usize)> for Lattice<T, B> {
-    type Output = T;
-
-    fn index(&self, pos: (usize, usize)) -> &Self::Output {
-        &self[Pos2D::<usize>::from(pos)]
-    }
-}
-
 impl<T: Copy + Default, B: LatticeBoundary> IndexMut<Pos2D<usize>> for Lattice<T, B> {
     fn index_mut(&mut self, pos: Pos2D<usize>) -> &mut Self::Output {
         &mut self.array[pos.row_major(self.height())]
-    }
-}
-
-impl<T: Copy + Default, B: LatticeBoundary> IndexMut<(usize, usize)> for Lattice<T, B> {
-    fn index_mut(&mut self, pos: (usize, usize)) -> &mut Self::Output {
-        &mut self[Pos2D::<usize>::from(pos)]
     }
 }
 

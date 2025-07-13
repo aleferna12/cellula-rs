@@ -6,7 +6,7 @@ use crate::constants::LatticeBoundaryType;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
-use crate::io::parameters::{CellularAutomataParameters, StaticAdhesionParameters};
+use crate::io::parameters::CellularAutomataParameters;
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::{AngularProjection, Pos2D, WrappedPos};
@@ -14,14 +14,23 @@ use crate::positional::pos::{AngularProjection, Pos2D, WrappedPos};
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
-pub struct CA<A> {
+pub struct Ca<A> {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
     pub adhesion: A
 }
 
-impl<A: AdhesionSystem> CA<A> {
+impl<A: AdhesionSystem> Ca<A> {
+    pub fn new(params: CellularAutomataParameters, adhesion: A) -> Self {
+        Self {
+            boltz_t: params.boltz_t,
+            size_lambda: params.size_lambda,
+            chemotaxis_mu: params.chemotaxis_mu,
+            adhesion
+        }
+    }
+    
     pub fn step(&self, env: &mut Environment, rng: &mut impl Rng) {
         let mut to_visit = env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
         while 0. < to_visit {
@@ -169,35 +178,29 @@ impl<A: AdhesionSystem> CA<A> {
     }
 }
 
-impl<A: AdhesionSystem + From<StaticAdhesionParameters>> From<CellularAutomataParameters> for CA<A> {
-    fn from(params: CellularAutomataParameters) -> Self {
-        Self {
-            boltz_t: params.boltz_t,
-            size_lambda: params.size_lambda,
-            chemotaxis_mu: params.chemotaxis_mu,
-            adhesion: params.adhesion.clone().into()
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::adhesion::StaticAdhesion;
+    use crate::adhesion::ClonalAdhesion;
     use crate::cell::Cell;
+    use crate::io::parameters::StaticAdhesionParameters;
     use super::*;
 
     #[test]
     fn test_delta_hamiltonian_size() {
-        let ca: CA<StaticAdhesion> = CellularAutomataParameters {
-            adhesion: StaticAdhesionParameters {
-                cell_energy: 10.,
-                medium_energy: 20.,
-                solid_energy: 20.
+        let adh_params = StaticAdhesionParameters {
+            cell_energy: 10.,
+            medium_energy: 20.,
+            solid_energy: 20.
+        };
+        let ca = Ca::new(
+            CellularAutomataParameters {
+                adhesion: adh_params.clone(),
+                boltz_t: 16.,
+                size_lambda: 1.,
+                chemotaxis_mu: 1.
             },
-            boltz_t: 16.,
-            size_lambda: 1.,
-            chemotaxis_mu: 1.
-        }.into();
+            ClonalAdhesion::new(adh_params, 10)
+        );
         let cell = RelCell::mock(Cell::new(100, 100, WrappedPos::origin()));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);

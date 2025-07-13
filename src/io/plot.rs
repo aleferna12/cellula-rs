@@ -1,6 +1,5 @@
 use image::{Pixel, Rgb, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
-use std::collections::HashSet;
 use std::error::Error;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use crate::constants::Spin;
@@ -8,6 +7,7 @@ use crate::environment::{Environment, LatticeEntity};
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos2D;
+use crate::spin_table::SpinTable;
 
 pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);
@@ -81,20 +81,20 @@ impl Plot for CenterPlot<'_> {
 
 pub struct ClonesPlot<'a> {
     env: &'a Environment,
-    clone_pairs: &'a HashSet<(Spin, Spin)>,
+    clone_pairs: &'a SpinTable<bool>,
     color: Rgb<u8>,
     all_clones: bool
 }
 
 impl<'a> ClonesPlot<'a> {
-    pub fn new(env: &'a Environment, clone_pairs: &'a HashSet<(Spin, Spin)>, color: Rgb<u8>, all_clones: bool) -> Self {
+    pub fn new(env: &'a Environment, clone_pairs: &'a SpinTable<bool>, color: Rgb<u8>, all_clones: bool) -> Self {
         Self { env, clone_pairs, color, all_clones }
     }
 }
 
 impl Plot for ClonesPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for (spin1, spin2) in self.clone_pairs.iter().copied() {
+        for (spin1, spin2) in self.clone_pairs.iter_pairs() {
             let message = "non-cell stored as clone";
             let cell1 = self.env.cells.get_entity(spin1).expect_cell(message);
             let cell2 = self.env.cells.get_entity(spin2).expect_cell(message);

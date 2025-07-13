@@ -1,11 +1,10 @@
-use std::collections::HashSet;
 use std::path::PathBuf;
 use image::RgbaImage;
-use crate::constants::Spin;
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
 use crate::io::plot::{hex_to_rgb, AreaPlot, BorderPlot, CenterPlot, ClonesPlot, Plot, SpinPlot};
+use crate::spin_table::SpinTable;
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -24,7 +23,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         env: &Environment,
-        clone_pairs: &HashSet<(Spin, Spin)>
+        clone_pairs: &SpinTable<bool>
     ) {
         let mut frame = None;
         let movie_update = if let Some(mm) = &self.movie_maker {
@@ -65,7 +64,7 @@ impl IoManager {
         }
     }
 
-    pub fn simulation_image(&self, env: &Environment, clone_pairs: &HashSet<(Spin, Spin)>) -> RgbaImage {
+    pub fn simulation_image(&self, env: &Environment, clone_pairs: &SpinTable<bool>) -> RgbaImage {
         let mut image = RgbaImage::new(
             env.width() as u32,
             env.height() as u32
