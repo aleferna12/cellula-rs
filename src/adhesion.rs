@@ -20,9 +20,7 @@ pub trait AdhesionSystem {
 //  connecting the two clonal cells
 pub struct ClonalAdhesion {
     pub static_adhesion: StaticAdhesion,
-    // TODO!: should this be stored as an array or **set** in each cell? Benchmark
-    //  the current implementation costs almost 25% of performance compared to StaticAdhesion
-    //  othe possible solution a big table in the heap that we can access with spins
+    // TODO!: try red-black trees in each cell
     pub clone_pairs: SpinTable<bool>
 }
 
