@@ -22,7 +22,7 @@ fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {
                     .unwrap();
                 Some((
                     bench_name.to_string(),
-                    Parameters::from_file(p).unwrap(),
+                    Parameters::parse_file(p).unwrap(),
                 ))
             }
             _ => None,
@@ -51,6 +51,7 @@ fn bench_param_files(
                         // Ensures that a single image will be saved, 
                         // either after the setup run or the whole simulation
                         params.io.image_period = max(time_steps, 100);
+                        params.io.movie.show = false;
                         let mut model = Model::try_from(params).unwrap();
                         model.run(100);
                         model
@@ -75,6 +76,25 @@ fn bench_param_files_1mcs(c: &mut Criterion) {
     bench_param_files(c, "models", "./benches/model_files", 1);
 }
 
+fn bench_clonal_dev(c: &mut Criterion) {
+    c.bench_function("clonal_dev", |b| {
+        b.iter_batched_ref(
+            || {
+                let mut params = Parameters::parse_file("examples/1_cell.toml").unwrap();
+                params.io.image_period = 50_000;
+                params.io.movie.show = false;
+                let mut model = Model::try_from(params).unwrap();
+                model.run(50_000);
+                model
+            },
+            |model| {
+                model.run(black_box(1_000));
+            },
+            BatchSize::SmallInput
+        )
+    });
+} 
+
 criterion_group!(
     name = model_1000mcs;
     config = Criterion::default()
@@ -85,4 +105,12 @@ criterion_group!(
 
 criterion_group!(model_1mcs, bench_param_files_1mcs);
 
-criterion_main!(model_1mcs, model_1000mcs);
+criterion_group!(
+    name = clonal_dev;
+    config = Criterion::default()
+        .sample_size(10)
+        .measurement_time(Duration::from_secs(60));
+    targets = bench_clonal_dev
+);
+
+criterion_main!(model_1mcs, model_1000mcs, clonal_dev);
