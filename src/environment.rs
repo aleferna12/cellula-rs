@@ -4,7 +4,6 @@ use crate::cell_container::CellContainer;
 use crate::constants::{LatticeBoundaryType, Spin};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::CellLattice;
-use crate::environment::DivisionError::{NewCellTooBig, NewCellTooSmall};
 use crate::io::parameters::{CellParameters, EnvironmentParameters};
 use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
@@ -280,7 +279,7 @@ impl Environment {
             .collect();
         for pos in new_positions {
             if mom_cell.area == 1 {
-                return Err(NewCellTooBig);
+                return Err(DivisionError::NewCellTooBig);
             }
             self.cell_lattice[pos] = new_spin;
             new_cell.shift_position::<LatticeBoundaryType>(
@@ -302,7 +301,7 @@ impl Environment {
             self.cells.replace(mom_clone);
             Ok(self.cells.push(new_cell, Some(mom_spin)))
         } else {
-            Err(NewCellTooSmall)
+            Err(DivisionError::NewCellTooSmall)
         }
     }
 }
