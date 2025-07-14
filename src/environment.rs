@@ -238,7 +238,7 @@ impl Environment {
             }
             match self.divide_cell(spin) {
                 Err(e) => {
-                    log::warn!("Failed to divide cell with spin {} with error `{:?}`", spin, e);
+                    log::warn!("Failed to divide cell with spin {spin} with error `{e:?}`");
                     None
                 },
                 Ok(cell) => Some(cell.spin)
@@ -253,7 +253,7 @@ impl Environment {
         let mom_cell = self
             .cells
             .get_entity_mut(spin)
-            .expect_cell(&format!("passed non-cell with spin {} to `divide_cel()`", spin));
+            .expect_cell(&format!("passed non-cell with spin {spin} to `divide_cel()`"));
         // We modify this mock cell to allow the division to be cancelled in the case of an error
         let mut mom_clone = mom_cell.clone();
         
@@ -346,7 +346,7 @@ impl<C: std::fmt::Debug> LatticeEntity<C> {
     pub fn unwrap_cell(self) -> C {
         match self {
             SomeCell(cell) => cell,
-            _ => panic!("called `LatticeEntity::unwrap_cell()` on a `{:?}` value", self)
+            _ => panic!("called `LatticeEntity::unwrap_cell()` on a `{self:?}` value")
         }
     }
 

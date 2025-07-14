@@ -42,9 +42,7 @@ impl IoManager {
             );
             if let Err(e) = mm.update(&resized) {
                 log::warn!(
-                "Failed to display simulation frame at time step {} with error `{}`",
-                time_step,
-                e
+                "Failed to display simulation frame at time step {time_step} with error `{e}`"
             );
             }
         }
@@ -59,7 +57,7 @@ impl IoManager {
                     .join(format!("{time_step}.{}", self.image_format.to_lowercase()))
             );
             if let Err(e) = saved {
-                log::warn!("Failed to save simulation frame at time step {} with error `{}`", time_step, e);
+                log::warn!("Failed to save simulation frame at time step {time_step} with error `{e}`");
             }
         }
     }
@@ -154,7 +152,7 @@ impl TryFrom<IoParameters> for IoManager {
                         Some(mm)
                     },
                     Err(e) => {
-                        log::warn!("Failed to initialise movie maker with error `{}`", e);
+                        log::warn!("Failed to initialise movie maker with error `{e}`");
                         None
                     }
                 }
