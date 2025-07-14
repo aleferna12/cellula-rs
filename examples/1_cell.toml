@@ -80,7 +80,9 @@ image-format = "webp"
 #   - "spin":   Plots lattice spins.
 #   - "center": Plots cell centers.
 #   - "clones": Plots will cells are attached.
-order = ["spin"]
+#   - "border": Plots cell borders.
+#   - "light":  Plots the light gradient.
+order = ["light", "spin"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
@@ -89,12 +91,20 @@ solid-color = "#000000"
 # With which color to plot the centers of cells.
 center-color = "#00ff00"
 # With which color to plot the border of cells.
-border-color = "#0000ff"
+border-color = "#000000"
 # With which color to plot the connections between cell clones.
 clones-color = "#ff0000"
 # Set to true to display all clone pairs, even those span across the lattice due to periodic boundaries.
 # [default = false]
 all-clones = false
+# With which color to plot the minimum area in the cell population.
+area-min-color = "#ff00ff"
+# With which color to plot the maximum area in the cell population.
+area-max-color = "#ffff00"
+# With which color to plot the minimum value for the light in the environment.
+light-min-color = "#000000"
+# With which color to plot the maximum value for the light in the environment.
+light-max-color = "#ffffff"
 
 [io.movie]
 # Whether the real-time movie should be shown or not.

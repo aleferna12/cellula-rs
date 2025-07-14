@@ -1,7 +1,10 @@
-use image::{Pixel, Rgb, RgbaImage};
+use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
+use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::error::Error;
+use std::fmt::{Debug};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use thiserror::Error;
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::positional::boundary::Boundary;
@@ -13,26 +16,51 @@ pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);
 }
 
+pub trait ContinuousPlot: Plot {
+    fn min_color(&self) -> &Srgb<u8>;
+    fn max_color(&self) -> &Srgb<u8>;
+    fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Srgb<u8>, LerpError> {
+        if max < min {
+            return Err(LerpError::NegativeRange);
+        }
+        if value < min {
+            return Err(LerpError::ValueTooSmall);
+        }
+        if value > max {
+            return Err(LerpError::ValueTooLarge);
+        }
+
+        let min_luv = Luv::from_color(self.min_color().into_linear::<f32>());
+        let max_luv = Luv::from_color(self.max_color().into_linear::<f32>());
+        let p = if min == max { 0.5 } else { (value - min) / (max - min) };
+        let blended = min_luv.mix(max_luv, p);
+        Ok(Srgb::from_linear(blended.into_color()))
+    }
+}
+
+#[derive(Debug)]
+pub enum LerpError {
+    ValueTooSmall,
+    ValueTooLarge,
+    NegativeRange
+}
+
 pub struct SpinPlot<'e> {
-    env: &'e Environment,
-    solid_color: Rgb<u8>,
-    medium_color: Option<Rgb<u8>>
+    pub env: &'e Environment,
+    pub solid_color: Srgb<u8>,
+    pub medium_color: Option<Srgb<u8>>
 }
 
 impl<'e> SpinPlot<'e> {
-    pub fn new(env: &'e Environment, solid_color: Rgb<u8>, medium_color: Option<Rgb<u8>>) -> Self {
-        Self { env, solid_color, medium_color}
-    }
-
-    fn spin_to_rgb(spin: Spin) -> Rgb<u8> {
+    fn spin_to_rgb(spin: Spin) -> Srgb<u8> {
         let mut hasher = DefaultHasher::new();
         spin.hash(&mut hasher);
         let hashed = hasher.finish();
-        [
-            (hashed & 0xFF).try_into().unwrap(),
+        Srgb::new(
+            (hashed & 0xFF) as u8,
             (hashed >> 8 & 0xFF) as u8,
             (hashed >> 16 & 0xFF) as u8
-        ].into()
+        )
     }
 }
 
@@ -48,21 +76,15 @@ impl Plot for SpinPlot<'_> {
                 self.medium_color
             };
             if let Some(color) = rgb {
-                image.put_pixel(pos.x as u32, pos.y as u32, color.to_rgba());
+                image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
             }
         }
     }
 }
 
 pub struct CenterPlot<'e> {
-    env: &'e Environment,
-    color: Rgb<u8>
-}
-
-impl<'e> CenterPlot<'e> {
-    pub fn new(env: &'e Environment, color: Rgb<u8>) -> Self {
-        Self { env, color }
-    }
+    pub env: &'e Environment,
+    pub color: Srgb<u8>
 }
 
 impl Plot for CenterPlot<'_> {
@@ -73,23 +95,17 @@ impl Plot for CenterPlot<'_> {
                 cell.center.pos().y as isize,
             ));
             if let Some(pos) = center {
-                draw_cross_mut(image, self.color.to_rgba(), pos.x as i32, pos.y as i32);
+                draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
             }
         }
     }
 }
 
 pub struct ClonesPlot<'a> {
-    env: &'a Environment,
-    clone_pairs: &'a SpinTable<bool>,
-    color: Rgb<u8>,
-    all_clones: bool
-}
-
-impl<'a> ClonesPlot<'a> {
-    pub fn new(env: &'a Environment, clone_pairs: &'a SpinTable<bool>, color: Rgb<u8>, all_clones: bool) -> Self {
-        Self { env, clone_pairs, color, all_clones }
-    }
+    pub env: &'a Environment,
+    pub clone_pairs: &'a SpinTable<bool>,
+    pub color: Srgb<u8>,
+    pub all_clones: bool
 }
 
 impl Plot for ClonesPlot<'_> {
@@ -113,7 +129,7 @@ impl Plot for ClonesPlot<'_> {
                     image,
                     (center1.x, center1.y),
                     (center2.x, center2.y),
-                    self.color.to_rgba()
+                    srgb_to_rgba(self.color)
                 )
             }
         }
@@ -121,13 +137,9 @@ impl Plot for ClonesPlot<'_> {
 }
 
 pub struct AreaPlot<'e> {
-    env: &'e Environment
-}
-
-impl<'e> AreaPlot<'e> {
-    pub fn new(env: &'e Environment) -> Self {
-        Self { env }
-    }
+    pub env: &'e Environment,
+    pub min_color: Srgb<u8>,
+    pub max_color: Srgb<u8>
 }
 
 impl Plot for AreaPlot<'_> {
@@ -146,23 +158,37 @@ impl Plot for AreaPlot<'_> {
         for pos in self.env.cell_lattice.iter_positions() {
             let entity = self.env.cells.get_entity(self.env.cell_lattice[pos]);
             if let LatticeEntity::SomeCell(cell) = entity {
-                let frac = lerp(cell.area as f32, min as f32, max as f32);
-                let gray = (255. * frac) as u8;
-                image.put_pixel(pos.x as u32, pos.y as u32, [gray, gray, gray, 255].into());
+                let color = self.lerp(
+                    cell.area as f32,
+                    min as f32,
+                    max as f32
+                );
+                match color {
+                    Ok(c) => image.put_pixel(
+                        pos.x as u32,
+                        pos.y as u32,
+                        srgb_to_rgba(c)
+                    ),
+                    Err(e) => log::warn!("Failed to plot area for pos `{pos:?}` with error `{e:?}`")
+                };
             }
         }
     }
 }
 
-pub struct BorderPlot<'e> {
-    env: &'e Environment,
-    color: Rgb<u8>
+impl ContinuousPlot for AreaPlot<'_> {
+    fn min_color(&self) -> &Srgb<u8> {
+        &self.min_color
+    }
+
+    fn max_color(&self) -> &Srgb<u8> {
+        &self.max_color
+    }
 }
 
-impl<'e> BorderPlot<'e> {
-    pub fn new(env: &'e Environment, color: Rgb<u8>) -> Self {
-        Self { env, color }
-    }
+pub struct BorderPlot<'e> {
+    pub env: &'e Environment,
+    pub color: Srgb<u8>
 }
 
 impl Plot for BorderPlot<'_> {
@@ -181,27 +207,68 @@ impl Plot for BorderPlot<'_> {
                     neigh_spin != spin
                 });
             if is_border {
-                image.put_pixel(pos.x as u32, pos.y as u32, self.color.to_rgba());
+                image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(self.color));
             }
         }
     }
 }
 
-pub fn lerp(value: f32, min: f32, max: f32) -> f32 {
-    let num = value - min;
-    if num == 0.0 { num } else { num / (max - min) }
+pub struct LightPlot<'e> {
+    pub(crate) env: &'e Environment,
+    pub(crate) min_color: Srgb<u8>,
+    pub(crate) max_color: Srgb<u8>
 }
 
-pub fn hex_to_rgb(hex: &str) -> Result<Rgb<u8>, Box<dyn Error>> {
+impl Plot for LightPlot<'_> {
+    fn plot(&self, image: &mut RgbaImage) {
+        for pos in self.env.light_lattice.iter_positions() {
+            let light = self.env.light_lattice[pos];
+            let color = self.lerp(
+                light as f32,
+                0.,
+                self.env.height() as f32
+            );
+            match color { 
+                Ok(c) => image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(c)),
+                Err(e) => log::warn!("Failed to plot light for pos `{pos:?}` with error `{e:?}`")
+            }
+        }
+    }
+}
+
+impl ContinuousPlot for LightPlot<'_> {
+    fn min_color(&self) -> &Srgb<u8> {
+        &self.min_color
+    }
+
+    fn max_color(&self) -> &Srgb<u8> {
+        &self.max_color
+    }
+}
+
+pub fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
+    let arr: [u8; 4] = color.with_alpha(255).into();
+    Rgba::from(arr)
+}
+
+pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, Box<dyn Error>> {
     if !hex.starts_with("#") {
-        return Err("`hex` must start with `#`".into());
+        return Err(HexError::MissingHashtag.into());
     }
     if hex.len() != 7 {
-        return Err("`hex` must be six characters long, excluding `#`".into());
+        return Err(HexError::WrongLength.into());
     }
     let hexu32 = hex.replace("#", "00");
     let bytes = u32::from_str_radix(&hexu32, 16)?.to_be_bytes();
     Ok([bytes[1], bytes[2], bytes[3]].into())
+}
+
+#[derive(Error, Debug)]
+pub enum HexError {
+    #[error("Missing `#` in the color name")]
+    MissingHashtag,
+    #[error("`hex` must be six characters long, excluding `#`")]
+    WrongLength
 }
 
 #[cfg(test)]
@@ -212,9 +279,9 @@ mod tests {
 
     #[test]
     fn test_spin_to_rgb() {
-        let mut tested = HashSet::<Rgb<u8>>::default();
+        let mut tested = HashSet::<[u8; 3]>::default();
         for i in 0..5232 as Spin {
-            let rgb = SpinPlot::spin_to_rgb(i);
+            let rgb: [u8; 3] = SpinPlot::spin_to_rgb(i).into();
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);
         }
@@ -222,6 +289,6 @@ mod tests {
 
     #[test]
     fn test_hex_to_rgb() {
-        assert_eq!(hex_to_rgb("#ff00ff").unwrap(), [255, 0, 255].into());
+        assert_eq!(hex_to_srgb("#ff00ff").unwrap(), Srgb::new(255, 0, 255));
     }
 }

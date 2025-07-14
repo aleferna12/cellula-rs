@@ -148,7 +148,11 @@ pub struct PlotParameters {
     pub clones_color: String,
     #[serde(default = "param_defaults::false_flag")]
     pub all_clones: bool,
-    pub border_color: String
+    pub border_color: String,
+    pub area_min_color: String,
+    pub area_max_color: String,
+    pub light_min_color: String,
+    pub light_max_color: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -158,7 +162,8 @@ pub enum PlotType {
     Center,
     Clones,
     Area,
-    Border
+    Border,
+    Light
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

@@ -3,7 +3,7 @@ use crate::cell::{RelCell, Cell};
 use crate::cell_container::CellContainer;
 use crate::constants::{LatticeBoundaryType, Spin};
 use crate::environment::LatticeEntity::*;
-use crate::lattice::CellLattice;
+use crate::lattice::{CellLattice, Lattice};
 use crate::io::parameters::{CellParameters, EnvironmentParameters};
 use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
@@ -14,6 +14,7 @@ use crate::positional::rect::Rect;
 
 pub struct Environment {
     pub cell_lattice: CellLattice<LatticeBoundaryType>,
+    pub light_lattice: Lattice<usize, LatticeBoundaryType>,
     pub cells: CellContainer,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
@@ -57,6 +58,13 @@ impl Environment {
         }
         log::info!("Created {} out of the {} cells requested", cell_count, params.starting_cells);
         
+        log::info!("Initialising light gradient");
+        for row in 0..env.height() {
+            for col in 0..env.width() {
+                env.light_lattice[(col, row).into()] = row;
+            } 
+        }
+        
         env
     }
 
@@ -73,9 +81,11 @@ impl Environment {
             (0, 0).into(),
             (width as isize, height as isize).into()
         );
-
+        let bound = LatticeBoundaryType::new(rect);
+        
         Self {
-            cell_lattice: CellLattice::new(LatticeBoundaryType::new(rect)),
+            cell_lattice: CellLattice::new(bound.clone()),
+            light_lattice: Lattice::new(bound),
             cells: CellContainer::from(cell_parameters),
             edge_book: EdgeBook::new(),
             neighbourhood: MooreNeighbourhood::new(neigh_r),

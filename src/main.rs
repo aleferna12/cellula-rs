@@ -4,6 +4,7 @@ TODO!:
         - cell info
         - backup
     - seed is not saved with the model when its 0
+    - look into anyhow, I think the backtracing would be very useful
  */
 use std::error::Error;
 use clap::Parser;

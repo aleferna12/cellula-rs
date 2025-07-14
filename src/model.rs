@@ -24,7 +24,14 @@ impl Model {
     pub fn run(&mut self, steps: u32) {
         log::info!("Starting simulation");
         for time_step in 0..=steps {
-            self.io_manager.image_io(time_step, &self.env, &self.ca.adhesion.clone_pairs);
+            let saved = self.io_manager.image_io(
+                time_step,
+                &self.env, 
+                &self.ca.adhesion.clone_pairs
+            );
+            if let Err(e) = saved {
+                log::warn!("Failed to save image at time step {time_step} with error `{e}`")
+            }
             self.step(time_step);
         }
     }

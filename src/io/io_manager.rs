@@ -1,9 +1,11 @@
+use std::error::Error;
 use std::path::PathBuf;
+use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_rgb, AreaPlot, BorderPlot, CenterPlot, ClonesPlot, Plot, SpinPlot};
+use crate::io::plot::{hex_to_srgb, AreaPlot, BorderPlot, CenterPlot, ClonesPlot, LightPlot, Plot, SpinPlot};
 use crate::spin_table::SpinTable;
 
 pub(crate) static IMAGES_PATH: &str = "images";
@@ -24,7 +26,7 @@ impl IoManager {
         time_step: u32,
         env: &Environment,
         clone_pairs: &SpinTable<bool>
-    ) {
+    ) -> Result<(), Box<dyn Error>> {
         let mut frame = None;
         let movie_update = if let Some(mm) = &self.movie_maker {
             time_step % mm.frame_period == 0 && mm.window_works()
@@ -32,7 +34,7 @@ impl IoManager {
             false
         };
         if movie_update {
-            frame = Some(self.simulation_image(env, clone_pairs));
+            frame = Some(self.simulation_image(env, clone_pairs)?);
             let mm = self.movie_maker.as_mut().unwrap();
             let resized = image::imageops::resize(
                 frame.as_ref().unwrap(),
@@ -40,29 +42,27 @@ impl IoManager {
                 mm.height,
                 image::imageops::Nearest,
             );
-            if let Err(e) = mm.update(&resized) {
-                log::warn!(
-                "Failed to display simulation frame at time step {time_step} with error `{e}`"
-            );
-            }
+            mm.update(&resized)?
         }
 
         if time_step % self.image_period == 0 {
             if frame.is_none() {
-                frame = Some(self.simulation_image(env, clone_pairs));
+                frame = Some(self.simulation_image(env, clone_pairs)?);
             }
-            let saved = frame.unwrap().save(
+            frame.unwrap().save(
                 &self.outdir
                     .join(IMAGES_PATH)
-                    .join(format!("{time_step}.{}", self.image_format.to_lowercase()))
-            );
-            if let Err(e) = saved {
-                log::warn!("Failed to save simulation frame at time step {time_step} with error `{e}`");
-            }
+                    .join(format!("{time_step}.{}", self.image_format.to_lowercase())
+            ))?;
         }
+        Ok(())
     }
 
-    pub fn simulation_image(&self, env: &Environment, clone_pairs: &SpinTable<bool>) -> RgbaImage {
+    pub fn simulation_image(
+        &self, 
+        env: &Environment, 
+        clone_pairs: &SpinTable<bool>
+    ) -> Result<RgbaImage, Box<dyn Error>> {
         let mut image = RgbaImage::new(
             env.width() as u32,
             env.height() as u32
@@ -70,40 +70,55 @@ impl IoManager {
         for plot in self.plots.order.clone() {
             match plot {
                 PlotType::Spin => {
-                    SpinPlot::new(
-                        env, 
-                        hex_to_rgb(&self.plots.solid_color).expect("`solid-color` is not a valid rgb"),
-                        self.plots.medium_color.clone().map(|ref rgb| { 
-                            hex_to_rgb(rgb).expect("`medium-color` is not a valid rgb")
-                        })
-                    ).plot(&mut image)
+                    SpinPlot {
+                        env,
+                        solid_color: hex_to_srgb(
+                            &self.plots.solid_color
+                        ).expect("`solid-color` is not a valid rgb"),
+                        medium_color: match &self.plots.medium_color { 
+                            None => None,
+                            Some(c) => Some(hex_to_srgb(&c)?)
+                        }
+                    }.plot(&mut image)
                 }
                 PlotType::Center => {
-                    CenterPlot::new(
+                    CenterPlot {
                         env,
-                        hex_to_rgb(&self.plots.center_color).expect("`center-color` is not a valid rgb")
-                    ).plot(&mut image)
+                        color: hex_to_srgb(&self.plots.center_color)?
+                    }.plot(&mut image)
                 }
                 PlotType::Clones => {
-                    ClonesPlot::new(
+                    ClonesPlot {
                         env, 
                         clone_pairs, 
-                        hex_to_rgb(&self.plots.clones_color).expect("`clones-color` is not a valid rgb"),
-                        self.plots.all_clones
-                    ).plot(&mut image)
+                        color: hex_to_srgb(&self.plots.clones_color)?,
+                        all_clones: self.plots.all_clones
+                    }.plot(&mut image)
                 },
                 PlotType::Area => {
-                    AreaPlot::new(env).plot(&mut image)
+                    AreaPlot{ 
+                        env,
+                        min_color: hex_to_srgb(&self.plots.area_min_color)?,
+                        max_color: hex_to_srgb(&self.plots.area_max_color)?,
+                    }.plot(&mut image)
                 },
                 PlotType::Border => {
-                    BorderPlot::new(
+                    BorderPlot {
                         env,
-                        hex_to_rgb(&self.plots.border_color).expect("`border-color` is not a valid rgb")
-                    ).plot(&mut image)
+                        color: hex_to_srgb(&self.plots.border_color)?
+                    }.plot(&mut image)
+                },
+                PlotType::Light => {
+                    LightPlot {
+                        env,
+                        min_color: hex_to_srgb(&self.plots.light_min_color)?,
+                        max_color: hex_to_srgb(&self.plots.light_max_color)?
+                    }.plot(&mut image)
                 }
             }
         }
-        image
+        flip_vertical_in_place(&mut image);
+        Ok(image)
     }
 
     pub fn create_directories(&self) -> std::io::Result<()> {
@@ -123,7 +138,7 @@ impl IoManager {
         std::fs::create_dir(self.outdir.join(IMAGES_PATH))
     }
     
-    pub fn create_parameters_file(&self, parameters: &Parameters) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn create_parameters_file(&self, parameters: &Parameters) -> Result<(), Box<dyn Error>> {
         let params_copy = self.outdir.join(CONFIG_COPY_PATH);
         std::fs::write(
             params_copy,
