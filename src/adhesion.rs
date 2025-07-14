@@ -86,7 +86,7 @@ impl AdhesionSystem for ClonalAdhesion {
             if c1.spin == c2.spin {
                 return 0.
             }
-            if self.clone_pairs[(c1.spin, c2.spin)] == true {
+            if self.clone_pairs[(c1.spin, c2.spin)] {
                 return 2. * self.static_adhesion.cell_energy;
             }
             return 2. * self.static_adhesion.medium_energy;
