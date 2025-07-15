@@ -1,7 +1,7 @@
 use num::traits::Euclid;
 use num::Num;
 use crate::cell::Cell;
-use crate::positional::pos::{AngularProjection, Pos2D};
+use crate::positional::pos::{AngularProjection, Pos};
 use crate::positional::rect::Rect;
 
 pub trait Boundary {
@@ -13,18 +13,18 @@ pub trait Boundary {
     /// Validates that positions are in bounds.
     ///
     /// With fixed boundary conditions, that means filtering invalid positions.
-    fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>>;
+    fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>>;
     
     fn valid_positions(
         &self,
-        positions: impl Iterator<Item = Pos2D<Self::Coord>>
-    ) -> impl Iterator<Item = Pos2D<Self::Coord>> {
+        positions: impl Iterator<Item = Pos<Self::Coord>>
+    ) -> impl Iterator<Item = Pos<Self::Coord>> {
         positions.filter_map(|pos| self.valid_pos(pos))
     }
 }
 
 pub trait LatticeBoundary: Boundary<Coord = isize> {
-    fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, width: usize, height: usize, add: bool);
+    fn shift_cell_center(cell: &mut Cell, pos: Pos<usize>, width: usize, height: usize, add: bool);
     // TODO!: this can make FixedBoundary quite a lot faster
     // fn delta_angle();
 }
@@ -47,7 +47,7 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
         &self.rect
     }
 
-    fn valid_pos(&self, pos: Pos2D<T>) -> Option<Pos2D<T>> {
+    fn valid_pos(&self, pos: Pos<T>) -> Option<Pos<T>> {
         if !(self.rect.min.x..self.rect.max.x).contains(&pos.x) {
             return None;
         }
@@ -59,11 +59,11 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
 }
 
 impl LatticeBoundary for FixedBoundary<isize> {
-    fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, _width: usize, _height: usize, add: bool) {
+    fn shift_cell_center(cell: &mut Cell, pos: Pos<usize>, _width: usize, _height: usize, add: bool) {
         let shift = if add { 1. } else { -1. };
         let area = cell.area as f32;
         
-        cell.center.pos = Pos2D::new(
+        cell.center.pos = Pos::new(
             cell.center.pos.x + shift * (pos.x as f32 - cell.center.pos.x) / area,
             cell.center.pos.y + shift * (pos.y as f32 - cell.center.pos.y) / area
         );
@@ -101,8 +101,8 @@ where
         &self.rect
     }
 
-    fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>> {
-        let p = Pos2D::new(
+    fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
+        let p = Pos::new(
             Self::wrap_scalar(pos.x, self.rect.min.x, self.rect.max.x),
             Self::wrap_scalar(pos.y, self.rect.min.y, self.rect.max.y)
         );
@@ -111,17 +111,17 @@ where
 }
 
 impl LatticeBoundary for PeriodicBoundary<isize> {
-    fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, width: usize, height: usize, add: bool) {
+    fn shift_cell_center(cell: &mut Cell, pos: Pos<usize>, width: usize, height: usize, add: bool) {
         let shift = if add { 1. } else { -1. };
 
-        let proj = AngularProjection::from_pos(Pos2D::new(pos.x as f32, pos.y as f32), width, height);
+        let proj = AngularProjection::from_pos(Pos::new(pos.x as f32, pos.y as f32), width, height);
         let sum_proj = &mut cell.center.projection;
         sum_proj.x_sin += shift * proj.x_sin;
         sum_proj.x_cos += shift * proj.x_cos;
         sum_proj.y_sin += shift * proj.y_sin;
         sum_proj.y_cos += shift * proj.y_cos;
         
-        cell.center.pos = Pos2D::from_projection(&cell.center.projection, width, height);
+        cell.center.pos = Pos::from_projection(&cell.center.projection, width, height);
     }
 }
 
@@ -158,7 +158,7 @@ where
 }
 
 impl LatticeBoundary for UnsafePeriodicBoundary<isize> {
-    fn shift_cell_center(cell: &mut Cell, pos: Pos2D<usize>, width: usize, height: usize, add: bool) {
+    fn shift_cell_center(cell: &mut Cell, pos: Pos<usize>, width: usize, height: usize, add: bool) {
         PeriodicBoundary::shift_cell_center(cell, pos, width, height, add)
     }
 }
@@ -172,8 +172,8 @@ where
         &self.rect
     }
 
-    fn valid_pos(&self, pos: Pos2D<Self::Coord>) -> Option<Pos2D<Self::Coord>> {
-        Some(Pos2D::new(
+    fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
+        Some(Pos::new(
             self.wrap_scalar(pos.x, self.rect().min.x, self.rect().max.x),
             self.wrap_scalar(pos.y, self.rect().min.y, self.rect().max.y)
         ))

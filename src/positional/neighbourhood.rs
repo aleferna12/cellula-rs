@@ -1,4 +1,4 @@
-use crate::positional::pos::Pos2D;
+use crate::positional::pos::Pos;
 // TODO! test dynamic allocation instead of the const arrays
 
 const MAX_NEIGH_R: u8 = 16;
@@ -58,14 +58,14 @@ const VON_NEUMANN_NEIGHS: [(i16, i16); VANNEUMANN_SIZE] = {
 // NEVER REMOVE THIS INLINE
 #[inline(always)]
 fn fetch_neighs(
-    pos: Pos2D<isize>, 
+    pos: Pos<isize>,
     neigh_array: &[(i16, i16)],
     n_neighs: u16
-) -> impl Iterator<Item = Pos2D<isize>> {
+) -> impl Iterator<Item = Pos<isize>> {
     neigh_array[..n_neighs.into()]
         .iter()
         .map(move |(i, j)| {
-            Pos2D::new(
+            Pos::new(
                 pos.x + *i as isize,
                 pos.y + *j as isize,
             )
@@ -77,7 +77,7 @@ pub trait Neighbourhood {
     
     fn n_neighs(&self) -> u16;
     
-    fn neighbours(&self, pos: Pos2D<isize>) -> impl Iterator<Item = Pos2D<isize>>;
+    fn neighbours(&self, pos: Pos<isize>) -> impl Iterator<Item = Pos<isize>>;
 }
 
 pub struct MooreNeighbourhood {
@@ -101,7 +101,7 @@ impl Neighbourhood for MooreNeighbourhood {
     }
 
     #[inline]
-    fn neighbours(&self, pos: Pos2D<isize>) -> impl Iterator<Item=Pos2D<isize>> {
+    fn neighbours(&self, pos: Pos<isize>) -> impl Iterator<Item=Pos<isize>> {
         fetch_neighs(pos, &MOORE_NEIGHS, self.n_neighs())
     }
 }
@@ -127,7 +127,7 @@ impl Neighbourhood for VonNeumannNeighbourhood {
     }
 
     #[inline]
-    fn neighbours(&self, pos: Pos2D<isize>) -> impl Iterator<Item = Pos2D<isize>> {
+    fn neighbours(&self, pos: Pos<isize>) -> impl Iterator<Item = Pos<isize>> {
         fetch_neighs(pos, &VON_NEUMANN_NEIGHS, self.n_neighs())
     }
 }
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_neighbours_are_edges() {
-        let p1 = Pos2D::from((100, 100));
+        let p1 = Pos::from((100, 100));
         for r in 1..9 {
             let neigh = MooreNeighbourhood::new(r);
             for p2 in neigh.neighbours(p1) {

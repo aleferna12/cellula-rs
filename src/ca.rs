@@ -9,7 +9,7 @@ use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
 use crate::io::parameters::CellularAutomataParameters;
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::{AngularProjection, Pos2D, WrappedPos};
+use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -57,8 +57,8 @@ impl<A: AdhesionSystem> Ca<A> {
         &self,
         env: &mut Environment,
         rng: &mut impl Rng,
-        pos_from: Pos2D<usize>,
-        pos_to: Pos2D<usize>
+        pos_from: Pos<usize>,
+        pos_to: Pos<usize>
     ) -> f32 {
         let spin_to = env.cell_lattice.lat[pos_to];
         if spin_to == Solid.spin() {
@@ -75,7 +75,7 @@ impl<A: AdhesionSystem> Ca<A> {
         let neigh_entities = env.cell_lattice.lat.bound.valid_positions(
             env.neighbourhood.neighbours(pos_to.into())
         ).map(|neigh| {
-            env.cells.get_entity(env.cell_lattice.lat[Pos2D::<usize>::from(neigh)])
+            env.cells.get_entity(env.cell_lattice.lat[Pos::<usize>::from(neigh)])
         });
         
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
@@ -107,18 +107,18 @@ impl<A: AdhesionSystem> Ca<A> {
         &self,
         chemotaxis_mu: f32,
         cell_center_from: &WrappedPos,
-        pos_to: Pos2D<usize>,
+        pos_to: Pos<usize>,
         lattice_width: usize,
         lattice_height: usize
     ) -> f32 {
         let proj_to = AngularProjection::from_pos(
-            Pos2D::new(pos_to.x as f32, pos_to.y as f32),
+            Pos::new(pos_to.x as f32, pos_to.y as f32),
             lattice_width,
             lattice_height
         );
         // Attracts cells to the center of lattice
         let proj_center = AngularProjection::from_pos(
-            Pos2D::new((lattice_width / 2) as f32, (lattice_height / 2) as f32),
+            Pos::new((lattice_width / 2) as f32, (lattice_height / 2) as f32),
             lattice_width,
             lattice_height
         );

@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::positional::pos::{Pos2D, WrappedPos};
+use crate::positional::pos::{Pos, WrappedPos};
 use crate::positional::boundary::LatticeBoundary;
 
 /// Represents a cell that is bound to an `Environment`.
@@ -65,7 +65,7 @@ impl Cell {
 
     pub fn shift_position<B: LatticeBoundary>(
         &mut self,
-        pos: Pos2D<usize>,
+        pos: Pos<usize>,
         width: usize,
         height: usize,
         add: bool

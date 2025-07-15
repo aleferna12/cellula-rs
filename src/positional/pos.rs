@@ -3,24 +3,24 @@ use std::f32::consts::TAU;
 /// 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[derive(Hash)]
-pub struct Pos2D<T> {
+pub struct Pos<T> {
     pub x: T,
     pub y: T
 }
 
-impl<T> Pos2D<T> {
+impl<T> Pos<T> {
     pub fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
 }
 
-impl<T> From<(T, T)> for Pos2D<T> {
+impl<T> From<(T, T)> for Pos<T> {
     fn from(value: (T, T)) -> Self {
-        Pos2D::<T>::new(value.0, value.1)
+        Pos::<T>::new(value.0, value.1)
     }
 }
 
-impl Pos2D<f32> {
+impl Pos<f32> {
     /// Unwraps the `AngularProjection` into a position.
     pub(crate) fn from_projection(proj: &AngularProjection, width: usize, height: usize) -> Self {
         let (angle_x, angle_y) = proj.angles();
@@ -31,7 +31,7 @@ impl Pos2D<f32> {
     }
 }
 
-impl Pos2D<usize> {
+impl Pos<usize> {
     pub(crate) fn pack_u32(self) -> u32 {
         ((self.x as u32) << 16) | self.y as u32
     }
@@ -41,16 +41,16 @@ impl Pos2D<usize> {
     }
 }
 
-impl From<Pos2D<usize>> for Pos2D<isize> {
-    fn from(value: Pos2D<usize>) -> Self {
-        Pos2D::new(value.x as isize, value.y as isize)
+impl From<Pos<usize>> for Pos<isize> {
+    fn from(value: Pos<usize>) -> Self {
+        Pos::new(value.x as isize, value.y as isize)
     }
 }
 
-impl From<Pos2D<isize>> for Pos2D<usize> {
-    fn from(value: Pos2D<isize>) -> Self {
+impl From<Pos<isize>> for Pos<usize> {
+    fn from(value: Pos<isize>) -> Self {
         let message = "overflow when translating position from general to lattice coordinates";
-        Pos2D::new(
+        Pos::new(
             value.x.try_into().expect(message), 
             value.y.try_into().expect(message)
         )
@@ -59,12 +59,12 @@ impl From<Pos2D<isize>> for Pos2D<usize> {
 
 #[derive(Debug, Clone)]
 pub struct WrappedPos {
-    pub(crate) pos: Pos2D<f32>,
+    pub(crate) pos: Pos<f32>,
     pub(crate) projection: AngularProjection
 }
 
 impl WrappedPos {
-    pub fn new(pos: Pos2D<f32>, width: usize, height: usize) -> Self {
+    pub fn new(pos: Pos<f32>, width: usize, height: usize) -> Self {
         Self {
             pos,
             projection: AngularProjection::from_pos(pos, width, height)
@@ -84,7 +84,7 @@ impl WrappedPos {
         }
     }
 
-    pub fn pos(&self) -> Pos2D<f32> {
+    pub fn pos(&self) -> Pos<f32> {
         self.pos
     }
 }
@@ -98,7 +98,7 @@ pub(crate) struct AngularProjection {
 }
 
 impl AngularProjection {
-    pub(crate) fn from_pos(pos: Pos2D<f32>, width: usize, height: usize) -> Self {
+    pub(crate) fn from_pos(pos: Pos<f32>, width: usize, height: usize) -> Self {
         let cx = TAU * pos.x / width as f32;
         let cy = TAU * pos.y  / height as f32;
         Self {

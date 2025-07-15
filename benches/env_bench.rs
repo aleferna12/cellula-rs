@@ -3,14 +3,14 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use evo_cpm::environment::LatticeEntity::*;
 use evo_cpm::environment::{Environment, LatticeEntity};
 use evo_cpm::positional::edge::Edge;
-use evo_cpm::positional::pos::Pos2D;
+use evo_cpm::positional::pos::Pos;
 use evo_cpm::positional::rect::Rect;
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
 use std::hint::black_box;
 
-fn random_neighbour(env: &Environment, p: Pos2D<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos2D<usize> {
+fn random_neighbour(env: &Environment, p: Pos<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos<usize> {
     let oldp = (p.x as i32, p.y as i32);
     let mut newp = oldp;
     let dist = neigh_r as i32;
@@ -22,7 +22,7 @@ fn random_neighbour(env: &Environment, p: Pos2D<usize>, neigh_r: u8, rng: &mut i
             -min(dist, oldp.1)..min(dist + 1, env.cell_lattice.height() as i32 - oldp.1)
         );
     }
-    Pos2D::new(newp.0 as usize, newp.1 as usize)
+    Pos::new(newp.0 as usize, newp.1 as usize)
 }
 
 fn add_random_edge(env: &mut Environment, rng: &mut impl Rng) -> bool {

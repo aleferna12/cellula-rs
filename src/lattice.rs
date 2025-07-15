@@ -7,7 +7,7 @@ use crate::cell::RelCell;
 use crate::constants::Spin;
 use crate::positional::boundary::LatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::Pos2D;
+use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 
 pub struct Lattice<T, B> {
@@ -33,15 +33,15 @@ impl<T: Default + Copy, B: LatticeBoundary> Lattice<T, B> {
         self.bound.rect().height() as usize
     }
 
-    pub fn random_pos(&self, rng: &mut impl Rng) -> Pos2D<usize> {
-        Pos2D::new(
+    pub fn random_pos(&self, rng: &mut impl Rng) -> Pos<usize> {
+        Pos::new(
             rng.random_range(0..self.width()),
             rng.random_range(0..self.height())
         )
     }
 
-    pub fn iter_positions(&self) -> impl Iterator<Item = Pos2D<usize>> {
-        self.bound.rect().iter_positions().map(|p| Pos2D::new(
+    pub fn iter_positions(&self) -> impl Iterator<Item = Pos<usize>> {
+        self.bound.rect().iter_positions().map(|p| Pos::new(
             p.x as usize,
             p.y as usize
         ))
@@ -55,16 +55,16 @@ impl<T: Default + Copy, B: LatticeBoundary> Lattice<T, B> {
     }
 }
 
-impl<T: Copy + Default, B: LatticeBoundary> Index<Pos2D<usize>> for Lattice<T, B> {
+impl<T: Copy + Default, B: LatticeBoundary> Index<Pos<usize>> for Lattice<T, B> {
     type Output = T;
 
-    fn index(&self, pos: Pos2D<usize>) -> &Self::Output {
+    fn index(&self, pos: Pos<usize>) -> &Self::Output {
         &self.array[pos.row_major(self.height())]
     }
 }
 
-impl<T: Copy + Default, B: LatticeBoundary> IndexMut<Pos2D<usize>> for Lattice<T, B> {
-    fn index_mut(&mut self, pos: Pos2D<usize>) -> &mut Self::Output {
+impl<T: Copy + Default, B: LatticeBoundary> IndexMut<Pos<usize>> for Lattice<T, B> {
+    fn index_mut(&mut self, pos: Pos<usize>) -> &mut Self::Output {
         &mut self.array[pos.row_major(self.height())]
     }
 }
@@ -82,9 +82,9 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
     /// 
     /// Prefer `box_cell_positions()`, which warns about missing values.
     /// This function should only be used when not all positions are required to be found.
-    pub fn iter_box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> impl Iterator<Item = Pos2D<usize>> {
+    pub fn iter_box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> impl Iterator<Item = Pos<usize>> {
         let search_radius = (radius_scaler * (max(cell.target_area, cell.area) as f32 / PI).sqrt()) as isize;
-        let center = Pos2D::new(
+        let center = Pos::new(
             cell.center.pos.x as isize,
             cell.center.pos.y as isize
         );
@@ -95,7 +95,7 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
         self.bound
             .valid_positions(rect.iter_positions())
             .filter_map(|pos| {
-                let lat_pos = Pos2D::<usize>::from(pos);
+                let lat_pos = Pos::<usize>::from(pos);
                 if self[lat_pos] == cell.spin {
                     return Some(lat_pos);
                 }
@@ -107,7 +107,7 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
     ///
     /// May fail if `radius_scaler` is too small.
-    pub fn box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> Vec<Pos2D<usize>> {
+    pub fn box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> Vec<Pos<usize>> {
         let found: Vec<_> = self.iter_box_cell_positions(cell, radius_scaler).collect();
         if found.len() != cell.area as usize {
             log::warn!(
@@ -125,23 +125,23 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
     ///
     /// Is considerably slower than `box_cell_positions()` and may fail if cell is not contiguous 
     /// or if the cell center is not a cell position.
-    pub fn contiguous_cell_positions<N: Neighbourhood>(&self, cell: &RelCell, neighbourhood: &N) -> Vec<Pos2D<usize>> {
+    pub fn contiguous_cell_positions<N: Neighbourhood>(&self, cell: &RelCell, neighbourhood: &N) -> Vec<Pos<usize>> {
         let mut visited = Lattice::<bool, _>::new(self.bound.clone());
         let mut found = Vec::with_capacity(cell.area as usize);
-        let mut queue = VecDeque::from([Pos2D::new(
+        let mut queue = VecDeque::from([Pos::new(
             cell.center.pos.x as isize,
             cell.center.pos.y as isize
         )]);
 
         while let Some(pos) = queue.pop_front() {
-            let lat_pos = Pos2D::from(pos);
+            let lat_pos = Pos::from(pos);
             if cell.spin != self[lat_pos] {
                 continue;
             }
             self.bound
                 .valid_positions(neighbourhood.neighbours(pos))
                 .for_each(|neigh| {
-                    let lat_neigh = Pos2D::from(neigh);
+                    let lat_neigh = Pos::from(neigh);
                     if !visited[lat_neigh] {
                         visited[lat_neigh] = true;
                         queue.push_back(neigh);
@@ -172,8 +172,8 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
         let mut neighs = HashSet::default();
         let mut border_pos = None;
         for pos in self.iter_box_cell_positions(cell, radius_scaler) {
-            if let Some(neigh) = self.bound.valid_pos(Pos2D::new(pos.x as isize - 1, pos.y as isize)) {
-                if self[pos] != self[Pos2D::from(neigh)] {
+            if let Some(neigh) = self.bound.valid_pos(Pos::new(pos.x as isize - 1, pos.y as isize)) {
+                if self[pos] != self[Pos::from(neigh)] {
                     border_pos = Some(pos);
                     break
                 }
@@ -186,11 +186,11 @@ impl<B: LatticeBoundary + Clone> CellLattice<B> {
         let mut visited = Lattice::<bool, _>::new(self.bound.clone());
         let mut queue = VecDeque::from([border_pos.unwrap().into()]);
         while let Some(pos) = queue.pop_front() {
-            let spin = self[Pos2D::from(pos)];
+            let spin = self[Pos::from(pos)];
             let mut same_spin_neighs = Vec::new();
             let mut has_diff_neighbor = false;
             for neigh in self.bound.valid_positions(neighbourhood.neighbours(pos)) {
-                let neigh_pos = Pos2D::from(neigh);
+                let neigh_pos = Pos::from(neigh);
 
                 let neigh_spin = self[neigh_pos];
                 if neigh_spin != spin {

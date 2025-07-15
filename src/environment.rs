@@ -9,7 +9,7 @@ use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
-use crate::positional::pos::{AngularProjection, Pos2D, WrappedPos};
+use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
 use crate::positional::rect::Rect;
 
 pub struct Environment {
@@ -130,14 +130,14 @@ impl Environment {
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
-        let center = self.cell_lattice.bound.valid_pos(Pos2D::new(
+        let center = self.cell_lattice.bound.valid_pos(Pos::new(
             rect.min.x as isize,
             rect.min.y as isize
         ));
         let mut cell = Cell::new(
             0,
             self.cells.target_area,
-            WrappedPos::new(Pos2D::new(center?.x as f32, center?.y as f32), self.width(), self.height())
+            WrappedPos::new(Pos::new(center?.x as f32, center?.y as f32), self.width(), self.height())
         );
         
         for pos in rect.iter_positions() {
@@ -145,7 +145,7 @@ impl Environment {
             if trans_pos.is_none() {
                 continue;
             }
-            let valid_pos: Pos2D<usize> = trans_pos.unwrap().into();
+            let valid_pos: Pos<usize> = trans_pos.unwrap().into();
             if self.cell_lattice[valid_pos] != Medium.spin() {
                 continue
             }
@@ -160,7 +160,7 @@ impl Environment {
         Some(self.cells.get_entity(spin).unwrap_cell())
     }
     
-    pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos2D<usize>>) -> usize {
+    pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
             if self.cell_lattice[pos] != Medium.spin() {
@@ -173,7 +173,7 @@ impl Environment {
     }
     
     pub fn make_border(&mut self) {
-        let mut border_positions = Vec::<Pos2D<usize>>::new();
+        let mut border_positions = Vec::<Pos<usize>>::new();
         for x in 0..self.width() {
             border_positions.push((x, 0).into());
         }
@@ -194,7 +194,7 @@ impl Environment {
         self.spawn_solid(border_positions.into_iter());
     }
     
-    pub fn update_edges(&mut self, pos: Pos2D<usize>) -> (u16, u16) {
+    pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
         let spin = self.cell_lattice[pos];
@@ -277,7 +277,7 @@ impl Environment {
             .into_iter()
             .filter(|pos| { 
                 let proj = AngularProjection::from_pos(
-                    Pos2D::new(pos.x as f32, pos.y as f32),
+                    Pos::new(pos.x as f32, pos.y as f32),
                     self.cell_lattice.width(),
                     self.cell_lattice.height()
                 );
@@ -385,8 +385,8 @@ pub mod tests {
         let mut env = Environment::new_empty_test(100, 100);
         env.spawn_rect_cell(
             Rect::new(
-                Pos2D::new(10, 10),
-                Pos2D::new(20, 20)
+                Pos::new(10, 10),
+                Pos::new(20, 20)
             )
         );
         assert_eq!(env.edge_book.len(), 8 * 4 * 3 + 4 * 5);
@@ -395,8 +395,8 @@ pub mod tests {
 
         env.spawn_rect_cell(
             Rect::new(
-                Pos2D::new(15, 15),
-                Pos2D::new(25, 25)
+                Pos::new(15, 15),
+                Pos::new(25, 25)
             )
         );
 

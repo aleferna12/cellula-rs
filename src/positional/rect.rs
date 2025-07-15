@@ -1,11 +1,11 @@
 use std::ops::AddAssign;
 use num::{Integer, Num};
-use crate::positional::pos::Pos2D;
+use crate::positional::pos::Pos;
 
 #[derive(Clone, Debug)]
 pub struct Rect<T> {
-    pub min: Pos2D<T>,
-    pub max: Pos2D<T>
+    pub min: Pos<T>,
+    pub max: Pos<T>
 }
 
 impl<T> Rect<T>
@@ -13,7 +13,7 @@ where
     T: Num
     + Copy
 {
-    pub fn new(min: Pos2D<T>, max: Pos2D<T>) -> Self {
+    pub fn new(min: Pos<T>, max: Pos<T>) -> Self {
         Self{ min, max }
     }
 
@@ -35,7 +35,7 @@ where
 }
 
 pub struct RectAreaIt<T> {
-    curr: Pos2D<T>,
+    curr: Pos<T>,
     rect: Rect<T>
 }
 
@@ -53,7 +53,7 @@ where
     T: Copy
     + Integer
     + AddAssign {
-    type Item = Pos2D<T>;
+    type Item = Pos<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.curr.y >= self.rect.max.y {

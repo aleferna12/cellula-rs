@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::mem;
-use crate::positional::pos::Pos2D;
+use crate::positional::pos::Pos;
 
 #[derive(Debug)]
 pub enum EdgeError {
@@ -10,16 +10,16 @@ pub enum EdgeError {
 
 #[derive(Eq, Clone)]
 pub struct Edge {
-    pub p1: Pos2D<usize>,
-    pub p2: Pos2D<usize>
+    pub p1: Pos<usize>,
+    pub p2: Pos<usize>
 }
 
 impl Edge {
-    pub fn new(p1: Pos2D<usize>, p2: Pos2D<usize>) -> Self {
+    pub fn new(p1: Pos<usize>, p2: Pos<usize>) -> Self {
         Self { p1, p2 }
     }
     
-    pub fn new_if_neighbour(p1: Pos2D<usize>, p2: Pos2D<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
+    pub fn new_if_neighbour(p1: Pos<usize>, p2: Pos<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
         let cx = p1.x.abs_diff(p2.x);
         let cy = p1.y.abs_diff(p2.y);
         let sum = cx + cy;

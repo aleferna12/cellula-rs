@@ -9,7 +9,7 @@ use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::Pos2D;
+use crate::positional::pos::Pos;
 use crate::spin_table::SpinTable;
 
 pub trait Plot {
@@ -90,7 +90,7 @@ pub struct CenterPlot<'e> {
 impl Plot for CenterPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
-            let center = self.env.cell_lattice.bound.valid_pos(Pos2D::new(
+            let center = self.env.cell_lattice.bound.valid_pos(Pos::new(
                 cell.center.pos().x as isize,
                 cell.center.pos().y as isize,
             ));
@@ -201,9 +201,9 @@ impl Plot for BorderPlot<'_> {
             let is_border = self.env
                 .cell_lattice
                 .bound
-                .valid_positions(self.env.neighbourhood.neighbours(Pos2D::from(pos)))
+                .valid_positions(self.env.neighbourhood.neighbours(Pos::from(pos)))
                 .any(|neigh| {
-                    let neigh_spin = self.env.cell_lattice[Pos2D::from(neigh)];
+                    let neigh_spin = self.env.cell_lattice[Pos::from(neigh)];
                     neigh_spin != spin
                 });
             if is_border {
