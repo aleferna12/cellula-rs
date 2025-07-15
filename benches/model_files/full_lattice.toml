@@ -21,7 +21,7 @@ image-period = 2048
 #   - "clones": Plots will cells are attached.
 #   - "border": Plots cell borders.
 #   - "light":  Plots the light gradient.
-order = ["light", "spin"]
+order = ["spin"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
