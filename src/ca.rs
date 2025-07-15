@@ -1,15 +1,14 @@
-use std::f32::consts::E;
-use rand::Rng;
 use crate::adhesion::AdhesionSystem;
 use crate::cell::RelCell;
-use crate::constants::LatticeBoundaryType;
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
-use crate::environment::LatticeEntity::{Medium, SomeCell, Solid};
+use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
 use crate::io::parameters::CellularAutomataParameters;
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
+use rand::Rng;
+use std::f32::consts::E;
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -89,13 +88,12 @@ impl<A: AdhesionSystem> Ca<A> {
         }
         
         // Executes the copy
-        let (width, height) = (env.width(), env.height());
         env.cell_lattice.lat[pos_to] = spin_from;
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_from) {
-            cell.shift_position::<LatticeBoundaryType>(pos_to, width, height, true);
+            cell.shift_position(pos_to, true, &env.cell_lattice.bound);
         }
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_to) {
-            cell.shift_position::<LatticeBoundaryType>(pos_to, width, height, false);
+            cell.shift_position(pos_to, false, &env.cell_lattice.bound);
         }
         let (removed, added) = env.update_edges(pos_to);
         (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
@@ -180,10 +178,10 @@ impl<A: AdhesionSystem> Ca<A> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::adhesion::ClonalAdhesion;
     use crate::cell::Cell;
     use crate::io::parameters::StaticAdhesionParameters;
-    use super::*;
 
     #[test]
     fn test_delta_hamiltonian_size() {
@@ -201,7 +199,7 @@ mod tests {
             },
             ClonalAdhesion::new(adh_params, 10)
         );
-        let cell = RelCell::mock(Cell::new(100, 100, WrappedPos::origin()));
+        let cell = RelCell::mock(Cell::new(100, 100, WrappedPos::default()));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }

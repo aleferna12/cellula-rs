@@ -1,8 +1,7 @@
+use crate::positional::pos::Pos;
+use crate::positional::rect::Rect;
 use num::traits::Euclid;
 use num::Num;
-use crate::cell::Cell;
-use crate::positional::pos::{AngularProjection, Pos};
-use crate::positional::rect::Rect;
 
 pub trait Boundary {
     type Coord;
@@ -24,7 +23,34 @@ pub trait Boundary {
 }
 
 pub trait LatticeBoundary: Boundary<Coord = isize> {
-    fn shift_cell_center(cell: &mut Cell, pos: Pos<usize>, width: usize, height: usize, add: bool);
+    /// Shifts the center of mass (`com`) by `pos` taking into account its `mass`.
+    /// 
+    /// `add` determined whether to add or remove `pos` from `com`.
+    fn shift_center_of_mass(
+        &self,
+        com: Pos<f32>,
+        pos: Pos<f32>,
+        mass: f32,
+        add: bool
+    ) -> Option<Pos<f32>> {
+        let shift = if add { 1. } else { -1. };
+        let new_mass = mass + shift;
+        if new_mass <= 0.0 {
+            return None;
+        }
+
+        let w = self.rect().width() as f32;
+        let h = self.rect().height() as f32;
+        // TODO! generalise displacement
+        let dx = ((pos.x - com.x + w / 2.).rem_euclid(w)) - w / 2.;
+        let dy = ((pos.y - com.y + h / 2.).rem_euclid(h)) - h / 2.;
+        let x = (com.x + dx * shift / new_mass).rem_euclid(w);
+        let y = (com.y + dy * shift / new_mass).rem_euclid(h);
+        Some(Pos::new(
+            x, y
+        ))
+    }
+
     // TODO!: this can make FixedBoundary quite a lot faster
     // fn delta_angle();
 }
@@ -59,14 +85,22 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
 }
 
 impl LatticeBoundary for FixedBoundary<isize> {
-    fn shift_cell_center(cell: &mut Cell, pos: Pos<usize>, _width: usize, _height: usize, add: bool) {
+    fn shift_center_of_mass(
+        &self,
+        com: Pos<f32>,
+        pos: Pos<f32>,
+        mass: f32,
+        add: bool
+    ) -> Option<Pos<f32>> {
         let shift = if add { 1. } else { -1. };
-        let area = cell.area as f32;
-        
-        cell.center.pos = Pos::new(
-            cell.center.pos.x + shift * (pos.x as f32 - cell.center.pos.x) / area,
-            cell.center.pos.y + shift * (pos.y as f32 - cell.center.pos.y) / area
-        );
+        let new_mass = mass + shift;
+        if new_mass <= 0.0 {
+            return None;
+        }
+        Some(Pos::new(
+            com.x + shift * (pos.x - com.x) / new_mass,
+            com.y + shift * (pos.y - com.y) / new_mass
+        ))
     }
 }
 
@@ -110,20 +144,7 @@ where
     }
 }
 
-impl LatticeBoundary for PeriodicBoundary<isize> {
-    fn shift_cell_center(cell: &mut Cell, pos: Pos<usize>, width: usize, height: usize, add: bool) {
-        let shift = if add { 1. } else { -1. };
-
-        let proj = AngularProjection::from_pos(Pos::new(pos.x as f32, pos.y as f32), width, height);
-        let sum_proj = &mut cell.center.projection;
-        sum_proj.x_sin += shift * proj.x_sin;
-        sum_proj.x_cos += shift * proj.x_cos;
-        sum_proj.y_sin += shift * proj.y_sin;
-        sum_proj.y_cos += shift * proj.y_cos;
-        
-        cell.center.pos = Pos::from_projection(&cell.center.projection, width, height);
-    }
-}
+impl LatticeBoundary for PeriodicBoundary<isize> {}
 
 /// This struct can only validate positions that are at most one `width()` or `height()` away from the boundaries.
 ///
@@ -157,12 +178,6 @@ where
     }
 }
 
-impl LatticeBoundary for UnsafePeriodicBoundary<isize> {
-    fn shift_cell_center(cell: &mut Cell, pos: Pos<usize>, width: usize, height: usize, add: bool) {
-        PeriodicBoundary::shift_cell_center(cell, pos, width, height, add)
-    }
-}
-
 impl<T> Boundary for UnsafePeriodicBoundary<T>
 where
     T: Copy + Num + Euclid + PartialOrd {
@@ -179,6 +194,8 @@ where
         ))
     }
 }
+
+impl LatticeBoundary for UnsafePeriodicBoundary<isize> {}
 
 #[cfg(test)]
 mod tests {

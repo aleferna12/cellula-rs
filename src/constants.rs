@@ -2,7 +2,7 @@ use crate::positional::boundary::UnsafePeriodicBoundary;
 
 /// Boundary type of the lattice.
 ///
-/// `FixedBoundary` is approx. 16% faster than `UnsafePeriodicBoundary` (in total run time).
+/// `FixedBoundary` is ~18% faster than `UnsafePeriodicBoundary` (in total run time).
 pub type LatticeBoundaryType = UnsafePeriodicBoundary<isize>;
 
 /// Type of cell's spins (determines maximum number of cells allowed in the simulation).

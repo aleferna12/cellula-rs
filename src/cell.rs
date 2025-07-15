@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::positional::pos::{Pos, WrappedPos};
+use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
 use crate::positional::boundary::LatticeBoundary;
 
 /// Represents a cell that is bound to an `Environment`.
@@ -50,12 +50,7 @@ pub struct Cell {
 }
 
 impl Cell {
-    pub fn new(area: u32, target_area: u32, mut center: WrappedPos) -> Self {
-        // Weights projection with current cell area
-        center.projection.x_sin *= area as f32;
-        center.projection.x_cos *= area as f32;
-        center.projection.y_sin *= area as f32;
-        center.projection.y_cos *= area as f32;
+    pub fn new(area: u32, target_area: u32, center: WrappedPos) -> Self {
         Self {
             area,
             target_area,
@@ -66,13 +61,26 @@ impl Cell {
     pub fn shift_position<B: LatticeBoundary>(
         &mut self,
         pos: Pos<usize>,
-        width: usize,
-        height: usize,
-        add: bool
+        add: bool,
+        bound: &B
     ) {
         // The order here matters, be careful
+        if let Some(new_center) = bound.shift_center_of_mass(
+            self.center.pos,
+            Pos::new(pos.x as f32, pos.y as f32),
+            self.area as f32,
+            add
+        ) {
+            self.center = WrappedPos::new(
+                new_center,
+                AngularProjection::from_pos(
+                    new_center, 
+                    bound.rect().width() as usize, 
+                    bound.rect().height() as usize
+                )
+            );
+        }
         self.shift_area(add);
-        B::shift_cell_center(self, pos, width, height, add);
     }
 
     pub fn shift_area(&mut self, add: bool) {

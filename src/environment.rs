@@ -133,11 +133,15 @@ impl Environment {
         let center = self.cell_lattice.bound.valid_pos(Pos::new(
             rect.min.x as isize,
             rect.min.y as isize
-        ));
+        ))?;
+        let center_pos = Pos::new(center.x as f32, center.y as f32);
         let mut cell = Cell::new(
             0,
             self.cells.target_area,
-            WrappedPos::new(Pos::new(center?.x as f32, center?.y as f32), self.width(), self.height())
+            WrappedPos::new(
+                center_pos, 
+                AngularProjection::from_pos(center_pos, self.width(), self.height())
+            )
         );
         
         for pos in rect.iter_positions() {
@@ -151,7 +155,7 @@ impl Environment {
             }
             self.cell_lattice[valid_pos] = spin;
             self.update_edges(valid_pos);
-            cell.shift_position::<LatticeBoundaryType>(pos, self.width(), self.height(), true);
+            cell.shift_position(pos, true, &self.cell_lattice.bound);
         }
         if cell.area == 0 { 
             return None;
@@ -269,7 +273,7 @@ impl Environment {
         let mut new_cell = Cell::new(
             0,
             cell_target_area,
-            WrappedPos::origin()
+            WrappedPos::default()
         );
         let new_positions: Vec<_> = self
             .cell_lattice
@@ -292,17 +296,15 @@ impl Environment {
                 return Err(DivisionError::NewCellTooBig);
             }
             self.cell_lattice[pos] = new_spin;
-            new_cell.shift_position::<LatticeBoundaryType>(
+            new_cell.shift_position(
                 pos,
-                self.cell_lattice.width(),
-                self.cell_lattice.height(),
-                true
+                true,
+                &self.cell_lattice.bound
             );
-            mom_clone.shift_position::<LatticeBoundaryType>(
+            mom_clone.shift_position(
                 pos,
-                self.cell_lattice.width(),
-                self.cell_lattice.height(),
-                false
+                false,
+                &self.cell_lattice.bound
             );
         }
         if new_cell.area > 0 {

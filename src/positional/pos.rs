@@ -65,28 +65,24 @@ pub struct WrappedPos {
 }
 
 impl WrappedPos {
-    pub fn new(pos: Pos<f32>, width: usize, height: usize) -> Self {
+    pub fn new(pos: Pos<f32>, projection: AngularProjection) -> Self {
         Self {
             pos,
-            projection: AngularProjection::from_pos(pos, width, height)
-        }
-    }
-
-    /// Represents the origin of the lattice, at 0, 0.
-    pub fn origin() -> Self {
-        Self {
-            pos: (0., 0.).into(),
-            projection: AngularProjection {
-                x_sin: 0.,
-                x_cos: 1.,
-                y_sin: 0.,
-                y_cos: 1.,
-            }
+            projection
         }
     }
 
     pub fn pos(&self) -> Pos<f32> {
         self.pos
+    }
+}
+
+impl Default for WrappedPos {
+    fn default() -> Self {
+        Self {
+            pos: (0., 0.).into(),
+            projection: AngularProjection::blank()
+        }
     }
 }
 
@@ -107,6 +103,15 @@ impl AngularProjection {
             x_cos: cx.cos(),
             y_sin: cy.sin(),
             y_cos: cy.cos()
+        }
+    }
+    
+    pub fn blank() -> Self {
+        Self {
+            x_sin: 0.0,
+            x_cos: 0.0,
+            y_sin: 0.0,
+            y_cos: 0.0,
         }
     }
     
