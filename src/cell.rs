@@ -1,8 +1,8 @@
-use std::ops::{Deref, DerefMut};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
+use crate::positional::boundary::Boundary;
 use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
-use crate::positional::boundary::LatticeBoundary;
+use std::ops::{Deref, DerefMut};
 
 /// Represents a cell that is bound to an `Environment`.
 ///
@@ -58,28 +58,14 @@ impl Cell {
         }
     }
 
-    pub fn shift_position<B: LatticeBoundary>(
+    pub fn shift_position<B: Boundary<Coord = f32>>(
         &mut self,
         pos: Pos<usize>,
         add: bool,
         bound: &B
     ) {
         // The order here matters, be careful
-        if let Some(new_center) = bound.shift_center_of_mass(
-            self.center.pos,
-            Pos::new(pos.x as f32, pos.y as f32),
-            self.area as f32,
-            add
-        ) {
-            self.center = WrappedPos::new(
-                new_center,
-                AngularProjection::from_pos(
-                    new_center, 
-                    bound.rect().width() as usize, 
-                    bound.rect().height() as usize
-                )
-            );
-        }
+        self.shift_center(pos, add, bound);
         self.shift_area(add);
     }
 
@@ -90,5 +76,25 @@ impl Cell {
             self.area = self.area.saturating_sub(1);
         }
     }
-    
+
+    pub fn shift_center<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, add: bool, bound: &B) -> bool {
+        let shift = if add { 1. } else { -1. };
+        let new_mass = self.area as f32 + shift;
+        if new_mass <= 0.0 {
+            return false;
+        }
+
+        let center_pos = self.center.pos;
+        let (dx, dy) = bound.displacement(center_pos, Pos::new(pos.x as f32, pos.y as f32));
+        // TODO! work this into Boundary
+        let x = (center_pos.x + dx * shift / new_mass).rem_euclid(bound.rect().width());
+        let y = (center_pos.y + dy * shift / new_mass).rem_euclid(bound.rect().height());
+        let new_center = Pos::new(x, y);
+        self.center = WrappedPos::new(new_center, AngularProjection::from_pos(
+            new_center,
+            bound.rect().width() as usize,
+            bound.rect().height() as usize
+        ));
+        true
+    }
 }

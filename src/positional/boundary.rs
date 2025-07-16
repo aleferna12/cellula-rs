@@ -1,7 +1,7 @@
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use num::traits::Euclid;
-use num::Num;
+use num::{FromPrimitive, Num};
 
 pub trait Boundary {
     type Coord;
@@ -20,36 +20,20 @@ pub trait Boundary {
     ) -> impl Iterator<Item = Pos<Self::Coord>> {
         positions.filter_map(|pos| self.valid_pos(pos))
     }
+
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord)
+    where
+        Self::Coord: FromPrimitive + Num + Copy + Euclid {
+        let two = Self::Coord::from_u8(2).expect("Cannot convert 2 to T");
+        let dx = ((pos2.x - pos1.x + self.rect().width() / two)
+            .rem_euclid(&self.rect().width())) - self.rect().width() / two;
+        let dy = ((pos2.y - pos1.y + self.rect().height() / two)
+            .rem_euclid(&self.rect().height())) - self.rect().height() / two;
+        (dx, dy)
+    }
 }
 
 pub trait LatticeBoundary: Boundary<Coord = isize> {
-    /// Shifts the center of mass (`com`) by `pos` taking into account its `mass`.
-    /// 
-    /// `add` determined whether to add or remove `pos` from `com`.
-    fn shift_center_of_mass(
-        &self,
-        com: Pos<f32>,
-        pos: Pos<f32>,
-        mass: f32,
-        add: bool
-    ) -> Option<Pos<f32>> {
-        let shift = if add { 1. } else { -1. };
-        let new_mass = mass + shift;
-        if new_mass <= 0.0 {
-            return None;
-        }
-
-        let w = self.rect().width() as f32;
-        let h = self.rect().height() as f32;
-        // TODO! generalise displacement
-        let dx = ((pos.x - com.x + w / 2.).rem_euclid(w)) - w / 2.;
-        let dy = ((pos.y - com.y + h / 2.).rem_euclid(h)) - h / 2.;
-        let x = (com.x + dx * shift / new_mass).rem_euclid(w);
-        let y = (com.y + dy * shift / new_mass).rem_euclid(h);
-        Some(Pos::new(
-            x, y
-        ))
-    }
 
     // TODO!: this can make FixedBoundary quite a lot faster
     // fn delta_angle();
@@ -85,23 +69,6 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
 }
 
 impl LatticeBoundary for FixedBoundary<isize> {
-    fn shift_center_of_mass(
-        &self,
-        com: Pos<f32>,
-        pos: Pos<f32>,
-        mass: f32,
-        add: bool
-    ) -> Option<Pos<f32>> {
-        let shift = if add { 1. } else { -1. };
-        let new_mass = mass + shift;
-        if new_mass <= 0.0 {
-            return None;
-        }
-        Some(Pos::new(
-            com.x + shift * (pos.x - com.x) / new_mass,
-            com.y + shift * (pos.y - com.y) / new_mass
-        ))
-    }
 }
 
 #[derive(Clone)]

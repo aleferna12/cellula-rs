@@ -90,10 +90,10 @@ impl<A: AdhesionSystem> Ca<A> {
         // Executes the copy
         env.cell_lattice.lat[pos_to] = spin_from;
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_from) {
-            cell.shift_position(pos_to, true, &env.cell_lattice.bound);
+            cell.shift_position(pos_to, true, &env.space);
         }
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_to) {
-            cell.shift_position(pos_to, false, &env.cell_lattice.bound);
+            cell.shift_position(pos_to, false, &env.space);
         }
         let (removed, added) = env.update_edges(pos_to);
         (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32

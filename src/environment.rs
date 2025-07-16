@@ -1,11 +1,11 @@
 use rand::Rng;
 use crate::cell::{RelCell, Cell};
 use crate::cell_container::CellContainer;
-use crate::constants::{LatticeBoundaryType, Spin};
+use crate::constants::{LatticeBoundaryType, SpaceType, Spin};
 use crate::environment::LatticeEntity::*;
 use crate::lattice::{CellLattice, Lattice};
 use crate::io::parameters::{CellParameters, EnvironmentParameters};
-use crate::positional::boundary::Boundary;
+use crate::positional::boundary::{Boundary, UnsafePeriodicBoundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
@@ -13,6 +13,7 @@ use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
 use crate::positional::rect::Rect;
 
 pub struct Environment {
+    pub space: SpaceType,
     pub cell_lattice: CellLattice<LatticeBoundaryType>,
     pub light_lattice: Lattice<usize, LatticeBoundaryType>,
     pub cells: CellContainer,
@@ -84,6 +85,10 @@ impl Environment {
         let bound = LatticeBoundaryType::new(rect);
         
         Self {
+            space: UnsafePeriodicBoundary::new(Rect::new(
+                (0., 0.).into(),
+                (width as f32, height as f32).into()
+            )),
             cell_lattice: CellLattice::new(bound.clone()),
             light_lattice: Lattice::new(bound),
             cells: CellContainer::from(cell_parameters),
@@ -155,7 +160,7 @@ impl Environment {
             }
             self.cell_lattice[valid_pos] = spin;
             self.update_edges(valid_pos);
-            cell.shift_position(pos, true, &self.cell_lattice.bound);
+            cell.shift_position(pos, true, &self.space);
         }
         if cell.area == 0 { 
             return None;
@@ -299,12 +304,12 @@ impl Environment {
             new_cell.shift_position(
                 pos,
                 true,
-                &self.cell_lattice.bound
+                &self.space
             );
             mom_clone.shift_position(
                 pos,
                 false,
-                &self.cell_lattice.bound
+                &self.space
             );
         }
         if new_cell.area > 0 {
