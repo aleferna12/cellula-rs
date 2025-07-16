@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let cli = Cli::parse();
     
-    let parameters = Parameters::parse_file(&cli.config)?;
+    let parameters = Parameters::parse(&cli.config)?;
     parameters.check_conflicts();
     
     let mut model = Model::try_from(parameters)?;

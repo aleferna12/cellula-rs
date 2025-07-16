@@ -22,7 +22,7 @@ fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {
                     .unwrap();
                 Some((
                     bench_name.to_string(),
-                    Parameters::parse_file(p).unwrap(),
+                    Parameters::parse(p).unwrap(),
                 ))
             }
             _ => None,
@@ -33,7 +33,7 @@ fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {
 /// Searches `parent_dir` for config files, reads them, 
 /// and them for each of them makes a benchmark called `function_prefix`/`file_name`/`time_steps`mcs.
 fn bench_param_files(
-    c: &mut Criterion, 
+    c: &mut Criterion,
     function_prefix: &str,
     parent_dir: impl AsRef<Path>,
     time_steps: u32
@@ -75,11 +75,11 @@ fn bench_param_files_1mcs(c: &mut Criterion) {
     bench_param_files(c, "models", "./benches/model_files", 1);
 }
 
-fn bench_clonal_dev(c: &mut Criterion) {
+fn bench_slow(c: &mut Criterion) {
     c.bench_function("clonal_dev", |b| {
         b.iter_batched_ref(
             || {
-                let mut params = Parameters::parse_file("examples/1_cell.toml").unwrap();
+                let mut params = Parameters::parse("examples/1_cell.toml").unwrap();
                 params.io.image_period = 50_000;
                 params.io.movie.show = false;
                 let mut model = Model::try_from(params).unwrap();
@@ -92,24 +92,43 @@ fn bench_clonal_dev(c: &mut Criterion) {
             BatchSize::SmallInput
         )
     });
-} 
+
+    c.bench_function("large_lattice/10000mcs", |b| {
+        b.iter_batched_ref(
+            || {
+                let mut params = Parameters::parse(
+                    "./benches/model_files/large_lattice.toml"
+                ).unwrap();
+                params.io.image_period = 10_000;
+                params.io.movie.show = false;
+                let mut model = Model::try_from(params).unwrap();
+                model.run(100);
+                model
+            },
+            |model| {
+                model.run(black_box(10_000));
+            },
+            BatchSize::SmallInput
+        )
+    });
+}
 
 criterion_group!(
     name = model_1000mcs;
     config = Criterion::default()
         .sample_size(10)
-        .measurement_time(Duration::from_secs(10));
+        .measurement_time(Duration::from_secs(15));
     targets = bench_param_files_1000mcs
 );
 
 criterion_group!(model_1mcs, bench_param_files_1mcs);
 
 criterion_group!(
-    name = clonal_dev;
+    name = slow;
     config = Criterion::default()
         .sample_size(10)
-        .measurement_time(Duration::from_secs(60));
-    targets = bench_clonal_dev
+        .measurement_time(Duration::from_secs(240));
+    targets = bench_slow
 );
 
-criterion_main!(model_1mcs, model_1000mcs, clonal_dev);
+criterion_main!(model_1mcs, model_1000mcs, slow);

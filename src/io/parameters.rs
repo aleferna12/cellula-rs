@@ -33,7 +33,7 @@ pub struct Parameters {
 }
 
 impl Parameters {
-    pub fn parse_file(path: impl AsRef<Path>) -> Result<Parameters, config::ConfigError> {
+    pub fn parse(path: impl AsRef<Path>) -> Result<Parameters, config::ConfigError> {
         let path = path.as_ref();
         log::info!("Reading parameters from `{}` and environment", path.display());
         let params = config::Config::builder()
@@ -180,7 +180,7 @@ mod tests {
     
     #[test]
     fn test_from_file() -> Result<(), config::ConfigError> {
-        Parameters::parse_file("examples/64_cells.toml")?;
+        Parameters::parse("examples/64_cells.toml")?;
         Ok(())
     }
 }
