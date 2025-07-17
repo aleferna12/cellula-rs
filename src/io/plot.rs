@@ -110,7 +110,7 @@ pub struct ClonesPlot<'a> {
 
 impl Plot for ClonesPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        let spins = self.clone_pairs.iter_pairs_range(
+        let spins = self.clone_pairs.iter_pairs(
             LatticeEntity::first_cell_spin(),
             self.env.cells.n_cells() + LatticeEntity::first_cell_spin()
         );
