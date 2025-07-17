@@ -1,5 +1,5 @@
 use crate::adhesion::ClonalAdhesion;
-use crate::ca::Ca;
+use crate::cellular_automata::CellularAutomata;
 use crate::environment::{Environment, LatticeEntity};
 use crate::io::io_manager::IoManager;
 use crate::io::parameters::Parameters;
@@ -9,7 +9,7 @@ use std::error::Error;
 
 pub struct Model {
     pub env: Environment,
-    pub ca: Ca<ClonalAdhesion>,
+    pub ca: CellularAutomata<ClonalAdhesion>,
     pub rng: Xoshiro256StarStar,
     pub io_manager: IoManager,
     parameters: Parameters
@@ -62,7 +62,7 @@ impl TryFrom<Parameters> for Model {
                 parameters.environment.clone(),
                 &mut rng
             ),
-            ca: Ca::new(
+            ca: CellularAutomata::new(
                 parameters.cellular_automata.clone(),
                 ClonalAdhesion::new(
                     parameters.cellular_automata.adhesion.clone(),

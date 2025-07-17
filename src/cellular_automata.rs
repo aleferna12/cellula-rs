@@ -13,14 +13,14 @@ use std::f32::consts::E;
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
-pub struct Ca<A> {
+pub struct CellularAutomata<A> {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
     pub adhesion: A
 }
 
-impl<A: AdhesionSystem> Ca<A> {
+impl<A: AdhesionSystem> CellularAutomata<A> {
     pub fn new(params: CellularAutomataParameters, adhesion: A) -> Self {
         Self {
             boltz_t: params.boltz_t,
@@ -191,7 +191,7 @@ mod tests {
             medium_energy: 20.,
             solid_energy: 20.
         };
-        let ca = Ca::new(
+        let ca = CellularAutomata::new(
             CellularAutomataParameters {
                 adhesion: adh_params.clone(),
                 boltz_t: 16.,

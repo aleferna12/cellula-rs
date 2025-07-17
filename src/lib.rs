@@ -3,7 +3,7 @@ pub mod positional;
 pub mod model;
 pub mod environment;
 pub mod cell;
-pub mod ca;
+pub mod cellular_automata;
 pub mod io;
 pub mod adhesion;
 pub mod constants;
