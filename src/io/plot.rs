@@ -177,7 +177,7 @@ impl Plot for AreaPlot<'_> {
                 max = cell.area
             }
         }
-        // TODO: might be faster to iterate cells instead
+        // TODO: might be faster to iterate cells instead (also in other plots)
         for pos in self.env.space.cell_lattice.iter_positions() {
             let entity = self.env.cells.get_entity(self.env.space.cell_lattice[pos]);
             if let LatticeEntity::SomeCell(cell) = entity {

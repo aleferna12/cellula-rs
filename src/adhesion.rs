@@ -15,9 +15,6 @@ pub trait AdhesionSystem {
     fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32;
 }
 
-// TODO!: Start by modeling adhesion based on whether two cells shared a boundary when they were born
-//  To better maintain cluster shape, this can be extended to both determine normal adhesion and also have springs
-//  connecting the two clonal cells
 pub struct ClonalAdhesion {
     pub static_adhesion: StaticAdhesion,
     // TODO!: try red-black trees in each cell
