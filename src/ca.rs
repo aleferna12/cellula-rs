@@ -101,7 +101,6 @@ impl<A: AdhesionSystem> Ca<A> {
     
     // TODO!: This currently just attracts cells to a fix point
     //  It also only works for periodic boundaries (and is very slow due to delta_angles)
-    // TODO! It actually doesnt work, we are missing the lattice center
     pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
         &self,
         chemotaxis_mu: f32,
@@ -109,12 +108,25 @@ impl<A: AdhesionSystem> Ca<A> {
         pos_to: Pos<usize>,
         bound: &B
     ) -> f32 {
-        let (dx, dy) = bound.displacement(
+        let (dx1, dy1) = bound.displacement(
             cell_center_from,
             Pos::new(pos_to.x as f32, pos_to.y as f32)
         );
-        let mag = (dx * dx + dy * dy).sqrt();
-        if mag <= 0. { 0. } else { -chemotaxis_mu * dx / mag }
+        let (dx2, dy2) = bound.displacement(
+            cell_center_from, 
+            Pos::new(bound.rect().width() / 2., bound.rect().height() / 2.)
+        );
+
+        let dot = dx1 * dx2 + dy1 * dy2;
+        let norm1_sq = dx1 * dx1 + dy1 * dy1;
+        let norm2_sq = dx2 * dx2 + dy2 * dy2;
+        let denom = (norm1_sq * norm2_sq).sqrt();
+
+        if denom <= 0. {
+            0.
+        } else {
+            -chemotaxis_mu * (dot / denom)
+        }
     }
 
     pub fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f32) -> bool {
