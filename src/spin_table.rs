@@ -16,7 +16,11 @@ impl<T: Default + Clone> SpinTable<T> {
     }
     
     pub fn iter_pairs(&self) -> impl Iterator<Item = (Spin, Spin)> {
-        (0..=self.max_spin).flat_map(|i| (0..=self.max_spin).map(move |j| (i, j)))
+        self.iter_pairs_range(0, self.max_spin)
+    }
+    
+    pub fn iter_pairs_range(&self, start: Spin, end: Spin) -> impl Iterator<Item = (Spin, Spin)> {
+        (start..end).flat_map(move |i| (i..end).map(move |j| (i, j)))
     }
 
     fn flat_index(&self, i: Spin, j: Spin) -> usize {

@@ -7,7 +7,7 @@ use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
-use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
+use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
 use rand::Rng;

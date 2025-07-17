@@ -1,6 +1,6 @@
 use crate::adhesion::ClonalAdhesion;
 use crate::ca::Ca;
-use crate::environment::Environment;
+use crate::environment::{Environment, LatticeEntity};
 use crate::io::io_manager::IoManager;
 use crate::io::parameters::Parameters;
 use rand::SeedableRng;
@@ -66,7 +66,7 @@ impl TryFrom<Parameters> for Model {
                 parameters.cellular_automata.clone(),
                 ClonalAdhesion::new(
                     parameters.cellular_automata.adhesion.clone(),
-                    parameters.environment.max_cells
+                    parameters.environment.max_cells + LatticeEntity::first_cell_spin()
                 )
             ),
             io_manager: IoManager::try_from(parameters.io.clone())?,

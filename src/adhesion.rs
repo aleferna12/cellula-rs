@@ -56,18 +56,12 @@ impl ClonalAdhesion {
             &env.neighbourhood
         );
         
-        let mom_clones = HashSet::from_iter(self
-            .clone_pairs
-            .iter_pairs()
-            .filter_map(|pair| {
-                if pair.0 == mom_cell.spin {
-                    Some(pair.1)
-                } else if pair.1 == mom_cell.spin { 
-                    Some(pair.0)
-                } else { 
-                    None
-                }
-            }));
+        let mom_clones = HashSet::from_iter(
+            (LatticeEntity::first_cell_spin()..=env.cells.n_cells())
+                .filter(|spin| {
+                    self.clone_pairs[(mom_cell.spin, *spin)]
+                })
+        );
         for spin in mom_clones.difference(&mom_neighs) {
             self.clone_pairs[(mom_cell.spin, *spin)] = false;
         }
