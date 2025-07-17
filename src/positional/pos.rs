@@ -1,6 +1,3 @@
-use fast_math::atan2;
-use std::f32::consts::TAU;
-
 /// 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[derive(Hash)]
@@ -18,17 +15,6 @@ impl<T> Pos<T> {
 impl<T> From<(T, T)> for Pos<T> {
     fn from(value: (T, T)) -> Self {
         Pos::<T>::new(value.0, value.1)
-    }
-}
-
-impl Pos<f32> {
-    /// Unwraps the `AngularProjection` into a position.
-    pub fn from_projection(proj: &AngularProjection, width: usize, height: usize) -> Self {
-        let (angle_x, angle_y) = proj.angles();
-        Self {
-            x: width as f32 * angle_x / TAU,
-            y: height as f32 * angle_y / TAU
-        }
     }
 }
 
@@ -55,83 +41,5 @@ impl From<Pos<isize>> for Pos<usize> {
             value.x.try_into().expect(message), 
             value.y.try_into().expect(message)
         )
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct WrappedPos {
-    pub pos: Pos<f32>,
-    pub projection: AngularProjection
-}
-
-impl WrappedPos {
-    pub fn new(pos: Pos<f32>, projection: AngularProjection) -> Self {
-        Self {
-            pos,
-            projection
-        }
-    }
-
-    pub fn pos(&self) -> Pos<f32> {
-        self.pos
-    }
-}
-
-impl Default for WrappedPos {
-    fn default() -> Self {
-        Self {
-            pos: (0., 0.).into(),
-            projection: AngularProjection::blank()
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct AngularProjection {
-    pub x_sin: f32,
-    pub x_cos: f32,
-    pub y_sin: f32,
-    pub y_cos: f32
-}
-
-impl AngularProjection {
-    pub fn from_pos(pos: Pos<f32>, width: usize, height: usize) -> Self {
-        let cx = TAU * pos.x / width as f32;
-        let cy = TAU * pos.y  / height as f32;
-        Self {
-            x_sin: cx.sin(),
-            x_cos: cx.cos(),
-            y_sin: cy.sin(),
-            y_cos: cy.cos()
-        }
-    }
-    
-    pub fn blank() -> Self {
-        Self {
-            x_sin: 0.0,
-            x_cos: 0.0,
-            y_sin: 0.0,
-            y_cos: 0.0,
-        }
-    }
-    
-    /// Returns the angles associated with this projection.
-    pub fn angles(&self) -> (f32, f32) {
-        (atan2(self.x_sin, self.x_cos).rem_euclid(TAU), atan2(self.y_sin, self.y_cos).rem_euclid(TAU))
-    }
-    
-    /// Returns the difference between the angles associated with the two projections.
-    /// 
-    /// This is considerably cheaper than calculating the angle deltas with `angles()`.
-    pub fn delta_angles(&self, other: &AngularProjection) -> (f32, f32) {
-        let x = atan2(
-            self.x_sin * other.x_cos - self.x_cos * other.x_sin,
-            self.x_cos * other.x_cos + self.x_sin * other.x_sin
-        );
-        let y = atan2(
-            self.y_sin * other.y_cos - self.y_cos * other.y_sin,
-            self.y_cos * other.y_cos + self.y_sin * other.y_sin
-        );
-        (x, y)
     }
 }

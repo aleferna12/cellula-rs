@@ -80,17 +80,23 @@ impl IoManager {
                             Some(c) => Some(hex_to_srgb(c)?)
                         }
                     }.plot(&mut image)
-                }
+                },
                 PlotType::Center => {
                     CenterPlot {
                         env,
                         color: hex_to_srgb(&self.plots.center_color)?
                     }.plot(&mut image)
-                }
+                },
+                PlotType::LightCenter => {
+                    CenterPlot {
+                        env,
+                        color: hex_to_srgb(&self.plots.light_center_color)?
+                    }.plot(&mut image)
+                },
                 PlotType::Clones => {
                     ClonesPlot {
-                        env, 
-                        clone_pairs, 
+                        env,
+                        clone_pairs,
                         color: hex_to_srgb(&self.plots.clones_color)?,
                         all_clones: self.plots.all_clones
                     }.plot(&mut image)

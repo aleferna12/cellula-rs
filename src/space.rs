@@ -13,7 +13,7 @@ pub struct Space {
     pub bound: BoundaryType,
     pub lat_bound: LatticeBoundaryType,
     pub cell_lattice: Lattice<Spin>,
-    pub light_lattice: Lattice<usize>,
+    pub light_lattice: Lattice<u32>,
 }
 
 impl Space {

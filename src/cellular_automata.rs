@@ -1,5 +1,5 @@
 use crate::adhesion::AdhesionSystem;
-use crate::cell::RelCell;
+use crate::cell::{Cell, RelCell};
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
@@ -80,7 +80,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if let SomeCell(cell) = entity_from {
             if env.cells.migrate {
-                delta_h += self.chemotaxis_bias(self.chemotaxis_mu, cell.center, pos_to, &env.space.bound);
+                delta_h += self.chemotaxis_bias(&cell, pos_to, self.chemotaxis_mu, &env.space.bound);
             }
         }
         if !self.accept_site_copy(rng, delta_h) {
@@ -90,31 +90,29 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         // Executes the copy
         env.space.cell_lattice[pos_to] = spin_from;
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_from) {
-            cell.shift_position(pos_to, true, &env.space.bound);
+            cell.shift_position(pos_to,env.space.light_lattice[pos_to], true, &env.space.bound);
         }
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_to) {
-            cell.shift_position(pos_to, false, &env.space.bound);
+            cell.shift_position(pos_to,env.space.light_lattice[pos_to], false, &env.space.bound);
         }
         let (removed, added) = env.update_edges(pos_to);
         (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
     }
     
-    // TODO!: This currently just attracts cells to a fix point
-    //  It also only works for periodic boundaries (and is very slow due to delta_angles)
     pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
         &self,
-        chemotaxis_mu: f32,
-        cell_center_from: Pos<f32>,
+        cell: &Cell,
         pos_to: Pos<usize>,
+        chemotaxis_mu: f32,
         bound: &B
     ) -> f32 {
         let (dx1, dy1) = bound.displacement(
-            cell_center_from,
+            cell.center,
             Pos::new(pos_to.x as f32, pos_to.y as f32)
         );
         let (dx2, dy2) = bound.displacement(
-            cell_center_from, 
-            Pos::new(bound.rect().width() / 2., bound.rect().height() / 2.)
+            cell.center,
+            cell.light_center
         );
 
         let dot = dx1 * dx2 + dy1 * dy2;
@@ -200,7 +198,7 @@ mod tests {
             },
             ClonalAdhesion::new(adh_params, 10)
         );
-        let cell = RelCell::mock(Cell::new(100, 100, Pos::new(0., 0.)));
+        let cell = RelCell::mock(Cell::new(100));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }

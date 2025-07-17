@@ -40,6 +40,13 @@ impl Environment {
             env.make_border();
         }
 
+        log::info!("Initialising light gradient");
+        for row in 0..env.height() {
+            for col in 0..env.width() {
+                env.space.light_lattice[(col, row).into()] = row.try_into().expect("Lattice is too big");
+            }
+        }
+
         log::info!("Creating cells");
         let mut cell_count = 0;
         let cell_side = (params.cell_start_area as f32).sqrt() as usize;
@@ -56,13 +63,6 @@ impl Environment {
             }
         }
         log::info!("Created {} out of the {} cells requested", cell_count, params.starting_cells);
-        
-        log::info!("Initialising light gradient");
-        for row in 0..env.height() {
-            for col in 0..env.width() {
-                env.space.light_lattice[(col, row).into()] = row;
-            } 
-        }
         
         env
     }
@@ -122,14 +122,7 @@ impl Environment {
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
-        let mut cell = Cell::new(
-            0,
-            self.cells.target_area,
-            self.space.bound.valid_pos(Pos::new(
-                rect.min.x as f32,
-                rect.min.y as f32
-            ))?
-        );
+        let mut cell = Cell::new(self.cells.target_area);
         
         for pos in rect.iter_positions() {
             let trans_pos = self.space.lat_bound.valid_pos(pos.into());
@@ -142,7 +135,7 @@ impl Environment {
             }
             self.space.cell_lattice[valid_pos] = spin;
             self.update_edges(valid_pos);
-            cell.shift_position(pos, true, &self.space.bound);
+            cell.shift_position(pos, self.space.light_lattice[valid_pos], true, &self.space.bound);
         }
         if cell.area == 0 { 
             return None;
@@ -258,11 +251,7 @@ impl Environment {
         // We modify this mock cell to allow the division to be cancelled in the case of an error
         let mut mom_clone = mom_cell.clone();
         
-        let mut new_cell = Cell::new(
-            0,
-            cell_target_area,
-            Pos::new(0., 0.)
-        );
+        let mut new_cell = Cell::new(cell_target_area);
         let new_positions: Vec<_> = self
             .space
             .box_cell_positions(mom_cell, self.cell_search_radius)
@@ -280,12 +269,14 @@ impl Environment {
             }
             self.space.cell_lattice[pos] = new_spin;
             new_cell.shift_position(
-                pos,
+                pos, 
+                self.space.light_lattice[pos],
                 true,
                 &self.space.bound
             );
             mom_clone.shift_position(
                 pos,
+                self.space.light_lattice[pos],
                 false,
                 &self.space.bound
             );

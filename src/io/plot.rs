@@ -101,6 +101,25 @@ impl Plot for CenterPlot<'_> {
     }
 }
 
+pub struct LightCenterPlot<'e> {
+    pub env: &'e Environment,
+    pub color: Srgb<u8>
+}
+
+impl Plot for LightCenterPlot<'_> {
+    fn plot(&self, image: &mut RgbaImage) {
+        for cell in &self.env.cells {
+            let center = self.env.space.lat_bound.valid_pos(Pos::new(
+                cell.light_center.x as isize,
+                cell.light_center.y as isize,
+            ));
+            if let Some(pos) = center {
+                draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
+            }
+        }
+    }
+}
+
 pub struct ClonesPlot<'a> {
     pub env: &'a Environment,
     pub clone_pairs: &'a SpinTable<bool>,
