@@ -1,7 +1,7 @@
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::positional::boundary::Boundary;
-use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
+use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
 
 /// Represents a cell that is bound to an `Environment`.
