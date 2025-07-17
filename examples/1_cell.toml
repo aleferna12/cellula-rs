@@ -41,8 +41,8 @@ div-area = 128
 # [default = true]
 divide = true
 # Set to `false` to disable migration.
-# [default = false]
-migrate = false
+# [default = true]
+migrate = true
 
 [cellular-automata]
 # Boltzmann temperature.

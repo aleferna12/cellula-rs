@@ -17,7 +17,7 @@ update-period = 32
 target-area = 64
 div-area = 128
 divide = true
-migrate = false
+migrate = true
 
 [cellular-automata]
 boltz-t = 16.0
