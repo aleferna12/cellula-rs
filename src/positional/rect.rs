@@ -1,6 +1,6 @@
-use std::ops::AddAssign;
-use num::{Integer, Num};
 use crate::positional::pos::Pos;
+use num::{Integer, Num};
+use std::ops::AddAssign;
 
 #[derive(Clone, Debug)]
 pub struct Rect<T> {

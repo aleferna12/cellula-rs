@@ -1,5 +1,5 @@
-use std::ops::{Index, IndexMut};
 use crate::constants::Spin;
+use std::ops::{Index, IndexMut};
 
 pub struct SpinTable<T> {
     array: Box<[T]>,

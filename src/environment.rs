@@ -1,21 +1,19 @@
-use rand::Rng;
-use crate::cell::{RelCell, Cell};
+use crate::cell::{Cell, RelCell};
 use crate::cell_container::CellContainer;
-use crate::constants::{LatticeBoundaryType, SpaceType, Spin};
+use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
-use crate::lattice::{CellLattice, Lattice};
 use crate::io::parameters::{CellParameters, EnvironmentParameters};
-use crate::positional::boundary::{Boundary, UnsafePeriodicBoundary};
+use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
 use crate::positional::rect::Rect;
+use crate::space::Space;
+use rand::Rng;
 
 pub struct Environment {
-    pub space: SpaceType,
-    pub cell_lattice: CellLattice<LatticeBoundaryType>,
-    pub light_lattice: Lattice<usize, LatticeBoundaryType>,
+    pub space: Space,
     pub cells: CellContainer,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
@@ -46,7 +44,7 @@ impl Environment {
         let mut cell_count = 0;
         let cell_side = (params.cell_start_area as f32).sqrt() as usize;
         for _ in 0..params.starting_cells {
-            let pos = env.cell_lattice.random_pos(rng);
+            let pos = env.space.cell_lattice.random_pos(rng);
             let cell = env.spawn_rect_cell(
                 Rect::new(
                     pos,
@@ -62,7 +60,7 @@ impl Environment {
         log::info!("Initialising light gradient");
         for row in 0..env.height() {
             for col in 0..env.width() {
-                env.light_lattice[(col, row).into()] = row;
+                env.space.light_lattice[(col, row).into()] = row;
             } 
         }
         
@@ -78,19 +76,8 @@ impl Environment {
         max_cells: Spin,
         cell_parameters: CellParameters
     ) -> Self {
-        let rect = Rect::new(
-            (0, 0).into(),
-            (width as isize, height as isize).into()
-        );
-        let bound = LatticeBoundaryType::new(rect);
-        
         Self {
-            space: UnsafePeriodicBoundary::new(Rect::new(
-                (0., 0.).into(),
-                (width as f32, height as f32).into()
-            )),
-            cell_lattice: CellLattice::new(bound.clone()),
-            light_lattice: Lattice::new(bound),
+            space: Space::new(width, height),
             cells: CellContainer::from(cell_parameters),
             edge_book: EdgeBook::new(),
             neighbourhood: MooreNeighbourhood::new(neigh_r),
@@ -126,16 +113,16 @@ impl Environment {
     }
     
     pub fn width(&self) -> usize {
-        self.cell_lattice.width()
+        self.space.cell_lattice.width()
     }
 
     pub fn height(&self) -> usize {
-        self.cell_lattice.height()
+        self.space.cell_lattice.height()
     }
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
-        let center = self.cell_lattice.bound.valid_pos(Pos::new(
+        let center = self.space.lat_bound.valid_pos(Pos::new(
             rect.min.x as isize,
             rect.min.y as isize
         ))?;
@@ -150,17 +137,17 @@ impl Environment {
         );
         
         for pos in rect.iter_positions() {
-            let trans_pos = self.cell_lattice.bound.valid_pos(pos.into());
+            let trans_pos = self.space.lat_bound.valid_pos(pos.into());
             if trans_pos.is_none() {
                 continue;
             }
             let valid_pos: Pos<usize> = trans_pos.unwrap().into();
-            if self.cell_lattice[valid_pos] != Medium.spin() {
+            if self.space.cell_lattice[valid_pos] != Medium.spin() {
                 continue
             }
-            self.cell_lattice[valid_pos] = spin;
+            self.space.cell_lattice[valid_pos] = spin;
             self.update_edges(valid_pos);
-            cell.shift_position(pos, true, &self.space);
+            cell.shift_position(pos, true, &self.space.bound);
         }
         if cell.area == 0 { 
             return None;
@@ -172,10 +159,10 @@ impl Environment {
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
-            if self.cell_lattice[pos] != Medium.spin() {
+            if self.space.cell_lattice[pos] != Medium.spin() {
                 continue
             }
-            self.cell_lattice[pos] = Solid.spin();
+            self.space.cell_lattice[pos] = Solid.spin();
             area += 1;
         }
         area
@@ -206,14 +193,15 @@ impl Environment {
     pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
-        let spin = self.cell_lattice[pos];
-        let valid_neighs = self.cell_lattice
-            .bound
+        let spin = self.space.cell_lattice[pos];
+        let valid_neighs = self
+            .space
+            .lat_bound
             .valid_positions(self.neighbourhood.neighbours(pos.into()))
             .map(|neigh| neigh.into());
         for neigh in valid_neighs {
             let edge = Edge::new(pos, neigh);
-            let spin_neigh = self.cell_lattice[neigh];
+            let spin_neigh = self.space.cell_lattice[neigh];
             if spin == spin_neigh {
                 self.edge_book.remove(&edge);
                 // Also representing the inverse edge
@@ -281,14 +269,14 @@ impl Environment {
             WrappedPos::default()
         );
         let new_positions: Vec<_> = self
-            .cell_lattice
+            .space
             .box_cell_positions(mom_cell, self.cell_search_radius)
             .into_iter()
             .filter(|pos| { 
                 let proj = AngularProjection::from_pos(
                     Pos::new(pos.x as f32, pos.y as f32),
-                    self.cell_lattice.width(),
-                    self.cell_lattice.height()
+                    self.space.cell_lattice.width(),
+                    self.space.cell_lattice.height()
                 );
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
@@ -300,16 +288,16 @@ impl Environment {
             if mom_cell.area == 1 {
                 return Err(DivisionError::NewCellTooBig);
             }
-            self.cell_lattice[pos] = new_spin;
+            self.space.cell_lattice[pos] = new_spin;
             new_cell.shift_position(
                 pos,
                 true,
-                &self.space
+                &self.space.bound
             );
             mom_clone.shift_position(
                 pos,
                 false,
-                &self.space
+                &self.space.bound
             );
         }
         if new_cell.area > 0 {
@@ -413,11 +401,11 @@ pub mod tests {
         let cell2 = entity2.unwrap_cell();
         assert_eq!(cell2.area, 75);
         assert_eq!(
-            env.cell_lattice.contiguous_cell_positions(cell2, &env.neighbourhood).len(),
+            env.space.contiguous_cell_positions(cell2, &env.neighbourhood).len(),
             75
         );
         assert_eq!(
-            env.cell_lattice.box_cell_positions(cell2, 2.).len(),
+            env.space.box_cell_positions(cell2, 2.).len(),
             75
         );
     }

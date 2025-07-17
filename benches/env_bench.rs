@@ -16,18 +16,18 @@ fn random_neighbour(env: &Environment, p: Pos<usize>, neigh_r: u8, rng: &mut imp
     let dist = neigh_r as i32;
     while oldp == newp {
         newp.0 = oldp.0 + rng.random_range(
-            -min(dist, oldp.0)..min(dist + 1, env.cell_lattice.width() as i32 - oldp.0)
+            -min(dist, oldp.0)..min(dist + 1, env.space.cell_lattice.width() as i32 - oldp.0)
         );
         newp.1 = oldp.1 + rng.random_range(
-            -min(dist, oldp.1)..min(dist + 1, env.cell_lattice.height() as i32 - oldp.1)
+            -min(dist, oldp.1)..min(dist + 1, env.space.cell_lattice.height() as i32 - oldp.1)
         );
     }
     Pos::new(newp.0 as usize, newp.1 as usize)
 }
 
 fn add_random_edge(env: &mut Environment, rng: &mut impl Rng) -> bool {
-    let p1 = env.cell_lattice.random_pos(rng);
-    let e = Edge::new(p1, random_neighbour(&env, p1, 1, rng));
+    let p1 = env.space.cell_lattice.random_pos(rng);
+    let e = Edge::new(p1, random_neighbour(env, p1, 1, rng));
     env.edge_book.insert(e)
 }
 
@@ -52,7 +52,7 @@ fn bench_env(c: &mut Criterion) {
             || {
                 let mut env = Environment::new_empty_test(100, 100);
                 let mut rng = Xoshiro256StarStar::seed_from_u64(1241254152);
-                for _ in 0..env.cell_lattice.width() * env.cell_lattice.height() / 2 {
+                for _ in 0..env.space.cell_lattice.width() * env.space.cell_lattice.height() / 2 {
                     add_random_edge(&mut env, &mut rng);
                 }
                 (env, rng)
@@ -74,7 +74,7 @@ fn bench_env(c: &mut Criterion) {
         b.iter(|| {
             let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
             assert_eq!(
-                env.cell_lattice.contiguous_cell_positions(cell, &env.neighbourhood).len(),
+                env.space.contiguous_cell_positions(cell, &env.neighbourhood).len(),
                 cell.area as usize
             );
         })
@@ -83,7 +83,7 @@ fn bench_env(c: &mut Criterion) {
         b.iter(|| {
             let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
             assert_eq!(
-                env.cell_lattice.box_cell_positions(cell, 2.).len(),
+                env.space.box_cell_positions(cell, 2.).len(),
                 cell.area as usize
             );
         })

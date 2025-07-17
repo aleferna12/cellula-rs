@@ -1,7 +1,7 @@
-use std::ops::Index;
+use crate::positional::edge::Edge;
 use indexmap::IndexSet;
 use rand::Rng;
-use crate::positional::edge::Edge;
+use std::ops::Index;
 
 /// This struct exists to book-keep the edges in a lattice.
 pub struct EdgeBook {

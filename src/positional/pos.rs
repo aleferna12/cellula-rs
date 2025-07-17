@@ -1,5 +1,5 @@
-use std::f32::consts::TAU;
 use fast_math::atan2;
+use std::f32::consts::TAU;
 
 /// 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]

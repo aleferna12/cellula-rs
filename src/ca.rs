@@ -59,22 +59,22 @@ impl<A: AdhesionSystem> Ca<A> {
         pos_from: Pos<usize>,
         pos_to: Pos<usize>
     ) -> f32 {
-        let spin_to = env.cell_lattice.lat[pos_to];
+        let spin_to = env.space.cell_lattice[pos_to];
         if spin_to == Solid.spin() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_from = {
-            let spin = env.cell_lattice.lat[pos_from];
+            let spin = env.space.cell_lattice[pos_from];
             if spin == Solid.spin() { Medium.spin() } else { spin }
         };
 
         let entity_from = env.cells.get_entity(spin_from);
         let entity_to = env.cells.get_entity(spin_to);
-        let neigh_entities = env.cell_lattice.lat.bound.valid_positions(
+        let neigh_entities = env.space.lat_bound.valid_positions(
             env.neighbourhood.neighbours(pos_to.into())
         ).map(|neigh| {
-            env.cells.get_entity(env.cell_lattice.lat[Pos::<usize>::from(neigh)])
+            env.cells.get_entity(env.space.cell_lattice[Pos::<usize>::from(neigh)])
         });
         
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
@@ -88,12 +88,12 @@ impl<A: AdhesionSystem> Ca<A> {
         }
         
         // Executes the copy
-        env.cell_lattice.lat[pos_to] = spin_from;
+        env.space.cell_lattice[pos_to] = spin_from;
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_from) {
-            cell.shift_position(pos_to, true, &env.space);
+            cell.shift_position(pos_to, true, &env.space.bound);
         }
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_to) {
-            cell.shift_position(pos_to, false, &env.space);
+            cell.shift_position(pos_to, false, &env.space.bound);
         }
         let (removed, added) = env.update_edges(pos_to);
         (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32

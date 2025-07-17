@@ -1,4 +1,4 @@
-use crate::cell::{RelCell, Cell};
+use crate::cell::{Cell, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};

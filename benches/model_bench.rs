@@ -13,7 +13,7 @@ fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {
         .filter_map(|entry| match entry {
             Ok(e) => {
                 let p = e.path();
-                if !p.is_file() || p.extension().unwrap().to_ascii_lowercase() != "toml" {
+                if !p.is_file() || !p.extension().unwrap().eq_ignore_ascii_case("toml") {
                     return None;
                 }
                 let bench_name = p.file_stem()
@@ -41,7 +41,7 @@ fn bench_param_files(
     let parent_dir = parent_dir.as_ref();
     for (file_name, parameters) in find_parameters(parent_dir) {
         c.bench_with_input(
-            BenchmarkId::new(function_prefix, format!("{}/{}mcs", file_name, time_steps)),
+            BenchmarkId::new(function_prefix, format!("{file_name}/{time_steps}mcs")),
             &parameters,
             |b, parameters| {
                 b.iter_batched_ref(

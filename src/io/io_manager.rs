@@ -1,12 +1,12 @@
-use std::error::Error;
-use std::path::PathBuf;
-use image::imageops::flip_vertical_in_place;
-use image::RgbaImage;
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
 use crate::io::plot::{hex_to_srgb, AreaPlot, BorderPlot, CenterPlot, ClonesPlot, LightPlot, Plot, SpinPlot};
 use crate::spin_table::SpinTable;
+use image::imageops::flip_vertical_in_place;
+use image::RgbaImage;
+use std::error::Error;
+use std::path::PathBuf;
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -77,7 +77,7 @@ impl IoManager {
                         ).expect("`solid-color` is not a valid rgb"),
                         medium_color: match &self.plots.medium_color { 
                             None => None,
-                            Some(c) => Some(hex_to_srgb(&c)?)
+                            Some(c) => Some(hex_to_srgb(c)?)
                         }
                     }.plot(&mut image)
                 }

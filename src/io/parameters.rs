@@ -1,7 +1,7 @@
-use std::path::Path;
+use crate::constants::Spin;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
-use crate::constants::Spin;
+use std::path::Path;
 
 static CLI_NOTES: &str = "\
     Model parameters are loaded from a TOML file specified by CONFIG.\n\
@@ -177,7 +177,7 @@ mod param_defaults {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_from_file() -> Result<(), config::ConfigError> {
         Parameters::parse("examples/64_cells.toml")?;

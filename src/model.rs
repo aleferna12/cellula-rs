@@ -1,11 +1,11 @@
-use std::error::Error;
-use rand::SeedableRng;
-use rand_xoshiro::Xoshiro256StarStar;
-use crate::adhesion::{ClonalAdhesion};
+use crate::adhesion::ClonalAdhesion;
 use crate::ca::Ca;
 use crate::environment::Environment;
 use crate::io::io_manager::IoManager;
 use crate::io::parameters::Parameters;
+use rand::SeedableRng;
+use rand_xoshiro::Xoshiro256StarStar;
+use std::error::Error;
 
 pub struct Model {
     pub env: Environment,

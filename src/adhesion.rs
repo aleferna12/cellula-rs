@@ -1,10 +1,10 @@
-use std::collections::HashSet;
 use crate::cell::RelCell;
 use crate::constants::Spin;
-use crate::environment::{Environment, LatticeEntity};
 use crate::environment::LatticeEntity::*;
+use crate::environment::{Environment, LatticeEntity};
 use crate::io::parameters::StaticAdhesionParameters;
 use crate::spin_table::SpinTable;
+use std::collections::HashSet;
 
 pub trait AdhesionSystem {
     // This arguably should receive info about which specific site is being copied 
@@ -43,14 +43,14 @@ impl ClonalAdhesion {
         }
         
         let cell = entity.unwrap_cell();
-        let cell_neighs = env.cell_lattice.cell_neighbours(
+        let cell_neighs = env.space.cell_neighbours(
             cell,
             env.cell_search_radius,
             &env.neighbourhood
         );
         
         let mom_cell = env.cells.get_entity(cell.mom).expect_cell("cell's mom is not a cell");
-        let mom_neighs = env.cell_lattice.cell_neighbours(
+        let mom_neighs = env.space.cell_neighbours(
             mom_cell,
             env.cell_search_radius,
             &env.neighbourhood

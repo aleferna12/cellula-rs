@@ -1,6 +1,6 @@
+use crate::positional::pos::Pos;
 use std::hash::{Hash, Hasher};
 use std::mem;
-use crate::positional::pos::Pos;
 
 #[derive(Debug)]
 pub enum EdgeError {

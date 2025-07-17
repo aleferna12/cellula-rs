@@ -1,16 +1,16 @@
-use image::{Rgba, RgbaImage};
-use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
-use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
-use std::error::Error;
-use std::fmt::{Debug};
-use std::hash::{DefaultHasher, Hash, Hasher};
-use thiserror::Error;
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin_table::SpinTable;
+use image::{Rgba, RgbaImage};
+use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
+use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
+use std::error::Error;
+use std::fmt::Debug;
+use std::hash::{DefaultHasher, Hash, Hasher};
+use thiserror::Error;
 
 pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);
@@ -66,8 +66,8 @@ impl<'e> SpinPlot<'e> {
 
 impl Plot for SpinPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.cell_lattice.iter_positions() {
-            let spin = self.env.cell_lattice[pos];
+        for pos in self.env.space.cell_lattice.iter_positions() {
+            let spin = self.env.space.cell_lattice[pos];
             let rgb = if spin > LatticeEntity::first_cell_spin() {
                 Some(Self::spin_to_rgb(spin))
             } else if spin == LatticeEntity::Solid.spin() {
@@ -90,7 +90,7 @@ pub struct CenterPlot<'e> {
 impl Plot for CenterPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
-            let center = self.env.cell_lattice.bound.valid_pos(Pos::new(
+            let center = self.env.space.lat_bound.valid_pos(Pos::new(
                 cell.center.pos().x as isize,
                 cell.center.pos().y as isize,
             ));
@@ -155,8 +155,8 @@ impl Plot for AreaPlot<'_> {
             }
         }
         // TODO: might be faster to iterate cells instead
-        for pos in self.env.cell_lattice.iter_positions() {
-            let entity = self.env.cells.get_entity(self.env.cell_lattice[pos]);
+        for pos in self.env.space.cell_lattice.iter_positions() {
+            let entity = self.env.cells.get_entity(self.env.space.cell_lattice[pos]);
             if let LatticeEntity::SomeCell(cell) = entity {
                 let color = self.lerp(
                     cell.area as f32,
@@ -193,17 +193,17 @@ pub struct BorderPlot<'e> {
 
 impl Plot for BorderPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.cell_lattice.iter_positions() {
-            let spin = self.env.cell_lattice[pos];
+        for pos in self.env.space.cell_lattice.iter_positions() {
+            let spin = self.env.space.cell_lattice[pos];
             if spin < LatticeEntity::first_cell_spin() {
                 continue
             }
             let is_border = self.env
-                .cell_lattice
-                .bound
+                .space
+                .lat_bound
                 .valid_positions(self.env.neighbourhood.neighbours(Pos::from(pos)))
                 .any(|neigh| {
-                    let neigh_spin = self.env.cell_lattice[Pos::from(neigh)];
+                    let neigh_spin = self.env.space.cell_lattice[Pos::from(neigh)];
                     neigh_spin != spin
                 });
             if is_border {
@@ -221,8 +221,8 @@ pub struct LightPlot<'e> {
 
 impl Plot for LightPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.light_lattice.iter_positions() {
-            let light = self.env.light_lattice[pos];
+        for pos in self.env.space.light_lattice.iter_positions() {
+            let light = self.env.space.light_lattice[pos];
             let color = self.lerp(
                 light as f32,
                 0.,
