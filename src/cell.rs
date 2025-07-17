@@ -86,10 +86,10 @@ impl Cell {
 
         let center_pos = self.center.pos;
         let (dx, dy) = bound.displacement(center_pos, Pos::new(pos.x as f32, pos.y as f32));
-        // TODO! work this into Boundary
-        let x = (center_pos.x + dx * shift / new_mass).rem_euclid(bound.rect().width());
-        let y = (center_pos.y + dy * shift / new_mass).rem_euclid(bound.rect().height());
-        let new_center = Pos::new(x, y);
+        let new_center = bound.valid_pos(Pos::new(
+            center_pos.x + dx * shift / new_mass,
+            center_pos.y + dy * shift / new_mass
+        )).expect("Shifted the center to outside the available space");
         self.center = WrappedPos::new(new_center, AngularProjection::from_pos(
             new_center,
             bound.rect().width() as usize,
