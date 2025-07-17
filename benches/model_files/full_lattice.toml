@@ -1,103 +1,55 @@
 [general]
-# How many MCS the simulation will run for.
 time-steps = 2048
-# Seed for the RNG.
-# Use `0` to pick a random seed.
 seed = 1241254152
 
-[io]
-# Output directory for files.
-outdir = "benches/model_outputs/full_lattice"
-# Flag used to delete contents of `outdir` if it exists.
-replace-outdir = true
-# Period (in MCS) with which to save an image of the simulation.
-image-period = 2048
-
-[io.plots]
-# Defines which plots to make and in what order.
-# Options are:
-#   - "spin":   Plots lattice spins.
-#   - "center": Plots cell centers.
-#   - "clones": Plots will cells are attached.
-#   - "border": Plots cell borders.
-#   - "light":  Plots the light gradient.
-order = ["spin"]
-# With which color to plot solid objects.
-solid-color = "#000000"
-# With which color to plot the medium.
-# Ommit to make the medium transparent.
-# medium-color = "#ffffff"
-# With which color to plot the centers of cells.
-center-color = "#00ff00"
-# With which color to plot the border of cells.
-border-color = "#000000"
-# With which color to plot the connections between cell clones.
-clones-color = "#ff0000"
-# Set to true to display all clone pairs, even those span across the lattice due to periodic boundaries.
-# [default = false]
-all-clones = false
-# With which color to plot the minimum area in the cell population.
-area-min-color = "#ff00ff"
-# With which color to plot the maximum area in the cell population.
-area-max-color = "#ffff00"
-# With which color to plot the minimum value for the light in the environment.
-light-min-color = "#000000"
-# With which color to plot the maximum value for the light in the environment.
-light-max-color = "#ffffff"
-
 [environment]
-# Width of the lattice.
 width = 128
-# Height of the lattice.
 height = 128
-# Whether to create a solid border around the cell lattice.
-# Should not be used with `neigh_r` > 1.
 enclose = false
 neigh-r = 1
-# Number of starting cells in the environment.
 starting-cells = 1024
-# Maximum number of cells allowed in the simulation.
-# Cell division is prevented if it would cause the cell population to exceed this threshold.
 max-cells = 1024
-# Starting cell area.
 cell-start-area = 64
-# How many times the cell putative radius will be scaled when searching for the cell's positions.
-# Decreasing this parameter improves performance but may lead to critical warnings reporting that not
-# cell postitions could be found.
 cell-search-radius = 2.5
-# Period (in MCS) with which the environment is updated.
-# This includes cell growth (by 1 area unit), genomic parameters, and reproduction.
 update-period = 32
 
 [environment.cell]
-# Target cell area.
 target-area = 64
-# Cell area before division.
 div-area = 128
-# Set to `false` to disable division.
-# [default = true]
 divide = true
+migrate = false
 
 [cellular-automata]
-# Boltzmann temperature.
-# Increases likelihood of unfavourable copy attempts being accepted.
-boltz-t = 16
-# Scaler constant for area deviation penalties.
-size-lambda = 1
-# Scaler constant for chemotaxis bias.
-chemotaxis-mu = 4
+boltz-t = 16.0
+size-lambda = 1.0
+chemotaxis-mu = 4.0
 
 [cellular-automata.adhesion]
-type = "static-adhesion"
-# Adhesion energy at cell-cell interfaces.
-cell-energy = 16
-# Adhesion energy at cell-medium interfaces.
-medium-energy = 16
-# Adhesion energy at cell-solid interfaces.
-solid-energy = 16
+cell-energy = 16.0
+medium-energy = 16.0
+solid-energy = 16.0
+
+[io]
+outdir = "benches/model_outputs/full_lattice"
+replace-outdir = true
+image-period = 1000
+image-format = "webp"
 
 [io.movie]
 show = false
 width = 320
 height = 320
 frame-period = 50
+
+[io.plots]
+order = ["spin"]
+solid-color = "#000000"
+center-color = "#00ff00"
+light-center-color = "#00ff00"
+clones-color = "#ff0000"
+all-clones = false
+border-color = "#000000"
+area-min-color = "#ff00ff"
+area-max-color = "#ffff00"
+light-min-color = "#000000"
+light-max-color = "#ffffff"

@@ -77,11 +77,12 @@ image-format = "webp"
 [io.plots]
 # Defines which plots to make and in what order.
 # Options are:
-#   - "spin":   Plots lattice spins.
-#   - "center": Plots cell centers.
-#   - "clones": Plots will cells are attached.
-#   - "border": Plots cell borders.
-#   - "light":  Plots the light gradient.
+#   - "spin":         Plots lattice spins.
+#   - "center":       Plots cell centers.
+#   - "clones":       Plots will cells are attached.
+#   - "border":       Plots cell borders.
+#   - "light":        Plots the light gradient.
+#   - "light-center": Plots the perceived center of the light gradient.
 order = ["light", "spin"]
 # With which color to plot solid objects.
 solid-color = "#000000"
