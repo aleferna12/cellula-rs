@@ -123,22 +123,19 @@ impl Plot for ClonesPlot<'_> {
             let cell2 = self.env.cells.get_entity(spin_pair.1).expect_cell(message);
             let center1 = cell1.center;
             let center2 = cell2.center;
-            let mut draw = true;
             if !self.all_clones {
                 let dist2 = (center1.x - center2.x).powf(2.) + (center1.y - center2.y).powf(2.);
-                let mean_area2 = (cell1.area + cell2.area).pow(2);
-                if dist2 > mean_area2 as f32 {
-                    draw = false
+                let diag = self.env.width() * self.env.width() + self.env.height() * self.env.height();
+                if dist2 > diag as f32 / 4. {
+                    continue;
                 }
             }
-            if draw {
-                draw_line_segment_mut(
-                    image,
-                    (center1.x, center1.y),
-                    (center2.x, center2.y),
-                    srgb_to_rgba(self.color)
-                )
-            }
+            draw_line_segment_mut(
+                image,
+                (center1.x, center1.y),
+                (center2.x, center2.y),
+                srgb_to_rgba(self.color)
+            )
         }
     }
 }
