@@ -1,7 +1,8 @@
+use std::ops::Sub;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use num::traits::Euclid;
-use num::{FromPrimitive, Num};
+use num::Num;
 
 pub trait Boundary {
     type Coord;
@@ -13,7 +14,8 @@ pub trait Boundary {
     ///
     /// With fixed boundary conditions, that means filtering invalid positions.
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>>;
-    
+
+    #[inline]
     fn valid_positions(
         &self,
         positions: impl Iterator<Item = Pos<Self::Coord>>
@@ -21,22 +23,38 @@ pub trait Boundary {
         positions.filter_map(|pos| self.valid_pos(pos))
     }
 
-    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord)
-    where
-        Self::Coord: FromPrimitive + Num + Copy + Euclid {
-        let two = Self::Coord::from_u8(2).expect("Cannot convert 2 to T");
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord);
+}
+
+pub trait PeriodicBoundary: Boundary
+where
+    Self::Coord: From<u8> + Num + Copy + Euclid {
+    #[inline]
+    fn periodic_displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
+        let two = Self::Coord::from(2);
         let dx = ((pos2.x - pos1.x + self.rect().width() / two)
             .rem_euclid(&self.rect().width())) - self.rect().width() / two;
         let dy = ((pos2.y - pos1.y + self.rect().height() / two)
             .rem_euclid(&self.rect().height())) - self.rect().height() / two;
         (dx, dy)
     }
-}
 
-pub trait LatticeBoundary: Boundary<Coord = isize> {
+    #[inline]
+    fn periodic_valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
+        let p = Pos::new(
+            Self::wrap_scalar(pos.x, self.rect().min.x, self.rect().max.x),
+            Self::wrap_scalar(pos.y, self.rect().min.y, self.rect().max.y)
+        );
+        Some(p)
+    }
 
-    // TODO!: this can make FixedBoundary quite a lot faster
-    // fn delta_angle();
+    #[inline]
+    fn wrap_scalar(val: Self::Coord, min: Self::Coord, max: Self::Coord) -> Self::Coord {
+        let range = max - min;
+        let mut offset = val - min;
+        offset = offset.rem_euclid(&range);
+        min + offset
+    }
 }
 
 #[derive(Clone)]
@@ -50,13 +68,18 @@ impl<T> FixedBoundary<T> {
     }
 }
 
-impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
+impl<T> Boundary for FixedBoundary<T>
+where 
+    T: PartialOrd 
+        + Copy 
+        + Sub<Output = T> {
     type Coord = T;
 
     fn rect(&self) -> &Rect<T> {
         &self.rect
     }
 
+    #[inline]
     fn valid_pos(&self, pos: Pos<T>) -> Option<Pos<T>> {
         if !(self.rect.min.x..self.rect.max.x).contains(&pos.x) {
             return None;
@@ -66,52 +89,49 @@ impl<T: PartialOrd + Copy> Boundary for FixedBoundary<T> {
         }
         Some(pos)
     }
-}
 
-impl LatticeBoundary for FixedBoundary<isize> {
+    #[inline]
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
+        (pos2.x - pos1.x, pos2.y - pos1.y)
+    }
 }
 
 #[derive(Clone)]
-pub struct PeriodicBoundary<T> {
+pub struct SafePeriodicBoundary<T> {
     rect: Rect<T>
 }
 
-impl<T> PeriodicBoundary<T> {
+impl<T> SafePeriodicBoundary<T>
+where
+    T: Copy + Num + Euclid {
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
 }
 
-impl<T> PeriodicBoundary<T>
+impl<T> Boundary for SafePeriodicBoundary<T>
 where
-    T: Copy + Num + Euclid {
-    fn wrap_scalar(val: T, min: T, max: T) -> T {
-        let range = max - min;
-        let mut offset = val - min;
-        offset = offset.rem_euclid(&range);
-        min + offset
-    }
-}
+    T: Num + Copy + Euclid + From<u8> {
+        type Coord = T;
 
-impl<T> Boundary for PeriodicBoundary<T>
-where
-    T: Copy + Num + Euclid {
-    type Coord = T;
+        fn rect(&self) -> &Rect<T> {
+            &self.rect
+        }
 
-    fn rect(&self) -> &Rect<T> {
-        &self.rect
-    }
-
+    #[inline]
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
-        let p = Pos::new(
-            Self::wrap_scalar(pos.x, self.rect.min.x, self.rect.max.x),
-            Self::wrap_scalar(pos.y, self.rect.min.y, self.rect.max.y)
-        );
-        Some(p)
+        self.periodic_valid_pos(pos)
+    }
+
+    #[inline]
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
+        self.periodic_displacement(pos1, pos2)
     }
 }
 
-impl LatticeBoundary for PeriodicBoundary<isize> {}
+impl<T> PeriodicBoundary for SafePeriodicBoundary<T>
+where
+    T: Num + Copy + Euclid + From<u8> {}
 
 /// This struct can only validate positions that are at most one `width()` or `height()` away from the boundaries.
 ///
@@ -133,44 +153,40 @@ where
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
-
-    pub fn wrap_scalar(&self, val: T, min: T, max: T) -> T {
-        if val < min {
-            max - (min - val)
-        } else if val >= max {
-            min + (val - max)
-        } else {
-            val
-        }
-    }
 }
 
 impl<T> Boundary for UnsafePeriodicBoundary<T>
 where
-    T: Copy + Num + Euclid + PartialOrd {
+    T: Num + Copy + Euclid + From<u8> {
     type Coord = T;
 
-    fn rect(&self) -> &Rect<Self::Coord> {
+    fn rect(&self) -> &Rect<T> {
         &self.rect
     }
-
+    
+    #[inline]
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
-        Some(Pos::new(
-            self.wrap_scalar(pos.x, self.rect().min.x, self.rect().max.x),
-            self.wrap_scalar(pos.y, self.rect().min.y, self.rect().max.y)
-        ))
+        self.periodic_valid_pos(pos)
+    }
+
+    #[inline]
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
+        self.periodic_displacement(pos1, pos2)
     }
 }
 
-impl LatticeBoundary for UnsafePeriodicBoundary<isize> {}
+impl<T> PeriodicBoundary for UnsafePeriodicBoundary<T>
+where
+    T: Num + Copy + Euclid + From<u8> {
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_periodic_boundary() {
-        let per = PeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));
+    fn test_safe_periodic_boundary() {
+        let per = SafePeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));
         assert_eq!(per.valid_pos((1, 1).into()).unwrap(), (1, 1).into());
         assert_eq!(per.valid_pos((-1, -1).into()).unwrap(), (9, 9).into());
         assert_eq!(per.valid_pos((10, 10).into()).unwrap(), (0, 0).into());
