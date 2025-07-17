@@ -112,13 +112,43 @@ fn shifted_com<B: Boundary<Coord = f32>>(
     if new_mass <= 0. { 
         return None;
     }
-
     let (dx, dy) = bound.displacement(com, Pos::new(pos.x as f32, pos.y as f32));
-    // We call this to rewrap the position if necessary
-    let shifted_pos = Pos::new(com.x + dx, com.y + dy);
     let new_com = Pos::new(
-        (com.x * com_mass + shifted_pos.x * added_mass) / new_mass,
-        (com.y * com_mass + shifted_pos.y * added_mass) / new_mass,
+        com.x + dx * added_mass / new_mass,
+        com.y + dy * added_mass / new_mass,
     );
+    // We call this to rewrap the position if necessary
     bound.valid_pos(new_com).expect("Shifted the center to outside the available space").into()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cell::Cell;
+    use crate::positional::boundary::UnsafePeriodicBoundary;
+    use crate::positional::pos::Pos;
+    use crate::positional::rect::Rect;
+
+    #[test]
+    fn test_shift_position_light_center() {
+        let bound = UnsafePeriodicBoundary::new(Rect::new(
+            (0., 0.).into(),
+            (50., 50.).into()
+        )); // or some test boundary
+        let mut cell = Cell::new(100);
+
+        // Add light at (2, 3) with value 10
+        cell.shift_position(Pos::new(2, 3), 10, true, &bound);
+        assert_eq!(cell.light_mass, 10);
+        assert_eq!(cell.light_center, Pos::new(2., 3.));
+
+        // Add light at (4, 5) with value 10
+        cell.shift_position(Pos::new(4, 5), 10, true, &bound);
+        assert_eq!(cell.light_mass, 20);
+        assert_eq!(cell.light_center, Pos::new(3., 4.)); // should be average
+
+        // Remove (2, 3)
+        cell.shift_position(Pos::new(2, 3), 10, false, &bound);
+        assert_eq!(cell.light_mass, 10);
+        assert_eq!(cell.light_center, Pos::new(4., 5.));
+    }
 }

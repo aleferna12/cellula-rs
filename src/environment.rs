@@ -125,17 +125,20 @@ impl Environment {
         let mut cell = Cell::new(self.cells.target_area);
         
         for pos in rect.iter_positions() {
-            let trans_pos = self.space.lat_bound.valid_pos(pos.into());
-            if trans_pos.is_none() {
-                continue;
+            if let Some(valid_pos) = self.space.lat_bound.valid_pos(pos.into()) {
+                let lat_pos = valid_pos.into();
+                if self.space.cell_lattice[lat_pos] != Medium.spin() {
+                    continue
+                }
+                self.space.cell_lattice[lat_pos] = spin;
+                self.update_edges(lat_pos);
+                cell.shift_position(
+                    lat_pos, 
+                    self.space.light_lattice[lat_pos], 
+                    true,
+                    &self.space.bound
+                );
             }
-            let valid_pos: Pos<usize> = trans_pos.unwrap().into();
-            if self.space.cell_lattice[valid_pos] != Medium.spin() {
-                continue
-            }
-            self.space.cell_lattice[valid_pos] = spin;
-            self.update_edges(valid_pos);
-            cell.shift_position(pos, self.space.light_lattice[valid_pos], true, &self.space.bound);
         }
         if cell.area == 0 { 
             return None;
@@ -395,5 +398,21 @@ pub mod tests {
     fn test_lattice_entity_spin() {
         assert!(LatticeEntity::first_cell_spin() > Medium.spin());
         assert!(LatticeEntity::first_cell_spin() > Solid.spin());
+    }
+
+    #[test]
+    fn test_light_center_above_center() {
+        let mut env = Environment::new_empty_test(100, 100);
+
+        for row in 0..100 {
+            for col in 0..100 {
+                env.space.light_lattice[(col, row).into()] = row as u32;
+            }
+        }
+
+        env.spawn_rect_cell(Rect::new(Pos::new(40, 40), Pos::new(50, 50)));
+
+        let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
+        assert!(cell.light_center.y > cell.center.y);
     }
 }
