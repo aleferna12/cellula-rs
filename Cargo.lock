@@ -636,7 +636,6 @@ dependencies = [
  "image",
  "imageproc",
  "indexmap",
- "lebe",
  "log",
  "minifb",
  "num",

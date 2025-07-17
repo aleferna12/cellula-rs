@@ -9,6 +9,7 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
 use std::hint::black_box;
+use evo_cpm::positional::boundary::{Boundary, UnsafePeriodicBoundary};
 
 fn random_neighbour(env: &Environment, p: Pos<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos<usize> {
     let oldp = (p.x as i32, p.y as i32);
@@ -63,6 +64,26 @@ fn bench_env(c: &mut Criterion) {
                 black_box(rng)
             ),
             BatchSize::SmallInput
+        );
+    });
+    
+    let pos_usize: [Pos<isize>; 2] = [Pos::new(20, 20), Pos::new(-20, -20)];
+    let lat_bound = UnsafePeriodicBoundary::new(Rect::new((0, 0).into(), (40, 40).into()));
+    c.bench_function("unsafe_periodic_boundary_usize", |b| {
+        b.iter(
+            || {
+                lat_bound.valid_positions(pos_usize.into_iter())
+            }
+        );
+    });
+
+    let pos_usize: [Pos<f32>; 2] = [Pos::new(20., 20.), Pos::new(-20., -20.)];
+    let lat_bound = UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (40., 40.).into()));
+    c.bench_function("unsafe_periodic_boundary_f32", |b| {
+        b.iter(
+            || {
+                lat_bound.valid_positions(pos_usize.into_iter())
+            }
         );
     });
 
