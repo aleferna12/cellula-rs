@@ -7,29 +7,53 @@ use num::Num;
 pub trait Boundary {
     type Coord;
 
+    /// Expose the boundary as a `Rect`.
     fn rect(&self) -> &Rect<Self::Coord>;
 
+    /// Validates that positions are in bounds.
+    ///
+    /// With fixed boundary conditions, that means filtering invalid positions.
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>>;
 
-    #[inline]
+    #[inline(always)]
     fn valid_positions(
         &self,
-        positions: impl Iterator<Item = Pos<Self::Coord>>,
+        positions: impl Iterator<Item = Pos<Self::Coord>>
     ) -> impl Iterator<Item = Pos<Self::Coord>> {
         positions.filter_map(|pos| self.valid_pos(pos))
     }
 
-    fn displacement(
-        &self,
-        pos1: Pos<Self::Coord>,
-        pos2: Pos<Self::Coord>,
-    ) -> (Self::Coord, Self::Coord);
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord);
 }
 
-/// Fixed boundary with clamped positions.
+pub trait PeriodicBoundary: Boundary
+where
+    Self::Coord: From<u8> + Num + Copy + Euclid {
+    #[inline(always)]
+    fn periodic_displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
+        let two = Self::Coord::from(2);
+        let dx = ((pos2.x - pos1.x + self.rect().width() / two)
+            .rem_euclid(&self.rect().width())) - self.rect().width() / two;
+        let dy = ((pos2.y - pos1.y + self.rect().height() / two)
+            .rem_euclid(&self.rect().height())) - self.rect().height() / two;
+        (dx, dy)
+    }
+
+    #[inline(always)]
+    fn periodic_valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
+        let p = Pos::new(
+            Self::wrap_scalar(pos.x, self.rect().min.x, self.rect().max.x),
+            Self::wrap_scalar(pos.y, self.rect().min.y, self.rect().max.y)
+        );
+        Some(p)
+    }
+
+    fn wrap_scalar(val: Self::Coord, min: Self::Coord, max: Self::Coord) -> Self::Coord;
+}
+
 #[derive(Clone)]
 pub struct FixedBoundary<T> {
-    rect: Rect<T>,
+    rect: Rect<T>
 }
 
 impl<T> FixedBoundary<T> {
@@ -40,99 +64,127 @@ impl<T> FixedBoundary<T> {
 
 impl<T> Boundary for FixedBoundary<T>
 where
-    T: PartialOrd + Copy + Sub<Output = T> {
+    T: PartialOrd
+    + Copy
+    + Sub<Output = T> {
     type Coord = T;
 
+    #[inline(always)]
     fn rect(&self) -> &Rect<T> {
         &self.rect
     }
 
-    #[inline]
+    #[inline(always)]
     fn valid_pos(&self, pos: Pos<T>) -> Option<Pos<T>> {
         if !(self.rect.min.x..self.rect.max.x).contains(&pos.x) {
             return None;
         }
         if !(self.rect.min.y..self.rect.max.y).contains(&pos.y) {
-            return None;
+            return None
         }
         Some(pos)
     }
 
-    #[inline]
-    fn displacement(&self, pos1: Pos<T>, pos2: Pos<T>) -> (T, T) {
+    #[inline(always)]
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
         (pos2.x - pos1.x, pos2.y - pos1.y)
     }
 }
 
-/// Safe periodic boundary: always wraps.
 #[derive(Clone)]
 pub struct SafePeriodicBoundary<T> {
-    rect: Rect<T>,
+    rect: Rect<T>
 }
 
 impl<T> SafePeriodicBoundary<T>
 where
-    T: Copy + Num + Euclid + From<u8> {
+    T: Copy + Num + Euclid {
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
-    }
-
-    #[inline]
-    fn wrap_scalar(val: T, min: T, max: T) -> T {
-        let range = max - min;
-        let offset = (val - min).rem_euclid(&range);
-        min + offset
-    }
-
-    #[inline]
-    fn periodic_displacement(&self, pos1: Pos<T>, pos2: Pos<T>) -> (T, T) {
-        let two = T::from(2);
-        let w = self.rect.width();
-        let h = self.rect.height();
-        let dx = ((pos2.x - pos1.x + w / two).rem_euclid(&w)) - w / two;
-        let dy = ((pos2.y - pos1.y + h / two).rem_euclid(&h)) - h / two;
-        (dx, dy)
     }
 }
 
 impl<T> Boundary for SafePeriodicBoundary<T>
 where
-    T: Copy + Num + Euclid + From<u8> {
+    T: Num + Copy + Euclid + From<u8> {
     type Coord = T;
 
+    #[inline(always)]
     fn rect(&self) -> &Rect<T> {
         &self.rect
     }
 
-    #[inline]
-    fn valid_pos(&self, pos: Pos<T>) -> Option<Pos<T>> {
-        Some(Pos::new(
-            Self::wrap_scalar(pos.x, self.rect.min.x, self.rect.max.x),
-            Self::wrap_scalar(pos.y, self.rect.min.y, self.rect.max.y),
-        ))
+    #[inline(always)]
+    fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
+        self.periodic_valid_pos(pos)
     }
 
-    #[inline]
-    fn displacement(&self, pos1: Pos<T>, pos2: Pos<T>) -> (T, T) {
+    #[inline(always)]
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
         self.periodic_displacement(pos1, pos2)
     }
 }
 
-/// Unsafe version of periodic boundary — assumes positions are close.
+impl<T> PeriodicBoundary for SafePeriodicBoundary<T>
+where
+    T: Num + Copy + Euclid + From<u8> {
+    #[inline(always)]
+    fn wrap_scalar(val: Self::Coord, min: Self::Coord, max: Self::Coord) -> Self::Coord {
+        let range = max - min;
+        let mut offset = val - min;
+        offset = offset.rem_euclid(&range);
+        min + offset
+    }
+}
+
+/// This struct can only validate positions that are at most one `width()` or `height()` away from the boundaries.
+///
+/// <div class="warning">
+///
+/// Only use when you are confident that all input positions are close to the boundary.
+///
+/// </div>
 #[derive(Clone)]
 pub struct UnsafePeriodicBoundary<T> {
-    rect: Rect<T>,
+    rect: Rect<T>
 }
 
 impl<T> UnsafePeriodicBoundary<T>
 where
-    T: Copy + Num + PartialOrd {
+    T: Copy
+    + Num
+    + PartialOrd {
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
+}
 
-    #[inline]
-    fn wrap_scalar(&self, val: T, min: T, max: T) -> T {
+impl<T> Boundary for UnsafePeriodicBoundary<T>
+where
+    T: Num + Copy + Euclid + From<u8> + PartialOrd {
+    type Coord = T;
+
+    #[inline(always)]
+    fn rect(&self) -> &Rect<T> {
+        &self.rect
+    }
+
+    #[inline(always)]
+    fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
+        self.periodic_valid_pos(pos)
+    }
+
+    #[inline(always)]
+    fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
+        self.periodic_displacement(pos1, pos2)
+    }
+}
+
+impl<T> PeriodicBoundary for UnsafePeriodicBoundary<T>
+where
+    T: Num + Copy + Euclid + From<u8> + PartialOrd {
+    #[inline(always)]
+    fn wrap_scalar(val: T, min: T, max: T) -> T {
         if val < min {
             max - (min - val)
         } else if val >= max {
@@ -141,42 +193,6 @@ where
             val
         }
     }
-
-    #[inline]
-    fn periodic_displacement(&self, pos1: Pos<T>, pos2: Pos<T>) -> (T, T)
-    where
-        T: Euclid + From<u8>,
-    {
-        let two = T::from(2);
-        let w = self.rect.width();
-        let h = self.rect.height();
-        let dx = ((pos2.x - pos1.x + w / two).rem_euclid(&w)) - w / two;
-        let dy = ((pos2.y - pos1.y + h / two).rem_euclid(&h)) - h / two;
-        (dx, dy)
-    }
-}
-
-impl<T> Boundary for UnsafePeriodicBoundary<T>
-where
-    T: Copy + Num + Euclid + PartialOrd + From<u8> {
-    type Coord = T;
-
-    fn rect(&self) -> &Rect<T> {
-        &self.rect
-    }
-
-    #[inline]
-    fn valid_pos(&self, pos: Pos<T>) -> Option<Pos<T>> {
-        Some(Pos::new(
-            self.wrap_scalar(pos.x, self.rect.min.x, self.rect.max.x),
-            self.wrap_scalar(pos.y, self.rect.min.y, self.rect.max.y),
-        ))
-    }
-
-    #[inline]
-    fn displacement(&self, pos1: Pos<T>, pos2: Pos<T>) -> (T, T) {
-        self.periodic_displacement(pos1, pos2)
-    }
 }
 
 #[cfg(test)]
@@ -184,7 +200,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_periodic_boundary() {
+    fn test_safe_periodic_boundary() {
         let per = SafePeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));
         assert_eq!(per.valid_pos((1, 1).into()).unwrap(), (1, 1).into());
         assert_eq!(per.valid_pos((-1, -1).into()).unwrap(), (9, 9).into());
