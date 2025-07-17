@@ -6,7 +6,7 @@ use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
 use crate::io::parameters::CellularAutomataParameters;
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::{AngularProjection, Pos};
+use crate::positional::pos::Pos;
 use rand::Rng;
 use std::f32::consts::E;
 
@@ -80,7 +80,7 @@ impl<A: AdhesionSystem> Ca<A> {
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if let SomeCell(cell) = entity_from {
             if env.cells.migrate {
-                delta_h += self.chemotaxis_bias(self.chemotaxis_mu, cell.center, pos_to, env.width(), env.height());
+                delta_h += self.chemotaxis_bias(self.chemotaxis_mu, cell.center, pos_to, &env.space.bound);
             }
         }
         if !self.accept_site_copy(rng, delta_h) {
@@ -101,36 +101,19 @@ impl<A: AdhesionSystem> Ca<A> {
     
     // TODO!: This currently just attracts cells to a fix point
     //  It also only works for periodic boundaries (and is very slow due to delta_angles)
-    pub fn chemotaxis_bias(
+    pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
         &self,
         chemotaxis_mu: f32,
         cell_center_from: Pos<f32>,
         pos_to: Pos<usize>,
-        lattice_width: usize,
-        lattice_height: usize
+        bound: &B
     ) -> f32 {
-        let proj_to = AngularProjection::from_pos(
+        let (dx, dy) = bound.displacement(
             Pos::new(pos_to.x as f32, pos_to.y as f32),
-            lattice_width,
-            lattice_height
+            cell_center_from
         );
-        // Attracts cells to the center of lattice
-        let proj_target = AngularProjection::from_pos(
-            Pos::new((lattice_width / 2) as f32, (lattice_height / 2) as f32),
-            lattice_width,
-            lattice_height
-        );
-        let proj_center = AngularProjection::from_pos(
-            cell_center_from,
-            lattice_width,
-            lattice_height
-        );
-        let copy_angle = proj_center.delta_angles(&proj_to);
-        let to_center = proj_center.delta_angles(&proj_target);
-        let dot = copy_angle.0 * to_center.0 + copy_angle.1 * to_center.1;
-        let mag_v = copy_angle.0 * copy_angle.0 + copy_angle.1 * copy_angle.1;
-        let mag_w = to_center.0 * to_center.0 + to_center.1 * to_center.1;
-        -chemotaxis_mu * (dot / (mag_v * mag_w)).clamp(-1., 1.)
+        let mag = (dx * dx + dy * dy).sqrt();
+        if mag <= 0. { 0. } else { -chemotaxis_mu * dx / mag }
     }
 
     pub fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f32) -> bool {

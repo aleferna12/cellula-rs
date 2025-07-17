@@ -68,7 +68,7 @@ impl Plot for SpinPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
-            let rgb = if spin > LatticeEntity::first_cell_spin() {
+            let rgb = if spin >= LatticeEntity::first_cell_spin() {
                 Some(Self::spin_to_rgb(spin))
             } else if spin == LatticeEntity::Solid.spin() {
                 Some(self.solid_color)
