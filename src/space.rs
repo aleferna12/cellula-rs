@@ -43,8 +43,8 @@ impl Space {
     pub fn iter_box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> impl Iterator<Item = Pos<usize>> {
         let search_radius = (radius_scaler * (max(cell.target_area, cell.area) as f32 / PI).sqrt()) as isize;
         let center = Pos::new(
-            cell.center.pos.x as isize,
-            cell.center.pos.y as isize
+            cell.center.x as isize,
+            cell.center.y as isize
         );
         let rect = Rect::new(
             (center.x - search_radius, center.y - search_radius).into(),
@@ -87,8 +87,8 @@ impl Space {
         let mut visited = Lattice::<bool>::new(self.cell_lattice.rect.clone());
         let mut found = Vec::with_capacity(cell.area as usize);
         let mut queue = VecDeque::from([Pos::new(
-            cell.center.pos.x as isize,
-            cell.center.pos.y as isize
+            cell.center.x as isize,
+            cell.center.y as isize
         )]);
 
         while let Some(pos) = queue.pop_front() {

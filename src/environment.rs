@@ -122,18 +122,13 @@ impl Environment {
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
-        let center = self.space.lat_bound.valid_pos(Pos::new(
-            rect.min.x as isize,
-            rect.min.y as isize
-        ))?;
-        let center_pos = Pos::new(center.x as f32, center.y as f32);
         let mut cell = Cell::new(
             0,
             self.cells.target_area,
-            WrappedPos::new(
-                center_pos, 
-                AngularProjection::from_pos(center_pos, self.width(), self.height())
-            )
+            self.space.bound.valid_pos(Pos::new(
+                rect.min.x as f32,
+                rect.min.y as f32
+            ))?
         );
         
         for pos in rect.iter_positions() {
@@ -266,22 +261,17 @@ impl Environment {
         let mut new_cell = Cell::new(
             0,
             cell_target_area,
-            WrappedPos::default()
+            Pos::new(0., 0.)
         );
         let new_positions: Vec<_> = self
             .space
             .box_cell_positions(mom_cell, self.cell_search_radius)
             .into_iter()
             .filter(|pos| { 
-                let proj = AngularProjection::from_pos(
-                    Pos::new(pos.x as f32, pos.y as f32),
-                    self.space.cell_lattice.width(),
-                    self.space.cell_lattice.height()
-                );
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
                 //  it also might be worth writing a faster implementation for FixedBoundary (LatticeBoundary)
-                proj.delta_angles(&mom_cell.center.projection).0 > 0.
+                self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_cell.center).0 > 0.
             })
             .collect();
         for pos in new_positions {

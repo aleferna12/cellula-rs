@@ -91,8 +91,8 @@ impl Plot for CenterPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
-                cell.center.pos().x as isize,
-                cell.center.pos().y as isize,
+                cell.center.x as isize,
+                cell.center.y as isize,
             ));
             if let Some(pos) = center {
                 draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
@@ -114,8 +114,8 @@ impl Plot for ClonesPlot<'_> {
             let message = "non-cell stored as clone";
             let cell1 = self.env.cells.get_entity(spin1).expect_cell(message);
             let cell2 = self.env.cells.get_entity(spin2).expect_cell(message);
-            let center1 = cell1.center.pos;
-            let center2 = cell2.center.pos;
+            let center1 = cell1.center;
+            let center2 = cell2.center;
             let mut draw = true;
             if !self.all_clones {
                 let dist2 = (center1.x - center2.x).powf(2.) + (center1.y - center2.y).powf(2.);

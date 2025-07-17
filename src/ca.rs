@@ -6,7 +6,7 @@ use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
 use crate::io::parameters::CellularAutomataParameters;
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::{AngularProjection, Pos, WrappedPos};
+use crate::positional::pos::{AngularProjection, Pos};
 use rand::Rng;
 use std::f32::consts::E;
 
@@ -80,7 +80,7 @@ impl<A: AdhesionSystem> Ca<A> {
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if let SomeCell(cell) = entity_from {
             if env.cells.migrate {
-                delta_h += self.chemotaxis_bias(self.chemotaxis_mu, &cell.center, pos_to, env.width(), env.height());
+                delta_h += self.chemotaxis_bias(self.chemotaxis_mu, cell.center, pos_to, env.width(), env.height());
             }
         }
         if !self.accept_site_copy(rng, delta_h) {
@@ -104,7 +104,7 @@ impl<A: AdhesionSystem> Ca<A> {
     pub fn chemotaxis_bias(
         &self,
         chemotaxis_mu: f32,
-        cell_center_from: &WrappedPos,
+        cell_center_from: Pos<f32>,
         pos_to: Pos<usize>,
         lattice_width: usize,
         lattice_height: usize
@@ -115,13 +115,18 @@ impl<A: AdhesionSystem> Ca<A> {
             lattice_height
         );
         // Attracts cells to the center of lattice
-        let proj_center = AngularProjection::from_pos(
+        let proj_target = AngularProjection::from_pos(
             Pos::new((lattice_width / 2) as f32, (lattice_height / 2) as f32),
             lattice_width,
             lattice_height
         );
-        let copy_angle = cell_center_from.projection.delta_angles(&proj_to);
-        let to_center = cell_center_from.projection.delta_angles(&proj_center);
+        let proj_center = AngularProjection::from_pos(
+            cell_center_from,
+            lattice_width,
+            lattice_height
+        );
+        let copy_angle = proj_center.delta_angles(&proj_to);
+        let to_center = proj_center.delta_angles(&proj_target);
         let dot = copy_angle.0 * to_center.0 + copy_angle.1 * to_center.1;
         let mag_v = copy_angle.0 * copy_angle.0 + copy_angle.1 * copy_angle.1;
         let mag_w = to_center.0 * to_center.0 + to_center.1 * to_center.1;
@@ -199,7 +204,7 @@ mod tests {
             },
             ClonalAdhesion::new(adh_params, 10)
         );
-        let cell = RelCell::mock(Cell::new(100, 100, WrappedPos::default()));
+        let cell = RelCell::mock(Cell::new(100, 100, Pos::new(0., 0.)));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }

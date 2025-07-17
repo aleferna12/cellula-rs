@@ -46,11 +46,11 @@ impl DerefMut for RelCell {
 pub struct Cell {
     pub area: u32,
     pub target_area: u32,
-    pub center: WrappedPos
+    pub center: Pos<f32>
 }
 
 impl Cell {
-    pub fn new(area: u32, target_area: u32, center: WrappedPos) -> Self {
+    pub fn new(area: u32, target_area: u32, center: Pos<f32>) -> Self {
         Self {
             area,
             target_area,
@@ -84,17 +84,12 @@ impl Cell {
             return false;
         }
 
-        let center_pos = self.center.pos;
-        let (dx, dy) = bound.displacement(center_pos, Pos::new(pos.x as f32, pos.y as f32));
-        let new_center = bound.valid_pos(Pos::new(
-            center_pos.x + dx * shift / new_mass,
-            center_pos.y + dy * shift / new_mass
+        let (dx, dy) = bound.displacement(self.center, Pos::new(pos.x as f32, pos.y as f32));
+        // We call this to rewrap the position if necessary
+        self.center = bound.valid_pos(Pos::new(
+            self.center.x + dx * shift / new_mass,
+            self.center.y + dy * shift / new_mass
         )).expect("Shifted the center to outside the available space");
-        self.center = WrappedPos::new(new_center, AngularProjection::from_pos(
-            new_center,
-            bound.rect().width() as usize,
-            bound.rect().height() as usize
-        ));
         true
     }
 }
