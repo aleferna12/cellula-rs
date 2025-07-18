@@ -61,3 +61,32 @@ impl<T: Copy + Default> IndexMut<Pos<usize>> for Lattice<T> {
         &mut self.array[pos.row_major(self.height())]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::positional::pos::Pos;
+    use crate::positional::rect::Rect;
+    use rand::{rngs::StdRng, SeedableRng};
+
+    #[test]
+    fn test_lattice_indexing_get_and_set() {
+        let rect = Rect::new((0, 0).into(), (3, 3).into());
+        let mut lattice: Lattice<i32> = Lattice::new(rect);
+        let pos = Pos::new(1, 2);
+        lattice[pos] = 42;
+        assert_eq!(lattice[pos], 42);
+    }
+
+    #[test]
+    fn test_random_pos_within_bounds() {
+        let rect = Rect::new((0, 0).into(), (10, 10).into());
+        let lattice: Lattice<u8> = Lattice::new(rect);
+        let mut rng = StdRng::seed_from_u64(42);
+        for _ in 0..100 {
+            let p = lattice.random_pos(&mut rng);
+            assert!(p.x < lattice.width());
+            assert!(p.y < lattice.height());
+        }
+    }
+}

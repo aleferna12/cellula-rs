@@ -43,3 +43,14 @@ impl From<Pos<isize>> for Pos<usize> {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_row_major() {
+        let pos = Pos::new(10, 10);
+        assert_eq!(pos.row_major(10), 110);
+    }
+}

@@ -19,7 +19,7 @@ pub struct Cli {
     pub config: String
 }
 
-// When you add parameters, dont forgot to document them (and their defaults)
+// When you add parameters, dont forget to document them (and their defaults)
 /// Parameters for the model.
 ///
 /// Documentation for each parameter is in `examples/64_cells.toml`
@@ -180,7 +180,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_file() -> Result<(), config::ConfigError> {
+    fn test_parse() -> Result<(), config::ConfigError> {
         Parameters::parse("examples/64_cells.toml")?;
         Ok(())
     }

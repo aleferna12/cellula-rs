@@ -96,7 +96,8 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
             cell.shift_position(pos_to,env.space.light_lattice[pos_to], false, &env.space.bound);
         }
         let (removed, added) = env.update_edges(pos_to);
-        (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
+        // Times 2 to represent the symmetric edge
+        2. * (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
     }
     
     pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(

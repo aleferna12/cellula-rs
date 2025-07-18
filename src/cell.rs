@@ -123,17 +123,36 @@ fn shifted_com<B: Boundary<Coord = f32>>(
 
 #[cfg(test)]
 mod tests {
-    use crate::cell::Cell;
+    use super::*;
     use crate::positional::boundary::UnsafePeriodicBoundary;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
+    fn make_unsafe_boundary() -> UnsafePeriodicBoundary<f32> {
+        UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
+    }
+
     #[test]
-    fn test_shift_position_light_center() {
-        let bound = UnsafePeriodicBoundary::new(Rect::new(
-            (0., 0.).into(),
-            (50., 50.).into()
-        )); // or some test boundary
+    fn test_shift_position_area_and_center() {
+        let mut cell = Cell::new(100);
+        let bound = make_unsafe_boundary();
+
+        cell.shift_position(Pos::new(10, 10), 0, true, &bound);
+        assert_eq!(cell.area, 1);
+        assert_eq!(cell.center, Pos::new(10.0, 10.0));
+
+        cell.shift_position(Pos::new(20, 20), 0, true, &bound);
+        assert_eq!(cell.area, 2);
+        assert_eq!(cell.center, Pos::new(15.0, 15.0));
+
+        cell.shift_position(Pos::new(10, 10), 0, false, &bound);
+        assert_eq!(cell.area, 1);
+        assert_eq!(cell.center, Pos::new(20.0, 20.0));
+    }
+
+    #[test]
+    fn test_shift_position_light_center_and_mass() {
+        let bound = make_unsafe_boundary();
         let mut cell = Cell::new(100);
 
         // Add light at (2, 3) with value 10
@@ -144,9 +163,9 @@ mod tests {
         // Add light at (4, 5) with value 10
         cell.shift_position(Pos::new(4, 5), 10, true, &bound);
         assert_eq!(cell.light_mass, 20);
-        assert_eq!(cell.light_center, Pos::new(3., 4.)); // should be average
+        assert_eq!(cell.light_center, Pos::new(3., 4.));
 
-        // Remove (2, 3)
+        // Remove light from (2, 3)
         cell.shift_position(Pos::new(2, 3), 10, false, &bound);
         assert_eq!(cell.light_mass, 10);
         assert_eq!(cell.light_center, Pos::new(4., 5.));

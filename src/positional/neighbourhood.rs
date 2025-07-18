@@ -134,6 +134,7 @@ impl Neighbourhood for VonNeumannNeighbourhood {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
     use super::*;
     use crate::positional::edge::Edge;
 
@@ -152,5 +153,44 @@ mod tests {
     fn test_moore() {
         let first_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
         assert_eq!(first_8, MOORE_NEIGHS[..8]);
+    }
+
+    #[test]
+    fn test_neighbourhood_symmetry_moore() {
+        let nh = MooreNeighbourhood::new(3);
+        let pos = Pos::new(0, 0);
+        let neighs: HashSet<_> = nh.neighbours(pos).collect();
+        for p in &neighs {
+            assert!(neighs.contains(&Pos::new(-p.x, -p.y)), "Asymmetric Moore offset: {:?}", p);
+        }
+    }
+
+    #[test]
+    fn test_neighbourhood_symmetry_von_neumann() {
+        let nh = VonNeumannNeighbourhood::new(5);
+        let pos = Pos::new(0, 0);
+        let neighs: HashSet<_> = nh.neighbours(pos).collect();
+        for p in &neighs {
+            assert!(neighs.contains(&Pos::new(-p.x, -p.y)), "Asymmetric Von Neumann offset: {:?}", p);
+        }
+    }
+    
+    #[test]
+    fn test_radius_zero_returns_empty() {
+        let moore = MooreNeighbourhood::new(0);
+        let von = VonNeumannNeighbourhood::new(0);
+        let pos = Pos::new(123, 456);
+        assert_eq!(moore.neighbours(pos).count(), 0);
+        assert_eq!(von.neighbours(pos).count(), 0);
+    }
+
+    #[test]
+    fn test_neighs_do_not_include_center() {
+        let pos = Pos::new(100, 100);
+        let moore = MooreNeighbourhood::new(1);
+        let von = VonNeumannNeighbourhood::new(1);
+
+        assert!(!moore.neighbours(pos).any(|p| p == pos), "Moore included center");
+        assert!(!von.neighbours(pos).any(|p| p == pos), "Von Neumann included center");
     }
 }

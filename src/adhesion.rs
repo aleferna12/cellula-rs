@@ -119,3 +119,88 @@ impl From<StaticAdhesionParameters> for StaticAdhesion {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cell::{Cell, RelCell};
+    use crate::constants::Spin;
+
+    // Helper to create a RelCell with given spin and mom by mocking and overriding
+    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell {
+        RelCell {
+            spin,
+            mom,
+            cell: Cell::new(10)
+        }
+    }
+
+    fn make_stat_params() -> StaticAdhesionParameters {
+        StaticAdhesionParameters {
+            cell_energy: 3.0,
+            medium_energy: 1.5,
+            solid_energy: 2.0,
+        }
+    }
+
+    #[test]
+    fn test_static_adhesion() {
+        let params = make_stat_params();
+        let static_adhesion = StaticAdhesion::from(params.clone());
+
+        let cell1 = make_rel_with_spin(1, 1);
+        let cell2 = make_rel_with_spin(2, 1);
+
+        assert_eq!(
+            static_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell1)),
+            0.
+        );
+        assert_eq!(
+            static_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
+            2. * params.cell_energy
+        );
+        assert_eq!(
+            static_adhesion.adhesion_energy(SomeCell(&cell1), Medium),
+            params.medium_energy
+        );
+        assert_eq!(
+            static_adhesion.adhesion_energy(Solid, SomeCell(&cell1)),
+            params.solid_energy
+        );
+    }
+
+    #[test]
+    fn test_clonal_adhesion() {
+        let params = make_stat_params();
+        let max_spin = 5;
+        let mut clonal_adhesion = ClonalAdhesion::new(params.clone(), max_spin);
+
+        let cell1 = make_rel_with_spin(1, 1);
+        let cell2 = make_rel_with_spin(2, 1);
+        // Initially clone_pairs empty
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell1)),
+            0.
+        );
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
+            2. * params.medium_energy
+        );
+
+        // Manually set clone pair between spin 1 and 2
+        clonal_adhesion.clone_pairs[(1, 2)] = true;
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
+            2. * params.cell_energy
+        );
+        // ClonalAdhesion falls back to StaticAdhesion for Medium and Solid
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(SomeCell(&cell1), Medium),
+            params.medium_energy
+        );
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(Solid, SomeCell(&cell1)),
+            params.solid_energy
+        );
+    }
+}

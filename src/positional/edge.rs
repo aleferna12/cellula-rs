@@ -9,6 +9,7 @@ pub enum EdgeError {
 }
 
 #[derive(Eq, Clone)]
+#[derive(Debug)]
 pub struct Edge {
     pub p1: Pos<usize>,
     pub p2: Pos<usize>

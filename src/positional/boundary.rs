@@ -198,24 +198,85 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::positional::pos::Pos;
 
-    #[test]
-    fn test_safe_periodic_boundary() {
-        let per = SafePeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));
-        assert_eq!(per.valid_pos((1, 1).into()).unwrap(), (1, 1).into());
-        assert_eq!(per.valid_pos((-1, -1).into()).unwrap(), (9, 9).into());
-        assert_eq!(per.valid_pos((10, 10).into()).unwrap(), (0, 0).into());
-        assert_eq!(per.valid_pos((11, 11).into()).unwrap(), (1, 1).into());
-        assert_eq!(per.valid_pos((30, 30).into()).unwrap(), (0, 0).into())
+    fn rect_10x10() -> Rect<isize> {
+        Rect::new(Pos::new(0, 0), Pos::new(10, 10))
     }
 
     #[test]
-    fn test_unsafe_periodic_boundary() {
-        let unsafeper = UnsafePeriodicBoundary::new(Rect::new((0, 0).into(), (10, 10).into()));
-        assert_eq!(unsafeper.valid_pos((1, 1).into()).unwrap(), (1, 1).into());
-        assert_eq!(unsafeper.valid_pos((-1, -1).into()).unwrap(), (9, 9).into());
-        assert_eq!(unsafeper.valid_pos((10, 10).into()).unwrap(), (0, 0).into());
-        assert_eq!(unsafeper.valid_pos((11, 11).into()).unwrap(), (1, 1).into());
-        assert_ne!(unsafeper.valid_pos((30, 30).into()).unwrap(), (0, 0).into())
+    fn test_fixed_valid() {
+        let fixed = FixedBoundary::new(rect_10x10());
+
+        // In bounds
+        assert_eq!(fixed.valid_pos(Pos::new(5, 5)), Some(Pos::new(5, 5)));
+
+        // Out of bounds
+        assert_eq!(fixed.valid_pos(Pos::new(-1, 5)), None);
+        assert_eq!(fixed.valid_pos(Pos::new(5, -1)), None);
+        assert_eq!(fixed.valid_pos(Pos::new(10, 5)), None);
+        assert_eq!(fixed.valid_pos(Pos::new(5, 10)), None);
+    }
+
+    #[test]
+    fn test_fixed_displacement() {
+        let fixed = FixedBoundary::new(rect_10x10());
+        let d = fixed.displacement(Pos::new(3, 3), Pos::new(6, 1));
+        assert_eq!(d, (3, -2));
+    }
+
+    #[test]
+    fn test_safe_periodic_valid() {
+        let per = SafePeriodicBoundary::new(rect_10x10());
+
+        // Valid values wrap around
+        assert_eq!(per.valid_pos(Pos::new(-1, -1)), Some(Pos::new(9, 9)));
+        assert_eq!(per.valid_pos(Pos::new(10, 10)), Some(Pos::new(0, 0)));
+        assert_eq!(per.valid_pos(Pos::new(30, 30)), Some(Pos::new(0, 0)));
+    }
+
+    #[test]
+    fn test_safe_periodic_displacement() {
+        let per = SafePeriodicBoundary::new(rect_10x10());
+
+        let d = per.displacement(Pos::new(9, 0), Pos::new(1, 0)); // wrapped
+        assert_eq!(d, (2, 0)); // shortest dx is -8 → wraps to +2
+
+        let d2 = per.displacement(Pos::new(1, 0), Pos::new(9, 0)); // reverse
+        assert_eq!(d2, (-2, 0));
+    }
+
+    #[test]
+    fn test_unsafe_periodic_valid() {
+        let unsafe_per = UnsafePeriodicBoundary::new(rect_10x10());
+
+        // Near bounds: valid
+        assert_eq!(unsafe_per.valid_pos(Pos::new(10, 0)), Some(Pos::new(0, 0)));
+        assert_eq!(unsafe_per.valid_pos(Pos::new(-1, 0)), Some(Pos::new(9, 0)));
+
+        // Far outside bounds: wrong result, but not panicked
+        let pos = unsafe_per.valid_pos(Pos::new(30, 30)).unwrap();
+        assert_ne!(pos, Pos::new(0, 0)); // Incorrect but expected under "unsafe"
+    }
+
+    #[test]
+    fn test_safe_periodic_wrap_scalar() {
+        let wrapped = SafePeriodicBoundary::<isize>::wrap_scalar(11, 0, 10);
+        assert_eq!(wrapped, 1);
+
+        let wrapped_neg = SafePeriodicBoundary::<isize>::wrap_scalar(-1, 0, 10);
+        assert_eq!(wrapped_neg, 9);
+    }
+
+    #[test]
+    fn test_unsafe_periodic_wrap_scalar() {
+        let wrap = UnsafePeriodicBoundary::<isize>::wrap_scalar(11, 0, 10);
+        assert_eq!(wrap, 1);
+
+        let wrap_neg = UnsafePeriodicBoundary::<isize>::wrap_scalar(-1, 0, 10);
+        assert_eq!(wrap_neg, 9);
+
+        let in_bounds = UnsafePeriodicBoundary::<isize>::wrap_scalar(5, 0, 10);
+        assert_eq!(in_bounds, 5);
     }
 }

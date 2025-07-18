@@ -39,3 +39,35 @@ impl<T: Default + Clone> IndexMut<(Spin, Spin)> for SpinTable<T> {
         &mut self.array[self.flat_index(index.0, index.1)]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::constants::Spin;
+
+    #[test]
+    fn test_index_access() {
+        let mut table: SpinTable<u32> = SpinTable::new(4);
+        table[(1, 3)] = 42;
+
+        // Check symmetry
+        assert_eq!(table[(1, 3)], 42);
+        assert_eq!(table[(3, 1)], 42);
+
+        // Overwrite via reversed index
+        table[(3, 1)] = 99;
+        assert_eq!(table[(1, 3)], 99);
+    }
+
+    #[test]
+    fn test_iter_pairs_produces_correct_pairs() {
+        let table: SpinTable<u8> = SpinTable::new(4);
+        let pairs: Vec<(Spin, Spin)> = table.iter_pairs(1, 4).collect();
+        let expected = vec![
+            (1, 1), (1, 2), (1, 3),
+            (2, 2), (2, 3),
+            (3, 3),
+        ];
+        assert_eq!(pairs, expected);
+    }
+}

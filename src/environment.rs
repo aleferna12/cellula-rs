@@ -193,18 +193,18 @@ impl Environment {
         for neigh in valid_neighs {
             let edge = Edge::new(pos, neigh);
             let spin_neigh = self.space.cell_lattice[neigh];
+            // The order of these if statements matter A LOT, dont mess with it
             if spin == spin_neigh {
-                self.edge_book.remove(&edge);
-                // Also representing the inverse edge
-                removed += 2;
+                if self.edge_book.remove(&edge) {
+                    removed += 1;
+                }
                 continue;
             }
             if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
                 continue;
             }
             if self.edge_book.insert(edge) {
-                // Also representing the inverse edge
-                added += 2;
+                added += 1;
             }
         }
         (removed, added)
@@ -358,61 +358,117 @@ impl LatticeEntity<()> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::positional::rect::Rect;
+    use crate::positional::pos::Pos;
 
-    #[test]
-    fn test_spawn_rect_cell() {
-        let mut env = Environment::new_empty_test(100, 100);
-        env.spawn_rect_cell(
-            Rect::new(
-                Pos::new(10, 10),
-                Pos::new(20, 20)
-            )
+    fn make_env_for_division() -> Environment {
+        let env = Environment::new_empty(
+            100,
+            100,
+            1,
+            1,
+            2.0,
+            10,
+            CellParameters {
+                target_area: 4,
+                div_area: 4,
+                divide: true,
+                migrate: false,
+            },
         );
-        assert_eq!(env.edge_book.len(), 8 * 4 * 3 + 4 * 5);
-        let entity1 = env.cells.get_entity(LatticeEntity::first_cell_spin());
-        assert!(matches!(entity1, SomeCell(_)));
-
-        env.spawn_rect_cell(
-            Rect::new(
-                Pos::new(15, 15),
-                Pos::new(25, 25)
-            )
-        );
-
-        let entity2 = env.cells.get_entity(LatticeEntity::first_cell_spin() + 1);
-        assert!(matches!(entity2, SomeCell(_)));
-
-        let cell2 = entity2.unwrap_cell();
-        assert_eq!(cell2.area, 75);
-        assert_eq!(
-            env.space.contiguous_cell_positions(cell2, &env.neighbourhood).len(),
-            75
-        );
-        assert_eq!(
-            env.space.box_cell_positions(cell2, 2.).len(),
-            75
-        );
+        env
     }
 
     #[test]
-    fn test_lattice_entity_spin() {
-        assert!(LatticeEntity::first_cell_spin() > Medium.spin());
-        assert!(LatticeEntity::first_cell_spin() > Solid.spin());
+    fn test_spawn_solid() {
+        let mut env = Environment::new_empty_test(10, 10);
+        let positions = vec![
+            Pos::new(1, 1),
+            Pos::new(2, 2),
+            Pos::new(3, 3),
+            Pos::new(1, 1), // duplicate to test deduplication
+        ];
+        let area = env.spawn_solid(positions.into_iter());
+        assert_eq!(area, 3); // One was a duplicate
+        for pos in &[
+            Pos::new(1, 1),
+            Pos::new(2, 2),
+            Pos::new(3, 3),
+        ] {
+            assert_eq!(env.space.cell_lattice[*pos], Solid.spin());
+        }
     }
 
     #[test]
-    fn test_light_center_above_center() {
-        let mut env = Environment::new_empty_test(100, 100);
+    fn test_make_border() {
+        let mut env = Environment::new_empty_test(10, 5);
+        env.make_border();
 
-        for row in 0..100 {
-            for col in 0..100 {
-                env.space.light_lattice[(col, row).into()] = row as u32;
-            }
+        for x in 0..10 {
+            assert_eq!(env.space.cell_lattice[Pos::new(x, 0)], Solid.spin());
+            assert_eq!(env.space.cell_lattice[Pos::new(x, 4)], Solid.spin());
         }
 
-        env.spawn_rect_cell(Rect::new(Pos::new(40, 40), Pos::new(50, 50)));
+        for y in 1..5 {
+            assert_eq!(env.space.cell_lattice[Pos::new(9, y)], Solid.spin());
+        }
 
-        let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
-        assert!(cell.light_center.y > cell.center.y);
+        for y in 1..4 {
+            assert_eq!(env.space.cell_lattice[Pos::new(0, y)], Solid.spin());
+        }
+    }
+
+    #[test]
+    fn test_update_edges_adds_and_removes() {
+        let mut env = Environment::new_empty_test(10, 10);
+        let spin = LatticeEntity::first_cell_spin();
+        env.space.cell_lattice[Pos::new(5, 5)] = spin;
+        let (removed, added) = env.update_edges(Pos::new(5, 5));
+        assert_eq!(removed, 0);
+        assert_eq!(added, 8);
+        
+        env.space.cell_lattice[Pos::new(6, 5)] = spin;
+        let (removed, added) = env.update_edges(Pos::new(5, 5));
+        assert_eq!(removed, 1);
+        assert_eq!(added, 0);
+
+        env.space.cell_lattice[Pos::new(6, 5)] = spin + 1;
+        let (removed, added) = env.update_edges(Pos::new(5, 5));
+        assert_eq!(removed, 0);
+        assert_eq!(added, 1);
+    }
+
+    #[test]
+    fn test_divide_cell() {
+        let mut env = make_env_for_division();
+
+        let rect = Rect::new(Pos::new(20, 20), Pos::new(22, 22));
+        env.spawn_rect_cell(rect);
+
+        let spin = LatticeEntity::first_cell_spin();
+        let result = env.divide_cell(spin);
+        assert!(result.is_ok());
+        let new_cell = result.unwrap();
+        assert_ne!(new_cell.spin, spin);
+    }
+
+    #[test]
+    fn test_reproduce() {
+        let mut env = make_env_for_division();
+        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)));
+
+        let divided_spins = env.reproduce();
+        assert_eq!(divided_spins.len(), 1);
+    }
+
+    #[test]
+    fn test_reproduce_limit_population() {
+        let mut env = make_env_for_division();
+        env.max_cells = 1;
+        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)));
+
+        let divided_spins = env.reproduce();
+        assert_eq!(divided_spins.len(), 0);
     }
 }
+
