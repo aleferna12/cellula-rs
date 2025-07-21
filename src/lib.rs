@@ -10,3 +10,4 @@ pub mod constants;
 pub mod cell_container;
 pub mod spin_table;
 pub mod space;
+pub mod genome;
