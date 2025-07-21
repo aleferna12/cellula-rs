@@ -20,6 +20,7 @@ log = "0.4.27"
 minifb = "0.28.0"
 num = "0.4.3"
 palette = "0.7.6"
+petgraph = "0.8.2"
 rand = "0.9.1"
 rand_xoshiro = "0.7.0"
 serde = { version = "1.0.219", features = ["derive"] }
