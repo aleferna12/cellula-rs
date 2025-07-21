@@ -45,9 +45,5 @@ name = "model_bench"
 harness = false
 
 [[bench]]
-name = "ca_bench"
-harness = false
-
-[[bench]]
 name = "io_bench"
 harness = false

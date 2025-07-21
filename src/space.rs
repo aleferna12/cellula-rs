@@ -40,7 +40,11 @@ impl Space {
     ///
     /// Prefer `box_cell_positions()`, which warns about missing values.
     /// This function should only be used when not all positions are required to be found.
-    pub fn iter_box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> impl Iterator<Item = Pos<usize>> {
+    pub fn iter_box_cell_positions<G>(
+        &self, 
+        cell: &RelCell<G>,
+        radius_scaler: f32
+    ) -> impl Iterator<Item = Pos<usize>> {
         let search_radius = (radius_scaler * (max(cell.target_area, cell.area) as f32 / PI).sqrt()) as isize;
         let center = Pos::new(
             cell.center.x as isize,
@@ -65,7 +69,7 @@ impl Space {
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
     ///
     /// May fail if `radius_scaler` is too small.
-    pub fn box_cell_positions(&self, cell: &RelCell, radius_scaler: f32) -> Vec<Pos<usize>> {
+    pub fn box_cell_positions<G>(&self, cell: &RelCell<G>, radius_scaler: f32) -> Vec<Pos<usize>> {
         let found: Vec<_> = self.iter_box_cell_positions(cell, radius_scaler).collect();
         if found.len() != cell.area as usize {
             log::warn!(
@@ -83,7 +87,11 @@ impl Space {
     ///
     /// Is considerably slower than `box_cell_positions()` and may fail if cell is not contiguous 
     /// or if the cell center is not a cell position.
-    pub fn contiguous_cell_positions<N: Neighbourhood>(&self, cell: &RelCell, neighbourhood: &N) -> Vec<Pos<usize>> {
+    pub fn contiguous_cell_positions<G, N: Neighbourhood>(
+        &self,
+        cell: &RelCell<G>, 
+        neighbourhood: &N
+    ) -> Vec<Pos<usize>> {
         let mut visited = Lattice::<bool>::new(self.cell_lattice.rect.clone());
         let mut found = Vec::with_capacity(cell.area as usize);
         let mut queue = VecDeque::from([Pos::new(
@@ -121,9 +129,9 @@ impl Space {
         found
     }
 
-    pub fn cell_neighbours<N: Neighbourhood>(
+    pub fn cell_neighbours<G, N: Neighbourhood>(
         &self,
-        cell: &RelCell,
+        cell: &RelCell<G>,
         radius_scaler: f32,
         neighbourhood: &N
     ) -> HashSet<Spin> {
@@ -172,11 +180,15 @@ impl Space {
 mod tests {
     use super::*;
     use crate::cell::{Cell, RelCell};
+    use crate::genome::SpecialisedGrn;
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
     
-    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space, RelCell) {
-        let mut cell = RelCell::mock(Cell::new(10));
+    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space, RelCell<SpecialisedGrn>) {
+        let mut cell = RelCell::mock(Cell::new(
+            10, 
+            SpecialisedGrn::new(0., 0.,)
+        ));
         let mut space = Space::new(10, 10);
         for pos in positions {
             space.cell_lattice[*pos] = cell.spin;

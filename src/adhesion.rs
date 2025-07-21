@@ -7,12 +7,7 @@ use crate::spin_table::SpinTable;
 use std::collections::HashSet;
 
 pub trait AdhesionSystem {
-    // This arguably should receive info about which specific site is being copied 
-    // It would be useful for hybrid models where adhesion properties depend on concentration of proteins etc
-    // See https://compucell3dreferencemanual.readthedocs.io/en/latest/adhesion_flex_plugin.html
-    // Although, in a puritan interpretation of CPM, the Hamiltonian is a property of the system and anything that is 
-    // copy-attempt-dependent should be a bias...
-    fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32;
+    fn adhesion_energy<G>(&self, entity1: LatticeEntity<&RelCell<G>>, entity2: LatticeEntity<&RelCell<G>>) -> f32;
 }
 
 pub struct ClonalAdhesion {
@@ -72,7 +67,7 @@ impl ClonalAdhesion {
 }
 
 impl AdhesionSystem for ClonalAdhesion {
-    fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32 {
+    fn adhesion_energy<G>(&self, entity1: LatticeEntity<&RelCell<G>>, entity2: LatticeEntity<&RelCell<G>>) -> f32 {
         if let (SomeCell(c1), SomeCell(c2)) = (entity1, entity2) {
             if c1.spin == c2.spin {
                 return 0.
@@ -94,7 +89,11 @@ pub struct StaticAdhesion {
 }
 
 impl AdhesionSystem for StaticAdhesion {
-    fn adhesion_energy(&self, entity1: LatticeEntity<&RelCell>, entity2: LatticeEntity<&RelCell>) -> f32 {
+    fn adhesion_energy<G>(
+        &self, 
+        entity1: LatticeEntity<&RelCell<G>>, 
+        entity2: LatticeEntity<&RelCell<G>>
+    ) -> f32 {
         match (entity1, entity2) {
             (SomeCell(c1), SomeCell(c2)) => {
                 if c1.spin == c2.spin {
@@ -125,13 +124,14 @@ mod tests {
     use super::*;
     use crate::cell::{Cell, RelCell};
     use crate::constants::Spin;
+    use crate::genome::SpecialisedGrn;
 
     // Helper to create a RelCell with given spin and mom by mocking and overriding
-    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell {
+    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<SpecialisedGrn> {
         RelCell {
             spin,
             mom,
-            cell: Cell::new(10)
+            cell: Cell::new(10, SpecialisedGrn::new(0., 0.,))
         }
     }
 

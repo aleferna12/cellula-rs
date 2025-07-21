@@ -3,6 +3,7 @@ use crate::environment::LatticeEntity;
 use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
+use crate::genome::{CellType, SpecialisedGrn};
 
 /// Represents a cell that is bound to an `Environment`.
 ///
@@ -11,15 +12,15 @@ use std::ops::{Deref, DerefMut};
 ///
 /// Implements `Deref<Cell>`.
 #[derive(Debug, Clone)]
-pub struct RelCell {
+pub struct RelCell<G> {
     pub spin: Spin,
     pub mom: Spin,
-    pub(crate) cell: Cell
+    pub(crate) cell: Cell<G>
 }
 
-impl RelCell {
+impl<G> RelCell<G> {
     /// Creates a mock cell with spin and mom = `LatticeEntity<()>::first_cell_spin()` for testing.
-    pub fn mock(cell: Cell) -> Self {
+    pub fn mock(cell: Cell<G>) -> Self {
         RelCell {
             spin: LatticeEntity::first_cell_spin(),
             mom: LatticeEntity::first_cell_spin(),
@@ -28,38 +29,42 @@ impl RelCell {
     }
 }
 
-impl Deref for RelCell {
-    type Target = Cell;
+impl<G> Deref for RelCell<G> {
+    type Target = Cell<G>;
 
     fn deref(&self) -> &Self::Target {
         &self.cell
     }
 }
 
-impl DerefMut for RelCell {
+impl<G> DerefMut for RelCell<G> {
     fn deref_mut(&mut self) -> &mut <Self as Deref>::Target {
         &mut self.cell
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct Cell {
+pub struct Cell<G> {
     pub area: u32,
     pub target_area: u32,
     pub center: Pos<f32>,
     pub light_center: Pos<f32>,
-    pub light_mass: u32
+    pub light_mass: u32,
+    pub cell_type: CellType,
+    pub genome: G
 }
 
-impl Cell {
-    /// Initialises an empty `Cell` to be filled progressively with `shift_position()`.
-    pub fn new(target_area: u32) -> Self {
+impl<G> Cell<G> {
+    /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
+    pub fn new(target_area: u32, genome: G) -> Self {
         Self {
             area: 0,
             target_area,
             center: Pos::new(0., 0.),
             light_center: Pos::new(0., 0.),
-            light_mass: 0
+            light_mass: 0,
+            cell_type: CellType::Migrate,
+            genome
         }
     }
 
@@ -125,6 +130,7 @@ fn shifted_com<B: Boundary<Coord = f32>>(
 
 #[cfg(test)]
 mod tests {
+    use crate::genome::SpecialisedGrn;
     use super::*;
     use crate::positional::boundary::UnsafePeriodicBoundary;
     use crate::positional::pos::Pos;
@@ -133,10 +139,14 @@ mod tests {
     fn make_unsafe_boundary() -> UnsafePeriodicBoundary<f32> {
         UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
     }
+    
+    fn make_test_cell() -> Cell<SpecialisedGrn> {
+        Cell::new(100, SpecialisedGrn::new(0., 0.))
+    }
 
     #[test]
     fn test_shift_position_area_and_center() {
-        let mut cell = Cell::new(100);
+        let mut cell = make_test_cell();
         let bound = make_unsafe_boundary();
 
         cell.shift_position(Pos::new(10, 10), 0, true, &bound);
@@ -155,7 +165,7 @@ mod tests {
     #[test]
     fn test_shift_position_light_center_and_mass() {
         let bound = make_unsafe_boundary();
-        let mut cell = Cell::new(100);
+        let mut cell = make_test_cell();
 
         // Add light at (2, 3) with value 10
         cell.shift_position(Pos::new(2, 3), 10, true, &bound);

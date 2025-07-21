@@ -1,6 +1,6 @@
 use crate::cell::{Cell, RelCell};
 use crate::cell_container::CellContainer;
-use crate::constants::Spin;
+use crate::constants::{Spin, SIZE_SCALE};
 use crate::environment::LatticeEntity::*;
 use crate::io::parameters::{CellParameters, EnvironmentParameters};
 use crate::positional::boundary::Boundary;
@@ -11,10 +11,11 @@ use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
 use rand::Rng;
+use crate::genome::SpecialisedGrn;
 
 pub struct Environment {
     pub space: Space,
-    pub cells: CellContainer,
+    pub cells: CellContainer<SpecialisedGrn>,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
     pub update_period: u32,
@@ -120,14 +121,17 @@ impl Environment {
         self.space.cell_lattice.height()
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell<SpecialisedGrn>> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
-        let mut cell = Cell::new(self.cells.target_area);
+        let mut cell = Cell::new(
+            self.cells.target_area,
+            SpecialisedGrn::new(1. / self.height() as f32, SIZE_SCALE)
+        );
         
         for pos in rect.iter_positions() {
             if let Some(valid_pos) = self.space.lat_bound.valid_pos(pos.into()) {
                 let lat_pos = valid_pos.into();
-                if self.space.cell_lattice[lat_pos] != Medium.spin() {
+                if self.space.cell_lattice[lat_pos] != Medium.discriminant() {
                     continue
                 }
                 self.space.cell_lattice[lat_pos] = spin;
@@ -150,10 +154,10 @@ impl Environment {
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
-            if self.space.cell_lattice[pos] != Medium.spin() {
+            if self.space.cell_lattice[pos] != Medium.discriminant() {
                 continue
             }
-            self.space.cell_lattice[pos] = Solid.spin();
+            self.space.cell_lattice[pos] = Solid.discriminant();
             area += 1;
         }
         area
@@ -244,7 +248,8 @@ impl Environment {
     }
     
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell, DivisionError> {
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<SpecialisedGrn>, DivisionError> {
+        let light_scale = 1. / self.height() as f32;
         let new_spin = self.cells.next_spin();
         let cell_target_area = self.cells.target_area;
         let mom_cell = self
@@ -254,7 +259,10 @@ impl Environment {
         // We modify this mock cell to allow the division to be cancelled in the case of an error
         let mut mom_clone = mom_cell.clone();
         
-        let mut new_cell = Cell::new(cell_target_area);
+        let mut new_cell = Cell::new(
+            cell_target_area,
+            SpecialisedGrn::new(light_scale, SIZE_SCALE)
+        );
         let new_positions: Vec<_> = self
             .space
             .box_cell_positions(mom_cell, self.cell_search_radius)
@@ -319,13 +327,13 @@ impl<C> LatticeEntity<C> {
     }
 }
 
-impl LatticeEntity<&RelCell> {
+impl<G> LatticeEntity<&RelCell<G>> {
     /// Maps the `LatticeEntity` to a unique spin value.
     pub fn spin(&self) -> Spin {
         match self {
             SomeCell(cell) => cell.spin,
-            Medium => 0,
-            Solid => 1
+            Medium => Medium.discriminant(),
+            Solid => Solid.discriminant()
         }
     }
 }
@@ -352,6 +360,14 @@ impl LatticeEntity<()> {
     /// This is required to be larger than `Medium::spin()` and `Solid::spin()`.
     pub fn first_cell_spin() -> Spin {
         2
+    }
+    
+    pub fn discriminant(&self) -> Spin {
+        match self { 
+            SomeCell(_) => 2,
+            Medium => 0,
+            Solid => 1
+        }
     }
 }
 
@@ -395,7 +411,7 @@ pub mod tests {
             Pos::new(2, 2),
             Pos::new(3, 3),
         ] {
-            assert_eq!(env.space.cell_lattice[*pos], Solid.spin());
+            assert_eq!(env.space.cell_lattice[*pos], Solid.discriminant());
         }
     }
 
@@ -405,16 +421,16 @@ pub mod tests {
         env.make_border();
 
         for x in 0..10 {
-            assert_eq!(env.space.cell_lattice[Pos::new(x, 0)], Solid.spin());
-            assert_eq!(env.space.cell_lattice[Pos::new(x, 4)], Solid.spin());
+            assert_eq!(env.space.cell_lattice[Pos::new(x, 0)], Solid.discriminant());
+            assert_eq!(env.space.cell_lattice[Pos::new(x, 4)], Solid.discriminant());
         }
 
         for y in 1..5 {
-            assert_eq!(env.space.cell_lattice[Pos::new(9, y)], Solid.spin());
+            assert_eq!(env.space.cell_lattice[Pos::new(9, y)], Solid.discriminant());
         }
 
         for y in 1..4 {
-            assert_eq!(env.space.cell_lattice[Pos::new(0, y)], Solid.spin());
+            assert_eq!(env.space.cell_lattice[Pos::new(0, y)], Solid.discriminant());
         }
     }
 

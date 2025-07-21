@@ -44,8 +44,8 @@ fn replace_random_edges(n_edges: usize, env: &mut Environment, rng: &mut impl Rn
 
 fn bench_env(c: &mut Criterion) {
     c.bench_function("lattice_entity_discriminant", |b| b.iter(|| {
-        Medium.spin();
-        Solid.spin();
+        Medium.discriminant();
+        Solid.discriminant();
     }));
 
     c.bench_function("replace_edges", |b| {

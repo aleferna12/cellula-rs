@@ -60,13 +60,13 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         pos_to: Pos<usize>
     ) -> f32 {
         let spin_to = env.space.cell_lattice[pos_to];
-        if spin_to == Solid.spin() {
+        if spin_to == Solid.discriminant() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_from = {
             let spin = env.space.cell_lattice[pos_from];
-            if spin == Solid.spin() { Medium.spin() } else { spin }
+            if spin == Solid.discriminant() { Medium.discriminant() } else { spin }
         };
 
         let entity_from = env.cells.get_entity(spin_from);
@@ -100,9 +100,9 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         2. * (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
     }
     
-    pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
+    pub fn chemotaxis_bias<G, B: Boundary<Coord = f32>>(
         &self,
-        cell: &Cell,
+        cell: &Cell<G>,
         pos_to: Pos<usize>,
         chemotaxis_mu: f32,
         bound: &B
@@ -132,11 +132,11 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         delta_h < 0. || rng.random::<f32>() < E.powf(-delta_h / self.boltz_t)
     }
 
-    pub fn delta_hamiltonian<'a>(
+    pub fn delta_hamiltonian<'a, G: 'a>(
         &self,
-        entity_from: LatticeEntity<&RelCell>,
-        entity_to: LatticeEntity<&RelCell>,
-        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell>>
+        entity_from: LatticeEntity<&RelCell<G>>,
+        entity_to: LatticeEntity<&RelCell<G>>,
+        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<G>>>
     ) -> f32 {
         let mut delta_h = 0.;
         delta_h += self.delta_hamiltonian_size(entity_from, entity_to);
@@ -144,7 +144,11 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         delta_h
     }
     
-    pub fn delta_hamiltonian_size(&self, entity_from: LatticeEntity<&RelCell>, entity_to: LatticeEntity<&RelCell>) -> f32 {
+    pub fn delta_hamiltonian_size<G>(
+        &self, 
+        entity_from: LatticeEntity<&RelCell<G>>, 
+        entity_to: LatticeEntity<&RelCell<G>>
+    ) -> f32 {
         let mut delta_h = 0.;
         if let SomeCell(cell) = entity_from {
             delta_h += self.size_energy_diff(true, cell.area, cell.target_area);
@@ -156,11 +160,11 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     }
 
     // TODO!: test
-    pub fn delta_hamiltonian_adhesion<'a>(
+    pub fn delta_hamiltonian_adhesion<'a, G: 'a>(
         &self,
-        entity_from: LatticeEntity<&RelCell>,
-        entity_to: LatticeEntity<&RelCell>,
-        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell>>
+        entity_from: LatticeEntity<&RelCell<G>>,
+        entity_to: LatticeEntity<&RelCell<G>>,
+        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<G>>>
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_entities {
@@ -181,6 +185,7 @@ mod tests {
     use super::*;
     use crate::adhesion::ClonalAdhesion;
     use crate::cell::Cell;
+    use crate::genome::SpecialisedGrn;
     use crate::io::parameters::StaticAdhesionParameters;
 
     #[test]
@@ -199,7 +204,7 @@ mod tests {
             },
             ClonalAdhesion::new(adh_params, 10)
         );
-        let cell = RelCell::mock(Cell::new(100));
+        let cell = RelCell::mock(Cell::new(100, SpecialisedGrn::new(0., 0.,)));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }

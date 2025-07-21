@@ -70,7 +70,7 @@ impl Plot for SpinPlot<'_> {
             let spin = self.env.space.cell_lattice[pos];
             let rgb = if spin >= LatticeEntity::first_cell_spin() {
                 Some(Self::spin_to_rgb(spin))
-            } else if spin == LatticeEntity::Solid.spin() {
+            } else if spin == LatticeEntity::Solid.discriminant() {
                 Some(self.solid_color)
             } else {
                 self.medium_color
