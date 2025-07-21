@@ -1,7 +1,7 @@
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_srgb, AreaPlot, BorderPlot, CenterPlot, ClonesPlot, LightPlot, Plot, SpinPlot};
+use crate::io::plot::{hex_to_srgb, AreaPlot, BorderPlot, CenterPlot, ClonesPlot, LightCenterPlot, LightPlot, Plot, SpinPlot};
 use crate::spin_table::SpinTable;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
@@ -88,7 +88,7 @@ impl IoManager {
                     }.plot(&mut image)
                 },
                 PlotType::LightCenter => {
-                    CenterPlot {
+                    LightCenterPlot {
                         env,
                         color: hex_to_srgb(&self.plots.light_center_color)?
                     }.plot(&mut image)
