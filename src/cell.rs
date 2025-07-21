@@ -93,6 +93,8 @@ impl Cell {
         ) {
             self.light_center = new_chem;
             self.light_mass = self.light_mass.saturating_add_signed(shift * light_at_pos as i32);
+        } else { 
+            self.light_center = self.center;
         }
     }
 }
