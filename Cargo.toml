@@ -23,6 +23,8 @@ palette = "0.7.6"
 rand = "0.9.1"
 rand_xoshiro = "0.7.0"
 serde = { version = "1.0.219", features = ["derive"] }
+strum = "0.27.1"
+strum_macros = "0.27.1"
 thiserror = "2.0.12"
 toml = "0.8.23"
 
@@ -43,4 +45,8 @@ harness = false
 
 [[bench]]
 name = "ca_bench"
+harness = false
+
+[[bench]]
+name = "io_bench"
 harness = false

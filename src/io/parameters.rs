@@ -2,6 +2,7 @@ use crate::constants::Spin;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use strum_macros::EnumIter;
 
 static CLI_NOTES: &str = "\
     Model parameters are loaded from a TOML file specified by CONFIG.\n\
@@ -155,7 +156,7 @@ pub struct PlotParameters {
     pub light_max_color: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, EnumIter, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum PlotType {
     Spin,

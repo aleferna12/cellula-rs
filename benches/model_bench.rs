@@ -58,7 +58,7 @@ fn bench_param_files(
                     |model| {
                         model.run(black_box(time_steps))
                     },
-                    BatchSize::SmallInput,
+                    BatchSize::LargeInput,
                 )
             },
         );
@@ -89,7 +89,7 @@ fn bench_slow(c: &mut Criterion) {
             |model| {
                 model.run(black_box(1_000));
             },
-            BatchSize::SmallInput
+            BatchSize::LargeInput
         )
     });
 
@@ -108,7 +108,7 @@ fn bench_slow(c: &mut Criterion) {
             |model| {
                 model.run(black_box(10_000));
             },
-            BatchSize::SmallInput
+            BatchSize::LargeInput
         )
     });
 }
