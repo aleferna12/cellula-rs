@@ -11,6 +11,7 @@ use std::error::Error;
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
+use crate::genome::CellType;
 
 pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);
@@ -68,12 +69,11 @@ impl Plot for SpinPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
-            let rgb = if spin >= LatticeEntity::first_cell_spin() {
-                Some(Self::spin_to_rgb(spin))
-            } else if spin == LatticeEntity::Solid.discriminant() {
-                Some(self.solid_color)
-            } else {
-                self.medium_color
+            let entity = self.env.cells.get_entity(spin);
+            let rgb = match entity { 
+                LatticeEntity::SomeCell(cell) => Some(Self::spin_to_rgb(cell.spin)),
+                LatticeEntity::Solid => Some(self.solid_color),
+                LatticeEntity::Medium => self.medium_color
             };
             if let Some(color) = rgb {
                 image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
@@ -159,6 +159,59 @@ impl Plot for ClonesPlot<'_> {
     }
 }
 
+pub struct BorderPlot<'e> {
+    pub env: &'e Environment,
+    pub color: Srgb<u8>
+}
+
+impl Plot for BorderPlot<'_> {
+    fn plot(&self, image: &mut RgbaImage) {
+        for pos in self.env.space.cell_lattice.iter_positions() {
+            let spin = self.env.space.cell_lattice[pos];
+            if spin < LatticeEntity::first_cell_spin() {
+                continue
+            }
+            let is_border = self.env
+                .space
+                .lat_bound
+                .valid_positions(self.env.neighbourhood.neighbours(Pos::from(pos)))
+                .any(|neigh| {
+                    let neigh_spin = self.env.space.cell_lattice[Pos::from(neigh)];
+                    neigh_spin != spin
+                });
+            if is_border {
+                image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(self.color));
+            }
+        }
+    }
+}
+
+pub struct CellTypePlot<'e> {
+    pub env: &'e Environment,
+    pub mig_color: Srgb<u8>,
+    pub div_color: Srgb<u8>
+}
+
+impl Plot for CellTypePlot<'_> {
+    fn plot(&self, image: &mut RgbaImage) {
+        for pos in self.env.space.cell_lattice.iter_positions() {
+            let spin = self.env.space.cell_lattice[pos];
+            let entity = self.env.cells.get_entity(spin);
+            if let LatticeEntity::SomeCell(cell) = entity {
+                let color = match cell.cell_type { 
+                    CellType::Migrate => self.mig_color,
+                    CellType::Divide => self.div_color
+                };
+                image.put_pixel(
+                    pos.x as u32,
+                    pos.y as u32,
+                    srgb_to_rgba(color)
+                )
+            }
+        }
+    }
+}
+
 pub struct AreaPlot<'e> {
     pub env: &'e Environment,
     pub min_color: Srgb<u8>,
@@ -209,37 +262,10 @@ impl ContinuousPlot for AreaPlot<'_> {
     }
 }
 
-pub struct BorderPlot<'e> {
-    pub env: &'e Environment,
-    pub color: Srgb<u8>
-}
-
-impl Plot for BorderPlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.space.cell_lattice.iter_positions() {
-            let spin = self.env.space.cell_lattice[pos];
-            if spin < LatticeEntity::first_cell_spin() {
-                continue
-            }
-            let is_border = self.env
-                .space
-                .lat_bound
-                .valid_positions(self.env.neighbourhood.neighbours(Pos::from(pos)))
-                .any(|neigh| {
-                    let neigh_spin = self.env.space.cell_lattice[Pos::from(neigh)];
-                    neigh_spin != spin
-                });
-            if is_border {
-                image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(self.color));
-            }
-        }
-    }
-}
-
 pub struct LightPlot<'e> {
-    pub(crate) env: &'e Environment,
-    pub(crate) min_color: Srgb<u8>,
-    pub(crate) max_color: Srgb<u8>
+    pub env: &'e Environment,
+    pub min_color: Srgb<u8>,
+    pub max_color: Srgb<u8>
 }
 
 impl Plot for LightPlot<'_> {

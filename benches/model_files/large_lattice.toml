@@ -53,3 +53,7 @@ area-min-color = "#ff00ff"
 area-max-color = "#ffff00"
 light-min-color = "#000000"
 light-max-color = "#ffffff"
+# With which color to plot migrating cells.
+migrating-color = "#b30000"
+# With which color to plot dividing cells.
+dividing-color = "#045a8d"

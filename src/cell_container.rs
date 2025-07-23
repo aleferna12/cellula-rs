@@ -2,7 +2,7 @@ use crate::cell::{Cell, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
-use crate::genome::Genome;
+use crate::genome::{CellType, Genome};
 use crate::io::parameters::CellParameters;
 
 pub struct CellContainer<G> {
@@ -22,7 +22,7 @@ impl<G: Genome> CellContainer<G> {
         self.n_cells() as Spin + LatticeEntity::first_cell_spin()
     }
 
-    pub(crate) fn push(&mut self, cell: Cell<G>, mom_spin: Option<Spin>) -> &RelCell<G> {
+    pub fn push(&mut self, cell: Cell<G>, mom_spin: Option<Spin>) -> &RelCell<G> {
         let new_spin = self.next_spin();
         self.vec.push(RelCell {
             spin: new_spin,
@@ -33,7 +33,7 @@ impl<G: Genome> CellContainer<G> {
     }
     
     /// Replaces the cell at `cell.spin`.
-    pub(crate) fn replace(&mut self, cell: RelCell<G>) {
+    pub fn replace(&mut self, cell: RelCell<G>) {
         let index = cell.spin - LatticeEntity::first_cell_spin();
         self.vec[index as usize] = cell
     }
@@ -60,9 +60,11 @@ impl<G: Genome> CellContainer<G> {
     
     pub fn update_cells(&mut self) {
         for cell in &mut self.vec {
-            if cell.target_area < self.div_area {
+            if let CellType::Divide = cell.cell_type && cell.target_area < self.div_area {
                 cell.target_area += 1;
             }
+            let light_signal = cell.light_mass;
+            cell.genome.update_expression(light_signal);
             cell.cell_type = cell.genome.get_cell_type();
         }
     }

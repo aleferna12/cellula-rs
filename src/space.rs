@@ -180,14 +180,14 @@ impl Space {
 mod tests {
     use super::*;
     use crate::cell::{Cell, RelCell};
-    use crate::genome::SpecialisedGrn;
+    use crate::genome::{Genome, MockGenome};
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
-    
-    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space, RelCell<SpecialisedGrn>) {
+
+    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space, RelCell<impl Genome>) {
         let mut cell = RelCell::mock(Cell::new(
-            10, 
-            SpecialisedGrn::new(0., 0.,)
+            10,
+            MockGenome::new(0)
         ));
         let mut space = Space::new(10, 10);
         for pos in positions {

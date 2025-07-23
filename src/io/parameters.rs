@@ -66,7 +66,7 @@ impl Parameters {
 #[serde(rename_all = "kebab-case")]
 pub struct GeneralParameters {
     pub time_steps: u32,
-    #[serde(default = "param_defaults::zero")]
+    #[serde(default = "param_defaults::zero_u64")]
     pub seed: u64,
 }
 
@@ -94,7 +94,9 @@ pub struct CellParameters {
     #[serde(default = "param_defaults::true_flag")]
     pub divide: bool,
     #[serde(default = "param_defaults::true_flag")]
-    pub migrate: bool
+    pub migrate: bool,
+    #[serde(default = "param_defaults::two_u32")]
+    pub n_regulatory_genes: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -154,6 +156,8 @@ pub struct PlotParameters {
     pub area_max_color: String,
     pub light_min_color: String,
     pub light_max_color: String,
+    pub migrating_color: String,
+    pub dividing_color: String
 }
 
 #[derive(Serialize, Deserialize, Clone, EnumIter, Debug)]
@@ -163,14 +167,16 @@ pub enum PlotType {
     Center,
     LightCenter,
     Clones,
-    Area,
     Border,
+    CellType,
+    Area,
     Light
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
 mod param_defaults {
-    pub fn zero() -> u64 { 0 }
+    pub fn zero_u64() -> u64 { 0 }
+    pub fn two_u32() -> u32 { 2 }
     pub fn false_flag() -> bool { false }
     pub fn true_flag() -> bool { true }
     pub fn webp() -> String { "webp".to_string() }

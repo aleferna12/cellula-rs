@@ -124,14 +124,14 @@ mod tests {
     use super::*;
     use crate::cell::{Cell, RelCell};
     use crate::constants::Spin;
-    use crate::genome::SpecialisedGrn;
+    use crate::genome::MockGenome;
 
     // Helper to create a RelCell with given spin and mom by mocking and overriding
-    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<SpecialisedGrn> {
+    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<MockGenome> {
         RelCell {
             spin,
             mom,
-            cell: Cell::new(10, SpecialisedGrn::new(0., 0.,))
+            cell: Cell::new(10, MockGenome::new(0))
         }
     }
 

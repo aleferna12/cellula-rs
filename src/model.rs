@@ -6,6 +6,7 @@ use crate::io::parameters::Parameters;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::error::Error;
+use crate::genome::Genome;
 
 pub struct Model {
     pub env: Environment,
@@ -43,6 +44,12 @@ impl Model {
             let new_spins = self.env.reproduce();
             for spin in new_spins {
                 self.ca.adhesion.update_clones(spin, &self.env);
+                // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
+                if let LatticeEntity::SomeCell(cell) = self.env.cells.get_entity_mut(spin) {
+                    cell.genome.attempt_mutate(&mut self.rng);
+                } else { 
+                    panic!("Newborn is not a cell")
+                }
             }
         }
     }

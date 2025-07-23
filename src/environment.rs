@@ -1,6 +1,6 @@
 use crate::cell::{Cell, RelCell};
 use crate::cell_container::CellContainer;
-use crate::constants::{Spin, SIZE_SCALE};
+use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
 use crate::io::parameters::{CellParameters, EnvironmentParameters};
 use crate::positional::boundary::Boundary;
@@ -11,11 +11,11 @@ use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
 use rand::Rng;
-use crate::genome::SpecialisedGrn;
+use crate::genome::{Genome, Grn};
 
 pub struct Environment {
     pub space: Space,
-    pub cells: CellContainer<SpecialisedGrn>,
+    pub cells: CellContainer<Grn>,
     pub edge_book: EdgeBook,
     pub neighbourhood: MooreNeighbourhood,
     pub update_period: u32,
@@ -104,7 +104,8 @@ impl Environment {
                 target_area: 0,
                 div_area: 0,
                 divide: false,
-                migrate: false
+                migrate: false,
+                n_regulatory_genes: 0,
             },
         )
     }
@@ -121,11 +122,17 @@ impl Environment {
         self.space.cell_lattice.height()
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell<SpecialisedGrn>> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell<impl Genome>> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
         let mut cell = Cell::new(
             self.cells.target_area,
-            SpecialisedGrn::new(1. / self.height() as f32, SIZE_SCALE)
+            // TODO!: Parameterize
+            Grn::new(
+                1. / self.height() as f32, 
+                2, 
+                0.01, 
+                0.01
+            )
         );
         
         for pos in rect.iter_positions() {
@@ -248,34 +255,32 @@ impl Environment {
     }
     
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<SpecialisedGrn>, DivisionError> {
-        let light_scale = 1. / self.height() as f32;
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<impl Genome>, DivisionError> {
         let new_spin = self.cells.next_spin();
         let cell_target_area = self.cells.target_area;
-        let mom_cell = self
+        let mut mom_clone = self
             .cells
             .get_entity_mut(spin)
-            .expect_cell(&format!("passed non-cell with spin {spin} to `divide_cel()`"));
-        // We modify this mock cell to allow the division to be cancelled in the case of an error
-        let mut mom_clone = mom_cell.clone();
+            .expect_cell(&format!("passed non-cell with spin {spin} to `divide_cel()`"))
+            .clone();
         
         let mut new_cell = Cell::new(
             cell_target_area,
-            SpecialisedGrn::new(light_scale, SIZE_SCALE)
+            mom_clone.genome.clone()
         );
         let new_positions: Vec<_> = self
             .space
-            .box_cell_positions(mom_cell, self.cell_search_radius)
+            .box_cell_positions(&mom_clone, self.cell_search_radius)
             .into_iter()
             .filter(|pos| { 
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
                 //  it also might be worth writing a faster implementation for FixedBoundary (LatticeBoundary)
-                self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_cell.center).0 > 0.
+                self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center).0 > 0.
             })
             .collect();
         for pos in new_positions {
-            if mom_cell.area == 1 {
+            if mom_clone.area == 1 {
                 return Err(DivisionError::NewCellTooBig);
             }
             self.space.cell_lattice[pos] = new_spin;
@@ -293,7 +298,7 @@ impl Environment {
             );
         }
         if new_cell.area > 0 {
-            let mom_spin = mom_cell.spin;
+            let mom_spin = mom_clone.spin;
             mom_clone.target_area = cell_target_area;
             self.cells.replace(mom_clone);
             Ok(self.cells.push(new_cell, Some(mom_spin)))
@@ -390,6 +395,7 @@ pub mod tests {
                 div_area: 4,
                 divide: true,
                 migrate: false,
+                n_regulatory_genes: 0
             },
         );
         env

@@ -1,7 +1,7 @@
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_srgb, AreaPlot, BorderPlot, CenterPlot, ClonesPlot, LightCenterPlot, LightPlot, Plot, SpinPlot};
+use crate::io::plot::{hex_to_srgb, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ClonesPlot, LightCenterPlot, LightPlot, Plot, SpinPlot};
 use crate::spin_table::SpinTable;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
@@ -119,6 +119,13 @@ impl IoManager {
                         env,
                         min_color: hex_to_srgb(&self.plots.light_min_color)?,
                         max_color: hex_to_srgb(&self.plots.light_max_color)?
+                    }.plot(&mut image)
+                },
+                PlotType::CellType => {
+                    CellTypePlot {
+                        env,
+                        mig_color: hex_to_srgb(&self.plots.migrating_color)?,
+                        div_color: hex_to_srgb(&self.plots.dividing_color)?,
                     }.plot(&mut image)
                 }
             }

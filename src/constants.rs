@@ -10,9 +10,6 @@ pub type BoundaryType = UnsafePeriodicBoundary<f32>;
 /// May also require changing the `discriminant()` method of `LatticeEntity<()>`.
 pub type Spin = u32;
 
-// TODO: parameterize
-pub const SIZE_SCALE: f32 = 1. / 20.;
-
 // Type definition based on BoundaryType
 pub type LatticeBoundaryType = <BoundaryType as LatticeBoundaryAssociate>::BoundaryType;
 

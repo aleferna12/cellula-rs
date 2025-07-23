@@ -1,9 +1,9 @@
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
+use crate::genome::CellType;
 use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
-use crate::genome::{CellType, SpecialisedGrn};
 
 /// Represents a cell that is bound to an `Environment`.
 ///
@@ -130,8 +130,8 @@ fn shifted_com<B: Boundary<Coord = f32>>(
 
 #[cfg(test)]
 mod tests {
-    use crate::genome::SpecialisedGrn;
     use super::*;
+    use crate::genome::MockGenome;
     use crate::positional::boundary::UnsafePeriodicBoundary;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
@@ -140,8 +140,8 @@ mod tests {
         UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
     }
     
-    fn make_test_cell() -> Cell<SpecialisedGrn> {
-        Cell::new(100, SpecialisedGrn::new(0., 0.))
+    fn make_test_cell() -> Cell<MockGenome> {
+        Cell::new(100, MockGenome::new(0))
     }
 
     #[test]

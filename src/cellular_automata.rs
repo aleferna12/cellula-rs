@@ -1,3 +1,4 @@
+use crate::genome::CellType;
 use crate::adhesion::AdhesionSystem;
 use crate::cell::{Cell, RelCell};
 use crate::environment::Environment;
@@ -79,7 +80,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if let SomeCell(cell) = entity_from {
-            if env.cells.migrate {
+            if env.cells.migrate && let CellType::Migrate = cell.cell_type {
                 delta_h += self.chemotaxis_bias(&cell, pos_to, self.chemotaxis_mu, &env.space.bound);
             }
         }
@@ -185,7 +186,7 @@ mod tests {
     use super::*;
     use crate::adhesion::ClonalAdhesion;
     use crate::cell::Cell;
-    use crate::genome::SpecialisedGrn;
+    use crate::genome::MockGenome;
     use crate::io::parameters::StaticAdhesionParameters;
 
     #[test]
@@ -204,7 +205,7 @@ mod tests {
             },
             ClonalAdhesion::new(adh_params, 10)
         );
-        let cell = RelCell::mock(Cell::new(100, SpecialisedGrn::new(0., 0.,)));
+        let cell = RelCell::mock(Cell::new(100, MockGenome::new(0)));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }
