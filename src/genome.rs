@@ -57,7 +57,7 @@ impl Genome for MockGenome {
 
 // TODO: this might be quite slow, we can implement a StaticGrn that does not support node insertion or deletion
 //  for improved performance. The advantage of this implementation is that we can delete or duplicate nodes dynamically
-//  and the object is stored directly as a graph
+//  and the object is stored directly as a graph.
 /// Provides a generic, versatile GRN implementation that is specialised in `Grn`.
 #[derive(Clone, Debug)]
 pub struct BaseGrn {
