@@ -131,7 +131,7 @@ mod tests {
         RelCell {
             spin,
             mom,
-            cell: Cell::new(10, MockGenome::new(0))
+            cell: Cell::new_empty(10, MockGenome::new(0))
         }
     }
 

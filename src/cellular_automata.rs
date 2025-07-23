@@ -4,7 +4,6 @@ use crate::cell::{Cell, RelCell};
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
-use crate::io::parameters::CellularAutomataParameters;
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
@@ -22,11 +21,11 @@ pub struct CellularAutomata<A> {
 }
 
 impl<A: AdhesionSystem> CellularAutomata<A> {
-    pub fn new(params: CellularAutomataParameters, adhesion: A) -> Self {
+    pub fn new(boltz_t: f32, size_lambda: f32, chemotaxis_mu: f32, adhesion: A) -> Self {
         Self {
-            boltz_t: params.boltz_t,
-            size_lambda: params.size_lambda,
-            chemotaxis_mu: params.chemotaxis_mu,
+            boltz_t,
+            size_lambda,
+            chemotaxis_mu,
             adhesion
         }
     }
@@ -197,15 +196,12 @@ mod tests {
             solid_energy: 20.
         };
         let ca = CellularAutomata::new(
-            CellularAutomataParameters {
-                adhesion: adh_params.clone(),
-                boltz_t: 16.,
-                size_lambda: 1.,
-                chemotaxis_mu: 1.
-            },
+            16., 
+            1.,
+            1.,
             ClonalAdhesion::new(adh_params, 10)
         );
-        let cell = RelCell::mock(Cell::new(100, MockGenome::new(0)));
+        let cell = RelCell::mock(Cell::new_empty(100, MockGenome::new(0)));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }

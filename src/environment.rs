@@ -58,6 +58,14 @@ impl Environment {
                     pos,
                     (pos.x + cell_side, pos.y + cell_side).into()
                 ),
+                // TODO!: Parameterize
+                Grn::new(
+                    1. / env.height() as f32,
+                    2,
+                    0.8,
+                    0.8,
+                    rng
+                )
             );
             if cell.is_some() {
                 cell_count += 1;
@@ -122,17 +130,11 @@ impl Environment {
         self.space.cell_lattice.height()
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>) -> Option<&RelCell<impl Genome>> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, genome: Grn) -> Option<&RelCell<Grn>> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
-        let mut cell = Cell::new(
+        let mut cell = Cell::new_empty(
             self.cells.target_area,
-            // TODO!: Parameterize
-            Grn::new(
-                1. / self.height() as f32, 
-                2, 
-                0.01, 
-                0.01
-            )
+            genome
         );
         
         for pos in rect.iter_positions() {
@@ -154,8 +156,7 @@ impl Environment {
         if cell.area == 0 { 
             return None;
         }
-        self.cells.push(cell, None);
-        Some(self.cells.get_entity(spin).unwrap_cell())
+        Some(self.cells.push(cell, None))
     }
     
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) -> usize {
@@ -264,7 +265,7 @@ impl Environment {
             .expect_cell(&format!("passed non-cell with spin {spin} to `divide_cel()`"))
             .clone();
         
-        let mut new_cell = Cell::new(
+        let mut new_cell = Cell::new_empty(
             cell_target_area,
             mom_clone.genome.clone()
         );
@@ -378,6 +379,7 @@ impl LatticeEntity<()> {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::genome::MockGenome;
     use super::*;
     use crate::positional::rect::Rect;
     use crate::positional::pos::Pos;
@@ -465,7 +467,7 @@ pub mod tests {
         let mut env = make_env_for_division();
 
         let rect = Rect::new(Pos::new(20, 20), Pos::new(22, 22));
-        env.spawn_rect_cell(rect);
+        env.spawn_rect_cell(rect, MockGenome::new(0));
 
         let spin = LatticeEntity::first_cell_spin();
         let result = env.divide_cell(spin);
@@ -477,7 +479,7 @@ pub mod tests {
     #[test]
     fn test_reproduce() {
         let mut env = make_env_for_division();
-        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)));
+        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), MockGenome::new(0));
 
         let divided_spins = env.reproduce();
         assert_eq!(divided_spins.len(), 1);
@@ -487,7 +489,7 @@ pub mod tests {
     fn test_reproduce_limit_population() {
         let mut env = make_env_for_division();
         env.max_cells = 1;
-        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)));
+        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), MockGenome::new(0));
 
         let divided_spins = env.reproduce();
         assert_eq!(divided_spins.len(), 0);

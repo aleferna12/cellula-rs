@@ -23,11 +23,11 @@ impl Space {
             (width, height).into()
         );
         Self {
-            bound: BoundaryType::new(Rect::new(
+            bound: BoundaryType::from(Rect::new(
                 (0., 0.).into(),
                 (width as f32, height as f32).into()
             )),
-            lat_bound: LatticeBoundaryType::new(Rect::new(
+            lat_bound: LatticeBoundaryType::from(Rect::new(
                 (0, 0).into(),
                 (width as isize, height as isize).into()
             )),
@@ -185,7 +185,7 @@ mod tests {
     use crate::positional::pos::Pos;
 
     fn space_cell_pair(positions: &[Pos<usize>]) -> (Space, RelCell<impl Genome>) {
-        let mut cell = RelCell::mock(Cell::new(
+        let mut cell = RelCell::mock(Cell::new_empty(
             10,
             MockGenome::new(0)
         ));

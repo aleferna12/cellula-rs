@@ -56,12 +56,6 @@ pub struct FixedBoundary<T> {
     rect: Rect<T>
 }
 
-impl<T> FixedBoundary<T> {
-    pub fn new(rect: Rect<T>) -> Self {
-        Self { rect }
-    }
-}
-
 impl<T> Boundary for FixedBoundary<T>
 where
     T: PartialOrd
@@ -91,17 +85,15 @@ where
     }
 }
 
+impl<T> From<Rect<T>> for FixedBoundary<T> {
+    fn from(rect: Rect<T>) -> Self {
+        Self { rect }
+    }
+}
+
 #[derive(Clone)]
 pub struct SafePeriodicBoundary<T> {
     rect: Rect<T>
-}
-
-impl<T> SafePeriodicBoundary<T>
-where
-    T: Copy + Num + Euclid {
-    pub fn new(rect: Rect<T>) -> Self {
-        Self { rect }
-    }
 }
 
 impl<T> Boundary for SafePeriodicBoundary<T>
@@ -137,6 +129,12 @@ where
     }
 }
 
+impl<T> From<Rect<T>> for SafePeriodicBoundary<T> {
+    fn from(rect: Rect<T>) -> Self {
+        Self { rect }
+    }
+}
+
 /// This struct can only validate positions that are at most one `width()` or `height()` away from the boundaries.
 ///
 /// <div class="warning">
@@ -147,16 +145,6 @@ where
 #[derive(Clone)]
 pub struct UnsafePeriodicBoundary<T> {
     rect: Rect<T>
-}
-
-impl<T> UnsafePeriodicBoundary<T>
-where
-    T: Copy
-    + Num
-    + PartialOrd {
-    pub fn new(rect: Rect<T>) -> Self {
-        Self { rect }
-    }
 }
 
 impl<T> Boundary for UnsafePeriodicBoundary<T>
@@ -195,6 +183,12 @@ where
     }
 }
 
+impl<T> From<Rect<T>> for UnsafePeriodicBoundary<T> {
+    fn from(rect: Rect<T>) -> Self {
+        Self { rect }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -206,7 +200,7 @@ mod tests {
 
     #[test]
     fn test_fixed_valid() {
-        let fixed = FixedBoundary::new(rect_10x10());
+        let fixed = FixedBoundary::from(rect_10x10());
 
         // In bounds
         assert_eq!(fixed.valid_pos(Pos::new(5, 5)), Some(Pos::new(5, 5)));
@@ -220,14 +214,14 @@ mod tests {
 
     #[test]
     fn test_fixed_displacement() {
-        let fixed = FixedBoundary::new(rect_10x10());
+        let fixed = FixedBoundary::from(rect_10x10());
         let d = fixed.displacement(Pos::new(3, 3), Pos::new(6, 1));
         assert_eq!(d, (3, -2));
     }
 
     #[test]
     fn test_safe_periodic_valid() {
-        let per = SafePeriodicBoundary::new(rect_10x10());
+        let per = SafePeriodicBoundary::from(rect_10x10());
 
         // Valid values wrap around
         assert_eq!(per.valid_pos(Pos::new(-1, -1)), Some(Pos::new(9, 9)));
@@ -237,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_safe_periodic_displacement() {
-        let per = SafePeriodicBoundary::new(rect_10x10());
+        let per = SafePeriodicBoundary::from(rect_10x10());
 
         let d = per.displacement(Pos::new(9, 0), Pos::new(1, 0)); // wrapped
         assert_eq!(d, (2, 0)); // shortest dx is -8 → wraps to +2
@@ -248,7 +242,7 @@ mod tests {
 
     #[test]
     fn test_unsafe_periodic_valid() {
-        let unsafe_per = UnsafePeriodicBoundary::new(rect_10x10());
+        let unsafe_per = UnsafePeriodicBoundary::from(rect_10x10());
 
         // Near bounds: valid
         assert_eq!(unsafe_per.valid_pos(Pos::new(10, 0)), Some(Pos::new(0, 0)));

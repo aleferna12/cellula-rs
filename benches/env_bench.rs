@@ -68,7 +68,7 @@ fn bench_env(c: &mut Criterion) {
     });
     
     let pos_usize: [Pos<isize>; 2] = [Pos::new(20, 20), Pos::new(-20, -20)];
-    let lat_bound = UnsafePeriodicBoundary::new(Rect::new((0, 0).into(), (40, 40).into()));
+    let lat_bound = UnsafePeriodicBoundary::from(Rect::new((0, 0).into(), (40, 40).into()));
     c.bench_function("unsafe_periodic_boundary_usize", |b| {
         b.iter(
             || {
@@ -78,7 +78,7 @@ fn bench_env(c: &mut Criterion) {
     });
 
     let pos_usize: [Pos<f32>; 2] = [Pos::new(20., 20.), Pos::new(-20., -20.)];
-    let lat_bound = UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (40., 40.).into()));
+    let lat_bound = UnsafePeriodicBoundary::from(Rect::new((0., 0.).into(), (40., 40.).into()));
     c.bench_function("unsafe_periodic_boundary_f32", |b| {
         b.iter(
             || {

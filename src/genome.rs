@@ -2,6 +2,7 @@ use rand_distr::Distribution;
 use crate::genome::GrnError::{MissingNode, WrongNodeType};
 use crate::genome::GrnGeneType::{Input, Output, Regulatory};
 use petgraph::graph::{DiGraph, NodeIndex};
+use rand::distr::Uniform;
 use rand::Rng;
 use rand_distr::Normal;
 use thiserror::Error;
@@ -70,42 +71,53 @@ pub struct BaseGrn {
 }
 
 impl BaseGrn {
-    pub fn new(input_scales: &[f32], n_regulatory: u32, n_outputs: u32, mut_rate: f32, mut_std: f32) -> Self {
+    pub fn new(
+        input_scales: &[f32],
+        n_regulatory: u32,
+        n_outputs: u32,
+        mut_rate: f32,
+        mut_std: f32, 
+        rng: &mut impl Rng
+    ) -> Self {
         let mut grn = BaseGrn {
             graph: DiGraph::new(),
             input_ids: Vec::new(),
             regulatory_ids: Vec::new(),
             output_ids: Vec::new(),
             mut_rate,
-            mut_distr: Normal::new(0., mut_std).expect("Invalid `mut_std`")
+            mut_distr: Normal::new(rng.random(), mut_std).expect("Invalid `mut_std`")
         };
 
         for scale in input_scales.iter() {
             let idx = grn.graph.add_node(Input(InputGene { signal: 0., scale: *scale }));
             grn.input_ids.push(idx.index() as u32);
         }
+        let uniform_distr = Uniform::new(-1., 1.).unwrap();
         for _ in 0..n_regulatory {
             let idx = grn.graph.add_node(Regulatory(RegulatoryGene {
-                threshold: 0.,
+                threshold: uniform_distr.sample(rng),
                 active: false,
                 activating: false
             }));
             grn.regulatory_ids.push(idx.index() as u32);
         }
         for _ in 0..n_outputs {
-            let idx = grn.graph.add_node(Output(OutputGene { threshold: 0., active: false }));
+            let idx = grn.graph.add_node(Output(OutputGene { 
+                threshold: uniform_distr.sample(rng), 
+                active: false 
+            }));
             grn.output_ids.push(idx.index() as u32);
         }
 
         for reg in grn.regulatory_ids.iter().copied() {
             for input in grn.input_ids.iter().copied() {
-                grn.graph.add_edge(input.into(), reg.into(), 0.);
+                grn.graph.add_edge(input.into(), reg.into(), uniform_distr.sample(rng));
             }
             for reg2 in grn.regulatory_ids.iter().copied() {
-                grn.graph.add_edge(reg.into(), reg2.into(), 0.);
+                grn.graph.add_edge(reg.into(), reg2.into(), uniform_distr.sample(rng));
             }
             for output in grn.output_ids.iter().copied() {
-                grn.graph.add_edge(reg.into(), output.into(), 0.);
+                grn.graph.add_edge(reg.into(), output.into(), uniform_distr.sample(rng));
             }
         }
         grn
@@ -196,7 +208,7 @@ impl BaseGrn {
     }
 
     fn update_expression(&mut self, input_signals: &[f32]) -> Result<(), GrnError> {
-        for (i, inp) in self.input_ids.clone().iter().copied().enumerate() {
+        for (i, inp) in self.input_ids.clone().into_iter().enumerate() {
             let inp_gene = self.get_input_gene_mut(inp.into())?;
             inp_gene.signal = input_signals[i];
         }
@@ -255,14 +267,15 @@ impl BaseGrn {
 
 /// Specialised GRN that handles the correct inputs and outputs.
 impl Grn {
-    pub fn new(light_scale: f32, n_regulatory: u32, mut_rate: f32, mut_std: f32) -> Self {
+    pub fn new(light_scale: f32, n_regulatory: u32, mut_rate: f32, mut_std: f32, rng: &mut impl Rng) -> Self {
         Self {
             grn: BaseGrn::new(
                 &[light_scale],
                 n_regulatory, 
                 1,
                 mut_rate,
-                mut_std
+                mut_std,
+                rng
             ),
         }
     }

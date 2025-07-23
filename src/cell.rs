@@ -56,7 +56,7 @@ pub struct Cell<G> {
 
 impl<G> Cell<G> {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new(target_area: u32, genome: G) -> Self {
+    pub fn new_empty(target_area: u32, genome: G) -> Self {
         Self {
             area: 0,
             target_area,
@@ -137,11 +137,11 @@ mod tests {
     use crate::positional::rect::Rect;
 
     fn make_unsafe_boundary() -> UnsafePeriodicBoundary<f32> {
-        UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
+        UnsafePeriodicBoundary::from(Rect::new((0., 0.).into(), (100., 100.).into()))
     }
     
     fn make_test_cell() -> Cell<MockGenome> {
-        Cell::new(100, MockGenome::new(0))
+        Cell::new_empty(100, MockGenome::new(0))
     }
 
     #[test]
