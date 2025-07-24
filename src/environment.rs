@@ -2,7 +2,7 @@ use rand_distr::Distribution;
 use rand::distr::Uniform;
 use crate::cell::{Cell, RelCell};
 use crate::cell_container::CellContainer;
-use crate::constants::Spin;
+use crate::constants::{NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
 use crate::genome::{Genome, Grn};
 use crate::io::parameters::{CellParameters, EnvironmentParameters};
@@ -19,7 +19,7 @@ pub struct Environment {
     pub space: Space,
     pub cells: CellContainer<Grn>,
     pub edge_book: EdgeBook,
-    pub neighbourhood: MooreNeighbourhood,
+    pub neighbourhood: NeighbourhoodType,
     pub update_period: u32,
     pub cell_search_radius: f32,
     pub population_exploded: bool,
