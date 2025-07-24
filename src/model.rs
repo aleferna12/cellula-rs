@@ -1,4 +1,4 @@
-use crate::adhesion::ClonalAdhesion;
+use crate::adhesion::{ClonalAdhesion, StaticAdhesion};
 use crate::cellular_automata::CellularAutomata;
 use crate::environment::{Environment, LatticeEntity};
 use crate::io::io_manager::IoManager;
@@ -6,22 +6,23 @@ use crate::io::parameters::Parameters;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::error::Error;
-use crate::genome::Genome;
+use rand::distr::{Distribution, Uniform};
+use crate::cell_container::CellContainer;
+use crate::constants::NeighbourhoodType;
+use crate::genome::{Genome, Grn};
+use crate::io::movie_maker::MovieMaker;
+use crate::positional::rect::Rect;
+use crate::space::Space;
 
 pub struct Model {
-    pub env: Environment,
+    pub env: Environment<NeighbourhoodType>,
     pub ca: CellularAutomata<ClonalAdhesion>,
     pub rng: Xoshiro256StarStar,
-    pub io_manager: IoManager,
-    parameters: Parameters
+    pub io_manager: IoManager
 }
 
+// TODO! Implement new, which does not require Parameters
 impl Model {
-    // Prevent from mutating, since values might have been used to set state already
-    pub fn parameters(&self) -> &Parameters {
-        &self.parameters
-    }
-    
     pub fn run(&mut self, steps: u32) {
         log::info!("Starting simulation");
         for time_step in 0..=steps {
@@ -59,34 +60,102 @@ impl TryFrom<Parameters> for Model {
     type Error = Box<dyn Error>;
 
     fn try_from(parameters: Parameters) -> Result<Self, Self::Error> {
-        let mut rng = if parameters.general.seed == 0 {
+        let rng = if parameters.general.seed == 0 {
             Xoshiro256StarStar::from_os_rng()
         } else {
             Xoshiro256StarStar::seed_from_u64(parameters.general.seed)
         };
-        let model = Self {
+        let mut model = Self {
             env: Environment::new(
-                parameters.environment.clone(),
-                &mut rng
+                parameters.environment.update_period,
+                parameters.environment.cell_search_radius,
+                parameters.environment.max_cells,
+                parameters.environment.enclose,
+                CellContainer::new(
+                    parameters.environment.cell.target_area,
+                    parameters.environment.cell.div_area,
+                    parameters.environment.cell.divide,
+                    parameters.environment.cell.migrate,
+                ),
+                Space::new(
+                    parameters.environment.width,
+                    parameters.environment.height,
+                ),
+                NeighbourhoodType::new(parameters.environment.neigh_r)
             ),
             ca: CellularAutomata::new(
                 parameters.cellular_automata.boltz_t,
                 parameters.cellular_automata.size_lambda,
                 parameters.cellular_automata.chemotaxis_mu,
                 ClonalAdhesion::new(
-                    parameters.cellular_automata.adhesion.clone(),
-                    parameters.environment.max_cells + LatticeEntity::first_cell_spin()
+                    parameters.environment.max_cells + LatticeEntity::first_cell_spin(),
+                    StaticAdhesion {
+                        cell_energy: parameters.cellular_automata.adhesion.cell_energy,
+                        medium_energy: parameters.cellular_automata.adhesion.medium_energy,
+                        solid_energy: parameters.cellular_automata.adhesion.solid_energy,
+                    }
                 )
             ),
-            io_manager: IoManager::try_from(parameters.io.clone())?,
-            rng,
-            parameters
+            io_manager: IoManager::new(
+                &parameters.io.outdir,
+                parameters.io.image_period,
+                parameters.io.image_format.clone(),
+                parameters.io.plots.clone(),
+                if parameters.io.movie.show {
+                    match MovieMaker::new(
+                        parameters.io.movie.width,
+                        parameters.io.movie.height,
+                        parameters.io.movie.frame_period
+                    ) {
+                        Ok(mm) => {
+                            log::info!("Creating window for real-time movie display");
+                            Some(mm)
+                        },
+                        Err(e) => {
+                            log::warn!("Failed to initialise movie maker with error `{e}`");
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            ),
+            rng
         };
 
         log::info!("Setting model up");
         log::info!("Creating output directory and copy of parameter file");
-        model.io_manager.create_directories()?;
-        model.io_manager.create_parameters_file(&model.parameters)?;
+        model.io_manager.create_directories(parameters.io.replace_outdir)?;
+        model.io_manager.create_parameters_file(&parameters)?;
+
+        log::info!("Creating cells");
+        let mut cell_count = 0;
+        let cell_side = (parameters.environment.cell_start_area as f32).sqrt() as usize;
+        for _ in 0..parameters.environment.starting_cells {
+            let pos = model.env.space.cell_lattice.random_pos(&mut model.rng);
+            let cell = model.env.spawn_rect_cell(
+                Rect::new(
+                    pos,
+                    (pos.x + cell_side, pos.y + cell_side).into()
+                ),
+                // TODO!: Parameterize
+                Grn::new(
+                    1. / model.env.height() as f32,
+                    2,
+                    0.8,
+                    0.8,
+                    || Uniform::new(-1., 1.).unwrap().sample(&mut model.rng)
+                )
+            );
+            if cell.is_some() {
+                cell_count += 1;
+            }
+        }
+        log::info!(
+            "Created {} out of the {} cells requested", 
+            cell_count, 
+            parameters.environment.starting_cells
+        );
 
         Ok(model)
     }

@@ -1,4 +1,3 @@
-use crate::io::parameters::MovieParameters;
 use image::{EncodableLayout, RgbaImage};
 
 pub struct MovieMaker {
@@ -9,6 +8,25 @@ pub struct MovieMaker {
 }
 
 impl MovieMaker {
+    pub fn new(
+        width: u32,
+        height: u32,
+        frame_period: u32
+    ) -> Result<Self, minifb::Error> {
+        let window = minifb::Window::new(
+            "Evo-CPM",
+            width as usize,
+            height as usize,
+            minifb::WindowOptions::default()
+        )?;
+        Ok(Self {
+            width,
+            height,
+            frame_period,
+            window
+        })
+    }
+    
     pub fn window_works(&self) -> bool {
         self.window.is_open() && !self.window.is_key_down(minifb::Key::Escape)
     }
@@ -22,25 +40,6 @@ impl MovieMaker {
             })
             .collect();
         self.window.update_with_buffer(&buffer, self.width as usize, self.height as usize)
-    }
-}
-
-impl TryFrom<MovieParameters> for MovieMaker {
-    type Error = minifb::Error;
-
-    fn try_from(params: MovieParameters) ->  Result<Self, Self::Error> {
-        let window = minifb::Window::new(
-            "Evo-CPM",
-            params.width as usize,
-            params.height as usize,
-            minifb::WindowOptions::default()
-        )?;
-        Ok(Self {
-            width: params.width,
-            height: params.height,
-            frame_period: params.frame_period,
-            window
-        })
     }
 }
 

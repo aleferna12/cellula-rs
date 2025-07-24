@@ -3,7 +3,6 @@ use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
 use crate::genome::{CellType, Genome};
-use crate::io::parameters::CellParameters;
 
 pub struct CellContainer<G> {
     pub target_area: u32,
@@ -14,6 +13,21 @@ pub struct CellContainer<G> {
 }
 
 impl<G: Genome> CellContainer<G> {
+    pub fn new(
+        target_area: u32,
+        div_area: u32,
+        divide: bool,
+        migrate: bool
+    ) -> Self {
+        Self {
+            target_area,
+            div_area,
+            divide,
+            migrate,
+            vec: vec![],
+        }
+    }
+    
     pub fn n_cells(&self) -> Spin {
         self.vec.len().try_into().expect("there are more cells than supported by the type `Spin`")
     }
@@ -66,18 +80,6 @@ impl<G: Genome> CellContainer<G> {
             let light_signal = cell.light_mass;
             cell.genome.update_expression(light_signal);
             cell.cell_type = cell.genome.get_cell_type();
-        }
-    }
-}
-
-impl<G> From<CellParameters> for CellContainer<G> {
-    fn from(params: CellParameters) -> Self {
-        Self {
-            target_area: params.target_area,
-            div_area: params.div_area,
-            divide: params.divide,
-            migrate: params.migrate,
-            vec: vec![],
         }
     }
 }

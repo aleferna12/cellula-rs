@@ -12,6 +12,8 @@ use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
 use crate::genome::CellType;
+use crate::lattice::Lattice;
+use crate::space::Space;
 
 pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);
@@ -44,8 +46,8 @@ pub enum LerpError {
     NegativeRange
 }
 
-pub struct SpinPlot<'e> {
-    pub env: &'e Environment,
+pub struct SpinPlot<'s> {
+    pub space: &'s Space,
     pub solid_color: Srgb<u8>,
     pub medium_color: Option<Srgb<u8>>
 }
@@ -65,13 +67,14 @@ impl<'e> SpinPlot<'e> {
 
 impl Plot for SpinPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.space.cell_lattice.iter_positions() {
-            let spin = self.env.space.cell_lattice[pos];
-            let entity = self.env.cells.get_entity(spin);
-            let rgb = match entity { 
-                LatticeEntity::SomeCell(cell) => Some(Self::spin_to_rgb(cell.spin)),
-                LatticeEntity::Solid => Some(self.solid_color),
-                LatticeEntity::Medium => self.medium_color
+        for pos in self.space.cell_lattice.iter_positions() {
+            let spin = self.space.cell_lattice[pos];
+            let rgb = if spin >= LatticeEntity::first_cell_spin() {
+                Some(Self::spin_to_rgb(spin))
+            } else if spin == LatticeEntity::Solid.discriminant() {
+                Some(self.solid_color)
+            } else {
+                self.medium_color
             };
             if let Some(color) = rgb {
                 image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
@@ -80,12 +83,12 @@ impl Plot for SpinPlot<'_> {
     }
 }
 
-pub struct CenterPlot<'e> {
-    pub env: &'e Environment,
+pub struct CenterPlot<'e, N> {
+    pub env: &'e Environment<N>,
     pub color: Srgb<u8>
 }
 
-impl Plot for CenterPlot<'_> {
+impl<N> Plot for CenterPlot<'_, N> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -99,12 +102,12 @@ impl Plot for CenterPlot<'_> {
     }
 }
 
-pub struct LightCenterPlot<'e> {
-    pub env: &'e Environment,
+pub struct LightCenterPlot<'e, N> {
+    pub env: &'e Environment<N>,
     pub color: Srgb<u8>
 }
 
-impl Plot for LightCenterPlot<'_> {
+impl<N> Plot for LightCenterPlot<'_, N> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -118,14 +121,14 @@ impl Plot for LightCenterPlot<'_> {
     }
 }
 
-pub struct ClonesPlot<'a> {
-    pub env: &'a Environment,
+pub struct ClonesPlot<'a, N> {
+    pub env: &'a Environment<N>,
     pub clone_pairs: &'a SymmetricTable<bool>,
     pub color: Srgb<u8>,
     pub all_clones: bool
 }
 
-impl Plot for ClonesPlot<'_> {
+impl<N> Plot for ClonesPlot<'_, N> {
     fn plot(&self, image: &mut RgbaImage) {
         let spins = self.clone_pairs.iter_pairs(
             LatticeEntity::first_cell_spin() as usize,
@@ -157,12 +160,12 @@ impl Plot for ClonesPlot<'_> {
     }
 }
 
-pub struct BorderPlot<'e> {
-    pub env: &'e Environment,
+pub struct BorderPlot<'e, N> {
+    pub env: &'e Environment<N>,
     pub color: Srgb<u8>
 }
 
-impl Plot for BorderPlot<'_> {
+impl<N: Neighbourhood> Plot for BorderPlot<'_, N> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
@@ -184,13 +187,13 @@ impl Plot for BorderPlot<'_> {
     }
 }
 
-pub struct CellTypePlot<'e> {
-    pub env: &'e Environment,
+pub struct CellTypePlot<'e, N> {
+    pub env: &'e Environment<N>,
     pub mig_color: Srgb<u8>,
     pub div_color: Srgb<u8>
 }
 
-impl Plot for CellTypePlot<'_> {
+impl<N> Plot for CellTypePlot<'_, N> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
@@ -210,13 +213,13 @@ impl Plot for CellTypePlot<'_> {
     }
 }
 
-pub struct AreaPlot<'e> {
-    pub env: &'e Environment,
+pub struct AreaPlot<'e, N> {
+    pub env: &'e Environment<N>,
     pub min_color: Luv,
     pub max_color: Luv
 }
 
-impl Plot for AreaPlot<'_> {
+impl<N> Plot for AreaPlot<'_, N> {
     fn plot(&self, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
@@ -250,30 +253,29 @@ impl Plot for AreaPlot<'_> {
     }
 }
 
-impl ContinuousPlot for AreaPlot<'_> {
+impl<N> ContinuousPlot for AreaPlot<'_, N> {
     fn min_color(&self) -> &Luv {
         &self.min_color
     }
-
     fn max_color(&self) -> &Luv {
         &self.max_color
     }
 }
 
-pub struct LightPlot<'e> {
-    pub env: &'e Environment,
+pub struct LightPlot<'l> {
+    pub lat: &'l Lattice<u32>,
     pub min_color: Luv,
     pub max_color: Luv
 }
 
 impl Plot for LightPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.space.light_lattice.iter_positions() {
-            let light = self.env.space.light_lattice[pos];
+        for pos in self.lat.iter_positions() {
+            let light = self.lat[pos];
             let color = self.lerp(
                 light as f32,
                 0.,
-                self.env.height() as f32
+                self.lat.height() as f32
             );
             match color { 
                 Ok(c) => image.put_pixel(

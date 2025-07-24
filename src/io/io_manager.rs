@@ -1,19 +1,19 @@
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
-use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
+use crate::io::parameters::{Parameters, PlotParameters, PlotType};
 use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ClonesPlot, LightCenterPlot, LightPlot, Plot, SpinPlot};
 use crate::symmetric_table::SymmetricTable;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use crate::positional::neighbourhood::Neighbourhood;
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
 
 pub struct IoManager {
     pub outdir: PathBuf,
-    pub replace_outdir: bool,
     pub image_period: u32,
     pub image_format: String,
     pub movie_maker: Option<MovieMaker>,
@@ -21,10 +21,28 @@ pub struct IoManager {
 }
 
 impl IoManager {
+    pub fn new(
+        outdir: impl AsRef<Path>,
+        image_period: u32,
+        image_format: String,
+        plots: PlotParameters,
+        movie_maker: Option<MovieMaker>
+    ) -> Self {
+        Self {
+            outdir: outdir.as_ref().to_path_buf(),
+            image_period,
+            image_format,
+            plots,
+            movie_maker
+            
+        }
+    }
+    
+    // TODO!: I dont like this, would be better to put this logic back in model.step()
     pub fn image_io(
         &mut self,
         time_step: u32,
-        env: &Environment,
+        env: &Environment<impl Neighbourhood>,
         clone_pairs: &SymmetricTable<bool>
     ) -> Result<(), Box<dyn Error>> {
         let mut frame = None;
@@ -60,7 +78,7 @@ impl IoManager {
 
     pub fn simulation_image(
         &self, 
-        env: &Environment, 
+        env: &Environment<impl Neighbourhood>, 
         clone_pairs: &SymmetricTable<bool>
     ) -> Result<RgbaImage, Box<dyn Error>> {
         let mut image = RgbaImage::new(
@@ -71,7 +89,7 @@ impl IoManager {
             match plot {
                 PlotType::Spin => {
                     SpinPlot {
-                        env,
+                        space: &env.space,
                         solid_color: hex_to_srgb(
                             &self.plots.solid_color
                         ).expect("`solid-color` is not a valid rgb"),
@@ -116,7 +134,7 @@ impl IoManager {
                 },
                 PlotType::Light => {
                     LightPlot {
-                        env,
+                        lat: &env.space.light_lattice,
                         min_color: srgb_to_luv(hex_to_srgb(&self.plots.light_min_color)?),
                         max_color: srgb_to_luv(hex_to_srgb(&self.plots.light_max_color)?)
                     }.plot(&mut image)
@@ -134,10 +152,10 @@ impl IoManager {
         Ok(image)
     }
 
-    pub fn create_directories(&self) -> std::io::Result<()> {
+    pub fn create_directories(&self, replace_outdir: bool) -> std::io::Result<()> {
         let outdir_exists = self.outdir.try_exists()?;
         if outdir_exists {
-            if self.replace_outdir {
+            if replace_outdir {
                 log::info!("Cleaning contents of '{}'", self.outdir.display());
                 std::fs::remove_dir_all(&self.outdir)?;
             } else {
@@ -162,32 +180,5 @@ impl IoManager {
             )
         )?;
         Ok(())
-    }
-}
-
-impl TryFrom<IoParameters> for IoManager {
-    type Error = <MovieMaker as TryFrom<MovieParameters>>::Error;
-    fn try_from(params: IoParameters) -> Result<Self, Self::Error> {
-        Ok(Self {
-            outdir: PathBuf::from(params.outdir),
-            replace_outdir: params.replace_outdir,
-            image_period: params.image_period,
-            image_format: params.image_format,
-            movie_maker: if params.movie.show {
-                match MovieMaker::try_from(params.movie.clone()) {
-                    Ok(mm) => {
-                        log::info!("Creating window for real-time movie display");
-                        Some(mm)
-                    },
-                    Err(e) => {
-                        log::warn!("Failed to initialise movie maker with error `{e}`");
-                        None
-                    }
-                }
-            } else {
-                None
-            },
-            plots: params.plots
-        })
     }
 }

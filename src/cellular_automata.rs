@@ -1,9 +1,9 @@
-use crate::genome::CellType;
 use crate::adhesion::AdhesionSystem;
 use crate::cell::{Cell, RelCell};
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
+use crate::genome::CellType;
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
@@ -30,7 +30,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         }
     }
     
-    pub fn step(&self, env: &mut Environment, rng: &mut impl Rng) {
+    pub fn step(&self, env: &mut Environment<impl Neighbourhood>, rng: &mut impl Rng) {
         let mut to_visit = env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
         while 0. < to_visit {
             let edge_i = env.edge_book.random_index(rng);
@@ -54,7 +54,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     /// The number of extra updates that the copy attempt incurred (not whether it was successful or not!).
     pub fn attempt_site_copy(
         &self,
-        env: &mut Environment,
+        env: &mut Environment<impl Neighbourhood>,
         rng: &mut impl Rng,
         pos_from: Pos<usize>,
         pos_to: Pos<usize>
@@ -183,14 +183,13 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adhesion::ClonalAdhesion;
+    use crate::adhesion::{ClonalAdhesion, StaticAdhesion};
     use crate::cell::Cell;
     use crate::genome::MockGenome;
-    use crate::io::parameters::StaticAdhesionParameters;
 
     #[test]
     fn test_delta_hamiltonian_size() {
-        let adh_params = StaticAdhesionParameters {
+        let adh = StaticAdhesion {
             cell_energy: 10.,
             medium_energy: 20.,
             solid_energy: 20.
@@ -199,7 +198,7 @@ mod tests {
             16., 
             1.,
             1.,
-            ClonalAdhesion::new(adh_params, 10)
+            ClonalAdhesion::new(10, adh)
         );
         let cell = RelCell::mock(Cell::new_empty(100, MockGenome::new(0)));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));

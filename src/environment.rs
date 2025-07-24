@@ -1,126 +1,61 @@
-use rand_distr::Distribution;
-use rand::distr::Uniform;
 use crate::cell::{Cell, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
 use crate::genome::{Genome, Grn};
-use crate::io::parameters::{CellParameters, EnvironmentParameters};
 use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
-use crate::positional::neighbourhood::Neighbourhood;
+use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
-use rand::Rng;
 
 // This could be a really complicated type with several generic parameters.
 // Because references to Environment are passed around quite a lot, and it initialises most of its members, I've decided
 // to keep it simple.
-pub struct Environment {
+pub struct Environment<N> {
     pub space: Space,
     pub cells: CellContainer<Grn>,
     pub edge_book: EdgeBook,
-    pub neighbourhood: NeighbourhoodType,
+    pub neighbourhood: N,
     pub update_period: u32,
     pub cell_search_radius: f32,
     pub population_exploded: bool,
     pub max_cells: Spin
 }
 
-impl Environment {
-    pub fn new(params: EnvironmentParameters, rng: &mut impl Rng) -> Self {
-        let mut env = Self::new_empty(
-            params.width,
-            params.height,
-            params.neigh_r,
-            params.update_period,
-            params.cell_search_radius,
-            params.max_cells,
-            params.cell
-        );
+impl<N> Environment<N> {
+    pub fn new(
+        update_period: u32,
+        cell_search_radius: f32,
+        max_cells: Spin,
+        enclose: bool,
+        cells: CellContainer<Grn>,
+        space: Space,
+        neighbourhood: N
+    ) -> Self {
+        let mut env = Self {
+            space,
+            cells,
+            neighbourhood,
+            edge_book: EdgeBook::new(),
+            max_cells,
+            update_period,
+            cell_search_radius,
+            population_exploded: false
+        };
 
-        if params.enclose {
-            log::info!("Enclosing environment with a border");
+        if enclose {
             env.make_border();
         }
-
-        log::info!("Initialising light gradient");
+    
         for row in 0..env.height() {
             for col in 0..env.width() {
                 env.space.light_lattice[(col, row).into()] = row.try_into().expect("Lattice is too big");
             }
         }
-
-        log::info!("Creating cells");
-        let mut cell_count = 0;
-        let cell_side = (params.cell_start_area as f32).sqrt() as usize;
-        for _ in 0..params.starting_cells {
-            let pos = env.space.cell_lattice.random_pos(rng);
-            let cell = env.spawn_rect_cell(
-                Rect::new(
-                    pos,
-                    (pos.x + cell_side, pos.y + cell_side).into()
-                ),
-                // TODO!: Parameterize
-                Grn::new(
-                    1. / env.height() as f32,
-                    2,
-                    0.8,
-                    0.8,
-                    || Uniform::new(-1., 1.).unwrap().sample(rng)
-                )
-            );
-            if cell.is_some() {
-                cell_count += 1;
-            }
-        }
-        log::info!("Created {} out of the {} cells requested", cell_count, params.starting_cells);
-        
         env
-    }
-
-    pub fn new_empty(
-        width: usize,
-        height: usize,
-        neigh_r: u8,
-        update_period: u32,
-        cell_search_radius: f32,
-        max_cells: Spin,
-        cell_parameters: CellParameters
-    ) -> Self {
-        Self {
-            space: Space::new(width, height),
-            cells: CellContainer::from(cell_parameters),
-            edge_book: EdgeBook::new(),
-            neighbourhood: NeighbourhoodType::new(neigh_r),
-            max_cells,
-            update_period,
-            cell_search_radius,
-            population_exploded: false
-        }
-    }
-
-    /// Empty environment with arbitrary cell parameters for testing purposes.
-    /// 
-    /// Do not use this in production, no cells can be added to an environment created through this method.
-    pub fn new_empty_test(width:usize, height: usize) -> Self {
-        Environment::new_empty(
-            width,
-            height,
-            1,
-            0,
-            0.,
-            0,
-            CellParameters {
-                target_area: 0,
-                div_area: 0,
-                divide: false,
-                migrate: false,
-                n_regulatory_genes: 0,
-            },
-        )
     }
 
     pub fn time_to_update(&self, time_step: u32) -> bool {
@@ -133,35 +68,6 @@ impl Environment {
 
     pub fn height(&self) -> usize {
         self.space.cell_lattice.height()
-    }
-
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, genome: Grn) -> Option<&RelCell<Grn>> {
-        let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
-        let mut cell = Cell::new_empty(
-            self.cells.target_area,
-            genome
-        );
-        
-        for pos in rect.iter_positions() {
-            if let Some(valid_pos) = self.space.lat_bound.valid_pos(pos.into()) {
-                let lat_pos = valid_pos.into();
-                if self.space.cell_lattice[lat_pos] != Medium.discriminant() {
-                    continue
-                }
-                self.space.cell_lattice[lat_pos] = spin;
-                self.update_edges(lat_pos);
-                cell.shift_position(
-                    lat_pos, 
-                    self.space.light_lattice[lat_pos], 
-                    true,
-                    &self.space.bound
-                );
-            }
-        }
-        if cell.area == 0 { 
-            return None;
-        }
-        Some(self.cells.push(cell, None))
     }
     
     pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) -> usize {
@@ -196,35 +102,6 @@ impl Environment {
         }
         
         self.spawn_solid(border_positions.into_iter());
-    }
-    
-    pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
-        let mut removed = 0;
-        let mut added = 0;
-        let spin = self.space.cell_lattice[pos];
-        let valid_neighs = self
-            .space
-            .lat_bound
-            .valid_positions(self.neighbourhood.neighbours(pos.into()))
-            .map(|neigh| neigh.into());
-        for neigh in valid_neighs {
-            let edge = Edge::new(pos, neigh);
-            let spin_neigh = self.space.cell_lattice[neigh];
-            // The order of these if statements matter A LOT, dont mess with it
-            if spin == spin_neigh {
-                if self.edge_book.remove(&edge) {
-                    removed += 1;
-                }
-                continue;
-            }
-            if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
-                continue;
-            }
-            if self.edge_book.insert(edge) {
-                added += 1;
-            }
-        }
-        (removed, added)
     }
     
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
@@ -314,6 +191,88 @@ impl Environment {
     }
 }
 
+impl<N: Neighbourhood> Environment<N> {
+    pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
+        let mut removed = 0;
+        let mut added = 0;
+        let spin = self.space.cell_lattice[pos];
+        let valid_neighs = self
+            .space
+            .lat_bound
+            .valid_positions(self.neighbourhood.neighbours(pos.into()))
+            .map(|neigh| neigh.into());
+        for neigh in valid_neighs {
+            let edge = Edge::new(pos, neigh);
+            let spin_neigh = self.space.cell_lattice[neigh];
+            // The order of these if statements matter A LOT, dont mess with it
+            if spin == spin_neigh {
+                if self.edge_book.remove(&edge) {
+                    removed += 1;
+                }
+                continue;
+            }
+            if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
+                continue;
+            }
+            if self.edge_book.insert(edge) {
+                added += 1;
+            }
+        }
+        (removed, added)
+    }
+
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, genome: Grn) -> Option<&RelCell<Grn>> {
+        let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
+        let mut cell = Cell::new_empty(
+            self.cells.target_area,
+            genome
+        );
+
+        for pos in rect.iter_positions() {
+            if let Some(valid_pos) = self.space.lat_bound.valid_pos(pos.into()) {
+                let lat_pos = valid_pos.into();
+                if self.space.cell_lattice[lat_pos] != Medium.discriminant() {
+                    continue
+                }
+                self.space.cell_lattice[lat_pos] = spin;
+                self.update_edges(lat_pos);
+                cell.shift_position(
+                    lat_pos,
+                    self.space.light_lattice[lat_pos],
+                    true,
+                    &self.space.bound
+                );
+            }
+        }
+        if cell.area == 0 {
+            return None;
+        }
+        Some(self.cells.push(cell, None))
+    }
+}
+
+impl Environment<MooreNeighbourhood> {
+    /// Empty environment with arbitrary cell parameters for testing purposes.
+    ///
+    /// Do not use this in production, no cells can be added to an environment created through this method.
+    pub fn new_empty_test(width:usize, height: usize) -> Self {
+        Environment::new(
+            0,
+            0.,
+            0,
+            false,
+            CellContainer::new(
+                0,
+                0,
+                false,
+                false
+            ),
+            Space::new(width, height),
+            NeighbourhoodType::new(1)
+        )
+    }
+}
+
 #[derive(Debug)]
 pub enum DivisionError {
     NewCellTooSmall,
@@ -389,21 +348,20 @@ pub mod tests {
     use crate::positional::rect::Rect;
     use std::default::Default;
 
-    fn make_env_for_division() -> Environment {
-        let env = Environment::new_empty(
-            100,
-            100,
-            1,
+    fn make_env_for_division() -> Environment<NeighbourhoodType> {
+        let env = Environment::new(
             1,
             2.0,
             10,
-            CellParameters {
-                target_area: 4,
-                div_area: 4,
-                divide: true,
-                migrate: false,
-                n_regulatory_genes: 0
-            },
+            false,
+            CellContainer::new(
+                4,
+                4,
+                true,
+                false
+            ),
+            Space::new(100, 100),
+            NeighbourhoodType::new(1)
         );
         env
     }
