@@ -9,12 +9,15 @@ use crate::io::parameters::{CellParameters, EnvironmentParameters};
 use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
-use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
+use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
 use rand::Rng;
 
+// This could be a really complicated type with several generic parameters.
+// Because references to Environment are passed around quite a lot, and it initialises most of its members, I've decided
+// to keep it simple.
 pub struct Environment {
     pub space: Space,
     pub cells: CellContainer<Grn>,
