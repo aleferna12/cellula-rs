@@ -1,7 +1,10 @@
+use rand_distr::Distribution;
+use rand::distr::Uniform;
 use crate::cell::{Cell, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
+use crate::genome::{Genome, Grn};
 use crate::io::parameters::{CellParameters, EnvironmentParameters};
 use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
@@ -11,7 +14,6 @@ use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
 use rand::Rng;
-use crate::genome::{Genome, Grn};
 
 pub struct Environment {
     pub space: Space,
@@ -64,7 +66,7 @@ impl Environment {
                     2,
                     0.8,
                     0.8,
-                    rng
+                    || Uniform::new(0., 1.).unwrap().sample(rng)
                 )
             );
             if cell.is_some() {
@@ -379,10 +381,10 @@ impl LatticeEntity<()> {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::genome::MockGenome;
     use super::*;
-    use crate::positional::rect::Rect;
     use crate::positional::pos::Pos;
+    use crate::positional::rect::Rect;
+    use std::default::Default;
 
     fn make_env_for_division() -> Environment {
         let env = Environment::new_empty(
@@ -467,7 +469,7 @@ pub mod tests {
         let mut env = make_env_for_division();
 
         let rect = Rect::new(Pos::new(20, 20), Pos::new(22, 22));
-        env.spawn_rect_cell(rect, MockGenome::new(0));
+        env.spawn_rect_cell(rect, Default::default());
 
         let spin = LatticeEntity::first_cell_spin();
         let result = env.divide_cell(spin);
@@ -479,7 +481,7 @@ pub mod tests {
     #[test]
     fn test_reproduce() {
         let mut env = make_env_for_division();
-        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), MockGenome::new(0));
+        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), Default::default());
 
         let divided_spins = env.reproduce();
         assert_eq!(divided_spins.len(), 1);
@@ -489,7 +491,7 @@ pub mod tests {
     fn test_reproduce_limit_population() {
         let mut env = make_env_for_division();
         env.max_cells = 1;
-        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), MockGenome::new(0));
+        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), Default::default());
 
         let divided_spins = env.reproduce();
         assert_eq!(divided_spins.len(), 0);

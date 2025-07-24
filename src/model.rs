@@ -70,7 +70,9 @@ impl TryFrom<Parameters> for Model {
                 &mut rng
             ),
             ca: CellularAutomata::new(
-                parameters.cellular_automata.clone(),
+                parameters.cellular_automata.boltz_t,
+                parameters.cellular_automata.size_lambda,
+                parameters.cellular_automata.chemotaxis_mu,
                 ClonalAdhesion::new(
                     parameters.cellular_automata.adhesion.clone(),
                     parameters.environment.max_cells + LatticeEntity::first_cell_spin()

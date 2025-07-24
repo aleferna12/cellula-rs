@@ -1,3 +1,4 @@
+use std::default::Default;
 use criterion::BatchSize;
 use criterion::{criterion_group, criterion_main, Criterion};
 use evo_cpm::environment::LatticeEntity::*;
@@ -88,7 +89,7 @@ fn bench_env(c: &mut Criterion) {
     });
 
     let mut env = Environment::new_empty_test(100, 100);
-    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()));
+    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()), Default::default());
 
     let mut group = c.benchmark_group("cell_positions");
     group.bench_function("contiguous_cell_positions", |b| {

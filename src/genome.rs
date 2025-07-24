@@ -1,9 +1,8 @@
-use rand_distr::Distribution;
 use crate::genome::GrnError::{MissingNode, WrongNodeType};
 use crate::genome::GrnGeneType::{Input, Output, Regulatory};
 use petgraph::graph::{DiGraph, NodeIndex};
-use rand::distr::Uniform;
 use rand::Rng;
+use rand_distr::Distribution;
 use rand_distr::Normal;
 use thiserror::Error;
 
@@ -77,7 +76,7 @@ impl BaseGrn {
         n_outputs: u32,
         mut_rate: f32,
         mut_std: f32, 
-        rng: &mut impl Rng
+        mut sampler: impl FnMut() -> f32
     ) -> Self {
         let mut grn = BaseGrn {
             graph: DiGraph::new(),
@@ -85,17 +84,17 @@ impl BaseGrn {
             regulatory_ids: Vec::new(),
             output_ids: Vec::new(),
             mut_rate,
-            mut_distr: Normal::new(rng.random(), mut_std).expect("Invalid `mut_std`")
+            mut_distr: Normal::new(0., mut_std).expect("Invalid `mut_std`")
         };
 
         for scale in input_scales.iter() {
             let idx = grn.graph.add_node(Input(InputGene { signal: 0., scale: *scale }));
             grn.input_ids.push(idx.index() as u32);
         }
-        let uniform_distr = Uniform::new(-1., 1.).unwrap();
+        
         for _ in 0..n_regulatory {
             let idx = grn.graph.add_node(Regulatory(RegulatoryGene {
-                threshold: uniform_distr.sample(rng),
+                threshold: sampler(),
                 active: false,
                 activating: false
             }));
@@ -103,7 +102,7 @@ impl BaseGrn {
         }
         for _ in 0..n_outputs {
             let idx = grn.graph.add_node(Output(OutputGene { 
-                threshold: uniform_distr.sample(rng), 
+                threshold: sampler(), 
                 active: false 
             }));
             grn.output_ids.push(idx.index() as u32);
@@ -111,13 +110,13 @@ impl BaseGrn {
 
         for reg in grn.regulatory_ids.iter().copied() {
             for input in grn.input_ids.iter().copied() {
-                grn.graph.add_edge(input.into(), reg.into(), uniform_distr.sample(rng));
+                grn.graph.add_edge(input.into(), reg.into(), sampler());
             }
             for reg2 in grn.regulatory_ids.iter().copied() {
-                grn.graph.add_edge(reg.into(), reg2.into(), uniform_distr.sample(rng));
+                grn.graph.add_edge(reg.into(), reg2.into(), sampler());
             }
             for output in grn.output_ids.iter().copied() {
-                grn.graph.add_edge(reg.into(), output.into(), uniform_distr.sample(rng));
+                grn.graph.add_edge(reg.into(), output.into(), sampler());
             }
         }
         grn
@@ -265,9 +264,15 @@ impl BaseGrn {
     }
 }
 
-/// Specialised GRN that handles the correct inputs and outputs.
+/// Specialised `Grn` that handles the correct inputs and outputs.
 impl Grn {
-    pub fn new(light_scale: f32, n_regulatory: u32, mut_rate: f32, mut_std: f32, rng: &mut impl Rng) -> Self {
+    pub fn new(
+        light_scale: f32, 
+        n_regulatory: u32, 
+        mut_rate: f32,
+        mut_std: f32,
+        sampler: impl FnMut() -> f32
+    ) -> Self {
         Self {
             grn: BaseGrn::new(
                 &[light_scale],
@@ -275,7 +280,7 @@ impl Grn {
                 1,
                 mut_rate,
                 mut_std,
-                rng
+                sampler
             ),
         }
     }
@@ -297,6 +302,12 @@ impl Genome for Grn {
             false => CellType::Divide,
             true => CellType::Migrate
         }
+    }
+}
+
+impl Default for Grn {
+    fn default() -> Self {
+        Self::new(0., 0, 0.0, 0.0, || 0.)
     }
 }
 
