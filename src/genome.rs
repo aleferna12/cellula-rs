@@ -55,6 +55,12 @@ impl Genome for MockGenome {
     }
 }
 
+impl Default for MockGenome {
+    fn default() -> Self {
+        MockGenome::new(0)
+    }
+}
+
 // TODO: this might be quite slow, we can implement a StaticGrn that does not support node insertion or deletion
 //  for improved performance. The advantage of this implementation is that we can delete or duplicate nodes dynamically
 //  and the object is stored directly as a graph.
