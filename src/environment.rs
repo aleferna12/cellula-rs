@@ -91,7 +91,7 @@ impl Environment {
             space: Space::new(width, height),
             cells: CellContainer::from(cell_parameters),
             edge_book: EdgeBook::new(),
-            neighbourhood: MooreNeighbourhood::new(neigh_r),
+            neighbourhood: NeighbourhoodType::new(neigh_r),
             max_cells,
             update_period,
             cell_search_radius,
