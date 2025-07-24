@@ -18,9 +18,9 @@ pub trait Plot {
 }
 
 pub trait ContinuousPlot: Plot {
-    fn min_color(&self) -> &Srgb<u8>;
-    fn max_color(&self) -> &Srgb<u8>;
-    fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Srgb<u8>, LerpError> {
+    fn min_color(&self) -> &Luv;
+    fn max_color(&self) -> &Luv;
+    fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Luv, LerpError> {
         if max < min {
             return Err(LerpError::NegativeRange);
         }
@@ -31,11 +31,9 @@ pub trait ContinuousPlot: Plot {
             return Err(LerpError::ValueTooLarge);
         }
 
-        let min_luv = Luv::from_color(self.min_color().into_linear::<f32>());
-        let max_luv = Luv::from_color(self.max_color().into_linear::<f32>());
         let p = if min == max { 0.5 } else { (value - min) / (max - min) };
-        let blended = min_luv.mix(max_luv, p);
-        Ok(Srgb::from_linear(blended.into_color()))
+        let blended = self.min_color().mix(self.max_color().clone(), p);
+        Ok(blended)
     }
 }
 
@@ -214,8 +212,8 @@ impl Plot for CellTypePlot<'_> {
 
 pub struct AreaPlot<'e> {
     pub env: &'e Environment,
-    pub min_color: Srgb<u8>,
-    pub max_color: Srgb<u8>
+    pub min_color: Luv,
+    pub max_color: Luv
 }
 
 impl Plot for AreaPlot<'_> {
@@ -243,7 +241,7 @@ impl Plot for AreaPlot<'_> {
                     Ok(c) => image.put_pixel(
                         pos.x as u32,
                         pos.y as u32,
-                        srgb_to_rgba(c)
+                        srgb_to_rgba(Srgb::from_linear(c.into_color()))
                     ),
                     Err(e) => log::warn!("Failed to plot area for pos `{pos:?}` with error `{e:?}`")
                 };
@@ -253,19 +251,19 @@ impl Plot for AreaPlot<'_> {
 }
 
 impl ContinuousPlot for AreaPlot<'_> {
-    fn min_color(&self) -> &Srgb<u8> {
+    fn min_color(&self) -> &Luv {
         &self.min_color
     }
 
-    fn max_color(&self) -> &Srgb<u8> {
+    fn max_color(&self) -> &Luv {
         &self.max_color
     }
 }
 
 pub struct LightPlot<'e> {
     pub env: &'e Environment,
-    pub min_color: Srgb<u8>,
-    pub max_color: Srgb<u8>
+    pub min_color: Luv,
+    pub max_color: Luv
 }
 
 impl Plot for LightPlot<'_> {
@@ -278,7 +276,11 @@ impl Plot for LightPlot<'_> {
                 self.env.height() as f32
             );
             match color { 
-                Ok(c) => image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(c)),
+                Ok(c) => image.put_pixel(
+                    pos.x as u32, 
+                    pos.y as u32,
+                    srgb_to_rgba(Srgb::from_linear(c.into_color()))
+                ),
                 Err(e) => log::warn!("Failed to plot light for pos `{pos:?}` with error `{e:?}`")
             }
         }
@@ -286,11 +288,11 @@ impl Plot for LightPlot<'_> {
 }
 
 impl ContinuousPlot for LightPlot<'_> {
-    fn min_color(&self) -> &Srgb<u8> {
+    fn min_color(&self) -> &Luv {
         &self.min_color
     }
 
-    fn max_color(&self) -> &Srgb<u8> {
+    fn max_color(&self) -> &Luv {
         &self.max_color
     }
 }
@@ -298,6 +300,10 @@ impl ContinuousPlot for LightPlot<'_> {
 pub fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
     let arr: [u8; 4] = color.with_alpha(255).into();
     Rgba::from(arr)
+}
+
+pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {
+    Luv::from_color(srgb.into_linear::<f32>())
 }
 
 pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, Box<dyn Error>> {
