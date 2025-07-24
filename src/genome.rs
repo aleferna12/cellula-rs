@@ -29,7 +29,7 @@ impl MockGenome {
         Self {
             period_updates,
             counter: 0,
-            cell_type: CellType::Divide
+            cell_type: CellType::Migrate
         }
     }
 }
@@ -91,7 +91,7 @@ impl BaseGrn {
             let idx = grn.graph.add_node(Input(InputGene { signal: 0., scale: *scale }));
             grn.input_ids.push(idx.index() as u32);
         }
-        
+
         for _ in 0..n_regulatory {
             let idx = grn.graph.add_node(Regulatory(RegulatoryGene {
                 threshold: sampler(),
@@ -102,7 +102,7 @@ impl BaseGrn {
         }
         for _ in 0..n_outputs {
             let idx = grn.graph.add_node(Output(OutputGene { 
-                threshold: sampler(), 
+                threshold: sampler(),
                 active: false 
             }));
             grn.output_ids.push(idx.index() as u32);
@@ -267,8 +267,8 @@ impl BaseGrn {
 /// Specialised `Grn` that handles the correct inputs and outputs.
 impl Grn {
     pub fn new(
-        light_scale: f32, 
-        n_regulatory: u32, 
+        light_scale: f32,
+        n_regulatory: u32,
         mut_rate: f32,
         mut_std: f32,
         sampler: impl FnMut() -> f32
@@ -299,8 +299,8 @@ impl Genome for Grn {
         match self.grn
             .get_output_gene(self.grn.output_ids[0].into())
             .expect("Invalid GRN architecture").active {
-            false => CellType::Divide,
-            true => CellType::Migrate
+            false => CellType::Migrate,
+            true => CellType::Divide
         }
     }
 }

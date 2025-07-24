@@ -83,6 +83,7 @@ image-format = "webp"
 #   - "border":       Plots cell borders.
 #   - "light":        Plots the light gradient.
 #   - "light-center": Plots the perceived center of the light gradient.
+#   - "cell-type":    Plots the cell type of cells.
 order = ["light", "spin"]
 # With which color to plot solid objects.
 solid-color = "#000000"

@@ -69,7 +69,7 @@ impl Environment {
                     2,
                     0.8,
                     0.8,
-                    || Uniform::new(0., 1.).unwrap().sample(rng)
+                    || Uniform::new(-1., 1.).unwrap().sample(rng)
                 )
             );
             if cell.is_some() {
