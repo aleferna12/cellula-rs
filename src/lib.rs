@@ -8,6 +8,6 @@ pub mod io;
 pub mod adhesion;
 pub mod constants;
 pub mod cell_container;
-pub mod spin_table;
+pub mod symmetric_table;
 pub mod space;
 pub mod genome;

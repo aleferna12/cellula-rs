@@ -2,7 +2,7 @@ use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{IoParameters, MovieParameters, Parameters, PlotParameters, PlotType};
 use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ClonesPlot, LightCenterPlot, LightPlot, Plot, SpinPlot};
-use crate::spin_table::SpinTable;
+use crate::symmetric_table::SymmetricTable;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use std::error::Error;
@@ -25,7 +25,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         env: &Environment,
-        clone_pairs: &SpinTable<bool>
+        clone_pairs: &SymmetricTable<bool>
     ) -> Result<(), Box<dyn Error>> {
         let mut frame = None;
         let movie_update = if let Some(mm) = &self.movie_maker {
@@ -61,7 +61,7 @@ impl IoManager {
     pub fn simulation_image(
         &self, 
         env: &Environment, 
-        clone_pairs: &SpinTable<bool>
+        clone_pairs: &SymmetricTable<bool>
     ) -> Result<RgbaImage, Box<dyn Error>> {
         let mut image = RgbaImage::new(
             env.width() as u32,

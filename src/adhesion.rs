@@ -3,7 +3,7 @@ use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
 use crate::environment::{Environment, LatticeEntity};
 use crate::io::parameters::StaticAdhesionParameters;
-use crate::spin_table::SpinTable;
+use crate::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
 
 pub trait AdhesionSystem {
@@ -13,14 +13,14 @@ pub trait AdhesionSystem {
 pub struct ClonalAdhesion {
     pub static_adhesion: StaticAdhesion,
     // TODO!: try red-black trees in each cell
-    pub clone_pairs: SpinTable<bool>
+    pub clone_pairs: SymmetricTable<bool>
 }
 
 impl ClonalAdhesion {
     pub fn new(params: StaticAdhesionParameters, max_spin: Spin) -> Self {
         Self {
             static_adhesion: StaticAdhesion::from(params),
-            clone_pairs: SpinTable::new(max_spin)
+            clone_pairs: SymmetricTable::new(max_spin as usize)
         }
     }
     
@@ -51,17 +51,17 @@ impl ClonalAdhesion {
         let mom_clones = HashSet::from_iter(
             (LatticeEntity::first_cell_spin()..=env.cells.n_cells())
                 .filter(|spin| {
-                    self.clone_pairs[(mom_cell.spin, *spin)]
+                    self.clone_pairs[(mom_cell.spin as usize, *spin as usize)]
                 })
         );
         for spin in mom_clones.difference(&mom_neighs) {
-            self.clone_pairs[(mom_cell.spin, *spin)] = false;
+            self.clone_pairs[(mom_cell.spin as usize, *spin as usize)] = false;
         }
         let clones: Vec<_> = cell_neighs.intersection(&mom_clones).copied().collect();
         for spin in &clones {
-            self.clone_pairs[(cell.spin, *spin)] = true;
+            self.clone_pairs[(cell.spin as usize, *spin as usize)] = true;
         }
-        self.clone_pairs[(cell.spin, mom_cell.spin)] = true;
+        self.clone_pairs[(cell.spin as usize, mom_cell.spin as usize)] = true;
         Some(clones)
     }
 }
@@ -72,7 +72,7 @@ impl AdhesionSystem for ClonalAdhesion {
             if c1.spin == c2.spin {
                 return 0.
             }
-            if self.clone_pairs[(c1.spin, c2.spin)] {
+            if self.clone_pairs[(c1.spin as usize, c2.spin as usize)] {
                 return 2. * self.static_adhesion.cell_energy;
             }
             return 2. * self.static_adhesion.medium_energy;

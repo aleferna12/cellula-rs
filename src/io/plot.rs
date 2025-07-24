@@ -3,7 +3,7 @@ use crate::environment::{Environment, LatticeEntity};
 use crate::positional::boundary::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
-use crate::spin_table::SpinTable;
+use crate::symmetric_table::SymmetricTable;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
@@ -120,7 +120,7 @@ impl Plot for LightCenterPlot<'_> {
 
 pub struct ClonesPlot<'a> {
     pub env: &'a Environment,
-    pub clone_pairs: &'a SpinTable<bool>,
+    pub clone_pairs: &'a SymmetricTable<bool>,
     pub color: Srgb<u8>,
     pub all_clones: bool
 }
@@ -128,16 +128,16 @@ pub struct ClonesPlot<'a> {
 impl Plot for ClonesPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         let spins = self.clone_pairs.iter_pairs(
-            LatticeEntity::first_cell_spin(),
-            self.env.cells.n_cells() + LatticeEntity::first_cell_spin()
+            LatticeEntity::first_cell_spin() as usize,
+            (self.env.cells.n_cells() + LatticeEntity::first_cell_spin()) as usize
         );
         for spin_pair in spins {
             if !self.clone_pairs[spin_pair] {
                 continue;
             }
             let message = "non-cell stored as clone";
-            let cell1 = self.env.cells.get_entity(spin_pair.0).expect_cell(message);
-            let cell2 = self.env.cells.get_entity(spin_pair.1).expect_cell(message);
+            let cell1 = self.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
+            let cell2 = self.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
             let center1 = cell1.center;
             let center2 = cell2.center;
             if !self.all_clones {
