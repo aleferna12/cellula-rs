@@ -10,8 +10,9 @@ pub struct Lattice<T> {
 
 // Since the lattice size is naturally usize, boundary coord should be isize to avoid overflow errors
 // Although technically it only has to be slightly larger than its defined size
-impl<T: Default + Copy> Lattice<T> {
-    pub fn new(rect: Rect<usize>) -> Self {
+impl<T> Lattice<T> {
+    pub fn new(rect: Rect<usize>) -> Self
+    where T: Default + Clone {
         Self {
             array: vec![T::default(); rect.width() * rect.height()]
                 .into_boxed_slice(),
@@ -38,7 +39,8 @@ impl<T: Default + Copy> Lattice<T> {
         self.rect.iter_positions()
     }
 
-    pub fn iter_values(&self) -> impl Iterator<Item = T> {
+    pub fn iter_values(&self) -> impl Iterator<Item = T>
+    where T: Copy {
         self.iter_positions()
             .map(|pos| {
                 self[pos]
@@ -46,7 +48,7 @@ impl<T: Default + Copy> Lattice<T> {
     }
 }
 
-impl<T: Copy + Default> Index<Pos<usize>> for Lattice<T> {
+impl<T> Index<Pos<usize>> for Lattice<T> {
     type Output = T;
 
     fn index(&self, pos: Pos<usize>) -> &Self::Output {
@@ -54,7 +56,7 @@ impl<T: Copy + Default> Index<Pos<usize>> for Lattice<T> {
     }
 }
 
-impl<T: Copy + Default> IndexMut<Pos<usize>> for Lattice<T> {
+impl<T> IndexMut<Pos<usize>> for Lattice<T> {
     fn index_mut(&mut self, pos: Pos<usize>) -> &mut Self::Output {
         &mut self.array[pos.row_major(self.height())]
     }

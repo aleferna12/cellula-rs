@@ -5,8 +5,9 @@ pub struct SymmetricTable<T> {
     length: usize,
 }
 
-impl<T: Default + Clone> SymmetricTable<T> {
-    pub fn new(length: usize) -> Self {
+impl<T> SymmetricTable<T> {
+    pub fn new(length: usize) -> Self
+    where T: Default + Clone {
         let size = length * (length + 1) / 2;
         Self {
             array: vec![T::default(); size].into_boxed_slice(),

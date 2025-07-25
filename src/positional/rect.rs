@@ -10,8 +10,7 @@ pub struct Rect<T> {
 
 impl<T> Rect<T>
 where
-    T: Num
-    + Copy {
+    T: Num + Copy {
     pub fn new(min: Pos<T>, max: Pos<T>) -> Self {
         Self{ min, max }
     }
@@ -31,7 +30,7 @@ where
 
 impl<T> Rect<T>
 where
-    T: Integer 
+    T: Integer
         + AddAssign
         + Copy {
     pub fn iter_positions(&self) -> RectAreaIt<T> {

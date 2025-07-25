@@ -59,8 +59,8 @@ pub struct FixedBoundary<T> {
 impl<T> Boundary for FixedBoundary<T>
 where
     T: PartialOrd
-    + Copy
-    + Sub<Output = T> {
+        + Copy
+        + Sub<Output = T> {
     type Coord = T;
 
     #[inline(always)]
