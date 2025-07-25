@@ -158,7 +158,6 @@ impl<G: Clone, N> Environment<G, N> {
             .filter(|pos| {
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                //  it also might be worth writing a faster implementation for FixedBoundary (LatticeBoundary)
                 self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center).0 > 0.
             })
             .collect();

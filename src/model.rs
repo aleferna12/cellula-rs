@@ -130,7 +130,7 @@ impl TryFrom<Parameters> for Model {
 
         log::info!("Creating cells");
         let mut cell_count = 0;
-        let cell_side = (parameters.environment.cell_start_area as f32).sqrt() as usize;
+        let cell_side = (parameters.environment.cell.starting_area as f32).sqrt() as usize;
         for _ in 0..parameters.environment.starting_cells {
             let pos = model.env.space.cell_lattice.random_pos(&mut model.rng);
             let cell = model.env.spawn_rect_cell(
@@ -152,8 +152,8 @@ impl TryFrom<Parameters> for Model {
             }
         }
         log::info!(
-            "Created {} out of the {} cells requested", 
-            cell_count, 
+            "Created {} out of the {} cells requested",
+            cell_count,
             parameters.environment.starting_cells
         );
 

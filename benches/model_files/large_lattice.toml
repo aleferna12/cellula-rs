@@ -9,11 +9,11 @@ enclose = false
 neigh-r = 1
 starting-cells = 300
 max-cells = 1024
-cell-start-area = 64
 cell-search-radius = 2.5
 update-period = 16
 
 [environment.cell]
+starting-area = 64
 target-area = 64
 div-area = 128
 divide = true
@@ -53,7 +53,5 @@ area-min-color = "#ff00ff"
 area-max-color = "#ffff00"
 light-min-color = "#000000"
 light-max-color = "#ffffff"
-# With which color to plot migrating cells.
 migrating-color = "#b30000"
-# With which color to plot dividing cells.
 dividing-color = "#045a8d"

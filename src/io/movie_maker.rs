@@ -26,7 +26,7 @@ impl MovieMaker {
             window
         })
     }
-    
+
     pub fn window_works(&self) -> bool {
         self.window.is_open() && !self.window.is_key_down(minifb::Key::Escape)
     }

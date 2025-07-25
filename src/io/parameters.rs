@@ -80,7 +80,6 @@ pub struct EnvironmentParameters {
     pub neigh_r: u8,
     pub starting_cells: Spin,
     pub max_cells: Spin,
-    pub cell_start_area: u32,
     pub cell_search_radius: f32,
     pub update_period: u32,
     pub cell: CellParameters
@@ -89,6 +88,7 @@ pub struct EnvironmentParameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct CellParameters {
+    pub starting_area: u32,
     pub target_area: u32,
     pub div_area: u32,
     #[serde(default = "param_defaults::true_flag")]

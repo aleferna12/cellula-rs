@@ -5,6 +5,7 @@ TODO!:
         - backup
     - seed is not saved with the model when its 0
     - look into anyhow, I think the backtracing would be very useful
+    - add builder structs for the long constructors (Env, IoManager, CellCont...)
  */
 use clap::Parser;
 use evo_cpm::io::parameters::{Cli, Parameters};
