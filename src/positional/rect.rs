@@ -11,8 +11,7 @@ pub struct Rect<T> {
 impl<T> Rect<T>
 where
     T: Num
-    + Copy
-{
+    + Copy {
     pub fn new(min: Pos<T>, max: Pos<T>) -> Self {
         Self{ min, max }
     }
@@ -57,8 +56,8 @@ impl<T: Copy> RectAreaIt<T> {
 impl<T> Iterator for RectAreaIt<T>
 where
     T: Copy
-    + Integer
-    + AddAssign {
+        + Integer
+        + AddAssign {
     type Item = Pos<T>;
 
     fn next(&mut self) -> Option<Self::Item> {

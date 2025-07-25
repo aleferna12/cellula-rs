@@ -12,9 +12,6 @@ use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
 
-// This could be a really complicated type with several generic parameters.
-// Because references to Environment are passed around quite a lot, and it initialises most of its members, I've decided
-// to keep it simple.
 pub struct Environment<G, N> {
     pub space: Space,
     pub cells: CellContainer<G>,
@@ -106,7 +103,7 @@ impl<G, N> Environment<G, N> {
     }
 }
 
-impl<G: Debug + Clone, N> Environment<G, N> {
+impl<G: Clone, N> Environment<G, N> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
@@ -141,8 +138,7 @@ impl<G: Debug + Clone, N> Environment<G, N> {
     }
 
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<G>, DivisionError>
-    where G: Debug + Clone {
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<G>, DivisionError> {
         let new_spin = self.cells.next_spin();
         let cell_target_area = self.cells.target_area;
         let mut mom_clone = self

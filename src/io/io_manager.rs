@@ -90,9 +90,7 @@ impl IoManager {
                 PlotType::Spin => {
                     SpinPlot {
                         space: &env.space,
-                        solid_color: hex_to_srgb(
-                            &self.plots.solid_color
-                        ).expect("`solid-color` is not a valid rgb"),
+                        solid_color: hex_to_srgb(&self.plots.solid_color)?,
                         medium_color: match &self.plots.medium_color { 
                             None => None,
                             Some(c) => Some(hex_to_srgb(c)?)

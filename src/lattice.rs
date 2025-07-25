@@ -7,6 +7,7 @@ pub struct Lattice<T> {
     array: Box<[T]>,
     pub rect: Rect<usize>
 }
+
 // Since the lattice size is naturally usize, boundary coord should be isize to avoid overflow errors
 // Although technically it only has to be slightly larger than its defined size
 impl<T: Default + Copy> Lattice<T> {
@@ -34,10 +35,7 @@ impl<T: Default + Copy> Lattice<T> {
     }
 
     pub fn iter_positions(&self) -> impl Iterator<Item = Pos<usize>> {
-        self.rect.iter_positions().map(|p| Pos::new(
-            p.x,
-            p.y
-        ))
+        self.rect.iter_positions()
     }
 
     pub fn iter_values(&self) -> impl Iterator<Item = T> {
