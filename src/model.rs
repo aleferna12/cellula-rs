@@ -8,14 +8,14 @@ use rand_xoshiro::Xoshiro256StarStar;
 use std::error::Error;
 use rand::distr::{Distribution, Uniform};
 use crate::cell_container::CellContainer;
-use crate::constants::NeighbourhoodType;
+use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::genome::{Genome, Grn};
 use crate::io::movie_maker::MovieMaker;
 use crate::positional::rect::Rect;
 use crate::space::Space;
 
 pub struct Model {
-    pub env: Environment<Grn, NeighbourhoodType>,
+    pub env: Environment<Grn, NeighbourhoodType, BoundaryType>,
     pub ca: CellularAutomata<ClonalAdhesion>,
     pub rng: Xoshiro256StarStar,
     pub io_manager: IoManager
@@ -78,9 +78,11 @@ impl TryFrom<Parameters> for Model {
                     parameters.environment.cell.migrate,
                 ),
                 Space::new(
-                    parameters.environment.width,
-                    parameters.environment.height,
-                ),
+                    BoundaryType::new(Rect::new(
+                        (0., 0.).into(),
+                        (parameters.environment.width as f32, parameters.environment.height as f32).into(),
+                    ))
+                ).expect("failed to initialise `Space`"),
                 NeighbourhoodType::new(parameters.environment.neigh_r)
             ),
             ca: CellularAutomata::new(

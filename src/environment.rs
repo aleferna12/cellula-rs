@@ -1,19 +1,19 @@
-use std::fmt::Debug;
 use crate::cell::{Cell, RelCell};
 use crate::cell_container::CellContainer;
-use crate::constants::{NeighbourhoodType, Spin};
+use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
 use crate::genome::MockGenome;
-use crate::positional::boundary::Boundary;
+use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
-use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
+use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
+use std::fmt::Debug;
 
-pub struct Environment<G, N> {
-    pub space: Space,
+pub struct Environment<G, N, B: AsLatticeBoundary> {
+    pub space: Space<B>,
     pub cells: CellContainer<G>,
     pub edge_book: EdgeBook,
     pub neighbourhood: N,
@@ -23,14 +23,14 @@ pub struct Environment<G, N> {
     pub max_cells: Spin
 }
 
-impl<G, N> Environment<G, N> {
+impl<G, N, B: AsLatticeBoundary> Environment<G, N, B> {
     pub fn new(
         update_period: u32,
         cell_search_radius: f32,
         max_cells: Spin,
         enclose: bool,
         cells: CellContainer<G>,
-        space: Space,
+        space: Space<B>,
         neighbourhood: N
     ) -> Self {
         let mut env = Self {
@@ -50,7 +50,7 @@ impl<G, N> Environment<G, N> {
     
         for row in 0..env.height() {
             for col in 0..env.width() {
-                env.space.light_lattice[(col, row).into()] = row.try_into().expect("Lattice is too big");
+                env.space.light_lattice[(col, row).into()] = row.try_into().expect("lattice is too big");
             }
         }
         env
@@ -103,7 +103,7 @@ impl<G, N> Environment<G, N> {
     }
 }
 
-impl<G: Clone, N> Environment<G, N> {
+impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
@@ -190,7 +190,7 @@ impl<G: Clone, N> Environment<G, N> {
     }
 }
 
-impl<G, N: Neighbourhood> Environment<G, N> {
+impl<G, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
     pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
@@ -250,8 +250,8 @@ impl<G, N: Neighbourhood> Environment<G, N> {
     }
 }
 
-impl Environment<MockGenome, MooreNeighbourhood> {
-    /// Empty environment with arbitrary cell parameters for testing purposes.
+impl Environment<MockGenome, NeighbourhoodType, BoundaryType> {
+    /// Empty environment with arbitrary cell parameters for testing and benchmarking.
     ///
     /// Do not use this in production, no cells can be added to an environment created through this method.
     pub fn new_empty_test(width:usize, height: usize) -> Self {
@@ -266,7 +266,10 @@ impl Environment<MockGenome, MooreNeighbourhood> {
                 false,
                 false
             ),
-            Space::new(width, height),
+            Space::new(BoundaryType::new(Rect::new(
+                (0., 0.,).into(),
+                (width as f32, height as f32).into()
+            ))).expect("failed to make test `Space`"),
             NeighbourhoodType::new(1)
         )
     }
@@ -344,11 +347,11 @@ impl LatticeEntity<()> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::genome::MockGenome;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
-    use crate::genome::MockGenome;
 
-    fn make_env_for_division() -> Environment<MockGenome, NeighbourhoodType> {
+    fn make_env_for_division() -> Environment<MockGenome, NeighbourhoodType, BoundaryType> {
         let env = Environment::new(
             1,
             2.0,
@@ -360,7 +363,10 @@ pub mod tests {
                 true,
                 false
             ),
-            Space::new(100, 100),
+            Space::new(BoundaryType::new(Rect::new(
+                (0., 0.,).into(),
+                (100., 100.).into()
+            ))).expect("failed to make test `Space`"),
             NeighbourhoodType::new(1)
         );
         env
@@ -368,7 +374,7 @@ pub mod tests {
 
     #[test]
     fn test_spawn_solid() {
-        let mut env: Environment<MockGenome, _> = Environment::new_empty_test(10, 10);
+        let mut env = Environment::new_empty_test(10, 10);
         let positions = vec![
             Pos::new(1, 1),
             Pos::new(2, 2),

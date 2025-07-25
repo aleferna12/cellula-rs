@@ -1,41 +1,37 @@
 use crate::cell::RelCell;
-use crate::constants::{BoundaryType, LatticeBoundaryType, Spin};
+use crate::constants::Spin;
 use crate::lattice::Lattice;
-use crate::positional::boundary::Boundary;
+use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use std::cmp::max;
 use std::collections::{HashSet, VecDeque};
+use std::error::Error;
 use std::f32::consts::PI;
 
-pub struct Space {
-    pub bound: BoundaryType,
-    pub lat_bound: LatticeBoundaryType,
+pub struct Space<B: AsLatticeBoundary> {
+    pub bound: B,
+    pub lat_bound: B::LatticeBoundary,
     pub cell_lattice: Lattice<Spin>,
     pub light_lattice: Lattice<u32>,
 }
 
-impl Space {
-    pub fn new(width: usize, height: usize) -> Self {
-        let rect = Rect::new(
-            (0, 0).into(),
-            (width, height).into()
-        );
-        Self {
-            bound: BoundaryType::from(Rect::new(
-                (0., 0.).into(),
-                (width as f32, height as f32).into()
-            )),
-            lat_bound: LatticeBoundaryType::from(Rect::new(
-                (0, 0).into(),
-                (width as isize, height as isize).into()
-            )),
-            cell_lattice: Lattice::new(rect.clone()),
-            light_lattice: Lattice::new(rect),
-        }
+impl<B: AsLatticeBoundary> Space<B> {
+    pub fn new(bound: B) -> Result<Self, Box<dyn Error>> 
+    where 
+        B: AsLatticeBoundary<Coord = f32>,
+        B::Error: 'static + Error {
+        let rect: Rect<usize> = bound.rect().clone().try_into()?;
+        Ok(Self{
+            lat_bound: bound.as_lattice_boundary()?,
+            cell_lattice: Lattice::<Spin>::new(rect.clone()),
+            light_lattice: Lattice::<u32>::new(rect),
+            bound,
+        })
     }
 
+    // TODO!: These should most definitely be implemented as part of a Lattice<impl PartialEq> API
     /// This is the fastest cell search function possible, but it is NOT SAFE.
     ///
     /// Prefer `box_cell_positions()`, which warns about missing values.
@@ -180,16 +176,20 @@ impl Space {
 mod tests {
     use super::*;
     use crate::cell::{Cell, RelCell};
+    use crate::constants::BoundaryType;
     use crate::genome::{Genome, MockGenome};
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
 
-    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space, RelCell<impl Genome>) {
+    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space<BoundaryType>, RelCell<impl Genome>) {
         let mut cell = RelCell::mock(Cell::new_empty(
             10,
             MockGenome::new(0)
         ));
-        let mut space = Space::new(10, 10);
+        let mut space = Space::new(BoundaryType::new(Rect::new(
+            (0., 0.).into(),
+            (10., 10.).into()
+        ))).unwrap();
         for pos in positions {
             space.cell_lattice[*pos] = cell.spin;
             cell.shift_position(*pos, 0, true, &space.bound)

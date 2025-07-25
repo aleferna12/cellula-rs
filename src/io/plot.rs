@@ -1,17 +1,17 @@
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
-use crate::positional::boundary::Boundary;
+use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::symmetric_table::SymmetricTable;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
-use std::error::Error;
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
 use crate::genome::CellType;
+use crate::io::plot::HexError::ParseU8Error;
 use crate::lattice::Lattice;
 use crate::space::Space;
 
@@ -46,13 +46,13 @@ pub enum LerpError {
     NegativeRange
 }
 
-pub struct SpinPlot<'s> {
-    pub space: &'s Space,
+pub struct SpinPlot<'s, B: AsLatticeBoundary> {
+    pub space: &'s Space<B>,
     pub solid_color: Srgb<u8>,
     pub medium_color: Option<Srgb<u8>>
 }
 
-impl<'e> SpinPlot<'e> {
+impl<'e, B: AsLatticeBoundary> SpinPlot<'e, B> {
     fn spin_to_rgb(spin: Spin) -> Srgb<u8> {
         let mut hasher = DefaultHasher::new();
         spin.hash(&mut hasher);
@@ -65,7 +65,7 @@ impl<'e> SpinPlot<'e> {
     }
 }
 
-impl Plot for SpinPlot<'_> {
+impl<B: AsLatticeBoundary> Plot for SpinPlot<'_, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.space.cell_lattice.iter_positions() {
             let spin = self.space.cell_lattice[pos];
@@ -83,12 +83,12 @@ impl Plot for SpinPlot<'_> {
     }
 }
 
-pub struct CenterPlot<'e, G, N> {
-    pub env: &'e Environment<G, N>,
+pub struct CenterPlot<'e, G, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<G, N, B>,
     pub color: Srgb<u8>
 }
 
-impl<G, N> Plot for CenterPlot<'_, G, N> {
+impl<G, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, G, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -102,12 +102,12 @@ impl<G, N> Plot for CenterPlot<'_, G, N> {
     }
 }
 
-pub struct LightCenterPlot<'e, G, N> {
-    pub env: &'e Environment<G, N>,
+pub struct LightCenterPlot<'e, G, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<G, N, B>,
     pub color: Srgb<u8>
 }
 
-impl<G, N> Plot for LightCenterPlot<'_, G, N> {
+impl<G, N, B: AsLatticeBoundary> Plot for LightCenterPlot<'_, G, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -121,14 +121,14 @@ impl<G, N> Plot for LightCenterPlot<'_, G, N> {
     }
 }
 
-pub struct ClonesPlot<'a, G, N> {
-    pub env: &'a Environment<G, N>,
+pub struct ClonesPlot<'a, G, N, B: AsLatticeBoundary> {
+    pub env: &'a Environment<G, N, B>,
     pub clone_pairs: &'a SymmetricTable<bool>,
     pub color: Srgb<u8>,
     pub all_clones: bool
 }
 
-impl<G, N> Plot for ClonesPlot<'_, G, N> {
+impl<G, N, B: AsLatticeBoundary> Plot for ClonesPlot<'_, G, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         let spins = self.clone_pairs.iter_pairs(
             LatticeEntity::first_cell_spin() as usize,
@@ -160,12 +160,12 @@ impl<G, N> Plot for ClonesPlot<'_, G, N> {
     }
 }
 
-pub struct BorderPlot<'e, G, N> {
-    pub env: &'e Environment<G, N>,
+pub struct BorderPlot<'e, G, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<G, N, B>,
     pub color: Srgb<u8>
 }
 
-impl<G, N: Neighbourhood> Plot for BorderPlot<'_, G, N> {
+impl<G, N: Neighbourhood, B: AsLatticeBoundary> Plot for BorderPlot<'_, G, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
@@ -187,13 +187,13 @@ impl<G, N: Neighbourhood> Plot for BorderPlot<'_, G, N> {
     }
 }
 
-pub struct CellTypePlot<'e, G, N> {
-    pub env: &'e Environment<G, N>,
+pub struct CellTypePlot<'e, G, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<G, N, B>,
     pub mig_color: Srgb<u8>,
     pub div_color: Srgb<u8>
 }
 
-impl<G, N> Plot for CellTypePlot<'_, G, N> {
+impl<G, N, B:AsLatticeBoundary> Plot for CellTypePlot<'_, G, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
@@ -213,13 +213,13 @@ impl<G, N> Plot for CellTypePlot<'_, G, N> {
     }
 }
 
-pub struct AreaPlot<'e, G, N> {
-    pub env: &'e Environment<G, N>,
+pub struct AreaPlot<'e, G, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<G, N, B>,
     pub min_color: Luv,
     pub max_color: Luv
 }
 
-impl<G, N> Plot for AreaPlot<'_, G, N> {
+impl<G, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, G, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
@@ -253,7 +253,7 @@ impl<G, N> Plot for AreaPlot<'_, G, N> {
     }
 }
 
-impl<G, N> ContinuousPlot for AreaPlot<'_, G, N> {
+impl<G, N, B: AsLatticeBoundary> ContinuousPlot for AreaPlot<'_, G, N, B> {
     fn min_color(&self) -> Luv {
         self.min_color
     }
@@ -308,7 +308,7 @@ pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {
     Luv::from_color(srgb.into_linear::<f32>())
 }
 
-pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, Box<dyn Error>> {
+pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, HexError> {
     if !hex.starts_with("#") {
         return Err(HexError::MissingHashtag.into());
     }
@@ -316,16 +316,18 @@ pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, Box<dyn Error>> {
         return Err(HexError::WrongLength.into());
     }
     let hexu32 = hex.replace("#", "00");
-    let bytes = u32::from_str_radix(&hexu32, 16)?.to_be_bytes();
+    let bytes = u32::from_str_radix(&hexu32, 16).map_err(ParseU8Error)?.to_be_bytes();
     Ok([bytes[1], bytes[2], bytes[3]].into())
 }
 
 #[derive(Error, Debug)]
 pub enum HexError {
-    #[error("Missing `#` in the color name")]
+    #[error("missing `#` in the color name")]
     MissingHashtag,
     #[error("`hex` must be six characters long, excluding `#`")]
-    WrongLength
+    WrongLength,
+    #[error("failed to parse the string as a hex `u8`: {0}")]
+    ParseU8Error(#[from] std::num::ParseIntError),
 }
 
 #[cfg(test)]
@@ -333,12 +335,13 @@ mod tests {
     use super::*;
     use crate::constants::Spin;
     use std::collections::HashSet;
+    use crate::positional::boundary::UnsafePeriodicBoundary;
 
     #[test]
     fn test_spin_to_rgb() {
         let mut tested = HashSet::<[u8; 3]>::default();
         for i in 0..5232 as Spin {
-            let rgb: [u8; 3] = SpinPlot::spin_to_rgb(i).into();
+            let rgb: [u8; 3] = SpinPlot::<UnsafePeriodicBoundary<f32>>::spin_to_rgb(i).into();
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);
         }

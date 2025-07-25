@@ -4,7 +4,7 @@ use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
 use crate::genome::CellType;
-use crate::positional::boundary::Boundary;
+use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use rand::Rng;
@@ -84,7 +84,11 @@ impl<A> CellularAutomata<A> {
 }
 
 impl<A: AdhesionSystem> CellularAutomata<A> {
-    pub fn step<G>(&self, env: &mut Environment<G, impl Neighbourhood>, rng: &mut impl Rng) {
+    pub fn step<G>(
+        &self, 
+        env: &mut Environment<G, impl Neighbourhood, impl AsLatticeBoundary<Coord = f32>>, 
+        rng: &mut impl Rng
+    ) {
         let mut to_visit = env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
         while 0. < to_visit {
             let edge_i = env.edge_book.random_index(rng);
@@ -108,7 +112,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     /// The number of extra updates that the copy attempt incurred (not whether it was successful or not!).
     pub fn attempt_site_copy<G>(
         &self,
-        env: &mut Environment<G, impl Neighbourhood>,
+        env: &mut Environment<G, impl Neighbourhood, impl AsLatticeBoundary<Coord = f32>>,
         rng: &mut impl Rng,
         pos_from: Pos<usize>,
         pos_to: Pos<usize>

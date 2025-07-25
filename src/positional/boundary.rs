@@ -1,8 +1,8 @@
-use std::ops::Sub;
 use crate::positional::pos::Pos;
-use crate::positional::rect::Rect;
+use crate::positional::rect::{Rect, RectConversionError};
 use num::traits::Euclid;
-use num::Num;
+use num::{Num};
+use std::ops::Sub;
 
 pub trait Boundary {
     type Coord;
@@ -26,7 +26,8 @@ pub trait Boundary {
     fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord);
 }
 
-pub trait PeriodicBoundary: Boundary
+/// Private trait that provides default implementations for periodic boundary types.
+trait PeriodicBoundary: Boundary
 where
     Self::Coord: From<u8> + Num + Copy + Euclid {
     #[inline(always)]
@@ -51,9 +52,21 @@ where
     fn wrap_scalar(val: Self::Coord, min: Self::Coord, max: Self::Coord) -> Self::Coord;
 }
 
+pub trait AsLatticeBoundary: Boundary {
+    type LatticeBoundary: Boundary<Coord = isize>;
+    type Error;
+    fn as_lattice_boundary(&self) -> Result<Self::LatticeBoundary, Self::Error>;
+}
+
 #[derive(Clone)]
 pub struct FixedBoundary<T> {
     rect: Rect<T>
+}
+
+impl<T> FixedBoundary<T> {
+    pub fn new(rect: Rect<T>) -> Self {
+        Self { rect }
+    }
 }
 
 impl<T> Boundary for FixedBoundary<T>
@@ -85,15 +98,24 @@ where
     }
 }
 
-impl<T> From<Rect<T>> for FixedBoundary<T> {
-    fn from(rect: Rect<T>) -> Self {
-        Self { rect }
+impl AsLatticeBoundary for FixedBoundary<f32> {
+    type LatticeBoundary = FixedBoundary<isize>;
+    type Error = RectConversionError;
+
+    fn as_lattice_boundary(&self) -> Result<FixedBoundary<isize>, Self::Error> {
+        Ok(FixedBoundary::new(Rect::try_from(self.rect.clone())?))
     }
 }
 
 #[derive(Clone)]
 pub struct SafePeriodicBoundary<T> {
     rect: Rect<T>
+}
+
+impl<T> SafePeriodicBoundary<T> {
+    pub fn new(rect: Rect<T>) -> Self {
+        Self { rect }
+    }
 }
 
 impl<T> Boundary for SafePeriodicBoundary<T>
@@ -129,9 +151,12 @@ where
     }
 }
 
-impl<T> From<Rect<T>> for SafePeriodicBoundary<T> {
-    fn from(rect: Rect<T>) -> Self {
-        Self { rect }
+impl AsLatticeBoundary for SafePeriodicBoundary<f32> {
+    type LatticeBoundary = SafePeriodicBoundary<isize>;
+    type Error = RectConversionError;
+
+    fn as_lattice_boundary(&self) -> Result<SafePeriodicBoundary<isize>, Self::Error> {
+        Ok(SafePeriodicBoundary::new(Rect::try_from(self.rect.clone())?))
     }
 }
 
@@ -145,6 +170,12 @@ impl<T> From<Rect<T>> for SafePeriodicBoundary<T> {
 #[derive(Clone)]
 pub struct UnsafePeriodicBoundary<T> {
     rect: Rect<T>
+}
+
+impl<T> UnsafePeriodicBoundary<T> {
+    pub fn new(rect: Rect<T>) -> Self {
+        Self { rect }
+    }
 }
 
 impl<T> Boundary for UnsafePeriodicBoundary<T>
@@ -183,9 +214,12 @@ where
     }
 }
 
-impl<T> From<Rect<T>> for UnsafePeriodicBoundary<T> {
-    fn from(rect: Rect<T>) -> Self {
-        Self { rect }
+impl AsLatticeBoundary for UnsafePeriodicBoundary<f32> {
+    type LatticeBoundary = UnsafePeriodicBoundary<isize>;
+    type Error = RectConversionError;
+
+    fn as_lattice_boundary(&self) -> Result<UnsafePeriodicBoundary<isize>, Self::Error> {
+        Ok(UnsafePeriodicBoundary::new(Rect::try_from(self.rect.clone())?))
     }
 }
 
@@ -200,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_fixed_valid() {
-        let fixed = FixedBoundary::from(rect_10x10());
+        let fixed = FixedBoundary::new(rect_10x10());
 
         // In bounds
         assert_eq!(fixed.valid_pos(Pos::new(5, 5)), Some(Pos::new(5, 5)));
@@ -214,14 +248,14 @@ mod tests {
 
     #[test]
     fn test_fixed_displacement() {
-        let fixed = FixedBoundary::from(rect_10x10());
+        let fixed = FixedBoundary::new(rect_10x10());
         let d = fixed.displacement(Pos::new(3, 3), Pos::new(6, 1));
         assert_eq!(d, (3, -2));
     }
 
     #[test]
     fn test_safe_periodic_valid() {
-        let per = SafePeriodicBoundary::from(rect_10x10());
+        let per = SafePeriodicBoundary::new(rect_10x10());
 
         // Valid values wrap around
         assert_eq!(per.valid_pos(Pos::new(-1, -1)), Some(Pos::new(9, 9)));
@@ -231,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_safe_periodic_displacement() {
-        let per = SafePeriodicBoundary::from(rect_10x10());
+        let per = SafePeriodicBoundary::new(rect_10x10());
 
         let d = per.displacement(Pos::new(9, 0), Pos::new(1, 0)); // wrapped
         assert_eq!(d, (2, 0)); // shortest dx is -8 → wraps to +2
@@ -242,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_unsafe_periodic_valid() {
-        let unsafe_per = UnsafePeriodicBoundary::from(rect_10x10());
+        let unsafe_per = UnsafePeriodicBoundary::new(rect_10x10());
 
         // Near bounds: valid
         assert_eq!(unsafe_per.valid_pos(Pos::new(10, 0)), Some(Pos::new(0, 0)));

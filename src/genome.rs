@@ -84,7 +84,7 @@ impl BaseGrn {
             regulatory_ids: Vec::new(),
             output_ids: Vec::new(),
             mut_rate,
-            mut_distr: Normal::new(0., mut_std).expect("Invalid `mut_std`")
+            mut_distr: Normal::new(0., mut_std).expect("invalid `mut_std`")
         };
 
         for scale in input_scales.iter() {
@@ -185,7 +185,7 @@ impl BaseGrn {
     fn compute_activation_from_inputs(&self, reg: NodeIndex) -> Option<f32> {
         let mut act = 0.;
         for inp in self.input_ids.iter().copied() {
-            let input_gene = self.get_input_gene(inp.into()).expect("Missing input gene");
+            let input_gene = self.get_input_gene(inp.into()).expect("missing input gene");
             let edge = self.graph.find_edge(inp.into(), reg)?;
             act += input_gene.signal * self.graph.edge_weight(edge).copied()?
         }
@@ -195,7 +195,7 @@ impl BaseGrn {
     fn compute_activation_from_regulators(&self, target: NodeIndex) -> Option<f32> {
         let mut act = 0.;
         for reg in self.regulatory_ids.iter().copied() {
-            let reg_gene = self.get_regulatory_gene(reg.into()).expect("Missing regulatory gene");
+            let reg_gene = self.get_regulatory_gene(reg.into()).expect("missing regulatory gene");
             act += if reg_gene.active {
                 let edge = self.graph.find_edge(reg.into(), target)?;
                 self.graph.edge_weight(edge).copied()?
@@ -247,7 +247,7 @@ impl BaseGrn {
             }
             
             for from in self.input_ids.iter().copied().chain(self.regulatory_ids.iter().copied()) {
-                let edge_index = self.graph.find_edge(from.into(), reg.into()).expect("Missing edge");
+                let edge_index = self.graph.find_edge(from.into(), reg.into()).expect("missing edge");
                 let edge = self.graph.edge_weight_mut(edge_index).unwrap();
                 if rng.random_bool(self.mut_rate as f64) {
                     *edge += self.mut_distr.sample(rng);
@@ -255,7 +255,7 @@ impl BaseGrn {
             }
             
             for out in self.output_ids.iter().copied() {
-                let edge_index = self.graph.find_edge(reg.into(), out.into()).expect("Missing edge");
+                let edge_index = self.graph.find_edge(reg.into(), out.into()).expect("missing edge");
                 let edge = self.graph.edge_weight_mut(edge_index).unwrap();
                 *edge += self.mut_distr.sample(rng);
             }
@@ -292,13 +292,13 @@ impl Genome for Grn {
     }
 
     fn update_expression(&mut self, light_signal: u32) {
-        self.grn.update_expression(&[light_signal as f32]).expect("Invalid GRN architecture");
+        self.grn.update_expression(&[light_signal as f32]).expect("invalid GRN architecture");
     }
 
     fn get_cell_type(&self) -> CellType {
         match self.grn
             .get_output_gene(self.grn.output_ids[0].into())
-            .expect("Invalid GRN architecture").active {
+            .expect("invalid GRN architecture").active {
             false => CellType::Migrate,
             true => CellType::Divide
         }
@@ -307,9 +307,9 @@ impl Genome for Grn {
 
 #[derive(Error, Debug)]
 pub enum GrnError {
-    #[error("The requested node does not exist in the GRN")]
+    #[error("the requested node does not exist in the GRN")]
     MissingNode,
-    #[error("The requested node is not the right type (perhaps you used the wrong index?)")]
+    #[error("the requested node is not the right type (perhaps you used the wrong index?)")]
     WrongNodeType
 }
 

@@ -125,7 +125,7 @@ fn shifted_com<B: Boundary<Coord = f32>>(
         com.y + dy * added_mass / new_mass,
     );
     // We call this to rewrap the position if necessary
-    bound.valid_pos(new_com).expect("Shifted the center to outside the available space").into()
+    bound.valid_pos(new_com).expect("shifted the center to outside the available space").into()
 }
 
 #[cfg(test)]
@@ -137,7 +137,7 @@ mod tests {
     use crate::positional::rect::Rect;
 
     fn make_unsafe_boundary() -> UnsafePeriodicBoundary<f32> {
-        UnsafePeriodicBoundary::from(Rect::new((0., 0.).into(), (100., 100.).into()))
+        UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
     }
     
     fn make_test_cell() -> Cell<MockGenome> {

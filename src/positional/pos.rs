@@ -28,9 +28,14 @@ impl Pos<usize> {
     }
 }
 
+// TODO: It aint good to have these traits here... they should be TryFroms
 impl From<Pos<usize>> for Pos<isize> {
     fn from(value: Pos<usize>) -> Self {
-        Pos::new(value.x as isize, value.y as isize)
+        let message = "overflow when translating position from general to lattice coordinates";
+        Pos::new(
+            value.x.try_into().expect(message), 
+            value.y.try_into().expect(message)
+        )
     }
 }
 
@@ -38,7 +43,7 @@ impl From<Pos<isize>> for Pos<usize> {
     fn from(value: Pos<isize>) -> Self {
         let message = "overflow when translating position from general to lattice coordinates";
         Pos::new(
-            value.x.try_into().expect(message), 
+            value.x.try_into().expect(message),
             value.y.try_into().expect(message)
         )
     }

@@ -1,6 +1,7 @@
 use crate::positional::pos::Pos;
-use num::{Integer, Num};
+use num::{Integer, Num, ToPrimitive};
 use std::ops::AddAssign;
+use thiserror::Error;
 
 #[derive(Clone, Debug)]
 pub struct Rect<T> {
@@ -73,6 +74,44 @@ where
         Some(ret_pos)
     }
 }
+
+impl TryFrom<Rect<f32>> for Rect<isize> {
+    type Error = RectConversionError;
+
+    fn try_from(value: Rect<f32>) -> Result<Self, Self::Error> {
+        Ok(Rect::new(
+            Pos::new(
+                value.min.x.to_isize().ok_or(Self::Error {})?,
+                value.min.y.to_isize().ok_or(Self::Error {})?,
+            ),
+            Pos::new(
+                value.max.x.to_isize().ok_or(Self::Error {})?,
+                value.max.y.to_isize().ok_or(Self::Error {})?,
+            )
+        ))
+    }
+}
+
+impl TryFrom<Rect<f32>> for Rect<usize> {
+    type Error = RectConversionError;
+
+    fn try_from(value: Rect<f32>) -> Result<Self, Self::Error> {
+        Ok(Rect::new(
+            Pos::new(
+                value.min.x.to_usize().ok_or(Self::Error {})?,
+                value.min.y.to_usize().ok_or(Self::Error {})?,
+            ),
+            Pos::new(
+                value.max.x.to_usize().ok_or(Self::Error {})?,
+                value.max.y.to_usize().ok_or(Self::Error {})?,
+            )
+        ))
+    }
+}
+
+#[derive(Error, Debug)]
+#[error("failed to convert `Rect`")]
+pub struct RectConversionError {}
 
 #[cfg(test)]
 mod tests {

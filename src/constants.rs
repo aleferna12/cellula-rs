@@ -1,4 +1,4 @@
-use crate::positional::boundary::{FixedBoundary, UnsafePeriodicBoundary};
+use crate::positional::boundary::UnsafePeriodicBoundary;
 use crate::positional::neighbourhood::MooreNeighbourhood;
 
 /// Boundary type of the environment.
@@ -13,18 +13,3 @@ pub type NeighbourhoodType = MooreNeighbourhood;
 /// 
 /// May also require changing the `discriminant()` method of `LatticeEntity<()>`.
 pub type Spin = u32;
-
-// Type definition based on BoundaryType
-pub type LatticeBoundaryType = <BoundaryType as LatticeBoundaryAssociate>::BoundaryType;
-
-pub trait LatticeBoundaryAssociate {
-    type BoundaryType;
-}
-
-impl LatticeBoundaryAssociate for UnsafePeriodicBoundary<f32> {
-    type BoundaryType = UnsafePeriodicBoundary<isize>;
-}
-
-impl LatticeBoundaryAssociate for FixedBoundary<f32> {
-    type BoundaryType = FixedBoundary<isize>;
-}
