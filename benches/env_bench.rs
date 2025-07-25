@@ -10,9 +10,10 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
 use std::hint::black_box;
+use evo_cpm::genome::MockGenome;
 use evo_cpm::positional::boundary::{Boundary, UnsafePeriodicBoundary};
 
-fn random_neighbour<N>(env: &Environment<N>, p: Pos<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos<usize> {
+fn random_neighbour<G, N>(env: &Environment<G, N>, p: Pos<usize>, neigh_r: u8, rng: &mut impl Rng) -> Pos<usize> {
     let oldp = (p.x as i32, p.y as i32);
     let mut newp = oldp;
     let dist = neigh_r as i32;
@@ -27,13 +28,13 @@ fn random_neighbour<N>(env: &Environment<N>, p: Pos<usize>, neigh_r: u8, rng: &m
     Pos::new(newp.0 as usize, newp.1 as usize)
 }
 
-fn add_random_edge<N>(env: &mut Environment<N>, rng: &mut impl Rng) -> bool {
+fn add_random_edge<G, N>(env: &mut Environment<G, N>, rng: &mut impl Rng) -> bool {
     let p1 = env.space.cell_lattice.random_pos(rng);
     let e = Edge::new(p1, random_neighbour(env, p1, 1, rng));
     env.edge_book.insert(e)
 }
 
-fn replace_random_edges<N>(n_edges: usize, env: &mut Environment<N>, rng: &mut impl Rng) {
+fn replace_random_edges<G, N>(n_edges: usize, env: &mut Environment<G, N>, rng: &mut impl Rng) {
     for _ in 0..n_edges {
         let e1 = add_random_edge(env, rng);
         if e1 {
@@ -89,7 +90,7 @@ fn bench_env(c: &mut Criterion) {
     });
 
     let mut env = Environment::new_empty_test(100, 100);
-    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()), Default::default());
+    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()), MockGenome::new(0));
 
     let mut group = c.benchmark_group("cell_positions");
     group.bench_function("contiguous_cell_positions", |b| {

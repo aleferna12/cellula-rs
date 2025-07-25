@@ -20,8 +20,8 @@ pub trait Plot {
 }
 
 pub trait ContinuousPlot: Plot {
-    fn min_color(&self) -> &Luv;
-    fn max_color(&self) -> &Luv;
+    fn min_color(&self) -> Luv;
+    fn max_color(&self) -> Luv;
     fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Luv, LerpError> {
         if max < min {
             return Err(LerpError::NegativeRange);
@@ -34,7 +34,7 @@ pub trait ContinuousPlot: Plot {
         }
 
         let p = if min == max { 0.5 } else { (value - min) / (max - min) };
-        let blended = self.min_color().mix(self.max_color().clone(), p);
+        let blended = self.min_color().mix(self.max_color(), p);
         Ok(blended)
     }
 }
@@ -83,12 +83,12 @@ impl Plot for SpinPlot<'_> {
     }
 }
 
-pub struct CenterPlot<'e, N> {
-    pub env: &'e Environment<N>,
+pub struct CenterPlot<'e, G, N> {
+    pub env: &'e Environment<G, N>,
     pub color: Srgb<u8>
 }
 
-impl<N> Plot for CenterPlot<'_, N> {
+impl<G, N> Plot for CenterPlot<'_, G, N> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -102,12 +102,12 @@ impl<N> Plot for CenterPlot<'_, N> {
     }
 }
 
-pub struct LightCenterPlot<'e, N> {
-    pub env: &'e Environment<N>,
+pub struct LightCenterPlot<'e, G, N> {
+    pub env: &'e Environment<G, N>,
     pub color: Srgb<u8>
 }
 
-impl<N> Plot for LightCenterPlot<'_, N> {
+impl<G, N> Plot for LightCenterPlot<'_, G, N> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -121,14 +121,14 @@ impl<N> Plot for LightCenterPlot<'_, N> {
     }
 }
 
-pub struct ClonesPlot<'a, N> {
-    pub env: &'a Environment<N>,
+pub struct ClonesPlot<'a, G, N> {
+    pub env: &'a Environment<G, N>,
     pub clone_pairs: &'a SymmetricTable<bool>,
     pub color: Srgb<u8>,
     pub all_clones: bool
 }
 
-impl<N> Plot for ClonesPlot<'_, N> {
+impl<G, N> Plot for ClonesPlot<'_, G, N> {
     fn plot(&self, image: &mut RgbaImage) {
         let spins = self.clone_pairs.iter_pairs(
             LatticeEntity::first_cell_spin() as usize,
@@ -138,7 +138,7 @@ impl<N> Plot for ClonesPlot<'_, N> {
             if !self.clone_pairs[spin_pair] {
                 continue;
             }
-            let message = "non-cell stored as clone";
+            let message = "Non-cell stored as clone";
             let cell1 = self.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
             let cell2 = self.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
             let center1 = cell1.center;
@@ -160,12 +160,12 @@ impl<N> Plot for ClonesPlot<'_, N> {
     }
 }
 
-pub struct BorderPlot<'e, N> {
-    pub env: &'e Environment<N>,
+pub struct BorderPlot<'e, G, N> {
+    pub env: &'e Environment<G, N>,
     pub color: Srgb<u8>
 }
 
-impl<N: Neighbourhood> Plot for BorderPlot<'_, N> {
+impl<G, N: Neighbourhood> Plot for BorderPlot<'_, G, N> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
@@ -187,13 +187,13 @@ impl<N: Neighbourhood> Plot for BorderPlot<'_, N> {
     }
 }
 
-pub struct CellTypePlot<'e, N> {
-    pub env: &'e Environment<N>,
+pub struct CellTypePlot<'e, G, N> {
+    pub env: &'e Environment<G, N>,
     pub mig_color: Srgb<u8>,
     pub div_color: Srgb<u8>
 }
 
-impl<N> Plot for CellTypePlot<'_, N> {
+impl<G, N> Plot for CellTypePlot<'_, G, N> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
@@ -213,13 +213,13 @@ impl<N> Plot for CellTypePlot<'_, N> {
     }
 }
 
-pub struct AreaPlot<'e, N> {
-    pub env: &'e Environment<N>,
+pub struct AreaPlot<'e, G, N> {
+    pub env: &'e Environment<G, N>,
     pub min_color: Luv,
     pub max_color: Luv
 }
 
-impl<N> Plot for AreaPlot<'_, N> {
+impl<G, N> Plot for AreaPlot<'_, G, N> {
     fn plot(&self, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
@@ -253,12 +253,12 @@ impl<N> Plot for AreaPlot<'_, N> {
     }
 }
 
-impl<N> ContinuousPlot for AreaPlot<'_, N> {
-    fn min_color(&self) -> &Luv {
-        &self.min_color
+impl<G, N> ContinuousPlot for AreaPlot<'_, G, N> {
+    fn min_color(&self) -> Luv {
+        self.min_color
     }
-    fn max_color(&self) -> &Luv {
-        &self.max_color
+    fn max_color(&self) -> Luv {
+        self.max_color
     }
 }
 
@@ -290,12 +290,12 @@ impl Plot for LightPlot<'_> {
 }
 
 impl ContinuousPlot for LightPlot<'_> {
-    fn min_color(&self) -> &Luv {
-        &self.min_color
+    fn min_color(&self) -> Luv {
+        self.min_color
     }
 
-    fn max_color(&self) -> &Luv {
-        &self.max_color
+    fn max_color(&self) -> Luv {
+        self.max_color
     }
 }
 

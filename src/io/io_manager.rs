@@ -39,10 +39,10 @@ impl IoManager {
     }
     
     // TODO!: I dont like this, would be better to put this logic back in model.step()
-    pub fn image_io(
+    pub fn image_io<G>(
         &mut self,
         time_step: u32,
-        env: &Environment<impl Neighbourhood>,
+        env: &Environment<G, impl Neighbourhood>,
         clone_pairs: &SymmetricTable<bool>
     ) -> Result<(), Box<dyn Error>> {
         let mut frame = None;
@@ -76,9 +76,9 @@ impl IoManager {
         Ok(())
     }
 
-    pub fn simulation_image(
+    pub fn simulation_image<G>(
         &self, 
-        env: &Environment<impl Neighbourhood>, 
+        env: &Environment<G, impl Neighbourhood>, 
         clone_pairs: &SymmetricTable<bool>
     ) -> Result<RgbaImage, Box<dyn Error>> {
         let mut image = RgbaImage::new(

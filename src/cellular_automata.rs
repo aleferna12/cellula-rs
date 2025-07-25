@@ -30,7 +30,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         }
     }
     
-    pub fn step(&self, env: &mut Environment<impl Neighbourhood>, rng: &mut impl Rng) {
+    pub fn step<G>(&self, env: &mut Environment<G, impl Neighbourhood>, rng: &mut impl Rng) {
         let mut to_visit = env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
         while 0. < to_visit {
             let edge_i = env.edge_book.random_index(rng);
@@ -52,9 +52,9 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     /// # Returns:
     /// 
     /// The number of extra updates that the copy attempt incurred (not whether it was successful or not!).
-    pub fn attempt_site_copy(
+    pub fn attempt_site_copy<G>(
         &self,
-        env: &mut Environment<impl Neighbourhood>,
+        env: &mut Environment<G, impl Neighbourhood>,
         rng: &mut impl Rng,
         pos_from: Pos<usize>,
         pos_to: Pos<usize>
@@ -80,7 +80,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if let SomeCell(cell) = entity_from {
             if env.cells.migrate && let CellType::Migrate = cell.cell_type {
-                delta_h += self.chemotaxis_bias(&cell, pos_to, self.chemotaxis_mu, &env.space.bound);
+                delta_h += self.chemotaxis_bias(cell, pos_to, self.chemotaxis_mu, &env.space.bound);
             }
         }
         if !self.accept_site_copy(rng, delta_h) {

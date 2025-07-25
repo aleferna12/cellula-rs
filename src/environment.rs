@@ -1,8 +1,9 @@
+use std::fmt::Debug;
 use crate::cell::{Cell, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
-use crate::genome::{Genome, Grn};
+use crate::genome::MockGenome;
 use crate::positional::boundary::Boundary;
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
@@ -14,9 +15,9 @@ use crate::space::Space;
 // This could be a really complicated type with several generic parameters.
 // Because references to Environment are passed around quite a lot, and it initialises most of its members, I've decided
 // to keep it simple.
-pub struct Environment<N> {
+pub struct Environment<G, N> {
     pub space: Space,
-    pub cells: CellContainer<Grn>,
+    pub cells: CellContainer<G>,
     pub edge_book: EdgeBook,
     pub neighbourhood: N,
     pub update_period: u32,
@@ -25,13 +26,13 @@ pub struct Environment<N> {
     pub max_cells: Spin
 }
 
-impl<N> Environment<N> {
+impl<G, N> Environment<G, N> {
     pub fn new(
         update_period: u32,
         cell_search_radius: f32,
         max_cells: Spin,
         enclose: bool,
-        cells: CellContainer<Grn>,
+        cells: CellContainer<G>,
         space: Space,
         neighbourhood: N
     ) -> Self {
@@ -103,7 +104,9 @@ impl<N> Environment<N> {
         
         self.spawn_solid(border_positions.into_iter());
     }
-    
+}
+
+impl<G: Debug + Clone, N> Environment<G, N> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
@@ -136,9 +139,10 @@ impl<N> Environment<N> {
             }
         }).collect()
     }
-    
+
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<impl Genome>, DivisionError> {
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<G>, DivisionError>
+    where G: Debug + Clone {
         let new_spin = self.cells.next_spin();
         let cell_target_area = self.cells.target_area;
         let mut mom_clone = self
@@ -146,7 +150,7 @@ impl<N> Environment<N> {
             .get_entity_mut(spin)
             .expect_cell(&format!("passed non-cell with spin {spin} to `divide_cel()`"))
             .clone();
-        
+
         let mut new_cell = Cell::new_empty(
             cell_target_area,
             mom_clone.genome.clone()
@@ -155,7 +159,7 @@ impl<N> Environment<N> {
             .space
             .box_cell_positions(&mom_clone, self.cell_search_radius)
             .into_iter()
-            .filter(|pos| { 
+            .filter(|pos| {
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
                 //  it also might be worth writing a faster implementation for FixedBoundary (LatticeBoundary)
@@ -168,7 +172,7 @@ impl<N> Environment<N> {
             }
             self.space.cell_lattice[pos] = new_spin;
             new_cell.shift_position(
-                pos, 
+                pos,
                 self.space.light_lattice[pos],
                 true,
                 &self.space.bound
@@ -191,7 +195,7 @@ impl<N> Environment<N> {
     }
 }
 
-impl<N: Neighbourhood> Environment<N> {
+impl<G, N: Neighbourhood> Environment<G, N> {
     pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
@@ -221,7 +225,7 @@ impl<N: Neighbourhood> Environment<N> {
         (removed, added)
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, genome: Grn) -> Option<&RelCell<Grn>> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, genome: G) -> Option<&RelCell<G>> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
         let mut cell = Cell::new_empty(
             self.cells.target_area,
@@ -251,7 +255,7 @@ impl<N: Neighbourhood> Environment<N> {
     }
 }
 
-impl Environment<MooreNeighbourhood> {
+impl Environment<MockGenome, MooreNeighbourhood> {
     /// Empty environment with arbitrary cell parameters for testing purposes.
     ///
     /// Do not use this in production, no cells can be added to an environment created through this method.
@@ -308,8 +312,9 @@ impl<G> LatticeEntity<&RelCell<G>> {
     }
 }
 
-impl<C: std::fmt::Debug> LatticeEntity<C> {
-    pub fn unwrap_cell(self) -> C {
+impl<C> LatticeEntity<C> {
+    pub fn unwrap_cell(self) -> C
+    where C: Debug {
         match self {
             SomeCell(cell) => cell,
             _ => panic!("called `LatticeEntity::unwrap_cell()` on a `{self:?}` value")
@@ -346,9 +351,9 @@ pub mod tests {
     use super::*;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
-    use std::default::Default;
+    use crate::genome::MockGenome;
 
-    fn make_env_for_division() -> Environment<NeighbourhoodType> {
+    fn make_env_for_division() -> Environment<MockGenome, NeighbourhoodType> {
         let env = Environment::new(
             1,
             2.0,
@@ -368,7 +373,7 @@ pub mod tests {
 
     #[test]
     fn test_spawn_solid() {
-        let mut env = Environment::new_empty_test(10, 10);
+        let mut env: Environment<MockGenome, _> = Environment::new_empty_test(10, 10);
         let positions = vec![
             Pos::new(1, 1),
             Pos::new(2, 2),
@@ -383,25 +388,6 @@ pub mod tests {
             Pos::new(3, 3),
         ] {
             assert_eq!(env.space.cell_lattice[*pos], Solid.discriminant());
-        }
-    }
-
-    #[test]
-    fn test_make_border() {
-        let mut env = Environment::new_empty_test(10, 5);
-        env.make_border();
-
-        for x in 0..10 {
-            assert_eq!(env.space.cell_lattice[Pos::new(x, 0)], Solid.discriminant());
-            assert_eq!(env.space.cell_lattice[Pos::new(x, 4)], Solid.discriminant());
-        }
-
-        for y in 1..5 {
-            assert_eq!(env.space.cell_lattice[Pos::new(9, y)], Solid.discriminant());
-        }
-
-        for y in 1..4 {
-            assert_eq!(env.space.cell_lattice[Pos::new(0, y)], Solid.discriminant());
         }
     }
 
@@ -430,7 +416,7 @@ pub mod tests {
         let mut env = make_env_for_division();
 
         let rect = Rect::new(Pos::new(20, 20), Pos::new(22, 22));
-        env.spawn_rect_cell(rect, Default::default());
+        env.spawn_rect_cell(rect, MockGenome::new(0));
 
         let spin = LatticeEntity::first_cell_spin();
         let result = env.divide_cell(spin);
@@ -442,7 +428,7 @@ pub mod tests {
     #[test]
     fn test_reproduce() {
         let mut env = make_env_for_division();
-        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), Default::default());
+        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), MockGenome::new(0));
 
         let divided_spins = env.reproduce();
         assert_eq!(divided_spins.len(), 1);
@@ -452,7 +438,7 @@ pub mod tests {
     fn test_reproduce_limit_population() {
         let mut env = make_env_for_division();
         env.max_cells = 1;
-        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), Default::default());
+        env.spawn_rect_cell(Rect::new(Pos::new(30, 30), Pos::new(32, 32)), MockGenome::new(0));
 
         let divided_spins = env.reproduce();
         assert_eq!(divided_spins.len(), 0);

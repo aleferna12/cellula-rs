@@ -12,7 +12,7 @@ pub struct CellContainer<G> {
     vec: Vec<RelCell<G>>
 }
 
-impl<G: Genome> CellContainer<G> {
+impl<G> CellContainer<G> {
     pub fn new(
         target_area: u32,
         div_area: u32,
@@ -71,8 +71,9 @@ impl<G: Genome> CellContainer<G> {
         }
         SomeCell(&mut self.vec[(spin - LatticeEntity::first_cell_spin()) as usize])
     }
-    
-    pub fn update_cells(&mut self) {
+
+    pub fn update_cells(&mut self)
+    where G: Genome {
         for cell in &mut self.vec {
             if let CellType::Divide = cell.cell_type && cell.target_area < self.div_area {
                 cell.target_area += 1;

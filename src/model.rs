@@ -15,7 +15,7 @@ use crate::positional::rect::Rect;
 use crate::space::Space;
 
 pub struct Model {
-    pub env: Environment<NeighbourhoodType>,
+    pub env: Environment<Grn, NeighbourhoodType>,
     pub ca: CellularAutomata<ClonalAdhesion>,
     pub rng: Xoshiro256StarStar,
     pub io_manager: IoManager

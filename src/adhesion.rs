@@ -4,6 +4,7 @@ use crate::environment::LatticeEntity::*;
 use crate::environment::{Environment, LatticeEntity};
 use crate::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
+use std::fmt::Debug;
 use crate::positional::neighbourhood::Neighbourhood;
 
 pub trait AdhesionSystem {
@@ -27,7 +28,7 @@ impl ClonalAdhesion {
     pub fn update_clones(
         &mut self,
         cell_spin: Spin,
-        env: &Environment<impl Neighbourhood>
+        env: &Environment<impl Debug, impl Neighbourhood>
     ) -> Option<Vec<Spin>> {
         let entity = env.cells.get_entity(cell_spin);
         if entity.spin() < LatticeEntity::first_cell_spin() {

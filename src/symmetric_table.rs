@@ -20,8 +20,7 @@ impl<T: Default + Clone> SymmetricTable<T> {
 
     fn flat_index(&self, i: usize, j: usize) -> usize {
         let (i, j) = if i > j { (j, i) } else { (i, j) };
-        let ind = i * (2 * self.length - i - 1) / 2 + j - i;
-        ind
+        i * (2 * self.length - i - 1) / 2 + j - i
     }
 }
 
