@@ -7,6 +7,7 @@ use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::error::Error;
 use rand::distr::{Distribution, Uniform};
+use crate::cell::Cell;
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::genome::{Genome, Grn};
@@ -140,13 +141,15 @@ impl TryFrom<Parameters> for Model {
                     pos,
                     (pos.x + cell_side, pos.y + cell_side).into()
                 ),
-                // TODO!: Parameterize
-                Grn::new(
-                    1. / model.env.height() as f32,
-                    2,
-                    0.8,
-                    0.8,
-                    || Uniform::new(-1., 1.).unwrap().sample(&mut model.rng)
+                Cell::new_empty(
+                    parameters.environment.cell.target_area,
+                    Grn::new(
+                        1. / model.env.height() as f32,
+                        2,
+                        0.8,
+                        0.8,
+                        || Uniform::new(-1., 1.).unwrap().sample(&mut model.rng)
+                    )
                 )
             );
             if cell.is_some() {

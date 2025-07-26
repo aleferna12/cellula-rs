@@ -10,6 +10,7 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
 use std::hint::black_box;
+use evo_cpm::cell::Cell;
 use evo_cpm::genome::MockGenome;
 use evo_cpm::positional::boundary::{AsLatticeBoundary, Boundary, UnsafePeriodicBoundary};
 
@@ -95,7 +96,10 @@ fn bench_env(c: &mut Criterion) {
     });
 
     let mut env = Environment::new_empty_test(100, 100);
-    env.spawn_rect_cell(Rect::new((10, 10).into(), (20, 20).into()), MockGenome::new(0));
+    env.spawn_rect_cell(
+        Rect::new((10, 10).into(), (20, 20).into()),
+        Cell::new_empty(100, MockGenome::new(0))
+    );
 
     let mut group = c.benchmark_group("cell_positions");
     group.bench_function("contiguous_cell_positions", |b| {
