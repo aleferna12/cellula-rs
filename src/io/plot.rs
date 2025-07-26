@@ -310,10 +310,10 @@ pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {
 
 pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, HexError> {
     if !hex.starts_with("#") {
-        return Err(HexError::MissingHashtag.into());
+        return Err(HexError::MissingHashtag);
     }
     if hex.len() != 7 {
-        return Err(HexError::WrongLength.into());
+        return Err(HexError::WrongLength);
     }
     let hexu32 = hex.replace("#", "00");
     let bytes = u32::from_str_radix(&hexu32, 16).map_err(ParseU8Error)?.to_be_bytes();
