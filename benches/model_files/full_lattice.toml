@@ -12,12 +12,15 @@ max-cells = 1024
 cell-search-radius = 2.5
 update-period = 32
 
-[environment.cell]
+[cell]
 starting-area = 64
 target-area = 64
 div-area = 128
 divide = true
 migrate = true
+n-regulatory-genes = 2
+mutation-rate = 0.01
+mutation-std = 0.01
 
 [cellular-automata]
 boltz-t = 16.0
