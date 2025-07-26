@@ -48,11 +48,7 @@ impl<G, N, B: AsLatticeBoundary> Environment<G, N, B> {
             env.make_border();
         }
     
-        for row in 0..env.height() {
-            for col in 0..env.width() {
-                env.space.chem_lattice[(col, row).into()] = row.try_into().expect("lattice is too big");
-            }
-        }
+        env.make_chem_gradient();
         env
     }
 
@@ -100,6 +96,14 @@ impl<G, N, B: AsLatticeBoundary> Environment<G, N, B> {
         }
         
         self.spawn_solid(border_positions.into_iter());
+    }
+    
+    pub fn make_chem_gradient(&mut self) {
+        for row in 0..self.height() {
+            for col in 0..self.width() {
+                self.space.chem_lattice[(col, row).into()] = row.try_into().expect("lattice is too big");
+            }
+        }
     }
 }
 
