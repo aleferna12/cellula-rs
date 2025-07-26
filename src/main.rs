@@ -1,5 +1,6 @@
 /*
 TODO!: 
+    - profile, there was a 6% performance loss since the last commit 
     - finish IO
         - cell info
         - backup
