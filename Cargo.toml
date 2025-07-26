@@ -5,8 +5,10 @@ edition = "2024"
 description = "A fast, easily extensible evo-devo model."
 
 [profile.release]
-# Change to "thin" or "off" if compilation time becomes a problem
+# These can drive up compilation time quite significantly,
+# but they do have a measurable effect on performance
 lto = "fat"
+codegen-units = 1
 
 [dependencies]
 clap = { version = "4.5.39", features = ["derive"] }
