@@ -2,8 +2,7 @@
 # How many MCS the simulation will run for.
 time-steps = 16384
 # Seed for the RNG.
-# Use `0` to pick a random seed.
-# [default = 0]
+# Omit to pick a random seed.
 seed = 1241254152
 
 [environment]
@@ -30,7 +29,7 @@ cell-search-radius = 3
 # This includes cell growth (by 1 area unit), genomic parameters, and reproduction.
 update-period = 64
 
-[environment.cell]
+[cell]
 # Starting cell area.
 starting-area = 64
 # Target cell area.
@@ -43,6 +42,12 @@ divide = true
 # Set to `false` to disable migration.
 # [default = true]
 migrate = true
+# Number of regulatory genes in the cell's GRN.
+n-regulatory-genes = 2
+# Mutation rate for each GRN parameter.
+mutation-rate = 0.01
+# Standard deviation of the GRN parameter mutations.
+mutation-std = 0.01
 
 [cellular-automata]
 # Boltzmann temperature.

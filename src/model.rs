@@ -3,7 +3,7 @@ use crate::cellular_automata::CellularAutomata;
 use crate::environment::{Environment, LatticeEntity};
 use crate::io::io_manager::IoManager;
 use crate::io::parameters::Parameters;
-use rand::SeedableRng;
+use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::error::Error;
 use rand::distr::{Distribution, Uniform};
@@ -60,12 +60,12 @@ impl Model {
 impl TryFrom<Parameters> for Model {
     type Error = Box<dyn Error>;
 
-    fn try_from(parameters: Parameters) -> Result<Self, Self::Error> {
-        let rng = if parameters.general.seed == 0 {
-            Xoshiro256StarStar::from_os_rng()
-        } else {
-            Xoshiro256StarStar::seed_from_u64(parameters.general.seed)
-        };
+    fn try_from(mut parameters: Parameters) -> Result<Self, Self::Error> {
+        // TOML doesnt support large u64s so we use a u32
+        let seed = parameters.general.seed.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64);
+        parameters.general.seed = seed.into();
+        let rng = Xoshiro256StarStar::seed_from_u64(seed);
+        
         let mut model = Self {
             env: Environment::new(
                 parameters.environment.update_period,
@@ -73,10 +73,10 @@ impl TryFrom<Parameters> for Model {
                 parameters.environment.max_cells,
                 parameters.environment.enclose,
                 CellContainer::new(
-                    parameters.environment.cell.target_area,
-                    parameters.environment.cell.div_area,
-                    parameters.environment.cell.divide,
-                    parameters.environment.cell.migrate,
+                    parameters.cell.target_area,
+                    parameters.cell.div_area,
+                    parameters.cell.divide,
+                    parameters.cell.migrate,
                 ),
                 Space::new(
                     BoundaryType::new(Rect::new(
@@ -133,7 +133,7 @@ impl TryFrom<Parameters> for Model {
 
         log::info!("Creating cells");
         let mut cell_count = 0;
-        let cell_side = (parameters.environment.cell.starting_area as f32).sqrt() as usize;
+        let cell_side = (parameters.cell.starting_area as f32).sqrt() as usize;
         for _ in 0..parameters.environment.starting_cells {
             let pos = model.env.space.cell_lattice.random_pos(&mut model.rng);
             let cell = model.env.spawn_rect_cell(
@@ -142,12 +142,12 @@ impl TryFrom<Parameters> for Model {
                     (pos.x + cell_side, pos.y + cell_side).into()
                 ),
                 Cell::new_empty(
-                    parameters.environment.cell.target_area,
+                    parameters.cell.target_area,
                     Grn::new(
                         1. / model.env.height() as f32,
-                        2,
-                        0.8,
-                        0.8,
+                        parameters.cell.n_regulatory_genes,
+                        parameters.cell.mutation_rate,
+                        parameters.cell.mutation_std,
                         || Uniform::new(-1., 1.).unwrap().sample(&mut model.rng)
                     )
                 )

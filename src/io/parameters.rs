@@ -29,6 +29,7 @@ pub struct Cli {
 pub struct Parameters {
     pub general: GeneralParameters,
     pub environment: EnvironmentParameters,
+    pub cell: CellParameters,
     pub cellular_automata: CellularAutomataParameters,
     pub io: IoParameters
 }
@@ -66,8 +67,7 @@ impl Parameters {
 #[serde(rename_all = "kebab-case")]
 pub struct GeneralParameters {
     pub time_steps: u32,
-    #[serde(default = "param_defaults::zero_u64")]
-    pub seed: u64,
+    pub seed: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -81,8 +81,7 @@ pub struct EnvironmentParameters {
     pub starting_cells: Spin,
     pub max_cells: Spin,
     pub cell_search_radius: f32,
-    pub update_period: u32,
-    pub cell: CellParameters
+    pub update_period: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -95,8 +94,9 @@ pub struct CellParameters {
     pub divide: bool,
     #[serde(default = "param_defaults::true_flag")]
     pub migrate: bool,
-    #[serde(default = "param_defaults::two_u32")]
-    pub n_regulatory_genes: u32
+    pub n_regulatory_genes: u32,
+    pub mutation_rate: f32,
+    pub mutation_std: f32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -175,8 +175,6 @@ pub enum PlotType {
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
 mod param_defaults {
-    pub fn zero_u64() -> u64 { 0 }
-    pub fn two_u32() -> u32 { 2 }
     pub fn false_flag() -> bool { false }
     pub fn true_flag() -> bool { true }
     pub fn webp() -> String { "webp".to_string() }
