@@ -115,7 +115,8 @@ impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
     pub fn reproduce(&mut self) -> Vec<Spin> {
         let mut divide = vec![];
         for cell in &self.cells {
-            if self.cells.divide && cell.area >= self.cells.div_area {
+            // Currently cells don't need to express the dividing type to divide, they just need to be big enough
+            if cell.area >= self.cells.div_area {
                 divide.push(cell.spin);
             }
         }
