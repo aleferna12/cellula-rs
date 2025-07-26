@@ -81,10 +81,10 @@ image-format = "webp"
 #   - "center":       Plots cell centers.
 #   - "clones":       Plots will cells are attached.
 #   - "border":       Plots cell borders.
-#   - "light":        Plots the light gradient.
-#   - "light-center": Plots the perceived center of the light gradient.
+#   - "chem":         Plots the chem gradient.
+#   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["light", "spin"]
+order = ["chem", "cell-type", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
@@ -96,8 +96,8 @@ center-color = "#00ff00"
 border-color = "#000000"
 # With which color to plot the connections between cell clones.
 clones-color = "#ff0000"
-# With which color to plot the perceived center of light of cells.
-light-center-color = "#00ff00"
+# With which color to plot the perceived center of chem of cells.
+chem-center-color = "#00ff00"
 # Set to true to display all clone pairs, even those span across the lattice due to periodic boundaries.
 # [default = false]
 all-clones = false
@@ -105,10 +105,10 @@ all-clones = false
 area-min-color = "#ff00ff"
 # With which color to plot the maximum area in the cell population.
 area-max-color = "#ffff00"
-# With which color to plot the minimum value for the light in the environment.
-light-min-color = "#000000"
-# With which color to plot the maximum value for the light in the environment.
-light-max-color = "#ffffff"
+# With which color to plot the minimum value for the chem in the environment.
+chem-min-color = "#000000"
+# With which color to plot the maximum value for the chem in the environment.
+chem-max-color = "#ffffff"
 # With which color to plot migrating cells.
 migrating-color = "#b30000"
 # With which color to plot dividing cells.

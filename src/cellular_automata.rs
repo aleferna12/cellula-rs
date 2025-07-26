@@ -43,7 +43,7 @@ impl<A> CellularAutomata<A> {
         );
         let (dx2, dy2) = bound.displacement(
             cell.center,
-            cell.light_center
+            cell.chem_center
         );
 
         let dot = dx1 * dx2 + dy1 * dy2;
@@ -148,10 +148,10 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         // Executes the copy
         env.space.cell_lattice[pos_to] = spin_from;
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_from) {
-            cell.shift_position(pos_to,env.space.light_lattice[pos_to], true, &env.space.bound);
+            cell.shift_position(pos_to,env.space.chem_lattice[pos_to], true, &env.space.bound);
         }
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_to) {
-            cell.shift_position(pos_to,env.space.light_lattice[pos_to], false, &env.space.bound);
+            cell.shift_position(pos_to,env.space.chem_lattice[pos_to], false, &env.space.bound);
         }
         let (removed, added) = env.update_edges(pos_to);
         // Times 2 to represent the symmetric edge

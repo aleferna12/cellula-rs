@@ -48,8 +48,8 @@ pub struct Cell<G> {
     pub area: u32,
     pub target_area: u32,
     pub center: Pos<f32>,
-    pub light_center: Pos<f32>,
-    pub light_mass: u32,
+    pub chem_center: Pos<f32>,
+    pub chem_mass: u32,
     pub cell_type: CellType,
     pub genome: G
 }
@@ -61,8 +61,8 @@ impl<G> Cell<G> {
             area: 0,
             target_area,
             center: Pos::new(0., 0.),
-            light_center: Pos::new(0., 0.),
-            light_mass: 0,
+            chem_center: Pos::new(0., 0.),
+            chem_mass: 0,
             cell_type: CellType::Migrate,
             genome
         }
@@ -71,7 +71,7 @@ impl<G> Cell<G> {
     pub fn shift_position<B: Boundary<Coord = f32>>(
         &mut self,
         pos: Pos<usize>,
-        light_at_pos: u32,
+        chem_at_pos: u32,
         add: bool,
         bound: &B
     ) {
@@ -89,17 +89,17 @@ impl<G> Cell<G> {
             self.area = self.area.saturating_add_signed(shift);
         }
         if let Some(new_chem) = shifted_com(
-            self.light_center,
+            self.chem_center,
             pos,
-            self.light_mass as f32,
-            light_at_pos as f32,
+            self.chem_mass as f32,
+            chem_at_pos as f32,
             shift,
             bound
         ) {
-            self.light_center = new_chem;
-            self.light_mass = self.light_mass.saturating_add_signed(shift * light_at_pos as i32);
+            self.chem_center = new_chem;
+            self.chem_mass = self.chem_mass.saturating_add_signed(shift * chem_at_pos as i32);
         } else { 
-            self.light_center = self.center;
+            self.chem_center = self.center;
         }
     }
 }
@@ -163,23 +163,23 @@ mod tests {
     }
 
     #[test]
-    fn test_shift_position_light_center_and_mass() {
+    fn test_shift_position_chem_center_and_mass() {
         let bound = make_unsafe_boundary();
         let mut cell = make_test_cell();
 
-        // Add light at (2, 3) with value 10
+        // Add chem at (2, 3) with value 10
         cell.shift_position(Pos::new(2, 3), 10, true, &bound);
-        assert_eq!(cell.light_mass, 10);
-        assert_eq!(cell.light_center, Pos::new(2., 3.));
+        assert_eq!(cell.chem_mass, 10);
+        assert_eq!(cell.chem_center, Pos::new(2., 3.));
 
-        // Add light at (4, 5) with value 10
+        // Add chem at (4, 5) with value 10
         cell.shift_position(Pos::new(4, 5), 10, true, &bound);
-        assert_eq!(cell.light_mass, 20);
-        assert_eq!(cell.light_center, Pos::new(3., 4.));
+        assert_eq!(cell.chem_mass, 20);
+        assert_eq!(cell.chem_center, Pos::new(3., 4.));
 
-        // Remove light from (2, 3)
+        // Remove chem from (2, 3)
         cell.shift_position(Pos::new(2, 3), 10, false, &bound);
-        assert_eq!(cell.light_mass, 10);
-        assert_eq!(cell.light_center, Pos::new(4., 5.));
+        assert_eq!(cell.chem_mass, 10);
+        assert_eq!(cell.chem_center, Pos::new(4., 5.));
     }
 }

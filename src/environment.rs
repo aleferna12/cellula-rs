@@ -50,7 +50,7 @@ impl<G, N, B: AsLatticeBoundary> Environment<G, N, B> {
     
         for row in 0..env.height() {
             for col in 0..env.width() {
-                env.space.light_lattice[(col, row).into()] = row.try_into().expect("lattice is too big");
+                env.space.chem_lattice[(col, row).into()] = row.try_into().expect("lattice is too big");
             }
         }
         env
@@ -168,13 +168,13 @@ impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
             self.space.cell_lattice[pos] = new_spin;
             new_cell.shift_position(
                 pos,
-                self.space.light_lattice[pos],
+                self.space.chem_lattice[pos],
                 true,
                 &self.space.bound
             );
             mom_clone.shift_position(
                 pos,
-                self.space.light_lattice[pos],
+                self.space.chem_lattice[pos],
                 false,
                 &self.space.bound
             );
@@ -237,7 +237,7 @@ impl<G, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B
                 self.update_edges(lat_pos);
                 cell.shift_position(
                     lat_pos,
-                    self.space.light_lattice[lat_pos],
+                    self.space.chem_lattice[lat_pos],
                     true,
                     &self.space.bound
                 );

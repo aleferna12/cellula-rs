@@ -78,8 +78,8 @@ impl<G> CellContainer<G> {
             if let CellType::Divide = cell.cell_type && cell.target_area < self.div_area {
                 cell.target_area += 1;
             }
-            let light_signal = cell.light_mass;
-            cell.genome.update_expression(light_signal);
+            let chem_signal = cell.chem_mass;
+            cell.genome.update_expression(chem_signal);
             cell.cell_type = cell.genome.get_cell_type();
         }
     }

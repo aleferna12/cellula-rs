@@ -102,17 +102,17 @@ impl<G, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, G, N, B> {
     }
 }
 
-pub struct LightCenterPlot<'e, G, N, B: AsLatticeBoundary> {
+pub struct ChemCenterPlot<'e, G, N, B: AsLatticeBoundary> {
     pub env: &'e Environment<G, N, B>,
     pub color: Srgb<u8>
 }
 
-impl<G, N, B: AsLatticeBoundary> Plot for LightCenterPlot<'_, G, N, B> {
+impl<G, N, B: AsLatticeBoundary> Plot for ChemCenterPlot<'_, G, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
-                cell.light_center.x as isize,
-                cell.light_center.y as isize,
+                cell.chem_center.x as isize,
+                cell.chem_center.y as isize,
             ));
             if let Some(pos) = center {
                 draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
@@ -262,18 +262,18 @@ impl<G, N, B: AsLatticeBoundary> ContinuousPlot for AreaPlot<'_, G, N, B> {
     }
 }
 
-pub struct LightPlot<'l> {
+pub struct ChemPlot<'l> {
     pub lat: &'l Lattice<u32>,
     pub min_color: Luv,
     pub max_color: Luv
 }
 
-impl Plot for LightPlot<'_> {
+impl Plot for ChemPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.lat.iter_positions() {
-            let light = self.lat[pos];
+            let chem = self.lat[pos];
             let color = self.lerp(
-                light as f32,
+                chem as f32,
                 0.,
                 self.lat.height() as f32
             );
@@ -283,13 +283,13 @@ impl Plot for LightPlot<'_> {
                     pos.y as u32,
                     srgb_to_rgba(Srgb::from_linear(c.into_color()))
                 ),
-                Err(e) => log::warn!("Failed to plot light for pos `{pos:?}` with error `{e:?}`")
+                Err(e) => log::warn!("Failed to plot chem for pos `{pos:?}` with error `{e:?}`")
             }
         }
     }
 }
 
-impl ContinuousPlot for LightPlot<'_> {
+impl ContinuousPlot for ChemPlot<'_> {
     fn min_color(&self) -> Luv {
         self.min_color
     }

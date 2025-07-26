@@ -1,7 +1,7 @@
 use crate::environment::Environment;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ClonesPlot, HexError, LightCenterPlot, LightPlot, Plot, SpinPlot};
+use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ClonesPlot, HexError, ChemCenterPlot, ChemPlot, Plot, SpinPlot};
 use crate::symmetric_table::SymmetricTable;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
@@ -103,10 +103,10 @@ impl IoManager {
                         color: hex_to_srgb(&self.plots.center_color)?
                     }.plot(&mut image)
                 },
-                PlotType::LightCenter => {
-                    LightCenterPlot {
+                PlotType::ChemCenter => {
+                    ChemCenterPlot {
                         env,
-                        color: hex_to_srgb(&self.plots.light_center_color)?
+                        color: hex_to_srgb(&self.plots.chem_center_color)?
                     }.plot(&mut image)
                 },
                 PlotType::Clones => {
@@ -130,11 +130,11 @@ impl IoManager {
                         color: hex_to_srgb(&self.plots.border_color)?
                     }.plot(&mut image)
                 },
-                PlotType::Light => {
-                    LightPlot {
-                        lat: &env.space.light_lattice,
-                        min_color: srgb_to_luv(hex_to_srgb(&self.plots.light_min_color)?),
-                        max_color: srgb_to_luv(hex_to_srgb(&self.plots.light_max_color)?)
+                PlotType::Chem => {
+                    ChemPlot {
+                        lat: &env.space.chem_lattice,
+                        min_color: srgb_to_luv(hex_to_srgb(&self.plots.chem_min_color)?),
+                        max_color: srgb_to_luv(hex_to_srgb(&self.plots.chem_max_color)?)
                     }.plot(&mut image)
                 },
                 PlotType::CellType => {

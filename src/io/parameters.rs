@@ -147,15 +147,15 @@ pub struct PlotParameters {
     pub solid_color: String,
     pub medium_color: Option<String>,
     pub center_color: String,
-    pub light_center_color: String,
+    pub chem_center_color: String,
     pub clones_color: String,
     #[serde(default = "param_defaults::false_flag")]
     pub all_clones: bool,
     pub border_color: String,
     pub area_min_color: String,
     pub area_max_color: String,
-    pub light_min_color: String,
-    pub light_max_color: String,
+    pub chem_min_color: String,
+    pub chem_max_color: String,
     pub migrating_color: String,
     pub dividing_color: String
 }
@@ -165,12 +165,12 @@ pub struct PlotParameters {
 pub enum PlotType {
     Spin,
     Center,
-    LightCenter,
+    ChemCenter,
     Clones,
     Border,
     CellType,
     Area,
-    Light
+    Chem
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

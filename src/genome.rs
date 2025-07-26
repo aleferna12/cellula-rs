@@ -8,7 +8,7 @@ use thiserror::Error;
 
 pub trait Genome {
     fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool;
-    fn update_expression(&mut self, light_signal: u32);
+    fn update_expression(&mut self, chem_signal: u32);
     fn get_cell_type(&self) -> CellType;
 }
 
@@ -39,7 +39,7 @@ impl Genome for MockGenome {
         false
     }
 
-    fn update_expression(&mut self, _light_signal: u32) {
+    fn update_expression(&mut self, _chem_signal: u32) {
         self.counter += 1;
         if self.counter > self.period_updates {
             match self.cell_type {
@@ -267,7 +267,7 @@ impl BaseGrn {
 /// Specialised `Grn` that handles the correct inputs and outputs.
 impl Grn {
     pub fn new(
-        light_scale: f32,
+        chem_scale: f32,
         n_regulatory: u32,
         mut_rate: f32,
         mut_std: f32,
@@ -275,7 +275,7 @@ impl Grn {
     ) -> Self {
         Self {
             grn: BaseGrn::new(
-                &[light_scale],
+                &[chem_scale],
                 n_regulatory, 
                 1,
                 mut_rate,
@@ -291,8 +291,8 @@ impl Genome for Grn {
         self.grn.attempt_mutate(rng)
     }
 
-    fn update_expression(&mut self, light_signal: u32) {
-        self.grn.update_expression(&[light_signal as f32]).expect("invalid GRN architecture");
+    fn update_expression(&mut self, chem_signal: u32) {
+        self.grn.update_expression(&[chem_signal as f32]).expect("invalid GRN architecture");
     }
 
     fn get_cell_type(&self) -> CellType {

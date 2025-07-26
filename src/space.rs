@@ -14,7 +14,7 @@ pub struct Space<B: AsLatticeBoundary> {
     pub bound: B,
     pub lat_bound: B::LatticeBoundary,
     pub cell_lattice: Lattice<Spin>,
-    pub light_lattice: Lattice<u32>,
+    pub chem_lattice: Lattice<u32>,
 }
 
 impl<B: AsLatticeBoundary> Space<B> {
@@ -26,7 +26,7 @@ impl<B: AsLatticeBoundary> Space<B> {
         Ok(Self{
             lat_bound: bound.as_lattice_boundary()?,
             cell_lattice: Lattice::<Spin>::new(rect.clone()),
-            light_lattice: Lattice::<u32>::new(rect),
+            chem_lattice: Lattice::<u32>::new(rect),
             bound,
         })
     }
