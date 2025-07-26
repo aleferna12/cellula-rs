@@ -260,6 +260,14 @@ impl BaseGrn {
                 *edge += self.mut_distr.sample(rng);
             }
         }
+        
+        for out in self.output_ids.clone() {
+            if rng.random_bool(self.mut_rate as f64) {
+                self.get_output_gene_mut(out.into())
+                    .expect(reg_miss)
+                    .threshold += self.mut_distr.sample(rng);
+            }
+        }
         mutated
     }
 }
