@@ -1,4 +1,5 @@
-use crate::cell::{Cell, RelCell};
+// TODO!: Revise all trait bounds of methods of Environment 
+use crate::cell::{CellLike, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
@@ -12,9 +13,9 @@ use crate::positional::rect::Rect;
 use crate::space::Space;
 use std::fmt::Debug;
 
-pub struct Environment<G, N, B: AsLatticeBoundary> {
+pub struct Environment<C, N, B: AsLatticeBoundary> {
     pub space: Space<B>,
-    pub cells: CellContainer<G>,
+    pub cells: CellContainer<C>,
     pub edge_book: EdgeBook,
     pub neighbourhood: N,
     pub update_period: u32,
@@ -23,13 +24,13 @@ pub struct Environment<G, N, B: AsLatticeBoundary> {
     pub max_cells: Spin
 }
 
-impl<G, N, B: AsLatticeBoundary> Environment<G, N, B> {
+impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
     pub fn new(
         update_period: u32,
         cell_search_radius: f32,
         max_cells: Spin,
         enclose: bool,
-        cells: CellContainer<G>,
+        cells: CellContainer<C>,
         space: Space<B>,
         neighbourhood: N
     ) -> Self {
@@ -107,7 +108,7 @@ impl<G, N, B: AsLatticeBoundary> Environment<G, N, B> {
     }
 }
 
-impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
+impl<C: CellLike + ChemSniffer + Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
@@ -116,7 +117,7 @@ impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
         let mut divide = vec![];
         for cell in &self.cells {
             // Currently cells don't need to express the dividing type to divide, they just need to be big enough
-            if cell.area >= self.cells.div_area {
+            if cell.area() >= self.cells.div_area {
                 divide.push(cell.spin);
             }
         }
@@ -143,7 +144,7 @@ impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
     }
 
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<G>, DivisionError> {
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<C>, DivisionError> {
         let new_spin = self.cells.next_spin();
         let cell_target_area = self.cells.target_area;
         let mut mom_clone = self
@@ -152,10 +153,7 @@ impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
             .expect_cell(&format!("passed non-cell with spin {spin} to `divide_cel()`"))
             .clone();
 
-        let mut new_cell = Cell::new_empty(
-            cell_target_area,
-            mom_clone.genome.clone()
-        );
+        let mut new_cell = mom_clone.birth();
         let new_positions: Vec<_> = self
             .space
             .box_cell_positions(&mom_clone, self.cell_search_radius)
@@ -163,30 +161,36 @@ impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
             .filter(|pos| {
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center).0 > 0.
+                self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
             })
             .collect();
         for pos in new_positions {
-            if mom_clone.area == 1 {
+            if mom_clone.area() == 1 {
                 return Err(DivisionError::NewCellTooBig);
             }
+            // TODO: this is basically the same as executing a lattice copy, unify the APIs
             self.space.cell_lattice[pos] = new_spin;
+            let chem_at = self.space.chem_lattice[pos] as f32;
             new_cell.shift_position(
                 pos,
-                self.space.chem_lattice[pos],
+                true,
+                &self.space.bound
+            );
+            new_cell.shift_chem(
+                pos,
+                chem_at,
                 true,
                 &self.space.bound
             );
             mom_clone.shift_position(
                 pos,
-                self.space.chem_lattice[pos],
                 false,
                 &self.space.bound
             );
         }
-        if new_cell.area > 0 {
+        if new_cell.area() > 0 {
             let mom_spin = mom_clone.spin;
-            mom_clone.target_area = cell_target_area;
+            mom_clone.set_target_area(cell_target_area);
             self.cells.replace(mom_clone);
             Ok(self.cells.push(new_cell, Some(mom_spin)))
         } else {
@@ -195,7 +199,7 @@ impl<G: Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
     }
 }
 
-impl<G, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B> {
+impl<C, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
@@ -225,7 +229,8 @@ impl<G, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B
         (removed, added)
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: Cell<G>) -> Option<&RelCell<G>> {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>>
+    where C: CellLike {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
 
         for pos in rect.iter_positions() {
@@ -238,13 +243,12 @@ impl<G, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<G, N, B
                 self.update_edges(lat_pos);
                 empty_cell.shift_position(
                     lat_pos,
-                    self.space.chem_lattice[lat_pos],
                     true,
                     &self.space.bound
                 );
             }
         }
-        if empty_cell.area == 0 {
+        if empty_cell.area() == 0 {
             return None;
         }
         Some(self.cells.push(empty_cell, None))
@@ -348,11 +352,12 @@ impl LatticeEntity<()> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::cell::Cell;
     use crate::genome::MockGenome;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
-    fn make_env_for_division() -> Environment<MockGenome, NeighbourhoodType, BoundaryType> {
+    fn make_env_for_division() -> Environment<Cell<MockGenome>, NeighbourhoodType, BoundaryType> {
         let env = Environment::new(
             1,
             2.0,
@@ -418,7 +423,10 @@ pub mod tests {
         let mut env = make_env_for_division();
 
         let rect = Rect::new(Pos::new(20, 20), Pos::new(22, 22));
-        env.spawn_rect_cell(rect, Cell::new_empty(4, MockGenome::new(0)));
+        env.spawn_rect_cell(
+            rect, 
+            Cell::new_empty(4, 8, MockGenome::new(0))
+        );
 
         let spin = LatticeEntity::first_cell_spin();
         let result = env.divide_cell(spin);
@@ -432,7 +440,7 @@ pub mod tests {
         let mut env = make_env_for_division();
         env.spawn_rect_cell(
             Rect::new(Pos::new(30, 30), Pos::new(32, 32)),
-            Cell::new_empty(4, MockGenome::new(0))
+            Cell::new_empty(4, 8, MockGenome::new(0))
         );
 
         let divided_spins = env.reproduce();
@@ -445,7 +453,7 @@ pub mod tests {
         env.max_cells = 1;
         env.spawn_rect_cell(
             Rect::new(Pos::new(30, 30), Pos::new(32, 32)), 
-            Cell::new_empty(4, MockGenome::new(0))
+            Cell::new_empty(4, 8, MockGenome::new(0))
         );
 
         let divided_spins = env.reproduce();

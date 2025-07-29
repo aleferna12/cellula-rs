@@ -1,9 +1,8 @@
 use crate::adhesion::AdhesionSystem;
-use crate::cell::{Cell, RelCell};
+use crate::cell::{CanMigrate, CellLike, ChemSniffer, RelCell};
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
-use crate::genome::CellType;
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
@@ -30,20 +29,20 @@ impl<A> CellularAutomata<A> {
         }
     }
 
-    pub fn chemotaxis_bias<G, B: Boundary<Coord = f32>>(
+    pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
         &self,
-        cell: &Cell<G>,
+        cell: &(impl CellLike + CanMigrate + ChemSniffer),
         pos_to: Pos<usize>,
         chemotaxis_mu: f32,
         bound: &B
     ) -> f32 {
         let (dx1, dy1) = bound.displacement(
-            cell.center,
+            cell.center(),
             Pos::new(pos_to.x as f32, pos_to.y as f32)
         );
         let (dx2, dy2) = bound.displacement(
-            cell.center,
-            cell.chem_center
+            cell.center(),
+            cell.chem_center()
         );
 
         let dot = dx1 * dx2 + dy1 * dy2;
@@ -58,17 +57,17 @@ impl<A> CellularAutomata<A> {
         }
     }
 
-    pub fn delta_hamiltonian_size<G>(
+    pub fn delta_hamiltonian_size<C: CellLike>(
         &self,
-        entity_from: LatticeEntity<&RelCell<G>>,
-        entity_to: LatticeEntity<&RelCell<G>>
+        entity_from: LatticeEntity<&RelCell<C>>,
+        entity_to: LatticeEntity<&RelCell<C>>
     ) -> f32 {
         let mut delta_h = 0.;
         if let SomeCell(cell) = entity_from {
-            delta_h += self.size_energy_diff(true, cell.area, cell.target_area);
+            delta_h += self.size_energy_diff(true, cell.area(), cell.target_area());
         }
         if let SomeCell(cell) = entity_to {
-            delta_h += self.size_energy_diff(false, cell.area, cell.target_area);
+            delta_h += self.size_energy_diff(false, cell.area(), cell.target_area());
         }
         delta_h
     }
@@ -84,9 +83,13 @@ impl<A> CellularAutomata<A> {
 }
 
 impl<A: AdhesionSystem> CellularAutomata<A> {
-    pub fn step<G>(
+    pub fn step(
         &self, 
-        env: &mut Environment<G, impl Neighbourhood, impl AsLatticeBoundary<Coord = f32>>, 
+        env: &mut Environment<
+            impl CellLike + CanMigrate + ChemSniffer, 
+            impl Neighbourhood, 
+            impl AsLatticeBoundary<Coord = f32>
+        >, 
         rng: &mut impl Rng
     ) {
         let mut to_visit = env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
@@ -110,9 +113,13 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     /// # Returns:
     ///
     /// The number of extra updates that the copy attempt incurred (not whether it was successful or not!).
-    pub fn attempt_site_copy<G>(
+    pub fn attempt_site_copy(
         &self,
-        env: &mut Environment<G, impl Neighbourhood, impl AsLatticeBoundary<Coord = f32>>,
+        env: &mut Environment<
+            impl CellLike + CanMigrate + ChemSniffer, 
+            impl Neighbourhood, 
+            impl AsLatticeBoundary<Coord = f32>
+        >,
         rng: &mut impl Rng,
         pos_from: Pos<usize>,
         pos_to: Pos<usize>
@@ -137,8 +144,8 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
 
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
         if let SomeCell(cell) = entity_from {
-            if env.cells.migrate && let CellType::Migrate = cell.cell_type {
-                delta_h += self.chemotaxis_bias(cell, pos_to, self.chemotaxis_mu, &env.space.bound);
+            if env.cells.migrate && cell.is_migrating() {
+                delta_h += self.chemotaxis_bias(&cell.cell, pos_to, self.chemotaxis_mu, &env.space.bound);
             }
         }
         if !self.accept_site_copy(rng, delta_h) {
@@ -147,22 +154,25 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
 
         // Executes the copy
         env.space.cell_lattice[pos_to] = spin_from;
+        let chem_at = env.space.chem_lattice[pos_to] as f32;
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_from) {
-            cell.shift_position(pos_to,env.space.chem_lattice[pos_to], true, &env.space.bound);
+            cell.shift_position(pos_to, true, &env.space.bound);
+            cell.shift_chem(pos_to, chem_at, true, &env.space.bound);
         }
         if let SomeCell(cell) = env.cells.get_entity_mut(spin_to) {
-            cell.shift_position(pos_to,env.space.chem_lattice[pos_to], false, &env.space.bound);
+            cell.shift_position(pos_to, false, &env.space.bound);
+            cell.shift_chem(pos_to, chem_at, false, &env.space.bound);
         }
         let (removed, added) = env.update_edges(pos_to);
         // Times 2 to represent the symmetric edge
         2. * (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
     }
 
-    pub fn delta_hamiltonian<'a, G: 'a>(
+    pub fn delta_hamiltonian<'a, C: 'a + CellLike>(
         &self,
-        entity_from: LatticeEntity<&RelCell<G>>,
-        entity_to: LatticeEntity<&RelCell<G>>,
-        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<G>>>
+        entity_from: LatticeEntity<&RelCell<C>>,
+        entity_to: LatticeEntity<&RelCell<C>>,
+        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<C>>>
     ) -> f32 {
         let mut delta_h = 0.;
         delta_h += self.delta_hamiltonian_size(entity_from, entity_to);
@@ -206,7 +216,11 @@ mod tests {
             1.,
             ClonalAdhesion::new(10, adh)
         );
-        let cell = RelCell::mock(Cell::new_empty(100, MockGenome::new(0)));
+        let cell = RelCell::mock(Cell::new_empty(
+            100, 
+            200, 
+            MockGenome::new(0)
+        ));
         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
         assert_eq!(dh, 2.);
     }

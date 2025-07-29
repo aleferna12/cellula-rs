@@ -9,7 +9,7 @@ use crate::positional::boundary::AsLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
 
 pub trait AdhesionSystem {
-    fn adhesion_energy<G>(&self, entity1: LatticeEntity<&RelCell<G>>, entity2: LatticeEntity<&RelCell<G>>) -> f32;
+    fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32;
 }
 
 pub struct ClonalAdhesion {
@@ -69,7 +69,7 @@ impl ClonalAdhesion {
 }
 
 impl AdhesionSystem for ClonalAdhesion {
-    fn adhesion_energy<G>(&self, entity1: LatticeEntity<&RelCell<G>>, entity2: LatticeEntity<&RelCell<G>>) -> f32 {
+    fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32 {
         if let (SomeCell(c1), SomeCell(c2)) = (entity1, entity2) {
             if c1.spin == c2.spin {
                 return 0.
@@ -91,10 +91,10 @@ pub struct StaticAdhesion {
 }
 
 impl AdhesionSystem for StaticAdhesion {
-    fn adhesion_energy<G>(
+    fn adhesion_energy<C>(
         &self, 
-        entity1: LatticeEntity<&RelCell<G>>, 
-        entity2: LatticeEntity<&RelCell<G>>
+        entity1: LatticeEntity<&RelCell<C>>, 
+        entity2: LatticeEntity<&RelCell<C>>
     ) -> f32 {
         match (entity1, entity2) {
             (SomeCell(c1), SomeCell(c2)) => {
@@ -119,11 +119,15 @@ mod tests {
     use crate::genome::MockGenome;
 
     // Helper to create a RelCell with given spin and mom by mocking and overriding
-    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<MockGenome> {
+    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<Cell<MockGenome>> {
         RelCell {
             spin,
             mom,
-            cell: Cell::new_empty(10, MockGenome::new(0))
+            cell: Cell::new_empty(
+                10, 
+                200, 
+                MockGenome::new(0)
+            )
         }
     }
     

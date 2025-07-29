@@ -1,18 +1,17 @@
-use crate::cell::{Cell, RelCell};
+use crate::cell::{CellLike, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
-use crate::genome::{CellType, Genome};
 
-pub struct CellContainer<G> {
+pub struct CellContainer<C> {
     pub target_area: u32,
     pub div_area: u32,
     pub divide: bool,
     pub migrate: bool,
-    vec: Vec<RelCell<G>>
+    vec: Vec<RelCell<C>>
 }
 
-impl<G> CellContainer<G> {
+impl<C> CellContainer<C> {
     pub fn new(
         target_area: u32,
         div_area: u32,
@@ -36,7 +35,7 @@ impl<G> CellContainer<G> {
         self.n_cells() as Spin + LatticeEntity::first_cell_spin()
     }
 
-    pub fn push(&mut self, cell: Cell<G>, mom_spin: Option<Spin>) -> &RelCell<G> {
+    pub fn push(&mut self, cell: C, mom_spin: Option<Spin>) -> &RelCell<C> {
         let new_spin = self.next_spin();
         self.vec.push(RelCell {
             spin: new_spin,
@@ -47,12 +46,12 @@ impl<G> CellContainer<G> {
     }
     
     /// Replaces the cell at `cell.spin`.
-    pub fn replace(&mut self, cell: RelCell<G>) {
+    pub fn replace(&mut self, cell: RelCell<C>) {
         let index = cell.spin - LatticeEntity::first_cell_spin();
         self.vec[index as usize] = cell
     }
 
-    pub fn get_entity(&self, spin: Spin) -> LatticeEntity<&RelCell<G>> {
+    pub fn get_entity(&self, spin: Spin) -> LatticeEntity<&RelCell<C>> {
         if spin == Medium.discriminant() {
             return Medium;
         }
@@ -62,7 +61,7 @@ impl<G> CellContainer<G> {
         SomeCell(&self.vec[(spin - LatticeEntity::first_cell_spin()) as usize])
     }
 
-    pub fn get_entity_mut(&mut self, spin: Spin) -> LatticeEntity<&mut RelCell<G>> {
+    pub fn get_entity_mut(&mut self, spin: Spin) -> LatticeEntity<&mut RelCell<C>> {
         if spin == Medium.discriminant() {
             return Medium;
         }
@@ -73,14 +72,9 @@ impl<G> CellContainer<G> {
     }
 
     pub fn update_cells(&mut self)
-    where G: Genome {
+    where C: CellLike {
         for cell in &mut self.vec {
-            if let CellType::Divide = cell.cell_type && cell.target_area < self.div_area {
-                cell.target_area += 1;
-            }
-            let chem_signal = cell.chem_mass;
-            cell.genome.update_expression(chem_signal);
-            cell.cell_type = cell.genome.get_cell_type();
+            cell.update();
         }
     }
 }

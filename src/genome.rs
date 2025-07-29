@@ -8,8 +8,7 @@ use thiserror::Error;
 
 pub trait Genome {
     fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool;
-    fn update_expression(&mut self, chem_signal: u32);
-    fn get_cell_type(&self) -> CellType;
+    fn update_expression(&mut self);
 }
 
 /// This is a fake genome that just cycles through cell types.
@@ -39,7 +38,7 @@ impl Genome for MockGenome {
         false
     }
 
-    fn update_expression(&mut self, _chem_signal: u32) {
+    fn update_expression(&mut self) {
         self.counter += 1;
         if self.counter > self.period_updates {
             match self.cell_type {
@@ -49,80 +48,79 @@ impl Genome for MockGenome {
             self.counter = 0;
         }
     }
-
-    fn get_cell_type(&self) -> CellType {
-        self.cell_type.clone()
-    }
 }
 
-// TODO: this might be quite slow, we can implement a StaticGrn that does not support node insertion or deletion
-//  for improved performance. The advantage of this implementation is that we can delete or duplicate nodes dynamically
-//  and the object is stored directly as a graph.
 /// Provides a generic, versatile GRN implementation that is specialised in `Grn`.
 #[derive(Clone, Debug)]
-pub struct BaseGrn {
+pub struct BaseGrn<const I: usize, const O: usize> {
     graph: DiGraph<GrnGeneType, f32>,
-    input_ids: Vec<u32>,
-    regulatory_ids: Vec<u32>,
-    output_ids: Vec<u32>,
+    input_ids: [usize; I],
+    output_ids: [usize; I],
+    regulatory_ids: Vec<usize>,
     mut_rate: f32,
-    mut_distr: Normal<f32>
+    mut_distr: Normal<f32>,
+    pub input_signals: [f32; I]
 }
 
-impl BaseGrn {
+impl<const I: usize, const O: usize> BaseGrn<I, O> {
     pub fn new(
-        input_scales: &[f32],
-        n_regulatory: u32,
-        n_outputs: u32,
+        input_scales: &[f32; I],
+        n_regulatory: usize,
         mut_rate: f32,
-        mut_std: f32, 
+        mut_std: f32,
         mut sampler: impl FnMut() -> f32
     ) -> Self {
         let mut grn = BaseGrn {
             graph: DiGraph::new(),
-            input_ids: Vec::new(),
-            regulatory_ids: Vec::new(),
-            output_ids: Vec::new(),
+            input_ids: core::array::from_fn(|i| i),
+            output_ids: core::array::from_fn(|i| i + I),
+            regulatory_ids: ((I + O)..(I + O + n_regulatory)).collect(),
+            input_signals: [0.; I],
             mut_rate,
             mut_distr: Normal::new(0., mut_std).expect("invalid `mut_std`")
         };
 
         for scale in input_scales.iter() {
-            let idx = grn.graph.add_node(Input(InputGene { signal: 0., scale: *scale }));
-            grn.input_ids.push(idx.index() as u32);
+            grn.graph.add_node(Input(InputGene { signal: 0., scale: *scale }));
         }
-
+        for _ in 0..O {
+            grn.graph.add_node(Output(OutputGene {
+                threshold: sampler(),
+                active: false
+            }));
+        }
         for _ in 0..n_regulatory {
-            let idx = grn.graph.add_node(Regulatory(RegulatoryGene {
+            grn.graph.add_node(Regulatory(RegulatoryGene {
                 threshold: sampler(),
                 active: false,
                 activating: false
             }));
-            grn.regulatory_ids.push(idx.index() as u32);
-        }
-        for _ in 0..n_outputs {
-            let idx = grn.graph.add_node(Output(OutputGene { 
-                threshold: sampler(),
-                active: false 
-            }));
-            grn.output_ids.push(idx.index() as u32);
         }
 
         for reg in grn.regulatory_ids.iter().copied() {
             for input in grn.input_ids.iter().copied() {
-                grn.graph.add_edge(input.into(), reg.into(), sampler());
+                grn.graph.add_edge(NodeIndex::new(input), NodeIndex::new(reg), sampler());
             }
             for reg2 in grn.regulatory_ids.iter().copied() {
-                grn.graph.add_edge(reg.into(), reg2.into(), sampler());
+                grn.graph.add_edge(NodeIndex::new(reg), NodeIndex::new(reg2), sampler());
             }
             for output in grn.output_ids.iter().copied() {
-                grn.graph.add_edge(reg.into(), output.into(), sampler());
+                grn.graph.add_edge(NodeIndex::new(reg), NodeIndex::new(output), sampler());
             }
         }
         grn
     }
 
-    pub fn get_input_gene(&self, index: NodeIndex) -> Result<&InputGene, GrnError> {
+    pub fn get_cell_type(&self) -> CellType {
+        match self
+            .get_output_gene(NodeIndex::new(self.output_ids[0]))
+            .expect("invalid GRN architecture").active {
+            false => CellType::Migrate,
+            true => CellType::Divide
+        }
+    }
+
+    fn get_input_gene(&self, index: NodeIndex) -> Result<&InputGene, GrnError> {
         let node = self.graph.node_weight(index).ok_or(MissingNode)?;
         match node {
             Input(gene) => {
@@ -132,7 +130,7 @@ impl BaseGrn {
         }
     }
 
-    pub fn get_input_gene_mut(&mut self, index: NodeIndex) -> Result<&mut InputGene, GrnError> {
+    fn get_input_gene_mut(&mut self, index: NodeIndex) -> Result<&mut InputGene, GrnError> {
         let node = self.graph.node_weight_mut(index).ok_or(MissingNode)?;
         match node {
             Input(gene) => {
@@ -142,7 +140,7 @@ impl BaseGrn {
         }
     }
 
-    pub fn get_regulatory_gene(&self, index: NodeIndex) -> Result<&RegulatoryGene, GrnError> {
+    fn get_regulatory_gene(&self, index: NodeIndex) -> Result<&RegulatoryGene, GrnError> {
         let node = self.graph.node_weight(index).ok_or(MissingNode)?;
         match node {
             Regulatory(gene) => {
@@ -152,7 +150,7 @@ impl BaseGrn {
         }
     }
 
-    pub fn get_regulatory_gene_mut(&mut self, index: NodeIndex) -> Result<&mut RegulatoryGene, GrnError> {
+    fn get_regulatory_gene_mut(&mut self, index: NodeIndex) -> Result<&mut RegulatoryGene, GrnError> {
         let node = self.graph.node_weight_mut(index).ok_or(MissingNode)?;
         match node {
             Regulatory(gene) => {
@@ -162,7 +160,7 @@ impl BaseGrn {
         }
     }
 
-    pub fn get_output_gene(&self, index: NodeIndex) -> Result<&OutputGene, GrnError> {
+    fn get_output_gene(&self, index: NodeIndex) -> Result<&OutputGene, GrnError> {
         let node = self.graph.node_weight(index).ok_or(MissingNode)?;
         match node {
             Output(gene) => {
@@ -172,7 +170,7 @@ impl BaseGrn {
         }
     }
 
-    pub fn get_output_gene_mut(&mut self, index: NodeIndex) -> Result<&mut OutputGene, GrnError> {
+    fn get_output_gene_mut(&mut self, index: NodeIndex) -> Result<&mut OutputGene, GrnError> {
         let node = self.graph.node_weight_mut(index).ok_or(MissingNode)?;
         match node {
             Output(gene) => {
@@ -185,8 +183,9 @@ impl BaseGrn {
     fn compute_activation_from_inputs(&self, reg: NodeIndex) -> Option<f32> {
         let mut act = 0.;
         for inp in self.input_ids.iter().copied() {
-            let input_gene = self.get_input_gene(inp.into()).expect("missing input gene");
-            let edge = self.graph.find_edge(inp.into(), reg)?;
+            let inp_ind = NodeIndex::new(inp);
+            let input_gene = self.get_input_gene(inp_ind).expect("missing input gene");
+            let edge = self.graph.find_edge(inp_ind, reg)?;
             act += input_gene.signal * self.graph.edge_weight(edge).copied()?
         }
         Some(act)
@@ -195,9 +194,10 @@ impl BaseGrn {
     fn compute_activation_from_regulators(&self, target: NodeIndex) -> Option<f32> {
         let mut act = 0.;
         for reg in self.regulatory_ids.iter().copied() {
-            let reg_gene = self.get_regulatory_gene(reg.into()).expect("missing regulatory gene");
+            let reg_ind = NodeIndex::new(reg);
+            let reg_gene = self.get_regulatory_gene(reg_ind).expect("missing regulatory gene");
             act += if reg_gene.active {
-                let edge = self.graph.find_edge(reg.into(), target)?;
+                let edge = self.graph.find_edge(reg_ind, target)?;
                 self.graph.edge_weight(edge).copied()?
             } else {
                 0.
@@ -205,16 +205,62 @@ impl BaseGrn {
         }
         Some(act)
     }
+}
 
-    fn update_expression(&mut self, input_signals: &[f32]) -> Result<(), GrnError> {
-        for (i, inp) in self.input_ids.clone().into_iter().enumerate() {
-            let inp_gene = self.get_input_gene_mut(inp.into())?;
-            inp_gene.signal = input_signals[i];
-        }
-        
+impl<const I: usize, const O: usize> Genome for BaseGrn<I, O> {
+    fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool {
+        let mutated = false;
         let reg_miss = "Missing regulatory gene";
         for reg in self.regulatory_ids.clone() {
-            let reg_idx = reg.into();
+            if rng.random_bool(self.mut_rate as f64) {
+                self.get_regulatory_gene_mut(NodeIndex::new(reg))
+                    .expect(reg_miss)
+                    .threshold += self.mut_distr.sample(rng);
+            }
+
+            for from in self.input_ids.iter().copied().chain(self.regulatory_ids.iter().copied()) {
+                let edge_index = self.graph.find_edge(
+                    NodeIndex::new(from),
+                    NodeIndex::new(reg)
+                ).expect("missing edge");
+                let edge = self.graph.edge_weight_mut(edge_index).unwrap();
+                if rng.random_bool(self.mut_rate as f64) {
+                    *edge += self.mut_distr.sample(rng);
+                }
+            }
+
+            for out in self.output_ids.iter().copied() {
+                let edge_index = self.graph.find_edge(
+                    NodeIndex::new(reg),
+                    NodeIndex::new(out)
+                ).expect("missing edge");
+                let edge = self.graph.edge_weight_mut(edge_index).unwrap();
+                *edge += self.mut_distr.sample(rng);
+            }
+        }
+
+        for out in self.output_ids.clone() {
+            if rng.random_bool(self.mut_rate as f64) {
+                self.get_output_gene_mut(NodeIndex::new(out))
+                    .expect(reg_miss)
+                    .threshold += self.mut_distr.sample(rng);
+            }
+        }
+        mutated
+    }
+
+    fn update_expression(&mut self) {
+        for (i, inp) in self.input_ids.clone().into_iter().enumerate() {
+            let signal = self.input_signals[i];
+            let inp_gene = self.get_input_gene_mut(
+                NodeIndex::new(inp)
+            ).expect("Missing regulatory gene");
+            inp_gene.signal = signal;
+        }
+
+        let reg_miss = "Missing regulatory gene";
+        for reg in self.regulatory_ids.clone() {
+            let reg_idx = NodeIndex::new(reg);
             let act_influx = self
                 .compute_activation_from_inputs(reg_idx)
                 .expect(reg_miss)
@@ -227,88 +273,11 @@ impl BaseGrn {
 
         let out_miss = "Missing output gene";
         for out in self.output_ids.clone() {
-            let out_idx = out.into();
-            let act_influx = self.compute_activation_from_regulators(out_idx).expect(out_miss);
+            let out_ind = NodeIndex::new(out);
+            let act_influx = self.compute_activation_from_regulators(out_ind).expect(out_miss);
 
-            let out_gene = self.get_output_gene_mut(out_idx).expect(out_miss);
+            let out_gene = self.get_output_gene_mut(out_ind).expect(out_miss);
             out_gene.active = act_influx > out_gene.threshold;
-        }
-        Ok(())
-    }
-    
-    fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool {
-        let mutated = false;
-        let reg_miss = "Missing regulatory gene";
-        for reg in self.regulatory_ids.clone() {
-            if rng.random_bool(self.mut_rate as f64) {
-                self.get_regulatory_gene_mut(reg.into())
-                    .expect(reg_miss)
-                    .threshold += self.mut_distr.sample(rng);
-            }
-            
-            for from in self.input_ids.iter().copied().chain(self.regulatory_ids.iter().copied()) {
-                let edge_index = self.graph.find_edge(from.into(), reg.into()).expect("missing edge");
-                let edge = self.graph.edge_weight_mut(edge_index).unwrap();
-                if rng.random_bool(self.mut_rate as f64) {
-                    *edge += self.mut_distr.sample(rng);
-                }
-            }
-            
-            for out in self.output_ids.iter().copied() {
-                let edge_index = self.graph.find_edge(reg.into(), out.into()).expect("missing edge");
-                let edge = self.graph.edge_weight_mut(edge_index).unwrap();
-                *edge += self.mut_distr.sample(rng);
-            }
-        }
-        
-        for out in self.output_ids.clone() {
-            if rng.random_bool(self.mut_rate as f64) {
-                self.get_output_gene_mut(out.into())
-                    .expect(reg_miss)
-                    .threshold += self.mut_distr.sample(rng);
-            }
-        }
-        mutated
-    }
-}
-
-/// Specialised `Grn` that handles the correct inputs and outputs.
-impl Grn {
-    pub fn new(
-        chem_scale: f32,
-        n_regulatory: u32,
-        mut_rate: f32,
-        mut_std: f32,
-        sampler: impl FnMut() -> f32
-    ) -> Self {
-        Self {
-            grn: BaseGrn::new(
-                &[chem_scale],
-                n_regulatory, 
-                1,
-                mut_rate,
-                mut_std,
-                sampler
-            ),
-        }
-    }
-}
-
-impl Genome for Grn {
-    fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool {
-        self.grn.attempt_mutate(rng)
-    }
-
-    fn update_expression(&mut self, chem_signal: u32) {
-        self.grn.update_expression(&[chem_signal as f32]).expect("invalid GRN architecture");
-    }
-
-    fn get_cell_type(&self) -> CellType {
-        match self.grn
-            .get_output_gene(self.grn.output_ids[0].into())
-            .expect("invalid GRN architecture").active {
-            false => CellType::Migrate,
-            true => CellType::Divide
         }
     }
 }
@@ -348,12 +317,6 @@ pub enum GrnGeneType {
     Input(InputGene),
     Regulatory(RegulatoryGene),
     Output(OutputGene)
-}
-
-#[derive(Clone)]
-#[derive(Debug)]
-pub struct Grn {
-    grn: BaseGrn,
 }
 
 #[derive(Clone, Debug)]

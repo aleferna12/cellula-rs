@@ -1,9 +1,32 @@
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::genome::CellType;
+use crate::genome::{BaseGrn, CellType, Genome, MockGenome};
 use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
+
+pub trait CellLike {
+    fn area(&self) -> u32;
+    fn target_area(&self) -> u32;
+    fn set_target_area(&mut self, value: u32);
+    fn center(&self) -> Pos<f32>;
+    fn shift_position<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, add: bool, bound: &B);
+    fn update(&mut self);
+    fn birth(&self) -> Self;
+}
+
+pub trait CanMigrate {
+    fn is_migrating(&self) -> bool;
+}
+
+pub trait CanDivide {
+    fn is_dividing(&self) -> bool;
+}
+
+pub trait ChemSniffer {
+    fn chem_center(&self) -> Pos<f32>;
+    fn shift_chem<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B);
+}
 
 /// Represents a cell that is bound to an `Environment`.
 ///
@@ -12,15 +35,15 @@ use std::ops::{Deref, DerefMut};
 ///
 /// Implements `Deref<Cell>`.
 #[derive(Debug, Clone)]
-pub struct RelCell<G> {
+pub struct RelCell<C> {
     pub spin: Spin,
     pub mom: Spin,
-    pub(crate) cell: Cell<G>
+    pub(crate) cell: C
 }
 
-impl<G> RelCell<G> {
+impl<C> RelCell<C> {
     /// Creates a mock cell with spin and mom = `LatticeEntity<()>::first_cell_spin()` for testing.
-    pub fn mock(cell: Cell<G>) -> Self {
+    pub fn mock(cell: C) -> Self {
         RelCell {
             spin: LatticeEntity::first_cell_spin(),
             mom: LatticeEntity::first_cell_spin(),
@@ -29,15 +52,15 @@ impl<G> RelCell<G> {
     }
 }
 
-impl<G> Deref for RelCell<G> {
-    type Target = Cell<G>;
+impl<C> Deref for RelCell<C> {
+    type Target = C;
 
     fn deref(&self) -> &Self::Target {
         &self.cell
     }
 }
 
-impl<G> DerefMut for RelCell<G> {
+impl<C> DerefMut for RelCell<C> {
     fn deref_mut(&mut self) -> &mut <Self as Deref>::Target {
         &mut self.cell
     }
@@ -47,31 +70,68 @@ impl<G> DerefMut for RelCell<G> {
 pub struct Cell<G> {
     pub area: u32,
     pub target_area: u32,
+    pub divide_area: u32,
     pub center: Pos<f32>,
     pub chem_center: Pos<f32>,
-    pub chem_mass: u32,
+    pub chem_mass: f32,
     pub cell_type: CellType,
     pub genome: G
 }
 
 impl<G> Cell<G> {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new_empty(target_area: u32, genome: G) -> Self {
+    pub fn new_empty(target_area: u32, divide_area: u32, genome: G) -> Self {
         Self {
             area: 0,
             target_area,
+            divide_area,
             center: Pos::new(0., 0.),
             chem_center: Pos::new(0., 0.),
-            chem_mass: 0,
+            chem_mass: 0.,
             cell_type: CellType::Migrate,
             genome
         }
     }
 
-    pub fn shift_position<B: Boundary<Coord = f32>>(
+    fn shift_chem_<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
+        let shift = if add { 1 } else { -1 };
+        if let Some(new_chem) = shifted_com(
+            self.chem_center,
+            pos,
+            self.chem_mass,
+            chem_at,
+            shift,
+            bound
+        ) {
+            self.chem_center = new_chem;
+            self.chem_mass = self.chem_mass + (shift as f32 * chem_at);
+        } else {
+            self.chem_center = self.center;
+        }
+    }
+}
+
+impl<G: Genome + Clone> CellLike for Cell<G>
+where Self: CanDivide {
+    fn area(&self) -> u32 {
+        self.area
+    }
+
+    fn target_area(&self) -> u32 {
+        self.target_area
+    }
+
+    fn set_target_area(&mut self, value: u32) {
+        self.target_area = value;
+    }
+
+    fn center(&self) -> Pos<f32> {
+        self.center
+    }
+
+    fn shift_position<B: Boundary<Coord = f32>>(
         &mut self,
         pos: Pos<usize>,
-        chem_at_pos: u32,
         add: bool,
         bound: &B
     ) {
@@ -79,28 +139,75 @@ impl<G> Cell<G> {
         // The order here matters (area is last), be careful
         if let Some(new_center) = shifted_com(
             self.center,
-            pos, 
+            pos,
             self.area as f32,
             1.,
-            shift, 
+            shift,
             bound
         ) {
             self.center = new_center;
             self.area = self.area.saturating_add_signed(shift);
         }
-        if let Some(new_chem) = shifted_com(
-            self.chem_center,
-            pos,
-            self.chem_mass as f32,
-            chem_at_pos as f32,
-            shift,
-            bound
-        ) {
-            self.chem_center = new_chem;
-            self.chem_mass = self.chem_mass.saturating_add_signed(shift * chem_at_pos as i32);
-        } else { 
-            self.chem_center = self.center;
+    }
+
+    fn update(&mut self) {
+        if self.is_dividing() && self.target_area < self.divide_area {
+            self.target_area += 1;
         }
+        self.genome.update_expression();
+    }
+
+    fn birth(&self) -> Self {
+        Self::new_empty(
+            self.target_area,
+            self.divide_area,
+            self.genome.clone()
+        )
+    }
+}
+
+impl<const I: usize> CanMigrate for Cell<BaseGrn<I, 1>> {
+    fn is_migrating(&self) -> bool {
+        matches!(self.genome.get_cell_type(), CellType::Migrate)
+    }
+}
+
+impl<const I: usize> CanDivide for Cell<BaseGrn<I, 1>> {
+    fn is_dividing(&self) -> bool {
+        matches!(self.genome.get_cell_type(), CellType::Divide)
+    }
+}
+
+impl CanMigrate for Cell<MockGenome> {
+    fn is_migrating(&self) -> bool {
+        matches!(self.cell_type, CellType::Migrate)
+    }
+}
+
+impl CanDivide for Cell<MockGenome> {
+    fn is_dividing(&self) -> bool {
+        matches!(self.cell_type, CellType::Divide)
+    }
+}
+
+impl ChemSniffer for Cell<MockGenome> {
+    fn chem_center(&self) -> Pos<f32> {
+        self.chem_center
+    }
+
+    fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
+        self.shift_chem_(pos, chem_at, add, bound);
+    }
+}
+
+impl<const O: usize> ChemSniffer for Cell<BaseGrn<1, O>> {
+    fn chem_center(&self) -> Pos<f32> {
+        self.chem_center
+    }
+
+    fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
+        self.shift_chem_(pos, chem_at, add, bound);
+        self.genome.input_signals[0] = self.chem_mass;
     }
 }
 
@@ -141,7 +248,11 @@ mod tests {
     }
     
     fn make_test_cell() -> Cell<MockGenome> {
-        Cell::new_empty(100, MockGenome::new(0))
+        Cell::new_empty(
+            100,
+            200,
+            MockGenome::new(0)
+        )
     }
 
     #[test]
@@ -149,15 +260,15 @@ mod tests {
         let mut cell = make_test_cell();
         let bound = make_unsafe_boundary();
 
-        cell.shift_position(Pos::new(10, 10), 0, true, &bound);
+        cell.shift_position(Pos::new(10, 10), true, &bound);
         assert_eq!(cell.area, 1);
         assert_eq!(cell.center, Pos::new(10.0, 10.0));
 
-        cell.shift_position(Pos::new(20, 20), 0, true, &bound);
+        cell.shift_position(Pos::new(20, 20), true, &bound);
         assert_eq!(cell.area, 2);
         assert_eq!(cell.center, Pos::new(15.0, 15.0));
 
-        cell.shift_position(Pos::new(10, 10), 0, false, &bound);
+        cell.shift_position(Pos::new(10, 10), false, &bound);
         assert_eq!(cell.area, 1);
         assert_eq!(cell.center, Pos::new(20.0, 20.0));
     }
@@ -168,18 +279,18 @@ mod tests {
         let mut cell = make_test_cell();
 
         // Add chem at (2, 3) with value 10
-        cell.shift_position(Pos::new(2, 3), 10, true, &bound);
-        assert_eq!(cell.chem_mass, 10);
+        cell.shift_chem(Pos::new(2, 3), 10., true, &bound);
+        assert_eq!(cell.chem_mass, 10.);
         assert_eq!(cell.chem_center, Pos::new(2., 3.));
 
         // Add chem at (4, 5) with value 10
-        cell.shift_position(Pos::new(4, 5), 10, true, &bound);
-        assert_eq!(cell.chem_mass, 20);
+        cell.shift_chem(Pos::new(4, 5), 10., true, &bound);
+        assert_eq!(cell.chem_mass, 20.);
         assert_eq!(cell.chem_center, Pos::new(3., 4.));
 
         // Remove chem from (2, 3)
-        cell.shift_position(Pos::new(2, 3), 10, false, &bound);
-        assert_eq!(cell.chem_mass, 10);
+        cell.shift_chem(Pos::new(2, 3), 10., false, &bound);
+        assert_eq!(cell.chem_mass, 10.);
         assert_eq!(cell.chem_center, Pos::new(4., 5.));
     }
 }
