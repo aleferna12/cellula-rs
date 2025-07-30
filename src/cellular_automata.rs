@@ -181,11 +181,11 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     }
     
     // TODO!: test
-    pub fn delta_hamiltonian_adhesion<'a, G: 'a>(
+    pub fn delta_hamiltonian_adhesion<'a, C: 'a>(
         &self,
-        entity_from: LatticeEntity<&RelCell<G>>,
-        entity_to: LatticeEntity<&RelCell<G>>,
-        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<G>>>
+        entity_from: LatticeEntity<&RelCell<C>>,
+        entity_to: LatticeEntity<&RelCell<C>>,
+        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<C>>>
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_entities {
