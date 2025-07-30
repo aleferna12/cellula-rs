@@ -16,7 +16,7 @@ use crate::positional::rect::Rect;
 use crate::space::Space;
 
 pub struct Model {
-    pub env: Environment<Grn, NeighbourhoodType, BoundaryType>,
+    pub env: Environment<Cell<Grn<1, 1>>, NeighbourhoodType, BoundaryType>,
     pub ca: CellularAutomata<ClonalAdhesion>,
     pub rng: Xoshiro256StarStar,
     pub io_manager: IoManager
@@ -74,7 +74,6 @@ impl TryFrom<Parameters> for Model {
                 parameters.environment.enclose,
                 CellContainer::new(
                     parameters.cell.target_area,
-                    parameters.cell.div_area,
                     parameters.cell.divide,
                     parameters.cell.migrate,
                 ),
@@ -143,8 +142,9 @@ impl TryFrom<Parameters> for Model {
                 ),
                 Cell::new_empty(
                     parameters.cell.target_area,
+                    parameters.cell.div_area,
                     Grn::new(
-                        1. / model.env.height() as f32,
+                        [1. / model.env.height() as f32],
                         parameters.cell.n_regulatory_genes,
                         parameters.cell.mutation_rate,
                         parameters.cell.mutation_std,

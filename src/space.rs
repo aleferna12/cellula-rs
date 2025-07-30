@@ -1,4 +1,4 @@
-use crate::cell::RelCell;
+use crate::cell::{CellLike, RelCell};
 use crate::constants::Spin;
 use crate::lattice::Lattice;
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
@@ -36,15 +36,15 @@ impl<B: AsLatticeBoundary> Space<B> {
     ///
     /// Prefer `box_cell_positions()`, which warns about missing values.
     /// This function should only be used when not all positions are required to be found.
-    pub fn iter_box_cell_positions<G>(
+    pub fn iter_box_cell_positions(
         &self, 
-        cell: &RelCell<G>,
+        cell: &RelCell<impl CellLike>,
         radius_scaler: f32
     ) -> impl Iterator<Item = Pos<usize>> {
-        let search_radius = (radius_scaler * (max(cell.target_area, cell.area) as f32 / PI).sqrt()) as isize;
+        let search_radius = (radius_scaler * (max(cell.target_area(), cell.area()) as f32 / PI).sqrt()) as isize;
         let center = Pos::new(
-            cell.center.x as isize,
-            cell.center.y as isize
+            cell.center().x as isize,
+            cell.center().y as isize
         );
         let rect = Rect::new(
             (center.x - search_radius, center.y - search_radius).into(),
@@ -65,14 +65,14 @@ impl<B: AsLatticeBoundary> Space<B> {
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside of it.
     ///
     /// May fail if `radius_scaler` is too small.
-    pub fn box_cell_positions<G>(&self, cell: &RelCell<G>, radius_scaler: f32) -> Vec<Pos<usize>> {
+    pub fn box_cell_positions(&self, cell: &RelCell<impl CellLike>, radius_scaler: f32) -> Vec<Pos<usize>> {
         let found: Vec<_> = self.iter_box_cell_positions(cell, radius_scaler).collect();
-        if found.len() != cell.area as usize {
+        if found.len() != cell.area() as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with spin {} \
                 (try to increase `search-radius`)", 
                 found.len(),
-                cell.area,
+                cell.area(),
                 cell.spin
             )
         }
@@ -83,16 +83,16 @@ impl<B: AsLatticeBoundary> Space<B> {
     ///
     /// Is considerably slower than `box_cell_positions()` and may fail if cell is not contiguous 
     /// or if the cell center is not a cell position.
-    pub fn contiguous_cell_positions<G, N: Neighbourhood>(
+    pub fn contiguous_cell_positions<N: Neighbourhood>(
         &self,
-        cell: &RelCell<G>, 
+        cell: &RelCell<impl CellLike>, 
         neighbourhood: &N
     ) -> Vec<Pos<usize>> {
         let mut visited = Lattice::<bool>::new(self.cell_lattice.rect.clone());
-        let mut found = Vec::with_capacity(cell.area as usize);
+        let mut found = Vec::with_capacity(cell.area() as usize);
         let mut queue = VecDeque::from([Pos::new(
-            cell.center.x as isize,
-            cell.center.y as isize
+            cell.center().x as isize,
+            cell.center().y as isize
         )]);
 
         while let Some(pos) = queue.pop_front() {
@@ -113,21 +113,21 @@ impl<B: AsLatticeBoundary> Space<B> {
             found.push(lat_pos);
         }
 
-        if found.len() != cell.area as usize {
+        if found.len() != cell.area() as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with spin {} \
                 (cell might be discontiguous)", 
                 found.len(),
-                cell.area,
+                cell.area(),
                 cell.spin
             )
         }
         found
     }
 
-    pub fn cell_neighbours<G, N: Neighbourhood>(
+    pub fn cell_neighbours<N: Neighbourhood>(
         &self,
-        cell: &RelCell<G>,
+        cell: &RelCell<impl CellLike>,
         radius_scaler: f32,
         neighbourhood: &N
     ) -> HashSet<Spin> {
@@ -177,13 +177,14 @@ mod tests {
     use super::*;
     use crate::cell::{Cell, RelCell};
     use crate::constants::BoundaryType;
-    use crate::genome::{Genome, MockGenome};
+    use crate::genome::MockGenome;
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
 
-    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space<BoundaryType>, RelCell<impl Genome>) {
+    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space<BoundaryType>, RelCell<impl CellLike>) {
         let mut cell = RelCell::mock(Cell::new_empty(
             10,
+            20,
             MockGenome::new(0)
         ));
         let mut space = Space::new(BoundaryType::new(Rect::new(
@@ -192,7 +193,7 @@ mod tests {
         ))).unwrap();
         for pos in positions {
             space.cell_lattice[*pos] = cell.spin;
-            cell.shift_position(*pos, 0, true, &space.bound)
+            cell.shift_position(*pos, true, &space.bound)
         }
         (space, cell)
     }

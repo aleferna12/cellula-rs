@@ -1,5 +1,5 @@
 // TODO!: Revise all trait bounds of methods of Environment 
-use crate::cell::{CellLike, ChemSniffer, RelCell};
+use crate::cell::{CanDivide, Cell, CellLike, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
@@ -108,7 +108,13 @@ impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<C: CellLike + ChemSniffer + Clone, N, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
+impl<C, N, B> Environment<C, N, B> 
+where 
+    C: CellLike
+        + CanDivide
+        + ChemSniffer
+        + Clone,
+    B: AsLatticeBoundary<Coord = f32> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
@@ -117,7 +123,7 @@ impl<C: CellLike + ChemSniffer + Clone, N, B: AsLatticeBoundary<Coord = f32>> En
         let mut divide = vec![];
         for cell in &self.cells {
             // Currently cells don't need to express the dividing type to divide, they just need to be big enough
-            if cell.area() >= self.cells.div_area {
+            if cell.area() >= cell.divide_area() {
                 divide.push(cell.spin);
             }
         }
@@ -255,7 +261,7 @@ impl<C, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B
     }
 }
 
-impl Environment<MockGenome, NeighbourhoodType, BoundaryType> {
+impl Environment<Cell<MockGenome>, NeighbourhoodType, BoundaryType> {
     /// Empty environment with arbitrary cell parameters for testing and benchmarking.
     ///
     /// Do not use this in production, no cells can be added to an environment created through this method.
@@ -266,7 +272,6 @@ impl Environment<MockGenome, NeighbourhoodType, BoundaryType> {
             0,
             false,
             CellContainer::new(
-                0,
                 0,
                 false,
                 false
@@ -304,7 +309,7 @@ impl<C> LatticeEntity<C> {
     }
 }
 
-impl<G> LatticeEntity<&RelCell<G>> {
+impl<C> LatticeEntity<&RelCell<C>> {
     /// Maps the `LatticeEntity` to a unique spin value.
     pub fn spin(&self) -> Spin {
         match self {
@@ -364,7 +369,6 @@ pub mod tests {
             10,
             false,
             CellContainer::new(
-                4,
                 4,
                 true,
                 false

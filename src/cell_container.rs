@@ -5,7 +5,6 @@ use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
 
 pub struct CellContainer<C> {
     pub target_area: u32,
-    pub div_area: u32,
     pub divide: bool,
     pub migrate: bool,
     vec: Vec<RelCell<C>>
@@ -14,13 +13,11 @@ pub struct CellContainer<C> {
 impl<C> CellContainer<C> {
     pub fn new(
         target_area: u32,
-        div_area: u32,
         divide: bool,
         migrate: bool
     ) -> Self {
         Self {
             target_area,
-            div_area,
             divide,
             migrate,
             vec: vec![],
@@ -88,9 +85,9 @@ impl<'a, G> IntoIterator for &'a CellContainer<G> {
     }
 }
 
-impl<'a, G> IntoIterator for &'a mut CellContainer<G> {
-    type Item = &'a mut RelCell<G>;
-    type IntoIter = std::slice::IterMut<'a, RelCell<G>>;
+impl<'a, C> IntoIterator for &'a mut CellContainer<C> {
+    type Item = &'a mut RelCell<C>;
+    type IntoIter = std::slice::IterMut<'a, RelCell<C>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.vec.iter_mut()

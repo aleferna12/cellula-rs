@@ -1,4 +1,4 @@
-use crate::cell::RelCell;
+use crate::cell::{CellLike, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
 use crate::environment::{Environment, LatticeEntity};
@@ -29,7 +29,11 @@ impl ClonalAdhesion {
     pub fn update_clones(
         &mut self,
         cell_spin: Spin,
-        env: &Environment<impl Debug, impl Neighbourhood, impl AsLatticeBoundary>
+        env: &Environment<
+            impl CellLike + Debug, 
+            impl Neighbourhood, 
+            impl AsLatticeBoundary
+        >
     ) -> Option<Vec<Spin>> {
         let entity = env.cells.get_entity(cell_spin);
         if entity.spin() < LatticeEntity::first_cell_spin() {
@@ -93,7 +97,7 @@ pub struct StaticAdhesion {
 impl AdhesionSystem for StaticAdhesion {
     fn adhesion_energy<C>(
         &self, 
-        entity1: LatticeEntity<&RelCell<C>>, 
+        entity1: LatticeEntity<&RelCell<C>>,
         entity2: LatticeEntity<&RelCell<C>>
     ) -> f32 {
         match (entity1, entity2) {
@@ -124,8 +128,8 @@ mod tests {
             spin,
             mom,
             cell: Cell::new_empty(
-                10, 
-                200, 
+                10,
+                200,
                 MockGenome::new(0)
             )
         }

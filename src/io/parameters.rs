@@ -94,7 +94,7 @@ pub struct CellParameters {
     pub divide: bool,
     #[serde(default = "param_defaults::true_flag")]
     pub migrate: bool,
-    pub n_regulatory_genes: u32,
+    pub n_regulatory_genes: usize,
     pub mutation_rate: f32,
     pub mutation_std: f32
 }

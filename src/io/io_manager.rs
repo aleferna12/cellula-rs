@@ -7,6 +7,7 @@ use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use crate::cell::{CanDivide, CanMigrate, CellLike, ChemSniffer};
 use crate::positional::boundary::AsLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
 
@@ -39,10 +40,14 @@ impl IoManager {
         }
     }
 
-    pub fn image_io<G>(
+    pub fn image_io(
         &mut self,
         time_step: u32,
-        env: &Environment<G, impl Neighbourhood, impl AsLatticeBoundary>,
+        env: &Environment<
+            impl CellLike + CanMigrate + CanDivide + ChemSniffer, 
+            impl Neighbourhood, 
+            impl AsLatticeBoundary
+        >,
         clone_pairs: &SymmetricTable<bool>
     ) -> Result<(), Box<dyn Error>> {
         let mut frame = None;
@@ -76,9 +81,13 @@ impl IoManager {
         Ok(())
     }
 
-    pub fn simulation_image<G>(
+    pub fn simulation_image(
         &self, 
-        env: &Environment<G, impl Neighbourhood, impl AsLatticeBoundary>,
+        env: &Environment<
+            impl CellLike + CanMigrate + CanDivide + ChemSniffer, 
+            impl Neighbourhood,
+            impl AsLatticeBoundary
+        >,
         clone_pairs: &SymmetricTable<bool>
     ) -> Result<RgbaImage, HexError> {
         let mut image = RgbaImage::new(

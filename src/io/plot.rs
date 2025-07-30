@@ -1,8 +1,12 @@
+use crate::cell::{CanDivide, CanMigrate, CellLike, ChemSniffer};
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
+use crate::io::plot::HexError::ParseU8Error;
+use crate::lattice::Lattice;
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
+use crate::space::Space;
 use crate::symmetric_table::SymmetricTable;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
@@ -10,10 +14,6 @@ use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-use crate::genome::CellType;
-use crate::io::plot::HexError::ParseU8Error;
-use crate::lattice::Lattice;
-use crate::space::Space;
 
 pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);
@@ -83,17 +83,17 @@ impl<B: AsLatticeBoundary> Plot for SpinPlot<'_, B> {
     }
 }
 
-pub struct CenterPlot<'e, G, N, B: AsLatticeBoundary> {
-    pub env: &'e Environment<G, N, B>,
+pub struct CenterPlot<'e, C, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<C, N, B>,
     pub color: Srgb<u8>
 }
 
-impl<G, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, G, N, B> {
+impl<C: CellLike, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
-                cell.center.x as isize,
-                cell.center.y as isize,
+                cell.center().x as isize,
+                cell.center().y as isize,
             ));
             if let Some(pos) = center {
                 draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
@@ -102,17 +102,17 @@ impl<G, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, G, N, B> {
     }
 }
 
-pub struct ChemCenterPlot<'e, G, N, B: AsLatticeBoundary> {
-    pub env: &'e Environment<G, N, B>,
+pub struct ChemCenterPlot<'e, C, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<C, N, B>,
     pub color: Srgb<u8>
 }
 
-impl<G, N, B: AsLatticeBoundary> Plot for ChemCenterPlot<'_, G, N, B> {
+impl<C: ChemSniffer, N, B: AsLatticeBoundary> Plot for ChemCenterPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
-                cell.chem_center.x as isize,
-                cell.chem_center.y as isize,
+                cell.chem_center().x as isize,
+                cell.chem_center().y as isize,
             ));
             if let Some(pos) = center {
                 draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
@@ -121,14 +121,14 @@ impl<G, N, B: AsLatticeBoundary> Plot for ChemCenterPlot<'_, G, N, B> {
     }
 }
 
-pub struct ClonesPlot<'a, G, N, B: AsLatticeBoundary> {
-    pub env: &'a Environment<G, N, B>,
+pub struct ClonesPlot<'a, C, N, B: AsLatticeBoundary> {
+    pub env: &'a Environment<C, N, B>,
     pub clone_pairs: &'a SymmetricTable<bool>,
     pub color: Srgb<u8>,
     pub all_clones: bool
 }
 
-impl<G, N, B: AsLatticeBoundary> Plot for ClonesPlot<'_, G, N, B> {
+impl<C: CellLike, N, B: AsLatticeBoundary> Plot for ClonesPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         let spins = self.clone_pairs.iter_pairs(
             LatticeEntity::first_cell_spin() as usize,
@@ -141,8 +141,8 @@ impl<G, N, B: AsLatticeBoundary> Plot for ClonesPlot<'_, G, N, B> {
             let message = "Non-cell stored as clone";
             let cell1 = self.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
             let cell2 = self.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
-            let center1 = cell1.center;
-            let center2 = cell2.center;
+            let center1 = cell1.center();
+            let center2 = cell2.center();
             if !self.all_clones {
                 let dist2 = (center1.x - center2.x).powf(2.) + (center1.y - center2.y).powf(2.);
                 let diag = self.env.width() * self.env.width() + self.env.height() * self.env.height();
@@ -160,12 +160,12 @@ impl<G, N, B: AsLatticeBoundary> Plot for ClonesPlot<'_, G, N, B> {
     }
 }
 
-pub struct BorderPlot<'e, G, N, B: AsLatticeBoundary> {
-    pub env: &'e Environment<G, N, B>,
+pub struct BorderPlot<'e, C, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<C, N, B>,
     pub color: Srgb<u8>
 }
 
-impl<G, N: Neighbourhood, B: AsLatticeBoundary> Plot for BorderPlot<'_, G, N, B> {
+impl<C, N: Neighbourhood, B: AsLatticeBoundary> Plot for BorderPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
@@ -187,22 +187,19 @@ impl<G, N: Neighbourhood, B: AsLatticeBoundary> Plot for BorderPlot<'_, G, N, B>
     }
 }
 
-pub struct CellTypePlot<'e, G, N, B: AsLatticeBoundary> {
-    pub env: &'e Environment<G, N, B>,
+pub struct CellTypePlot<'e, C, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<C, N, B>,
     pub mig_color: Srgb<u8>,
     pub div_color: Srgb<u8>
 }
 
-impl<G, N, B:AsLatticeBoundary> Plot for CellTypePlot<'_, G, N, B> {
+impl<C: CanMigrate + CanDivide, N, B:AsLatticeBoundary> Plot for CellTypePlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.env.space.cell_lattice.iter_positions() {
             let spin = self.env.space.cell_lattice[pos];
             let entity = self.env.cells.get_entity(spin);
             if let LatticeEntity::SomeCell(cell) = entity {
-                let color = match cell.cell_type { 
-                    CellType::Migrate => self.mig_color,
-                    CellType::Divide => self.div_color
-                };
+                let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
                 image.put_pixel(
                     pos.x as u32,
                     pos.y as u32,
@@ -213,22 +210,22 @@ impl<G, N, B:AsLatticeBoundary> Plot for CellTypePlot<'_, G, N, B> {
     }
 }
 
-pub struct AreaPlot<'e, G, N, B: AsLatticeBoundary> {
-    pub env: &'e Environment<G, N, B>,
+pub struct AreaPlot<'e, C, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<C, N, B>,
     pub min_color: Luv,
     pub max_color: Luv
 }
 
-impl<G, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, G, N, B> {
+impl<C: CellLike, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
         for cell in &self.env.cells {
-            if cell.area < min {
-                min = cell.area
+            if cell.area() < min {
+                min = cell.area()
             }
-            if cell.area > max {
-                max = cell.area
+            if cell.area() > max {
+                max = cell.area()
             }
         }
         // TODO: might be faster to iterate cells instead (also in other plots)
@@ -236,7 +233,7 @@ impl<G, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, G, N, B> {
             let entity = self.env.cells.get_entity(self.env.space.cell_lattice[pos]);
             if let LatticeEntity::SomeCell(cell) = entity {
                 let color = self.lerp(
-                    cell.area as f32,
+                    cell.area() as f32,
                     min as f32,
                     max as f32
                 );
@@ -253,7 +250,7 @@ impl<G, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, G, N, B> {
     }
 }
 
-impl<G, N, B: AsLatticeBoundary> ContinuousPlot for AreaPlot<'_, G, N, B> {
+impl<C: CellLike, N, B: AsLatticeBoundary> ContinuousPlot for AreaPlot<'_, C, N, B> {
     fn min_color(&self) -> Luv {
         self.min_color
     }
@@ -334,8 +331,8 @@ pub enum HexError {
 mod tests {
     use super::*;
     use crate::constants::Spin;
-    use std::collections::HashSet;
     use crate::positional::boundary::UnsafePeriodicBoundary;
+    use std::collections::HashSet;
 
     #[test]
     fn test_spin_to_rgb() {

@@ -1,14 +1,14 @@
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::genome::{BaseGrn, CellType, Genome, MockGenome};
+use crate::genome::{Grn, CellType, Genome, MockGenome};
 use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
 
 pub trait CellLike {
-    fn area(&self) -> u32;
     fn target_area(&self) -> u32;
     fn set_target_area(&mut self, value: u32);
+    fn area(&self) -> u32;
     fn center(&self) -> Pos<f32>;
     fn shift_position<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, add: bool, bound: &B);
     fn update(&mut self);
@@ -21,6 +21,8 @@ pub trait CanMigrate {
 
 pub trait CanDivide {
     fn is_dividing(&self) -> bool;
+    fn divide_area(&self) -> u32;
+    fn set_divide_area(&mut self, value: u32);
 }
 
 pub trait ChemSniffer {
@@ -113,16 +115,16 @@ impl<G> Cell<G> {
 
 impl<G: Genome + Clone> CellLike for Cell<G>
 where Self: CanDivide {
-    fn area(&self) -> u32 {
-        self.area
-    }
-
     fn target_area(&self) -> u32 {
         self.target_area
     }
 
     fn set_target_area(&mut self, value: u32) {
         self.target_area = value;
+    }
+
+    fn area(&self) -> u32 {
+        self.area
     }
 
     fn center(&self) -> Pos<f32> {
@@ -166,15 +168,23 @@ where Self: CanDivide {
     }
 }
 
-impl<const I: usize> CanMigrate for Cell<BaseGrn<I, 1>> {
+impl<const I: usize> CanMigrate for Cell<Grn<I, 1>> {
     fn is_migrating(&self) -> bool {
         matches!(self.genome.get_cell_type(), CellType::Migrate)
     }
 }
 
-impl<const I: usize> CanDivide for Cell<BaseGrn<I, 1>> {
+impl<const I: usize> CanDivide for Cell<Grn<I, 1>> {
     fn is_dividing(&self) -> bool {
         matches!(self.genome.get_cell_type(), CellType::Divide)
+    }
+
+    fn divide_area(&self) -> u32 {
+        self.divide_area
+    }
+
+    fn set_divide_area(&mut self, value: u32) {
+        self.divide_area = value;
     }
 }
 
@@ -188,6 +198,14 @@ impl CanDivide for Cell<MockGenome> {
     fn is_dividing(&self) -> bool {
         matches!(self.cell_type, CellType::Divide)
     }
+
+    fn divide_area(&self) -> u32 {
+        self.divide_area
+    }
+
+    fn set_divide_area(&mut self, value: u32) {
+        self.divide_area = value
+    }
 }
 
 impl ChemSniffer for Cell<MockGenome> {
@@ -200,7 +218,7 @@ impl ChemSniffer for Cell<MockGenome> {
     }
 }
 
-impl<const O: usize> ChemSniffer for Cell<BaseGrn<1, O>> {
+impl<const O: usize> ChemSniffer for Cell<Grn<1, O>> {
     fn chem_center(&self) -> Pos<f32> {
         self.chem_center
     }

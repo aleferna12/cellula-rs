@@ -52,7 +52,7 @@ impl Genome for MockGenome {
 
 /// Provides a generic, versatile GRN implementation that is specialised in `Grn`.
 #[derive(Clone, Debug)]
-pub struct BaseGrn<const I: usize, const O: usize> {
+pub struct Grn<const I: usize, const O: usize> {
     graph: DiGraph<GrnGeneType, f32>,
     input_ids: [usize; I],
     output_ids: [usize; I],
@@ -62,15 +62,15 @@ pub struct BaseGrn<const I: usize, const O: usize> {
     pub input_signals: [f32; I]
 }
 
-impl<const I: usize, const O: usize> BaseGrn<I, O> {
+impl<const I: usize, const O: usize> Grn<I, O> {
     pub fn new(
-        input_scales: &[f32; I],
+        input_scales: [f32; I],
         n_regulatory: usize,
         mut_rate: f32,
         mut_std: f32,
         mut sampler: impl FnMut() -> f32
     ) -> Self {
-        let mut grn = BaseGrn {
+        let mut grn = Grn {
             graph: DiGraph::new(),
             input_ids: core::array::from_fn(|i| i),
             output_ids: core::array::from_fn(|i| i + I),
@@ -80,8 +80,8 @@ impl<const I: usize, const O: usize> BaseGrn<I, O> {
             mut_distr: Normal::new(0., mut_std).expect("invalid `mut_std`")
         };
 
-        for scale in input_scales.iter() {
-            grn.graph.add_node(Input(InputGene { signal: 0., scale: *scale }));
+        for scale in input_scales {
+            grn.graph.add_node(Input(InputGene { signal: 0., scale }));
         }
         for _ in 0..O {
             grn.graph.add_node(Output(OutputGene {
@@ -207,7 +207,7 @@ impl<const I: usize, const O: usize> BaseGrn<I, O> {
     }
 }
 
-impl<const I: usize, const O: usize> Genome for BaseGrn<I, O> {
+impl<const I: usize, const O: usize> Genome for Grn<I, O> {
     fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool {
         let mutated = false;
         let reg_miss = "Missing regulatory gene";

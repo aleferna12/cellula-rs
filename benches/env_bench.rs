@@ -14,8 +14,8 @@ use evo_cpm::cell::Cell;
 use evo_cpm::genome::MockGenome;
 use evo_cpm::positional::boundary::{AsLatticeBoundary, Boundary, UnsafePeriodicBoundary};
 
-fn random_neighbour<G, N>(
-    env: &Environment<G, N, impl AsLatticeBoundary>,
+fn random_neighbour<C, N>(
+    env: &Environment<C, N, impl AsLatticeBoundary>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl Rng
@@ -34,13 +34,17 @@ fn random_neighbour<G, N>(
     Pos::new(newp.0 as usize, newp.1 as usize)
 }
 
-fn add_random_edge<G, N>(env: &mut Environment<G, N, impl AsLatticeBoundary>, rng: &mut impl Rng) -> bool {
+fn add_random_edge<C, N>(env: &mut Environment<C, N, impl AsLatticeBoundary>, rng: &mut impl Rng) -> bool {
     let p1 = env.space.cell_lattice.random_pos(rng);
     let e = Edge::new(p1, random_neighbour(env, p1, 1, rng));
     env.edge_book.insert(e)
 }
 
-fn replace_random_edges<G, N>(n_edges: usize, env: &mut Environment<G, N, impl AsLatticeBoundary>, rng: &mut impl Rng) {
+fn replace_random_edges<C, N>(
+    n_edges: usize, 
+    env: &mut Environment<C, N, impl AsLatticeBoundary>, 
+    rng: &mut impl Rng
+) {
     for _ in 0..n_edges {
         let e1 = add_random_edge(env, rng);
         if e1 {
@@ -98,7 +102,7 @@ fn bench_env(c: &mut Criterion) {
     let mut env = Environment::new_empty_test(100, 100);
     env.spawn_rect_cell(
         Rect::new((10, 10).into(), (20, 20).into()),
-        Cell::new_empty(100, MockGenome::new(0))
+        Cell::new_empty(100, 200, MockGenome::new(0))
     );
 
     let mut group = c.benchmark_group("cell_positions");
