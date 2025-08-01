@@ -1,4 +1,3 @@
-// TODO!: Revise all trait bounds of methods of Environment 
 use crate::cell::{CanDivide, Cell, CellLike, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
@@ -110,9 +109,8 @@ impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
 
 impl<C, N, B> Environment<C, N, B> 
 where 
-    C: CellLike
-        + CanDivide
-        + ChemSniffer
+    C: CanDivide
+        + ChemSniffer // TODO: this should not be a bound here, but space needs to be generalised before we remove it
         + Clone,
     B: AsLatticeBoundary<Coord = f32> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
@@ -190,6 +188,12 @@ where
             );
             mom_clone.shift_position(
                 pos,
+                false,
+                &self.space.bound
+            );
+            mom_clone.shift_chem(
+                pos,
+                chem_at,
                 false,
                 &self.space.bound
             );

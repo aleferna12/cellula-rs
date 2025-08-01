@@ -15,17 +15,17 @@ pub trait CellLike {
     fn birth(&self) -> Self;
 }
 
-pub trait CanMigrate {
+pub trait CanMigrate: CellLike {
     fn is_migrating(&self) -> bool;
 }
 
-pub trait CanDivide {
+pub trait CanDivide: CellLike {
     fn is_dividing(&self) -> bool;
     fn divide_area(&self) -> u32;
     fn set_divide_area(&mut self, value: u32);
 }
 
-pub trait ChemSniffer {
+pub trait ChemSniffer: CellLike {
     fn chem_center(&self) -> Pos<f32>;
     fn shift_chem<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B);
 }
@@ -188,6 +188,18 @@ impl<const I: usize> CanDivide for Cell<Grn<I, 1>> {
     }
 }
 
+// O can't be a generic because the CellLike impl only exists for CanDivide, which only exists for O = 1
+impl ChemSniffer for Cell<Grn<1, 1>> {
+    fn chem_center(&self) -> Pos<f32> {
+        self.chem_center
+    }
+
+    fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
+        self.shift_chem_(pos, chem_at, add, bound);
+        self.genome.input_signals[0] = self.chem_mass;
+    }
+}
+
 impl CanMigrate for Cell<MockGenome> {
     fn is_migrating(&self) -> bool {
         matches!(self.cell_type, CellType::Migrate)
@@ -215,17 +227,6 @@ impl ChemSniffer for Cell<MockGenome> {
 
     fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
         self.shift_chem_(pos, chem_at, add, bound);
-    }
-}
-
-impl<const O: usize> ChemSniffer for Cell<Grn<1, O>> {
-    fn chem_center(&self) -> Pos<f32> {
-        self.chem_center
-    }
-
-    fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
-        self.shift_chem_(pos, chem_at, add, bound);
-        self.genome.input_signals[0] = self.chem_mass;
     }
 }
 

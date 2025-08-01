@@ -31,7 +31,7 @@ impl<A> CellularAutomata<A> {
 
     pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
         &self,
-        cell: &(impl CellLike + CanMigrate + ChemSniffer),
+        cell: &(impl CanMigrate + ChemSniffer),
         pos_to: Pos<usize>,
         chemotaxis_mu: f32,
         bound: &B
@@ -86,7 +86,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     pub fn step(
         &self, 
         env: &mut Environment<
-            impl CellLike + CanMigrate + ChemSniffer, 
+            impl CanMigrate + ChemSniffer, 
             impl Neighbourhood, 
             impl AsLatticeBoundary<Coord = f32>
         >, 
@@ -112,11 +112,11 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     ///
     /// # Returns:
     ///
-    /// The number of extra updates that the copy attempt incurred (not whether it was successful or not!).
+    /// The number of extra updates that the copy attempt incurred.
     pub fn attempt_site_copy(
         &self,
         env: &mut Environment<
-            impl CellLike + CanMigrate + ChemSniffer, 
+            impl CanMigrate + ChemSniffer, 
             impl Neighbourhood, 
             impl AsLatticeBoundary<Coord = f32>
         >,

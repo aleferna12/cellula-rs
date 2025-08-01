@@ -44,7 +44,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         env: &Environment<
-            impl CellLike + CanMigrate + CanDivide + ChemSniffer, 
+            impl CanMigrate + CanDivide + ChemSniffer, 
             impl Neighbourhood, 
             impl AsLatticeBoundary
         >,
@@ -84,7 +84,7 @@ impl IoManager {
     pub fn simulation_image(
         &self, 
         env: &Environment<
-            impl CellLike + CanMigrate + CanDivide + ChemSniffer, 
+            impl CanMigrate + CanDivide + ChemSniffer, 
             impl Neighbourhood,
             impl AsLatticeBoundary
         >,
