@@ -47,7 +47,7 @@ impl Parameters {
                     .separator("__")
                     .convert_case(config::Case::Kebab)
                     .list_separator(",")
-                    .with_list_parse_key("io.plots.order")
+                    .with_list_parse_key("io.plot.order")
                     .try_parsing(true)
             ).build()?
                 .try_deserialize()?;
