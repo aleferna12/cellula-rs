@@ -68,6 +68,8 @@ impl Parameters {
 pub struct GeneralParameters {
     pub time_steps: u32,
     pub seed: Option<u64>,
+    // TODO: maybe this type of parameter should be in EnvironmentPar (and starting_cells in CellPar etc)
+    pub n_environments: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -126,7 +128,7 @@ pub struct IoParameters {
     #[serde(default = "param_defaults::webp")]
     pub image_format: String,
     pub movie: MovieParameters,
-    pub plots: PlotParameters
+    pub plot: PlotParameters
 }
 
 #[derive(Serialize, Deserialize, Clone)]

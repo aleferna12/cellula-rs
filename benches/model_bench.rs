@@ -1,10 +1,10 @@
-use std::cmp::max;
-use criterion::{Criterion, criterion_group, criterion_main, BenchmarkId, BatchSize};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
+use evo_cpm::io::parameters::Parameters;
 use evo_cpm::model::Model;
+use std::cmp::max;
 use std::hint::black_box;
 use std::path::Path;
 use std::time::Duration;
-use evo_cpm::io::parameters::Parameters;
 
 /// Builds all example models.
 fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {
@@ -51,12 +51,12 @@ fn bench_param_files(
                         // either after the setup run or the whole simulation
                         params.io.image_period = max(time_steps, 100);
                         params.io.movie.show = false;
-                        let mut model = Model::try_from(params).unwrap();
-                        model.run(100);
+                        let mut model = Model::initialise_from_parameters(params).unwrap();
+                        model.run_for(100);
                         model
                     },
                     |model| {
-                        model.run(black_box(time_steps))
+                        model.run_for(black_box(time_steps))
                     },
                     BatchSize::LargeInput,
                 )
@@ -82,12 +82,12 @@ fn bench_slow(c: &mut Criterion) {
                 let mut params = Parameters::parse("examples/1_cell.toml").unwrap();
                 params.io.image_period = 50_000;
                 params.io.movie.show = false;
-                let mut model = Model::try_from(params).unwrap();
-                model.run(50_000);
+                let mut model = Model::initialise_from_parameters(params).unwrap();
+                model.run_for(50_000);
                 model
             },
             |model| {
-                model.run(black_box(1_000));
+                model.run_for(black_box(1_000));
             },
             BatchSize::LargeInput
         )
@@ -101,12 +101,12 @@ fn bench_slow(c: &mut Criterion) {
                 ).unwrap();
                 params.io.image_period = 10_000;
                 params.io.movie.show = false;
-                let mut model = Model::try_from(params).unwrap();
-                model.run(100);
+                let mut model = Model::initialise_from_parameters(params).unwrap();
+                model.run_for(100);
                 model
             },
             |model| {
-                model.run(black_box(10_000));
+                model.run_for(black_box(10_000));
             },
             BatchSize::LargeInput
         )

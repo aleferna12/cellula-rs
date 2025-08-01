@@ -430,7 +430,7 @@ pub mod tests {
     fn test_divide_cell() {
         let mut env = make_env_for_division();
 
-        let rect = Rect::new(Pos::new(20, 20), Pos::new(22, 22));
+        let rect = Rect::new(Pos::new(20, 20), Pos::new(23, 23));
         env.spawn_rect_cell(
             rect, 
             Cell::new_empty(4, 8, MockGenome::new(0))
@@ -447,7 +447,7 @@ pub mod tests {
     fn test_reproduce() {
         let mut env = make_env_for_division();
         env.spawn_rect_cell(
-            Rect::new(Pos::new(30, 30), Pos::new(32, 32)),
+            Rect::new(Pos::new(30, 30), Pos::new(33, 33)),
             Cell::new_empty(4, 8, MockGenome::new(0))
         );
 
@@ -460,7 +460,7 @@ pub mod tests {
         let mut env = make_env_for_division();
         env.max_cells = 1;
         env.spawn_rect_cell(
-            Rect::new(Pos::new(30, 30), Pos::new(32, 32)), 
+            Rect::new(Pos::new(30, 30), Pos::new(33, 33)),
             Cell::new_empty(4, 8, MockGenome::new(0))
         );
 
