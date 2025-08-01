@@ -1,6 +1,6 @@
 pub mod lattice;
 pub mod positional;
-pub mod model;
+pub mod pond;
 pub mod environment;
 pub mod cell;
 pub mod cellular_automata;
@@ -11,3 +11,4 @@ pub mod cell_container;
 pub mod symmetric_table;
 pub mod space;
 pub mod genome;
+pub mod model;

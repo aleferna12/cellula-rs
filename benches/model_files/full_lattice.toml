@@ -1,6 +1,7 @@
 [general]
 time-steps = 2048
 seed = 1241254152
+n-environments = 1
 
 [environment]
 width = 128
@@ -44,7 +45,7 @@ width = 320
 height = 320
 frame-period = 50
 
-[io.plots]
+[io.plot]
 order = ["spin"]
 solid-color = "#000000"
 center-color = "#00ff00"

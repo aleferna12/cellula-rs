@@ -4,6 +4,8 @@ time-steps = 8192
 # Seed for the RNG.
 # Omit to pick a random seed.
 seed = 1241254152
+# Number of environments to create.
+n-environments = 1
 
 [environment]
 # Width of the lattice.
@@ -79,7 +81,7 @@ image-period = 2048
 # [default = "webp"]
 image-format = "webp"
 
-[io.plots]
+[io.plot]
 # Defines which plots to make and in what order.
 # Options are:
 #   - "spin":         Plots lattice spins.
@@ -129,4 +131,4 @@ width = 320
 # Height of the movie window.
 height = 320
 # How many MCS to skip between the displayed frames.
-frame-period = 50
+frame-period = 100
