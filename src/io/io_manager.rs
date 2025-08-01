@@ -7,7 +7,7 @@ use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use crate::cell::{CanDivide, CanMigrate, CellLike, ChemSniffer};
+use crate::cell::{CanDivide, CanMigrate, ChemSniffer};
 use crate::positional::boundary::AsLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
 

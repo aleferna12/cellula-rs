@@ -106,7 +106,7 @@ impl<G> Cell<G> {
             bound
         ) {
             self.chem_center = new_chem;
-            self.chem_mass = self.chem_mass + (shift as f32 * chem_at);
+            self.chem_mass += shift as f32 * chem_at;
         } else {
             self.chem_center = self.center;
         }

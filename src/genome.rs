@@ -239,7 +239,7 @@ impl<const I: usize, const O: usize> Genome for Grn<I, O> {
             }
         }
 
-        for out in self.output_ids.clone() {
+        for out in self.output_ids {
             if rng.random_bool(self.mut_rate as f64) {
                 self.get_output_gene_mut(NodeIndex::new(out))
                     .expect(reg_miss)
@@ -250,7 +250,7 @@ impl<const I: usize, const O: usize> Genome for Grn<I, O> {
     }
 
     fn update_expression(&mut self) {
-        for (i, inp) in self.input_ids.clone().into_iter().enumerate() {
+        for (i, inp) in self.input_ids.into_iter().enumerate() {
             let signal = self.input_signals[i];
             let inp_gene = self.get_input_gene_mut(
                 NodeIndex::new(inp)
@@ -272,7 +272,7 @@ impl<const I: usize, const O: usize> Genome for Grn<I, O> {
         }
 
         let out_miss = "Missing output gene";
-        for out in self.output_ids.clone() {
+        for out in self.output_ids {
             let out_ind = NodeIndex::new(out);
             let act_influx = self.compute_activation_from_regulators(out_ind).expect(out_miss);
 
