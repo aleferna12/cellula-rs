@@ -30,6 +30,10 @@ pub trait ChemSniffer: CellLike {
     fn shift_chem<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B);
 }
 
+pub trait Fit {
+    fn fitness(&self) -> f32;
+}
+
 /// Represents a cell that is bound to an `Environment`.
 ///
 /// Functions that do not need information about a cell's relational operators 
@@ -227,6 +231,12 @@ impl ChemSniffer for Cell<MockGenome> {
 
     fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
         self.shift_chem_(pos, chem_at, add, bound);
+    }
+}
+
+impl<G> Fit for Cell<G> {
+    fn fitness(&self) -> f32 {
+        self.chem_mass
     }
 }
 
