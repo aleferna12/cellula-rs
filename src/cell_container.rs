@@ -1,4 +1,4 @@
-use crate::cell::{CellLike, RelCell};
+use crate::cell::{CellLike, Fit, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
@@ -76,9 +76,20 @@ impl<C> CellContainer<C> {
     }
 }
 
-impl<'a, G> IntoIterator for &'a CellContainer<G> {
-    type Item = &'a RelCell<G>;
-    type IntoIter = std::slice::Iter<'a, RelCell<G>>;
+impl<C: Fit> Fit for CellContainer<C> {
+    fn fitness(&self) -> f32 {
+        let tot_fit: f32 = self
+            .vec
+            .iter()
+            .map(|c| { c.fitness() })
+            .sum();
+        tot_fit / self.vec.len() as f32
+    }
+}
+
+impl<'a, C> IntoIterator for &'a CellContainer<C> {
+    type Item = &'a RelCell<C>;
+    type IntoIter = std::slice::Iter<'a, RelCell<C>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.vec.iter()
