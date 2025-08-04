@@ -14,3 +14,4 @@ pub mod genome;
 pub mod model;
 pub mod disperser;
 pub mod selector;
+pub mod transporter;

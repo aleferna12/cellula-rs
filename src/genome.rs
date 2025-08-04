@@ -1,9 +1,9 @@
 use crate::genome::GrnError::{MissingNode, WrongNodeType};
 use crate::genome::GrnGeneType::{Input, Output, Regulatory};
-use petgraph::graph::{DiGraph, NodeIndex};
 use rand::Rng;
 use rand_distr::Distribution;
 use rand_distr::Normal;
+use rustworkx_core::petgraph::prelude::{DiGraph, NodeIndex};
 use thiserror::Error;
 
 pub trait Genome {

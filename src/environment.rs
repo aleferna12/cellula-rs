@@ -11,6 +11,7 @@ use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
 use std::fmt::Debug;
+use rustworkx_core::petgraph::prelude::UnGraph;
 
 pub struct Environment<C, N, B: AsLatticeBoundary> {
     pub space: Space<B>,
@@ -209,7 +210,7 @@ where
     }
 }
 
-impl<C, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
+impl<C: CellLike, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
@@ -239,8 +240,7 @@ impl<C, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B
         (removed, added)
     }
 
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>>
-    where C: CellLike {
+    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>> {
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
 
         for pos in rect.iter_positions() {
@@ -262,6 +262,21 @@ impl<C, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B
             return None;
         }
         Some(self.cells.push(empty_cell, None))
+    }
+
+    pub fn build_neighbours_graph(&self) -> UnGraph<(), ()> {
+        let mut graph = UnGraph::new_undirected();
+        for cell in &self.cells {
+            let neighs = self.space.cell_neighbours(
+                cell,
+                self.cell_search_radius,
+                &self.neighbourhood
+            );
+            for neigh in neighs {
+                graph.add_edge(cell.spin.into(), neigh.into(), ());
+            }
+        }
+        graph
     }
 }
 

@@ -76,17 +76,6 @@ impl<C> CellContainer<C> {
     }
 }
 
-impl<C: Fit> Fit for CellContainer<C> {
-    fn fitness(&self) -> f32 {
-        let tot_fit: f32 = self
-            .vec
-            .iter()
-            .map(|c| { c.fitness() })
-            .sum();
-        tot_fit / self.vec.len() as f32
-    }
-}
-
 impl<'a, C> IntoIterator for &'a CellContainer<C> {
     type Item = &'a RelCell<C>;
     type IntoIter = std::slice::Iter<'a, RelCell<C>>;
