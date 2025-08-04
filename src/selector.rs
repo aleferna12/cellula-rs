@@ -2,7 +2,8 @@ use rand::Rng;
 use crate::cell::Fit;
 
 pub trait Selector {
-    fn select<'f, F: Fit>(&mut self, selectable: &'f [F]) -> impl Iterator<Item = &'f F>;
+    // This can instead return an impl Iterator<Item = F> if needed for generalisation
+    fn select<'f, F: Fit>(&mut self, selectable: &'f [F]) -> Vec<&'f F>;
 }
 
 pub struct WeightedSelection<R> {
@@ -11,7 +12,8 @@ pub struct WeightedSelection<R> {
 }
 
 impl<R: Rng> WeightedSelection<R> {
-    pub fn select_random<'f, F: Fit>(&mut self, selectable: &'f [F], tot_fit: f32) -> &'f F {
+    // TODO: can the lifetimes be elided?
+    fn select_random_fit<'f, F: Fit>(&mut self, selectable: &'f [F], tot_fit: f32) -> &'f F {
         let mut rand_fit = self.rng.random::<f32>() * tot_fit;
         for s in selectable {
             let this_fit = s.fitness();
@@ -26,15 +28,15 @@ impl<R: Rng> WeightedSelection<R> {
 }
 
 impl<R: Rng> Selector for WeightedSelection<R> {
-    fn select<'f, F: Fit>(&mut self, selectable: &'f [F]) -> impl Iterator<Item = &'f F> {
+    fn select<'f, F: Fit>(&mut self, selectable: &'f [F]) -> Vec<&'f F> {
         let tot_fit = selectable
             .iter()
             .map(|s| { s.fitness() })
             .sum();
         let mut selected = vec![];
         for _ in 0..self.select_n {
-            selected.push(self.select_random(selectable, tot_fit));
+            selected.push(self.select_random_fit(selectable, tot_fit));
         }
-        selected.into_iter()
+        selected
     }
 }

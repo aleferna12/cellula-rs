@@ -1,5 +1,5 @@
 use crate::adhesion::ClonalAdhesion;
-use crate::cell::Cell;
+use crate::cell::{Cell, Fit};
 use crate::cellular_automata::CellularAutomata;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::environment::{Environment, LatticeEntity};
@@ -7,8 +7,8 @@ use crate::genome::{Genome, Grn};
 use rand_xoshiro::Xoshiro256StarStar;
 
 pub struct Pond {
-    pub(crate) env: Environment<Cell<Grn<1, 1>>, NeighbourhoodType, BoundaryType>,
-    pub(crate) ca: CellularAutomata<ClonalAdhesion>,
+    pub env: Environment<Cell<Grn<1, 1>>, NeighbourhoodType, BoundaryType>,
+    pub ca: CellularAutomata<ClonalAdhesion>,
     rng: Xoshiro256StarStar,
     time_step: u32
 }
@@ -43,6 +43,18 @@ impl Pond {
             }
         }
         self.time_step += 1;
+    }
+}
+
+impl Fit for Pond {
+    fn fitness(&self) -> f32 {
+        let tot_fit: f32 = self
+            .env
+            .cells
+            .into_iter()
+            .map(|c| { c.fitness() })
+            .sum();
+        tot_fit / self.env.cells.n_cells() as f32
     }
 }
 

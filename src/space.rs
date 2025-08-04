@@ -32,6 +32,8 @@ impl<B: AsLatticeBoundary> Space<B> {
     }
 
     // TODO!: These should most definitely be implemented as part of a Lattice<impl PartialEq> API
+    //  or moved into Environment such that we dont need to pass in the Neighbourhood
+    //  (but this would be painful due to borrow semantics)
     /// This is the fastest cell search function possible, but it is NOT SAFE.
     ///
     /// Prefer `box_cell_positions()`, which warns about missing values.
