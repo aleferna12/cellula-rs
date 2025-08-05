@@ -1,12 +1,11 @@
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ClonesPlot, HexError, ChemCenterPlot, ChemPlot, Plot, SpinPlot};
+use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ChemCenterPlot, ChemPlot, ClonesPlot, HexError, Plot, SpinPlot};
+use crate::pond::Pond;
 use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use num::integer::Roots;
-use crate::pond::Pond;
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -159,8 +158,8 @@ impl IoManager {
         let img_width = images[0].width();
         let img_height = images[0].height();
         let n_images = images.len() as u32;
-        let rows = n_images.sqrt();
-        let cols = rows + (n_images % rows);
+        let cols = (n_images as f32).sqrt().ceil() as u32;
+        let rows = (n_images + cols - 1) / cols;
 
         let mut result = RgbaImage::new(
             img_width * cols,
