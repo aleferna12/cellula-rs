@@ -10,6 +10,10 @@ use std::collections::{HashSet, VecDeque};
 use std::error::Error;
 use std::f32::consts::PI;
 
+// TODO: generalise this
+//  a lot of calls in env and cellular automata currently rely on this having a chem gradient layer
+//  we can make a trait HasChem to make this general
+//  there should also be a trait SpaceLike, that implements a method to shift the cell positions appropriately
 pub struct Space<B: AsLatticeBoundary> {
     pub bound: B,
     pub lat_bound: B::LatticeBoundary,
