@@ -160,7 +160,7 @@ where
         let mut new_cell = mom_clone.birth();
         let new_positions: Vec<_> = self
             .space
-            .box_cell_positions(&mom_clone, self.cell_search_radius)
+            .search_cell_box(&mom_clone, self.cell_search_radius)
             .into_iter()
             .filter(|pos| {
                 // TODO!: use principal component to determine division axis
@@ -217,8 +217,8 @@ impl<C, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B
         let valid_neighs = self
             .space
             .lat_bound
-            .valid_positions(self.neighbourhood.neighbours(pos.into()))
-            .map(|neigh| neigh.into());
+            .valid_positions(self.neighbourhood.neighbours(pos.to_isize()))
+            .map(|neigh| neigh.to_usize());
         for neigh in valid_neighs {
             let edge = Edge::new(pos, neigh);
             let spin_neigh = self.space.cell_lattice[neigh];
@@ -244,8 +244,8 @@ impl<C, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B
         let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
 
         for pos in rect.iter_positions() {
-            if let Some(valid_pos) = self.space.lat_bound.valid_pos(pos.into()) {
-                let lat_pos = valid_pos.into();
+            if let Some(valid_pos) = self.space.lat_bound.valid_pos(pos.to_isize()) {
+                let lat_pos = valid_pos.to_usize();
                 if self.space.cell_lattice[lat_pos] != Medium.discriminant() {
                     continue
                 }

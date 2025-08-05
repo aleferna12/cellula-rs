@@ -12,12 +12,6 @@ impl<T> Pos<T> {
     }
 }
 
-impl<T> From<(T, T)> for Pos<T> {
-    fn from(value: (T, T)) -> Self {
-        Pos::<T>::new(value.0, value.1)
-    }
-}
-
 impl Pos<usize> {
     pub(crate) fn pack_u32(self) -> u32 {
         ((self.x as u32) << 16) | self.y as u32
@@ -26,26 +20,39 @@ impl Pos<usize> {
     pub fn row_major(self, height: usize) -> usize {
         self.x * height + self.y
     }
-}
 
-// TODO: It aint good to have these traits here... they should be TryFroms
-impl From<Pos<usize>> for Pos<isize> {
-    fn from(value: Pos<usize>) -> Self {
-        let message = "overflow when translating position from general to lattice coordinates";
-        Pos::new(
-            value.x.try_into().expect(message), 
-            value.y.try_into().expect(message)
-        )
+    pub fn to_isize(self) -> Pos<isize> {
+        Pos::new(self.x as isize, self.y as isize)
+    }
+
+    pub fn to_f32(self) -> Pos<f32> {
+        Pos::new(self.x as f32, self.y as f32)
     }
 }
 
-impl From<Pos<isize>> for Pos<usize> {
-    fn from(value: Pos<isize>) -> Self {
-        let message = "overflow when translating position from general to lattice coordinates";
-        Pos::new(
-            value.x.try_into().expect(message),
-            value.y.try_into().expect(message)
-        )
+impl Pos<f32> {
+    pub fn to_isize(self) -> Pos<isize> {
+        Pos::new(self.x as isize, self.y as isize)
+    }
+
+    pub fn to_usize(self) -> Pos<usize> {
+        Pos::new(self.x as usize, self.y as usize)
+    }
+}
+
+impl Pos<isize> {
+    pub fn to_f32(self) -> Pos<f32> {
+        Pos::new(self.x as f32, self.y as f32)
+    }
+
+    pub fn to_usize(self) -> Pos<usize> {
+        Pos::new(self.x as usize, self.y as usize)
+    }
+}
+
+impl<T> From<(T, T)> for Pos<T> {
+    fn from(value: (T, T)) -> Self {
+        Pos::<T>::new(value.0, value.1)
     }
 }
 

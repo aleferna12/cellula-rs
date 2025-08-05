@@ -144,7 +144,7 @@ mod tests {
         for r in 1..9 {
             let neigh = MooreNeighbourhood::new(r);
             for p2 in neigh.neighbours(p1) {
-                assert!(Edge::new_if_neighbour(p1.into(), p2.into(), r).is_ok());
+                assert!(Edge::new_if_neighbour(p1.to_usize(), p2.to_usize(), r).is_ok());
             }
         }
     }

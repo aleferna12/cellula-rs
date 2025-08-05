@@ -75,6 +75,7 @@ where
     }
 }
 
+// TODO: make these explicit (like in Pos)
 impl TryFrom<Rect<f32>> for Rect<isize> {
     type Error = RectConversionError;
 

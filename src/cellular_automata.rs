@@ -137,9 +137,9 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         let entity_from = env.cells.get_entity(spin_from);
         let entity_to = env.cells.get_entity(spin_to);
         let neigh_entities = env.space.lat_bound.valid_positions(
-            env.neighbourhood.neighbours(pos_to.into())
+            env.neighbourhood.neighbours(pos_to.to_isize())
         ).map(|neigh| {
-            env.cells.get_entity(env.space.cell_lattice[Pos::<usize>::from(neigh)])
+            env.cells.get_entity(env.space.cell_lattice[neigh.to_usize()])
         });
 
         let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);

@@ -175,9 +175,9 @@ impl<C, N: Neighbourhood, B: AsLatticeBoundary> Plot for BorderPlot<'_, C, N, B>
             let is_border = self.env
                 .space
                 .lat_bound
-                .valid_positions(self.env.neighbourhood.neighbours(Pos::from(pos)))
+                .valid_positions(self.env.neighbourhood.neighbours(pos.to_isize()))
                 .any(|neigh| {
-                    let neigh_spin = self.env.space.cell_lattice[Pos::from(neigh)];
+                    let neigh_spin = self.env.space.cell_lattice[neigh.to_usize()];
                     neigh_spin != spin
                 });
             if is_border {
@@ -228,7 +228,7 @@ impl<C: CellLike, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, C, N, B> {
                 max = cell.area()
             }
         }
-        // TODO: might be faster to iterate cells instead (also in other plots)
+
         for pos in self.env.space.cell_lattice.iter_positions() {
             let entity = self.env.cells.get_entity(self.env.space.cell_lattice[pos]);
             if let LatticeEntity::SomeCell(cell) = entity {

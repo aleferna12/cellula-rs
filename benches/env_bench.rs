@@ -110,7 +110,7 @@ fn bench_env(c: &mut Criterion) {
         b.iter(|| {
             let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
             assert_eq!(
-                env.space.contiguous_cell_positions(cell, &env.neighbourhood).len(),
+                env.space.search_cell_contiguous(cell, &env.neighbourhood).len(),
                 cell.area as usize
             );
         })
@@ -119,7 +119,7 @@ fn bench_env(c: &mut Criterion) {
         b.iter(|| {
             let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
             assert_eq!(
-                env.space.box_cell_positions(cell, 2.).len(),
+                env.space.search_cell_box(cell, 2.).len(),
                 cell.area as usize
             );
         })
