@@ -647,6 +647,7 @@ dependencies = [
 name = "evo-cpm"
 version = "0.0.1"
 dependencies = [
+ "by_address",
  "clap",
  "config",
  "criterion",
