@@ -1,4 +1,4 @@
-use crate::disperser::DispersionEvent;
+use crate::ecology::disperser::DispersionEvent;
 
 pub trait Transporter {
     type Error;

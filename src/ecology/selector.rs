@@ -12,7 +12,6 @@ pub struct WeightedSelection<R> {
 }
 
 impl<R: Rng> WeightedSelection<R> {
-    // TODO: can the lifetimes be elided?
     fn select_random_fit<'f, F: Fit>(&mut self, selectable: &'f [F], tot_fit: f32) -> &'f F {
         let mut rand_fit = self.rng.random::<f32>() * tot_fit;
         for s in selectable {
@@ -38,5 +37,15 @@ impl<R: Rng> Selector for WeightedSelection<R> {
             selected.push(self.select_random_fit(selectable, tot_fit));
         }
         selected
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_weighted_selection() {
+        
     }
 }

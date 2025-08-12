@@ -3,7 +3,7 @@ use std::ptr;
 use by_address::ByAddress;
 use crate::constants::Spin;
 use crate::pond::Pond;
-use crate::selector::Selector;
+use crate::ecology::selector::Selector;
 use rustworkx_core::connectivity::connected_components;
 
 pub trait Disperser {
