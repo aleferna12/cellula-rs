@@ -1,4 +1,4 @@
-use crate::cell::{CellLike, RelCell};
+use crate::cell::{Cellular, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
 use crate::environment::{Environment, LatticeEntity};
@@ -30,7 +30,7 @@ impl ClonalAdhesion {
         &mut self,
         cell_spin: Spin,
         env: &Environment<
-            impl CellLike + Debug, 
+            impl Cellular + Debug, 
             impl Neighbourhood, 
             impl AsLatticeBoundary
         >

@@ -1,4 +1,4 @@
-use crate::cell::{CanDivide, CanMigrate, CellLike, ChemSniffer};
+use crate::cell::{CanDivide, CanMigrate, Cellular, ChemSniffer};
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::io::plot::HexError::ParseU8Error;
@@ -88,7 +88,7 @@ pub struct CenterPlot<'e, C, N, B: AsLatticeBoundary> {
     pub color: Srgb<u8>
 }
 
-impl<C: CellLike, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, C, N, B> {
+impl<C: Cellular, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -128,7 +128,7 @@ pub struct ClonesPlot<'a, C, N, B: AsLatticeBoundary> {
     pub all_clones: bool
 }
 
-impl<C: CellLike, N, B: AsLatticeBoundary> Plot for ClonesPlot<'_, C, N, B> {
+impl<C: Cellular, N, B: AsLatticeBoundary> Plot for ClonesPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         let spins = self.clone_pairs.iter_pairs(
             LatticeEntity::first_cell_spin() as usize,
@@ -216,7 +216,7 @@ pub struct AreaPlot<'e, C, N, B: AsLatticeBoundary> {
     pub max_color: Luv
 }
 
-impl<C: CellLike, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, C, N, B> {
+impl<C: Cellular, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
@@ -250,7 +250,7 @@ impl<C: CellLike, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, C, N, B> {
     }
 }
 
-impl<C: CellLike, N, B: AsLatticeBoundary> ContinuousPlot for AreaPlot<'_, C, N, B> {
+impl<C: Cellular, N, B: AsLatticeBoundary> ContinuousPlot for AreaPlot<'_, C, N, B> {
     fn min_color(&self) -> Luv {
         self.min_color
     }

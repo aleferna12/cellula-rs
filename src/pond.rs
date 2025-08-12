@@ -6,6 +6,7 @@ use crate::environment::{Environment, LatticeEntity};
 use crate::genome::{Genome, Grn};
 use rand_xoshiro::Xoshiro256StarStar;
 
+// TODO: this struct can be made general if CellularAutomata is also general
 pub struct Pond {
     pub env: Environment<Cell<Grn<1, 1>>, NeighbourhoodType, BoundaryType>,
     pub ca: CellularAutomata<ClonalAdhesion>,

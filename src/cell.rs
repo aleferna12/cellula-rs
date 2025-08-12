@@ -5,7 +5,7 @@ use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
 
-pub trait CellLike {
+pub trait Cellular {
     fn target_area(&self) -> u32;
     fn set_target_area(&mut self, value: u32);
     fn area(&self) -> u32;
@@ -13,19 +13,20 @@ pub trait CellLike {
     fn shift_position<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, add: bool, bound: &B);
     fn update(&mut self);
     fn birth(&self) -> Self;
+    fn die(&mut self);
 }
 
-pub trait CanMigrate: CellLike {
+pub trait CanMigrate: Cellular {
     fn is_migrating(&self) -> bool;
 }
 
-pub trait CanDivide: CellLike {
+pub trait CanDivide: Cellular {
     fn is_dividing(&self) -> bool;
     fn divide_area(&self) -> u32;
     fn set_divide_area(&mut self, value: u32);
 }
 
-pub trait ChemSniffer: CellLike {
+pub trait ChemSniffer: Cellular {
     fn chem_center(&self) -> Pos<f32>;
     fn shift_chem<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B);
 }
@@ -117,7 +118,7 @@ impl<G> Cell<G> {
     }
 }
 
-impl<G: Genome + Clone> CellLike for Cell<G>
+impl<G: Genome + Clone> Cellular for Cell<G>
 where Self: CanDivide {
     fn target_area(&self) -> u32 {
         self.target_area
@@ -170,6 +171,10 @@ where Self: CanDivide {
             self.genome.clone()
         )
     }
+
+    fn die(&mut self) {
+        self.target_area = 0;
+    }
 }
 
 impl<const I: usize> CanMigrate for Cell<Grn<I, 1>> {
@@ -192,7 +197,7 @@ impl<const I: usize> CanDivide for Cell<Grn<I, 1>> {
     }
 }
 
-// O can't be a generic because the CellLike impl only exists for CanDivide, which only exists for O = 1
+// O can't be a generic because the Cellular impl only exists for CanDivide, which only exists for O = 1
 impl ChemSniffer for Cell<Grn<1, 1>> {
     fn chem_center(&self) -> Pos<f32> {
         self.chem_center

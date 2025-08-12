@@ -1,5 +1,5 @@
 use crate::adhesion::AdhesionSystem;
-use crate::cell::{CanMigrate, CellLike, ChemSniffer, RelCell};
+use crate::cell::{CanMigrate, Cellular, ChemSniffer, RelCell};
 use crate::environment::Environment;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
@@ -57,7 +57,7 @@ impl<A> CellularAutomata<A> {
         }
     }
 
-    pub fn delta_hamiltonian_size<C: CellLike>(
+    pub fn delta_hamiltonian_size<C: Cellular>(
         &self,
         entity_from: LatticeEntity<&RelCell<C>>,
         entity_to: LatticeEntity<&RelCell<C>>
@@ -168,7 +168,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         2. * (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
     }
 
-    pub fn delta_hamiltonian<'a, C: 'a + CellLike>(
+    pub fn delta_hamiltonian<'a, C: 'a + Cellular>(
         &self,
         entity_from: LatticeEntity<&RelCell<C>>,
         entity_to: LatticeEntity<&RelCell<C>>,

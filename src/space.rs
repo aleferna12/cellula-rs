@@ -1,4 +1,4 @@
-use crate::cell::{CellLike, RelCell};
+use crate::cell::{Cellular, RelCell};
 use crate::constants::Spin;
 use crate::lattice::Lattice;
 use crate::positional::boundary::AsLatticeBoundary;
@@ -46,7 +46,7 @@ impl<B: AsLatticeBoundary> Space<B> {
     /// </div>
     pub fn search_cell_box_iter(
         &self,
-        cell: &RelCell<impl CellLike>,
+        cell: &RelCell<impl Cellular>,
         diameter_scaler: f32
     ) -> impl Iterator<Item = Pos<usize>> {
         let search_diam = (
@@ -67,7 +67,7 @@ impl<B: AsLatticeBoundary> Space<B> {
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
     /// May fail if `radius_scaler` is too small, in which case logs a warning.
-    pub fn search_cell_box(&self, cell: &RelCell<impl CellLike>, diameter_scaler: f32) -> Vec<Pos<usize>> {
+    pub fn search_cell_box(&self, cell: &RelCell<impl Cellular>, diameter_scaler: f32) -> Vec<Pos<usize>> {
         let found: Vec<_> = self.search_cell_box_iter(cell, diameter_scaler).collect();
         if found.len() != cell.area() as usize {
             log::warn!(
@@ -87,7 +87,7 @@ impl<B: AsLatticeBoundary> Space<B> {
     /// or if the cell centre is not a cell position.
     pub fn search_cell_contiguous<N: Neighbourhood>(
         &self,
-        cell: &RelCell<impl CellLike>,
+        cell: &RelCell<impl Cellular>,
         neighbourhood: &N
     ) -> Vec<Pos<usize>> {
         let found = self.cell_lattice.search_contiguous(
@@ -111,7 +111,7 @@ impl<B: AsLatticeBoundary> Space<B> {
 
     pub fn search_cell_outline<N: Neighbourhood>(
         &self,
-        cell: &RelCell<impl CellLike>,
+        cell: &RelCell<impl Cellular>,
         diameter_scaler: f32,
         neighbourhood: &N
     ) -> Vec<Pos<usize>> {
@@ -132,7 +132,7 @@ impl<B: AsLatticeBoundary> Space<B> {
 
     pub fn cell_neighbours<N: Neighbourhood>(
         &self,
-        cell: &RelCell<impl CellLike>,
+        cell: &RelCell<impl Cellular>,
         diameter_scaler: f32,
         neighbourhood: &N
     ) -> HashSet<Spin> {
@@ -154,7 +154,7 @@ mod tests {
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
 
-    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space<BoundaryType>, RelCell<impl CellLike>) {
+    fn space_cell_pair(positions: &[Pos<usize>]) -> (Space<BoundaryType>, RelCell<impl Cellular>) {
         let mut cell = RelCell::mock(Cell::new_empty(
             10,
             20,

@@ -1,4 +1,4 @@
-use crate::cell::{CellLike, RelCell};
+use crate::cell::{Cellular, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
@@ -69,7 +69,8 @@ impl<C> CellContainer<C> {
     }
 
     pub fn update_cells(&mut self)
-    where C: CellLike {
+    where C: Cellular
+    {
         for cell in &mut self.vec {
             cell.update();
         }

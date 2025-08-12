@@ -159,7 +159,7 @@ impl IoManager {
         let img_height = images[0].height();
         let n_images = images.len() as u32;
         let cols = (n_images as f32).sqrt().ceil() as u32;
-        let rows = (n_images + cols - 1) / cols;
+        let rows = n_images.div_ceil(cols);
 
         let mut result = RgbaImage::new(
             img_width * cols,

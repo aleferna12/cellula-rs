@@ -66,9 +66,9 @@ impl<const I: usize, const O: usize> Grn<I, O> {
     ) -> Self {
         let mut grn = Grn {
             graph: DiGraph::new(),
-            input_ids: core::array::from_fn(|i| NodeIndex::new(i)),
+            input_ids: core::array::from_fn(NodeIndex::new),
             output_ids: core::array::from_fn(|i| NodeIndex::new(i + I)),
-            regulatory_ids: ((I + O)..(I + O + n_regulatory)).map(|r| NodeIndex::new(r)).collect(),
+            regulatory_ids: ((I + O)..(I + O + n_regulatory)).map(NodeIndex::new).collect(),
             input_signals: [0.; I],
             mut_rate,
             mut_distr: Normal::new(0., mut_std).expect("invalid `mut_std`")

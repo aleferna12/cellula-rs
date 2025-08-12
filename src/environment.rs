@@ -1,4 +1,4 @@
-use crate::cell::{CanDivide, Cell, CellLike, ChemSniffer, RelCell};
+use crate::cell::{CanDivide, Cell, Cellular, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
@@ -210,7 +210,7 @@ where
     }
 }
 
-impl<C: CellLike, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
+impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
         let mut removed = 0;
         let mut added = 0;
