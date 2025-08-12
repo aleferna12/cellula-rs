@@ -159,6 +159,7 @@ where
             .clone();
 
         let mut new_cell = mom_clone.birth();
+        new_cell.set_target_area(self.cells.target_area);
         let new_positions: Vec<_> = self
             .space
             .search_cell_box(&mom_clone, self.cell_search_radius)
