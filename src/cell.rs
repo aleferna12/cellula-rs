@@ -1,6 +1,6 @@
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::genome::{Grn, CellType, Genome, MockGenome};
+use crate::genome::{Genome, Grn, MockGenome};
 use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
@@ -174,13 +174,13 @@ where Self: CanDivide {
 
 impl<const I: usize> CanMigrate for Cell<Grn<I, 1>> {
     fn is_migrating(&self) -> bool {
-        matches!(self.genome.get_cell_type(), CellType::Migrate)
+        self.genome.nth_output_gene(0).active
     }
 }
 
 impl<const I: usize> CanDivide for Cell<Grn<I, 1>> {
     fn is_dividing(&self) -> bool {
-        matches!(self.genome.get_cell_type(), CellType::Divide)
+        !self.is_migrating()
     }
 
     fn divide_area(&self) -> u32 {
@@ -262,6 +262,12 @@ fn shifted_com<B: Boundary<Coord = f32>>(
     );
     // We call this to rewrap the position if necessary
     bound.valid_pos(new_com).expect("shifted the center to outside the available space").into()
+}
+
+#[derive(Clone, Debug)]
+pub enum CellType {
+    Migrate,
+    Divide
 }
 
 #[cfg(test)]

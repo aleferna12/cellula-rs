@@ -1,22 +1,20 @@
-use crate::genome::GrnError::{MissingNode, WrongNodeType};
 use crate::genome::GrnGeneType::{Input, Output, Regulatory};
 use rand::Rng;
 use rand_distr::Distribution;
 use rand_distr::Normal;
 use rustworkx_core::petgraph::prelude::{DiGraph, NodeIndex};
-use thiserror::Error;
 
 pub trait Genome {
     fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool;
     fn update_expression(&mut self);
 }
 
-/// This is a fake genome that just cycles through cell types.
+/// This is a fake genome that just cycles through a boolean `state`.
 #[derive(Clone, Debug)]
 pub struct MockGenome {
     period_updates: u32,
     counter: u32,
-    cell_type: CellType
+    state: bool
 }
 
 impl MockGenome {
@@ -28,7 +26,7 @@ impl MockGenome {
         Self {
             period_updates,
             counter: 0,
-            cell_type: CellType::Migrate
+            state: false,
         }
     }
 }
@@ -41,22 +39,18 @@ impl Genome for MockGenome {
     fn update_expression(&mut self) {
         self.counter += 1;
         if self.counter > self.period_updates {
-            match self.cell_type {
-                CellType::Migrate => self.cell_type = CellType::Divide,
-                CellType::Divide => self.cell_type = CellType::Migrate
-            }
+            self.state = !self.state;
             self.counter = 0;
         }
     }
 }
 
-/// Provides a generic, versatile GRN implementation that is specialised in `Grn`.
 #[derive(Clone, Debug)]
 pub struct Grn<const I: usize, const O: usize> {
     graph: DiGraph<GrnGeneType, f32>,
-    input_ids: [usize; I],
-    output_ids: [usize; I],
-    regulatory_ids: Vec<usize>,
+    input_ids: [NodeIndex; I],
+    output_ids: [NodeIndex; I],
+    regulatory_ids: Vec<NodeIndex>,
     mut_rate: f32,
     mut_distr: Normal<f32>,
     pub input_signals: [f32; I]
@@ -72,9 +66,9 @@ impl<const I: usize, const O: usize> Grn<I, O> {
     ) -> Self {
         let mut grn = Grn {
             graph: DiGraph::new(),
-            input_ids: core::array::from_fn(|i| i),
-            output_ids: core::array::from_fn(|i| i + I),
-            regulatory_ids: ((I + O)..(I + O + n_regulatory)).collect(),
+            input_ids: core::array::from_fn(|i| NodeIndex::new(i)),
+            output_ids: core::array::from_fn(|i| NodeIndex::new(i + I)),
+            regulatory_ids: ((I + O)..(I + O + n_regulatory)).map(|r| NodeIndex::new(r)).collect(),
             input_signals: [0.; I],
             mut_rate,
             mut_distr: Normal::new(0., mut_std).expect("invalid `mut_std`")
@@ -99,129 +93,131 @@ impl<const I: usize, const O: usize> Grn<I, O> {
 
         for reg in grn.regulatory_ids.iter().copied() {
             for input in grn.input_ids.iter().copied() {
-                grn.graph.add_edge(NodeIndex::new(input), NodeIndex::new(reg), sampler());
+                grn.graph.add_edge(input, reg, sampler());
             }
             for reg2 in grn.regulatory_ids.iter().copied() {
-                grn.graph.add_edge(NodeIndex::new(reg), NodeIndex::new(reg2), sampler());
+                grn.graph.add_edge(reg, reg2, sampler());
             }
             for output in grn.output_ids.iter().copied() {
-                grn.graph.add_edge(NodeIndex::new(reg), NodeIndex::new(output), sampler());
+                grn.graph.add_edge(reg, output, sampler());
             }
         }
         grn
     }
 
-    pub fn get_cell_type(&self) -> CellType {
-        match self
-            .get_output_gene(NodeIndex::new(self.output_ids[0]))
-            .expect("invalid GRN architecture").active {
-            false => CellType::Migrate,
-            true => CellType::Divide
-        }
+    pub fn nth_input_gene(&self, index: usize) -> &InputGene {
+        self.get_input_gene(self.input_ids[index])
     }
 
-    fn get_input_gene(&self, index: NodeIndex) -> Result<&InputGene, GrnError> {
-        let node = self.graph.node_weight(index).ok_or(MissingNode)?;
-        match node {
-            Input(gene) => {
-                Ok(gene)
-            },
-            _ => Err(WrongNodeType)
-        }
+    pub fn nth_regulatory_gene(&self, index: usize) -> &RegulatoryGene {
+        self.get_regulatory_gene(self.regulatory_ids[index])
     }
 
-    fn get_input_gene_mut(&mut self, index: NodeIndex) -> Result<&mut InputGene, GrnError> {
-        let node = self.graph.node_weight_mut(index).ok_or(MissingNode)?;
-        match node {
-            Input(gene) => {
-                Ok(gene)
-            },
-            _ => Err(WrongNodeType)
-        }
+    pub fn nth_output_gene(&self, index: usize) -> &OutputGene {
+        self.get_output_gene(self.output_ids[index])
     }
 
-    fn get_regulatory_gene(&self, index: NodeIndex) -> Result<&RegulatoryGene, GrnError> {
-        let node = self.graph.node_weight(index).ok_or(MissingNode)?;
-        match node {
-            Regulatory(gene) => {
-                Ok(gene)
-            },
-            _ => Err(WrongNodeType)
-        }
-    }
-
-    fn get_regulatory_gene_mut(&mut self, index: NodeIndex) -> Result<&mut RegulatoryGene, GrnError> {
-        let node = self.graph.node_weight_mut(index).ok_or(MissingNode)?;
-        match node {
-            Regulatory(gene) => {
-                Ok(gene)
-            },
-            _ => Err(WrongNodeType)
-        }
-    }
-
-    fn get_output_gene(&self, index: NodeIndex) -> Result<&OutputGene, GrnError> {
-        let node = self.graph.node_weight(index).ok_or(MissingNode)?;
-        match node {
-            Output(gene) => {
-                Ok(gene)
-            },
-            _ => Err(WrongNodeType)
-        }
-    }
-
-    fn get_output_gene_mut(&mut self, index: NodeIndex) -> Result<&mut OutputGene, GrnError> {
-        let node = self.graph.node_weight_mut(index).ok_or(MissingNode)?;
-        match node {
-            Output(gene) => {
-                Ok(gene)
-            },
-            _ => Err(WrongNodeType)
-        }
-    }
-
-    fn compute_activation_from_inputs(&self, reg: NodeIndex) -> Option<f32> {
-        let mut act = 0.;
-        for inp in self.input_ids.iter().copied() {
-            let inp_ind = NodeIndex::new(inp);
-            let input_gene = self.get_input_gene(inp_ind).expect("missing input gene");
-            let edge = self.graph.find_edge(inp_ind, reg)?;
-            act += input_gene.signal * self.graph.edge_weight(edge).copied()?
-        }
-        Some(act)
-    }
-
-    fn compute_activation_from_regulators(&self, target: NodeIndex) -> Option<f32> {
-        let mut act = 0.;
-        for reg in self.regulatory_ids.iter().copied() {
-            let reg_ind = NodeIndex::new(reg);
-            let reg_gene = self.get_regulatory_gene(reg_ind).expect("missing regulatory gene");
-            act += if reg_gene.active {
-                let edge = self.graph.find_edge(reg_ind, target)?;
-                self.graph.edge_weight(edge).copied()?
-            } else {
-                0.
+    fn get_input_gene(&self, index: NodeIndex) -> &InputGene {
+        match self.graph.node_weight(index) {
+            None => panic!("node index does not exist"),
+            Some(grn_gene) => match grn_gene {
+                Input(gene) => gene,
+                _ => panic!("node index is wrong gene type (expected `Input`, received `{grn_gene:?}`)")
             }
         }
-        Some(act)
+    }
+
+    fn get_input_gene_mut(&mut self, index: NodeIndex) -> &mut InputGene {
+        match self.graph.node_weight_mut(index) {
+            None => panic!("node index does not exist"),
+            Some(grn_gene) => match grn_gene {
+                Input(gene) => gene,
+                _ => panic!("node index is wrong gene type (expected `Input`, received `{grn_gene:?}`)")
+            }
+        }
+    }
+
+    fn get_regulatory_gene(&self, index: NodeIndex) -> &RegulatoryGene {
+        match self.graph.node_weight(index) {
+            None => panic!("node index does not exist"),
+            Some(grn_gene) => match grn_gene {
+                Regulatory(gene) => gene,
+                _ => panic!("node index is wrong gene type (expected `Regulatory`, received `{grn_gene:?}`)")
+            }
+        }
+    }
+
+    fn get_regulatory_gene_mut(&mut self, index: NodeIndex) -> &mut RegulatoryGene {
+        match self.graph.node_weight_mut(index) {
+            None => panic!("node index does not exist"),
+            Some(grn_gene) => match grn_gene {
+                Regulatory(gene) => gene,
+                _ => panic!("node index is wrong gene type (expected `Regulatory`, received `{grn_gene:?}`)")
+            }
+        }
+    }
+
+    fn get_output_gene(&self, index: NodeIndex) -> &OutputGene {
+        match self.graph.node_weight(index) {
+            None => panic!("node index does not exist"),
+            Some(grn_gene) => match grn_gene {
+                Output(gene) => gene,
+                _ => panic!("node index is wrong gene type (expected `Output`, received `{grn_gene:?}`)")
+            }
+        }
+    }
+
+    fn get_output_gene_mut(&mut self, index: NodeIndex) -> &mut OutputGene {
+        match self.graph.node_weight_mut(index) {
+            None => panic!("node index does not exist"),
+            Some(grn_gene) => match grn_gene {
+                Output(gene) => gene,
+                _ => panic!("node index is wrong gene type (expected `Output`, received `{grn_gene:?}`)")
+            }
+        }
+    }
+
+    fn compute_activation_from_inputs(&self, reg: NodeIndex) -> f32 {
+        self.input_ids
+            .iter()
+            .copied()
+            .map(|inp_ind| {
+                let input_gene = self.get_input_gene(inp_ind);
+                let edge = self.graph.find_edge(inp_ind, reg).expect("missing edge");
+                input_gene.signal * self.graph.edge_weight(edge).copied().unwrap()
+            })
+            .sum()
+    }
+
+    fn compute_activation_from_regulators(&self, target: NodeIndex) -> f32 {
+        self.regulatory_ids
+            .iter()
+            .copied()
+            .map(|reg_ind| {
+                let reg_gene = self.get_regulatory_gene(reg_ind);
+                if reg_gene.active {
+                    let edge = self.graph.find_edge(reg_ind, target).expect("missing edge");
+                    self.graph.edge_weight(edge).copied().unwrap()
+                } else {
+                    0.
+                }
+            })
+            .sum()
     }
 }
 
 impl<const I: usize, const O: usize> Genome for Grn<I, O> {
     fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool {
         let mutated = false;
-        let reg_miss = "Missing regulatory gene";
         for reg in self.regulatory_ids.clone() {
             if rng.random_bool(self.mut_rate as f64) {
-                self.get_regulatory_gene_mut(NodeIndex::new(reg))
-                    .expect(reg_miss)
-                    .threshold += self.mut_distr.sample(rng);
+                self.get_regulatory_gene_mut(reg).threshold += self.mut_distr.sample(rng);
             }
 
             for from in self.input_ids.iter().copied().chain(self.regulatory_ids.iter().copied()) {
                 let edge_index = self.graph.find_edge(
-                    NodeIndex::new(from),
-                    NodeIndex::new(reg)
+                    from,
+                    reg
                 ).expect("missing edge");
                 let edge = self.graph.edge_weight_mut(edge_index).unwrap();
                 if rng.random_bool(self.mut_rate as f64) {
@@ -231,8 +227,8 @@ impl<const I: usize, const O: usize> Genome for Grn<I, O> {
 
             for out in self.output_ids.iter().copied() {
                 let edge_index = self.graph.find_edge(
-                    NodeIndex::new(reg),
-                    NodeIndex::new(out)
+                    reg,
+                    out
                 ).expect("missing edge");
                 let edge = self.graph.edge_weight_mut(edge_index).unwrap();
                 *edge += self.mut_distr.sample(rng);
@@ -241,9 +237,7 @@ impl<const I: usize, const O: usize> Genome for Grn<I, O> {
 
         for out in self.output_ids {
             if rng.random_bool(self.mut_rate as f64) {
-                self.get_output_gene_mut(NodeIndex::new(out))
-                    .expect(reg_miss)
-                    .threshold += self.mut_distr.sample(rng);
+                self.get_output_gene_mut(out).threshold += self.mut_distr.sample(rng);
             }
         }
         mutated
@@ -252,42 +246,27 @@ impl<const I: usize, const O: usize> Genome for Grn<I, O> {
     fn update_expression(&mut self) {
         for (i, inp) in self.input_ids.into_iter().enumerate() {
             let signal = self.input_signals[i];
-            let inp_gene = self.get_input_gene_mut(
-                NodeIndex::new(inp)
-            ).expect("Missing regulatory gene");
+            let inp_gene = self.get_input_gene_mut(inp);
             inp_gene.signal = signal;
         }
 
-        let reg_miss = "Missing regulatory gene";
         for reg in self.regulatory_ids.clone() {
-            let reg_idx = NodeIndex::new(reg);
-            let act_influx = self
-                .compute_activation_from_inputs(reg_idx)
-                .expect(reg_miss)
-                + self
-                .compute_activation_from_regulators(reg_idx)
-                .expect(reg_miss);
-            let reg_gene = self.get_regulatory_gene_mut(reg_idx).expect(reg_miss);
+            let act_influx = self.compute_activation_from_inputs(reg)
+                + self.compute_activation_from_regulators(reg);
+            let reg_gene = self.get_regulatory_gene_mut(reg);
             reg_gene.activating = act_influx > reg_gene.threshold;
         }
+        for reg in self.regulatory_ids.clone() {
+            let reg_gene = self.get_regulatory_gene_mut(reg);
+            reg_gene.active = reg_gene.activating;
+        }
 
-        let out_miss = "Missing output gene";
         for out in self.output_ids {
-            let out_ind = NodeIndex::new(out);
-            let act_influx = self.compute_activation_from_regulators(out_ind).expect(out_miss);
-
-            let out_gene = self.get_output_gene_mut(out_ind).expect(out_miss);
+            let act_influx = self.compute_activation_from_regulators(out);
+            let out_gene = self.get_output_gene_mut(out);
             out_gene.active = act_influx > out_gene.threshold;
         }
     }
-}
-
-#[derive(Error, Debug)]
-pub enum GrnError {
-    #[error("the requested node does not exist in the GRN")]
-    MissingNode,
-    #[error("the requested node is not the right type (perhaps you used the wrong index?)")]
-    WrongNodeType
 }
 
 #[derive(Clone)]
@@ -302,7 +281,7 @@ pub struct InputGene {
 pub struct RegulatoryGene {
     pub threshold: f32,
     pub active: bool,
-    pub activating: bool
+    activating: bool
 }
 
 #[derive(Clone)]
@@ -319,8 +298,95 @@ pub enum GrnGeneType {
     Output(OutputGene)
 }
 
-#[derive(Clone, Debug)]
-pub enum CellType {
-    Migrate,
-    Divide
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::{SeedableRng};
+    use rand_xoshiro::Xoshiro256StarStar;
+
+    fn fixed_sampler() -> impl FnMut() -> f32 {
+        let mut val = 0.0;
+        move || {
+            val += 1.0;
+            val
+        }
+    }
+
+    #[test]
+    fn mockgenome_cycles_state_after_period() {
+        let mut g = MockGenome::new(2);
+        assert_eq!(g.state, false);
+
+        g.update_expression(); // counter=1
+        assert_eq!(g.state, false);
+
+        g.update_expression(); // counter=2
+        assert_eq!(g.state, false);
+
+        g.update_expression(); // counter resets, state flips
+        assert_eq!(g.state, true);
+        assert_eq!(g.counter, 0);
+    }
+
+    // ---------- GRN Tests ----------
+
+    #[test]
+    fn grn_graph_has_expected_nodes_and_edges() {
+        let grn: Grn<2, 1> = Grn::new([1.0, 2.0], 1, 0.1, 0.5, fixed_sampler());
+
+        // 2 input + 1 output + 1 regulatory
+        assert_eq!(grn.graph.node_count(), 4);
+
+        // Each regulatory node should have edges from inputs, from itself, and to outputs
+        let reg = grn.regulatory_ids[0];
+        assert!(grn.graph.find_edge(grn.input_ids[0], reg).is_some());
+        assert!(grn.graph.find_edge(grn.input_ids[1], reg).is_some());
+        assert!(grn.graph.find_edge(reg, reg).is_some());
+        assert!(grn.graph.find_edge(reg, grn.output_ids[0]).is_some());
+    }
+
+    #[test]
+    fn nth_gene_accessors() {
+        let grn: Grn<2, 1> = Grn::new([1.5, 2.5], 1, 0.1, 0.5, fixed_sampler());
+
+        assert_eq!(grn.nth_input_gene(0).scale, 1.5);
+        assert_eq!(grn.nth_input_gene(1).scale, 2.5);
+        assert!(grn.nth_output_gene(0).threshold > 0.0);
+        assert!(grn.nth_regulatory_gene(0).threshold > 0.0);
+    }
+
+    #[test]
+    fn update_expression_sets_signals_and_activation() {
+        let mut grn: Grn<1, 1> = Grn::new([1.0], 1, 0.1, 0.5, || 1.0);
+
+        // Give input a signal so activation > threshold
+        grn.input_signals[0] = 10.0;
+        grn.update_expression();
+
+        let reg_gene = grn.nth_regulatory_gene(0);
+        assert!(reg_gene.active);
+    }
+
+    #[test]
+    fn attempt_mutate_changes_thresholds_and_edges() {
+        let mut grn: Grn<1, 1> = Grn::new([1.0], 1, 1.0, 0.5, || 0.0);
+        let mut rng = Xoshiro256StarStar::seed_from_u64(42);
+
+        // Snapshot values before
+        let reg_threshold_before = grn.nth_regulatory_gene(0).threshold;
+        let out_threshold_before = grn.nth_output_gene(0).threshold;
+
+        // Collect all edge weights before mutation
+        let edges_before: Vec<_> = grn.graph.edge_weights().copied().collect();
+
+        grn.attempt_mutate(&mut rng);
+
+        // Thresholds should change
+        assert_ne!(grn.nth_regulatory_gene(0).threshold, reg_threshold_before);
+        assert_ne!(grn.nth_output_gene(0).threshold, out_threshold_before);
+
+        // At least one edge weight should have changed
+        let edges_after: Vec<_> = grn.graph.edge_weights().copied().collect();
+        assert!(edges_before.iter().zip(edges_after.iter()).all(|(a, b)| a != b));
+    }
 }
