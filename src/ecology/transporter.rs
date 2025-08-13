@@ -7,9 +7,9 @@ pub trait Transporter {
     fn transport(&mut self, from: &mut Pond, to: &mut Pond, spins: Vec<Spin>);
 }
 
-pub struct Wipeout;
+pub struct WipeOut;
 
-impl Transporter for Wipeout {
+impl Transporter for WipeOut {
     fn transport(&mut self, from: &mut Pond, to: &mut Pond, spins: Vec<Spin>) {
         to.wipe_out();
         for spin in spins {
@@ -19,7 +19,7 @@ impl Transporter for Wipeout {
                 .expect_cell("tried to transport non-cell");
             let spin_from = cell.spin;
             let spin_to = to.env.cells.push(cell.birth(), None).spin;
-            
+
             for pos in from.env.space.search_cell_box(&cell, from.env.cell_search_radius) {
                 from.ca.shift_position(
                     pos,
