@@ -1,5 +1,6 @@
+use rand::Rng;
 use crate::adhesion::ClonalAdhesion;
-use crate::cell::{Cell, Fit};
+use crate::cell::{Cell, Cellular, Fit, RelCell};
 use crate::cellular_automata::CellularAutomata;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::environment::{Environment, LatticeEntity};
@@ -45,6 +46,29 @@ impl Pond {
         }
         self.time_step += 1;
     }
+
+    // TODO!: i think that this function being here is an indicator that all functions that dynamically change
+    //  the environment should also be in Pond
+    //  What if in other impls of CA I need to do some operation on CA whenever a cell is spawned?
+    //  This way Pond becomes "an environment where change happens through a CA"
+    pub fn kill_cell(&mut self, cell: &mut RelCell<impl Cellular>) {
+        for pos in self.env.space.search_cell_box(cell, self.env.cell_search_radius) {
+            // TODO!: Parameterize chance of medium
+            if self.rng.random::<f32>() < 0.1 {
+                self.env.space.cell_lattice[pos] = LatticeEntity::Medium.discriminant();
+            }
+        }
+        for i in 0..self.ca.adhesion.clone_pairs.length() {
+            self.ca.adhesion.clone_pairs[(cell.spin as usize, i)] = false
+        }
+        cell.die();
+    }
+    
+    pub fn wipe_out(&mut self) {
+        self.env.cells.wipe_out();
+        self.env.space.cell_lattice.clear();
+        self.ca.adhesion.clone_pairs.clear();
+    }
 }
 
 impl Fit for Pond {
@@ -56,22 +80,5 @@ impl Fit for Pond {
             .map(|c| { c.fitness() })
             .sum();
         tot_fit / self.env.cells.n_cells() as f32
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use rand::{Rng, SeedableRng};
-    use rand_xoshiro::Xoshiro256StarStar;
-
-    #[test]
-    fn test_seed() {
-        let mut rng = Xoshiro256StarStar::seed_from_u64(1241254152);
-        let s = (0..50)
-            .map(|_| rng.random_range(0..9).to_string())
-            .collect::<Vec<_>>()
-            .join("");
-        let res = "15515320360704325727185856564110164830043067488704";
-        assert_eq!(res, s);
     }
 }

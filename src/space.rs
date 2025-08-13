@@ -22,7 +22,7 @@ pub struct Space<B: AsLatticeBoundary> {
 }
 
 impl<B: AsLatticeBoundary> Space<B> {
-    pub fn new(bound: B) -> Result<Self, Box<dyn Error>> 
+    pub fn new(bound: B) -> Result<Self, Box<dyn Error>>
     where 
         B: AsLatticeBoundary<Coord = f32>,
         B::Error: 'static + Error {

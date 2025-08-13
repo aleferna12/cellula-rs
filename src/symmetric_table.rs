@@ -6,13 +6,8 @@ pub struct SymmetricTable<T> {
 }
 
 impl<T> SymmetricTable<T> {
-    pub fn new(length: usize) -> Self
-    where T: Default + Clone {
-        let size = length * (length + 1) / 2;
-        Self {
-            array: vec![T::default(); size].into_boxed_slice(),
-            length
-        }
+    pub fn length(&self) -> usize {
+        self.length
     }
     
     pub fn iter_pairs(&self, start: usize, end: usize) -> impl Iterator<Item = (usize, usize)> {
@@ -22,6 +17,20 @@ impl<T> SymmetricTable<T> {
     fn flat_index(&self, i: usize, j: usize) -> usize {
         let (i, j) = if i > j { (j, i) } else { (i, j) };
         i * (2 * self.length - i - 1) / 2 + j - i
+    }
+}
+
+impl<T: Default + Clone> SymmetricTable<T> {
+    pub fn new(length: usize) -> Self {
+        let size = length * (length + 1) / 2;
+        Self {
+            array: vec![T::default(); size].into_boxed_slice(),
+            length
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.array.fill(T::default());
     }
 }
 

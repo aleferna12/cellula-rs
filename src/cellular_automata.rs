@@ -1,6 +1,6 @@
 use crate::adhesion::AdhesionSystem;
 use crate::cell::{CanMigrate, Cellular, ChemSniffer, RelCell};
-use crate::environment::Environment;
+use crate::environment::{EdgesUpdate, Environment};
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
@@ -8,6 +8,7 @@ use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use rand::Rng;
 use std::f32::consts::E;
+use crate::constants::Spin;
 
 // This could be a module but it's convenient to be able to access the relevant parameters 
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -59,14 +60,14 @@ impl<A> CellularAutomata<A> {
 
     pub fn delta_hamiltonian_size<C: Cellular>(
         &self,
-        entity_from: LatticeEntity<&RelCell<C>>,
-        entity_to: LatticeEntity<&RelCell<C>>
+        entity_source: LatticeEntity<&RelCell<C>>,
+        entity_target: LatticeEntity<&RelCell<C>>
     ) -> f32 {
         let mut delta_h = 0.;
-        if let SomeCell(cell) = entity_from {
+        if let SomeCell(cell) = entity_source {
             delta_h += self.size_energy_diff(true, cell.area(), cell.target_area());
         }
-        if let SomeCell(cell) = entity_to {
+        if let SomeCell(cell) = entity_target {
             delta_h += self.size_energy_diff(false, cell.area(), cell.target_area());
         }
         delta_h
@@ -121,76 +122,94 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
             impl AsLatticeBoundary<Coord = f32>
         >,
         rng: &mut impl Rng,
-        pos_from: Pos<usize>,
-        pos_to: Pos<usize>
+        pos_source: Pos<usize>,
+        pos_target: Pos<usize>
     ) -> f32 {
-        let spin_to = env.space.cell_lattice[pos_to];
-        if spin_to == Solid.discriminant() {
+        let spin_target = env.space.cell_lattice[pos_target];
+        if spin_target == Solid.discriminant() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
-        let spin_from = {
-            let spin = env.space.cell_lattice[pos_from];
+        let spin_source = {
+            let spin = env.space.cell_lattice[pos_source];
             if spin == Solid.discriminant() { Medium.discriminant() } else { spin }
         };
 
-        let entity_from = env.cells.get_entity(spin_from);
-        let entity_to = env.cells.get_entity(spin_to);
+        let entity_source = env.cells.get_entity(spin_source);
+        let entity_target = env.cells.get_entity(spin_target);
         let neigh_entities = env.space.lat_bound.valid_positions(
-            env.neighbourhood.neighbours(pos_to.to_isize())
+            env.neighbourhood.neighbours(pos_target.to_isize())
         ).map(|neigh| {
             env.cells.get_entity(env.space.cell_lattice[neigh.to_usize()])
         });
 
-        let mut delta_h = self.delta_hamiltonian(entity_from, entity_to, neigh_entities);
-        if let SomeCell(cell) = entity_from {
+        let mut delta_h = self.delta_hamiltonian(entity_source, entity_target, neigh_entities);
+        if let SomeCell(cell) = entity_source {
             if env.cells.migrate && cell.is_migrating() {
-                delta_h += self.chemotaxis_bias(&cell.cell, pos_to, self.chemotaxis_mu, &env.space.bound);
+                delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, &env.space.bound);
             }
         }
         if !self.accept_site_copy(rng, delta_h) {
             return 0.;
         }
-
-        // Executes the copy
-        env.space.cell_lattice[pos_to] = spin_from;
-        let chem_at = env.space.chem_lattice[pos_to] as f32;
-        if let SomeCell(cell) = env.cells.get_entity_mut(spin_from) {
-            cell.shift_position(pos_to, true, &env.space.bound);
-            cell.shift_chem(pos_to, chem_at, true, &env.space.bound);
-        }
-        if let SomeCell(cell) = env.cells.get_entity_mut(spin_to) {
-            cell.shift_position(pos_to, false, &env.space.bound);
-            cell.shift_chem(pos_to, chem_at, false, &env.space.bound);
-        }
-        let (removed, added) = env.update_edges(pos_to);
+        let edges_update = self.shift_position(
+            pos_target,
+            spin_target,
+            spin_source,
+            env,
+        );
         // Times 2 to represent the symmetric edge
-        2. * (added as f32 - removed as f32) / env.neighbourhood.n_neighs() as f32
+        2. * (edges_update.added as f32 - edges_update.removed as f32) / env.neighbourhood.n_neighs() as f32
+    }
+
+    pub fn shift_position<C: ChemSniffer>(
+        &self,
+        pos: Pos<usize>,
+        from: Spin,
+        to: Spin,
+        env: &mut Environment<
+            C,
+            impl Neighbourhood,
+            impl AsLatticeBoundary<Coord = f32>
+        >,
+    ) -> EdgesUpdate {
+        // Executes the copy
+        env.space.cell_lattice[pos] = to;
+        let chem_at = env.space.chem_lattice[pos] as f32;
+        if let SomeCell(cell) = env.cells.get_entity_mut(to) {
+            cell.shift_position(pos, true, &env.space.bound);
+            cell.shift_chem(pos, chem_at, true, &env.space.bound);
+        }
+        if let SomeCell(cell) = env.cells.get_entity_mut(from) {
+            cell.shift_position(pos, false, &env.space.bound);
+            cell.shift_chem(pos, chem_at, false, &env.space.bound);
+        }
+        env.update_edges(pos)
     }
 
     pub fn delta_hamiltonian<'a, C: 'a + Cellular>(
         &self,
-        entity_from: LatticeEntity<&RelCell<C>>,
-        entity_to: LatticeEntity<&RelCell<C>>,
+        entity_source: LatticeEntity<&RelCell<C>>,
+        entity_target: LatticeEntity<&RelCell<C>>,
         neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<C>>>
     ) -> f32 {
         let mut delta_h = 0.;
-        delta_h += self.delta_hamiltonian_size(entity_from, entity_to);
-        delta_h += self.delta_hamiltonian_adhesion(entity_from, entity_to, neigh_entities);
+        delta_h += self.delta_hamiltonian_size(entity_source, entity_target);
+        delta_h += self.delta_hamiltonian_adhesion(entity_source, entity_target, neigh_entities);
         delta_h
     }
     
     // TODO!: test
     pub fn delta_hamiltonian_adhesion<'a, C: 'a>(
         &self,
-        entity_from: LatticeEntity<&RelCell<C>>,
-        entity_to: LatticeEntity<&RelCell<C>>,
+        entity_source: LatticeEntity<&RelCell<C>>,
+        entity_target: LatticeEntity<&RelCell<C>>,
         neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<C>>>
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_entities {
-            energy -= self.adhesion.adhesion_energy(entity_to, neigh);
-            energy += self.adhesion.adhesion_energy(entity_from, neigh);
+            energy -= self.adhesion.adhesion_energy(entity_target, neigh);
+            energy += self.adhesion.adhesion_energy(entity_source, neigh);
         }
         energy
     }

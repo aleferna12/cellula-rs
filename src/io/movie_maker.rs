@@ -54,6 +54,5 @@ mod tests {
             minifb::WindowOptions::default()
         );
         assert!(window.is_ok());
-        window.unwrap().update();
     }
 }

@@ -69,11 +69,14 @@ impl<C> CellContainer<C> {
     }
 
     pub fn update_cells(&mut self)
-    where C: Cellular
-    {
+    where C: Cellular {
         for cell in &mut self.vec {
             cell.update();
         }
+    }
+
+    pub fn wipe_out(&mut self) {
+        self.vec.clear()
     }
 }
 

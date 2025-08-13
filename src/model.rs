@@ -149,3 +149,20 @@ impl Model {
         self.run_for(self.time_steps);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rand::{Rng, SeedableRng};
+    use rand_xoshiro::Xoshiro256StarStar;
+
+    #[test]
+    fn test_seed() {
+        let mut rng = Xoshiro256StarStar::seed_from_u64(1241254152);
+        let s = (0..50)
+            .map(|_| rng.random_range(0..9).to_string())
+            .collect::<Vec<_>>()
+            .join("");
+        let res = "15515320360704325727185856564110164830043067488704";
+        assert_eq!(res, s);
+    }
+}

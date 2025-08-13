@@ -175,6 +175,7 @@ where
                 return Err(DivisionError::NewCellTooBig);
             }
             // TODO: this is basically the same as executing a lattice copy, unify the APIs
+            //  This can happen when we move functions that change the env to Pond and CA
             self.space.cell_lattice[pos] = new_spin;
             let chem_at = self.space.chem_lattice[pos] as f32;
             new_cell.shift_position(
@@ -212,7 +213,7 @@ where
 }
 
 impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
-    pub fn update_edges(&mut self, pos: Pos<usize>) -> (u16, u16) {
+    pub fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
         let mut removed = 0;
         let mut added = 0;
         let spin = self.space.cell_lattice[pos];
@@ -238,7 +239,7 @@ impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environme
                 added += 1;
             }
         }
-        (removed, added)
+        EdgesUpdate { added, removed }
     }
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>> {
@@ -305,6 +306,11 @@ impl Environment<Cell<MockGenome>, NeighbourhoodType, BoundaryType> {
     }
 }
 
+pub struct EdgesUpdate {
+    pub added: u16,
+    pub removed: u16
+}
+
 #[derive(Debug)]
 pub enum DivisionError {
     NewCellTooSmall,
@@ -331,6 +337,8 @@ impl<C> LatticeEntity<C> {
 
 impl<C> LatticeEntity<&RelCell<C>> {
     /// Maps the `LatticeEntity` to a unique spin value.
+    ///
+    /// If you need the spin of a non-cell variant use `discriminant()` instead.
     pub fn spin(&self) -> Spin {
         match self {
             SomeCell(cell) => cell.spin,
@@ -358,16 +366,17 @@ impl<C> LatticeEntity<C> {
 }
 
 impl LatticeEntity<()> {
+    // TODO!: What if this is just Enum::length and then we subtract one for each discriminant?
     /// Returns the first spin that corresponds to a cell.
-    /// 
-    /// This is required to be larger than `Medium::spin()` and `Solid::spin()`.
+    ///
+    /// This is required to be larger than `Medium.discriminant()` and `Solid.discriminant()`.
     pub fn first_cell_spin() -> Spin {
         2
     }
-    
+
     pub fn discriminant(&self) -> Spin {
-        match self { 
-            SomeCell(_) => 2,
+        match self {
+            SomeCell(_) => Self::first_cell_spin(),
             Medium => 0,
             Solid => 1
         }
@@ -427,19 +436,19 @@ pub mod tests {
         let mut env = Environment::new_empty_test(10, 10);
         let spin = LatticeEntity::first_cell_spin();
         env.space.cell_lattice[Pos::new(5, 5)] = spin;
-        let (removed, added) = env.update_edges(Pos::new(5, 5));
-        assert_eq!(removed, 0);
-        assert_eq!(added, 8);
+        let mut edges_update = env.update_edges(Pos::new(5, 5));
+        assert_eq!(edges_update.removed, 0);
+        assert_eq!(edges_update.added, 8);
         
         env.space.cell_lattice[Pos::new(6, 5)] = spin;
-        let (removed, added) = env.update_edges(Pos::new(5, 5));
-        assert_eq!(removed, 1);
-        assert_eq!(added, 0);
+        edges_update = env.update_edges(Pos::new(5, 5));
+        assert_eq!(edges_update.removed, 1);
+        assert_eq!(edges_update.added, 0);
 
         env.space.cell_lattice[Pos::new(6, 5)] = spin + 1;
-        let (removed, added) = env.update_edges(Pos::new(5, 5));
-        assert_eq!(removed, 0);
-        assert_eq!(added, 1);
+        edges_update = env.update_edges(Pos::new(5, 5));
+        assert_eq!(edges_update.removed, 0);
+        assert_eq!(edges_update.added, 1);
     }
 
     #[test]

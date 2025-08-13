@@ -14,15 +14,6 @@ pub struct Lattice<T> {
 // Since the lattice size is naturally usize, boundary coord should be isize to avoid overflow errors
 // Although technically it only has to be slightly larger than its defined size
 impl<T> Lattice<T> {
-    pub fn new(rect: Rect<usize>) -> Self
-    where T: Default + Clone {
-        Self {
-            array: vec![T::default(); rect.width() * rect.height()]
-                .into_boxed_slice(),
-            rect,
-        }
-    }
-
     pub fn width(&self) -> usize {
         self.rect.width()
     }
@@ -47,6 +38,19 @@ impl<T> Lattice<T> {
             .map(|pos| {
                 &self[pos]
             })
+    }
+}
+
+impl<T: Default + Clone> Lattice<T> {
+    pub fn new(rect: Rect<usize>) -> Self {
+        Self {
+            array: vec![T::default(); rect.width() * rect.height()].into_boxed_slice(),
+            rect,
+        }
+    }
+    
+    pub fn clear(&mut self) {
+        self.array.fill(T::default());
     }
 }
 
