@@ -35,6 +35,7 @@ impl Pond {
             self.env.cells.update_cells();
             let new_spins = self.env.reproduce();
             for spin in new_spins {
+                // TODO!: This function is preventing CA to be generalised in Pond
                 self.ca.adhesion.update_clones(spin, &self.env);
                 // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
                 if let LatticeEntity::SomeCell(cell) = self.env.cells.get_entity_mut(spin) {

@@ -4,6 +4,10 @@ TODO!:
         - cell info
         - backup
     - add builder structs for the long constructors (Env, IoManager, CellCont...)
+    - generalise remaining modules:
+        - Space
+        - CA
+        - Pond (at that point also move functions that modify environment out of environment)
  */
 use clap::Parser;
 use evo_cpm::io::parameters::{Cli, Parameters};
