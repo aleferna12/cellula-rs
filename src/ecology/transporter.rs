@@ -20,7 +20,7 @@ impl Transporter for WipeOut {
             let spin_from = cell.spin;
             let spin_to = to.env.cells.push(cell.birth(), None).spin;
 
-            for pos in from.env.space.search_cell_box(&cell, from.env.cell_search_radius) {
+            for pos in from.env.space.search_cell_box(cell, from.env.cell_search_radius) {
                 from.ca.shift_position(
                     pos,
                     spin_from,
