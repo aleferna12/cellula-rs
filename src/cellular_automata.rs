@@ -162,6 +162,8 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         2. * (edges_update.added as f32 - edges_update.removed as f32) / env.neighbourhood.n_neighs() as f32
     }
 
+    // TODO!: Once CA has been generalised (requires Space to be generalised), this function should become part
+    //  of a CA trait (together with step). It doesnt need to take self anymore at that point
     pub fn shift_position<C: ChemSniffer>(
         &self,
         pos: Pos<usize>,
