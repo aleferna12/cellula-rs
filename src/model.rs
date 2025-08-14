@@ -147,7 +147,8 @@ impl Model {
                 pond.step();
             }
             
-            if time_step > 0 && time_step % 1000 == 0 {
+            // TODO!: Parameterize
+            if time_step > 0 && time_step % 2000 == 0 {
                 let dispersed = SelectiveDispersion{ 
                     selector: WeightedOrderedSelection{
                         rng: &mut self.rng 
