@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::cell::{CanDivide, Cell, Cellular, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
@@ -121,6 +122,9 @@ where
     pub fn reproduce(&mut self) -> Vec<Spin> {
         let mut divide = vec![];
         for cell in &self.cells {
+            if !cell.is_alive() {
+                continue;
+            }
             // Currently cells don't need to express the dividing type to divide, they just need to be big enough
             if cell.area() >= cell.divide_area() {
                 divide.push(cell.spin);
@@ -266,16 +270,34 @@ impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environme
         Some(self.cells.push(empty_cell, None))
     }
 
-    pub fn build_neighbours_graph(&self) -> UnGraph<(), ()> {
+    pub fn build_neighbours_graph(&self) -> UnGraph<Spin, ()> {
         let mut graph = UnGraph::new_undirected();
+        let mut node_map = HashMap::new();
+
         for cell in &self.cells {
+            if !cell.is_valid() {
+                continue;
+            }
+            
+            // Add or retrieve the node for this cell's spin
+            let cell_idx = *node_map.entry(cell.spin)
+                .or_insert_with(|| graph.add_node(cell.spin));
+
             let neighs = self.space.cell_neighbours(
                 cell,
                 self.cell_search_radius,
                 &self.neighbourhood
             );
-            for neigh in neighs {
-                graph.add_edge(cell.spin.into(), neigh.into(), ());
+
+            for neigh_spin in neighs {
+                if neigh_spin < LatticeEntity::first_cell_spin() {
+                    continue;
+                }
+                // Add or retrieve the node for the neighbor spin
+                let neigh_idx = *node_map.entry(neigh_spin)
+                    .or_insert_with(|| graph.add_node(neigh_spin));
+
+                graph.update_edge(cell_idx, neigh_idx, ());
             }
         }
         graph

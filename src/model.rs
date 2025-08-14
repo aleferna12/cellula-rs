@@ -7,6 +7,9 @@ use crate::cell::Cell;
 use crate::cell_container::CellContainer;
 use crate::cellular_automata::CellularAutomata;
 use crate::constants::{BoundaryType, NeighbourhoodType};
+use crate::ecology::disperser::{Disperser, SelectiveDispersion};
+use crate::ecology::selector::WeightedOrderedSelection;
+use crate::ecology::transporter::{Transporter, WipeOut};
 use crate::environment::{Environment, LatticeEntity};
 use crate::genome::Grn;
 use crate::io::io_manager::IoManager;
@@ -19,6 +22,7 @@ use crate::space::Space;
 pub struct Model {
     pub ponds: Vec<Pond>,
     pub io: IoManager,
+    pub rng: Xoshiro256StarStar,
     time_steps: u32
 }
 
@@ -127,7 +131,7 @@ impl Model {
             ponds.push(Pond::new(env, ca, rng.clone()));
         }
 
-        Ok(Self { ponds, io, time_steps: parameters.general.time_steps })
+        Ok(Self { ponds, io, rng, time_steps: parameters.general.time_steps })
     }
 
     pub fn run_for(&mut self, time_steps: u32) {
@@ -141,6 +145,24 @@ impl Model {
             }
             for pond in &mut self.ponds {
                 pond.step();
+            }
+            
+            if time_step > 0 && time_step % 1000 == 0 {
+                let dispersed = SelectiveDispersion{ 
+                    selector: WeightedOrderedSelection{
+                        rng: &mut self.rng 
+                    } 
+                }.disperse(&self.ponds);
+                for event in dispersed {
+                    let [from, to] = self.ponds
+                        .get_disjoint_mut([event.from, event.to])
+                        .expect("dispersion event `from` and `to` are the same");
+                    WipeOut.transport(
+                        from,
+                        to,
+                        event.spins
+                    );
+                }
             }
         }
     }

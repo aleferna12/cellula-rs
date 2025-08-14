@@ -8,35 +8,40 @@ pub trait Disperser {
 }
 
 // This can become a trait in the future if needed
+#[derive(Debug)]
 pub struct DispersionEvent {
-    from: usize,
-    to: usize,
-    spins: Vec<Spin>,
+    pub(crate) from: usize,
+    pub(crate) to: usize,
+    pub(crate) spins: Vec<Spin>,
 }
 
 pub struct SelectiveDispersion<S> {
-    selector: S
+    pub selector: S
 }
 
 impl<S> SelectiveDispersion<S> {
-    pub fn get_prop_spins(pond: &Pond) -> Vec<Spin> {
+    /// Returns at most `n_props` 
+    pub fn get_prop_spins(pond: &Pond, n_props: usize) -> Vec<Vec<Spin>> {
+        if n_props < 1 {
+            return vec![];
+        }
+        
         let neighs_graph = pond.env.build_neighbours_graph();
-        let subgraphs = connected_components(&neighs_graph);
+        let mut subgraphs = connected_components(&neighs_graph);
         // There is only one cluster
         if subgraphs.len() <= 1 {
             return vec![];
         }
 
-        let prop_index = subgraphs
-            .iter()
-            .map(|s| s.len())
-            .enumerate()
-            .min_by(|a, b| a.1.cmp(&b.1))
-            .unwrap();
-
-        subgraphs[prop_index.0]
-            .iter()
-            .map(|s| { s.index() as Spin })
+        subgraphs.sort_by(|subgraph1, subgraph2| { 
+            subgraph1.len().cmp(&subgraph2.len()) 
+        });
+        
+        subgraphs[0..n_props.min(subgraphs.len() - 1)]
+            .into_iter()
+            .map(|subgraph| {
+                subgraph.iter().map(|&index| neighs_graph[index]).collect()
+            })
             .collect()
     }
 }
@@ -44,30 +49,28 @@ impl<S> SelectiveDispersion<S> {
 impl<S: PreservesOrder> Disperser for SelectiveDispersion<S> {
     fn disperse(&mut self, dispersable: &[Pond]) -> Vec<DispersionEvent> {
         let selected = self.selector.select(dispersable);
-        let mut events = vec![];
-        // Lazily evaluated
-        let mut props = vec![None; selected.len()];
-        for (i, parent) in selected.into_iter().enumerate() {
-            if i == parent {
-                continue;
-            }
-
-            let prop = match props[parent].as_ref() {
-                Some(prop) => prop,
-                None => {
-                    props[parent] = Self::get_prop_spins(&dispersable[parent]).into();
-                    props[parent].as_ref().unwrap()
-                }
-            };
-
-            if !prop.is_empty() {
-                events.push(DispersionEvent {
-                    from: parent,
-                    to: i,
-                    spins: prop.clone(),
-                })
-            }
+        let mut prop_counts = vec![0usize; selected.len()];
+        for &s in &selected {
+            prop_counts[s] += 1;
         }
-        events
+        let mut props: Vec<_> = prop_counts.into_iter()
+            .enumerate()
+            .map(|(i, count)| Self::get_prop_spins(&dispersable[i], count.saturating_sub(1)))
+            .collect();
+        
+        selected.into_iter()
+            .enumerate()
+            .filter_map(|(to, from)| {
+                if from == to {
+                    None
+                } else {
+                    props[from].pop().map(|prop| DispersionEvent {
+                        from,
+                        to,
+                        spins: prop
+                    })
+                }
+            })
+            .collect()
     }
 }

@@ -152,9 +152,8 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         if !self.accept_site_copy(rng, delta_h) {
             return 0.;
         }
-        let edges_update = self.shift_position(
+        let edges_update = self.grant_position(
             pos_target,
-            spin_target,
             spin_source,
             env,
         );
@@ -163,11 +162,10 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     }
 
     // TODO!: Once CA has been generalised (requires Space to be generalised), this function should become part
-    //  of a CA trait (together with step). It doesnt need to take self anymore at that point
-    pub fn shift_position<C: ChemSniffer>(
+    //  of a CA trait (together with step)
+    pub fn grant_position<C: ChemSniffer>(
         &self,
         pos: Pos<usize>,
-        from: Spin,
         to: Spin,
         env: &mut Environment<
             C,
@@ -175,17 +173,17 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
             impl AsLatticeBoundary<Coord = f32>
         >,
     ) -> EdgesUpdate {
-        // Executes the copy
-        env.space.cell_lattice[pos] = to;
         let chem_at = env.space.chem_lattice[pos] as f32;
         if let SomeCell(cell) = env.cells.get_entity_mut(to) {
             cell.shift_position(pos, true, &env.space.bound);
             cell.shift_chem(pos, chem_at, true, &env.space.bound);
         }
-        if let SomeCell(cell) = env.cells.get_entity_mut(from) {
+        if let SomeCell(cell) = env.cells.get_entity_mut(env.space.cell_lattice[pos]) {
             cell.shift_position(pos, false, &env.space.bound);
             cell.shift_chem(pos, chem_at, false, &env.space.bound);
         }
+        // Executes the copy
+        env.space.cell_lattice[pos] = to;
         env.update_edges(pos)
     }
 

@@ -17,19 +17,15 @@ impl Transporter for WipeOut {
                 .cells
                 .get_entity(spin)
                 .expect_cell("tried to transport non-cell");
-            let spin_from = cell.spin;
             let spin_to = to.env.cells.push(cell.birth(), None).spin;
-
             for pos in from.env.space.search_cell_box(cell, from.env.cell_search_radius) {
-                from.ca.shift_position(
+                from.ca.grant_position(
                     pos,
-                    spin_from,
                     LatticeEntity::Medium.discriminant(),
                     &mut from.env
                 );
-                to.ca.shift_position(
+                to.ca.grant_position(
                     pos,
-                    LatticeEntity::Medium.discriminant(),
                     spin_to,
                     &mut to.env
                 );

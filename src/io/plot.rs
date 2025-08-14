@@ -91,6 +91,9 @@ pub struct CenterPlot<'e, C, N, B: AsLatticeBoundary> {
 impl<C: Cellular, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in &self.env.cells {
+            if !cell.is_valid() {
+                continue;
+            }
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
                 cell.center().x as isize,
                 cell.center().y as isize,

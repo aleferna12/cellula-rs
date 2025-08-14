@@ -11,7 +11,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 pub struct Pond {
     pub env: Environment<Cell<Grn<1, 1>>, NeighbourhoodType, BoundaryType>,
     pub ca: CellularAutomata<ClonalAdhesion>,
-    rng: Xoshiro256StarStar,
+    pub(crate) rng: Xoshiro256StarStar,
     time_step: u32
 }
 
@@ -78,6 +78,7 @@ impl Fit for Pond {
             .env
             .cells
             .into_iter()
+            .filter(|cell| cell.is_valid())
             .map(|c| { c.fitness() })
             .sum();
         tot_fit / self.env.cells.n_cells() as f32

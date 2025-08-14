@@ -14,6 +14,8 @@ pub trait Cellular {
     fn update(&mut self);
     fn birth(&self) -> Self;
     fn die(&mut self);
+    fn is_alive(&self) -> bool;
+    fn is_valid(&self) -> bool;
 }
 
 pub trait CanMigrate: Cellular {
@@ -111,10 +113,10 @@ impl<G> Cell<G> {
             bound
         ) {
             self.chem_center = new_chem;
-            self.chem_mass += shift as f32 * chem_at;
         } else {
             self.chem_center = self.center;
         }
+        self.chem_mass += shift as f32 * chem_at;
     }
 }
 
@@ -153,8 +155,8 @@ where Self: CanDivide {
             bound
         ) {
             self.center = new_center;
-            self.area = self.area.saturating_add_signed(shift);
         }
+        self.area = self.area.saturating_add_signed(shift);
     }
 
     fn update(&mut self) {
@@ -174,6 +176,14 @@ where Self: CanDivide {
 
     fn die(&mut self) {
         self.target_area = 0;
+    }
+
+    fn is_alive(&self) -> bool {
+        self.target_area > 0
+    }
+
+    fn is_valid(&self) -> bool {
+        self.area > 0
     }
 }
 

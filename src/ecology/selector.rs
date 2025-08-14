@@ -42,7 +42,7 @@ impl<R: Rng> Selector for WeightedSelection<R> {
 }
 
 pub struct WeightedOrderedSelection<R> {
-    rng: R
+    pub rng: R
 }
 
 impl<R: Rng> Selector for WeightedOrderedSelection<R> {
@@ -52,11 +52,13 @@ impl<R: Rng> Selector for WeightedOrderedSelection<R> {
             rng: &mut self.rng
         };
         let selected: Vec<_> = selector.select(selectable);
+        // TODO: it might be faster to iterate selected while removing elements, but then for each
+        //  `s` in selectable we need to iterate selected once while comparing elements which might be slow
+        //  Benchmark
         let mut selection_count = vec![0u32; selected.len()];
         for &s in &selected {
             selection_count[s] += 1
         }
-
         let mut dead = vec![];
         let mut parents = vec![0; selected.len()];
         let mut offspring = vec![0; selected.len()];
@@ -79,7 +81,7 @@ impl<R: Rng> Selector for WeightedOrderedSelection<R> {
     }
 }
 
-
+impl<R: Rng> PreservesOrder for WeightedOrderedSelection<R> {}
 
 #[cfg(test)]
 mod tests {

@@ -28,6 +28,7 @@ impl<C> CellContainer<C> {
         self.vec.len().try_into().expect("there are more cells than supported by the type `Spin`")
     }
     
+    // TODO!: Reuse first free spin
     pub fn next_spin(&self) -> Spin {
         self.n_cells() as Spin + LatticeEntity::first_cell_spin()
     }
