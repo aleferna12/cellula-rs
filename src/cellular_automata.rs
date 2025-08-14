@@ -93,7 +93,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         >, 
         rng: &mut impl Rng
     ) {
-        let mut to_visit = env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
+        let mut to_visit = 2. * env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
         while 0. < to_visit {
             let edge_i = env.edge_book.random_index(rng);
             let edge = env.edge_book.at(edge_i);
