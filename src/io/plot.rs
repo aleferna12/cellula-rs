@@ -174,6 +174,9 @@ impl<C: Cellular, N, B: AsLatticeBoundary> Plot for ClonesPlot<'_, C, N, B> {
             let message = "Non-cell stored as clone";
             let cell1 = self.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
             let cell2 = self.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
+            if !cell1.is_valid() || !cell2.is_valid() {
+                continue;
+            }
             let center1 = cell1.center();
             let center2 = cell2.center();
             if !self.all_clones {

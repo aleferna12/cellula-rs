@@ -1,30 +1,28 @@
 [general]
 # How many MCS the simulation will run for.
-time-steps = 16384
+time-steps = 100000000
 # Seed for the RNG.
 # Omit to pick a random seed.
 seed = 1241254152345
 # Number of ponds to create.
-n-ponds = 4
-# Period (in MCS) with which to check and execute dispersion events.
-dispersion-period = 1000
+n-ponds = 100
 
 [pond]
 # Width of the lattice.
-width = 128
+width = 256
 # Height of the lattice.
-height = 128
+height = 256
 # Whether to create a solid border around the cell lattice.
 # Should not be used with `neigh_r` > 1.
 # [default = false]
-enclose = false
+enclose = true
 # Radius of the neighbourhood.
 neigh-r = 1
 # Number of starting cells in the environment.
 starting-cells = 1
 # Maximum number of cells allowed in the environment.
 # Cell division is prevented if it would cause the cell population to exceed this threshold.
-max-cells = 1024
+max-cells = 32
 # How many times to enlarge the cells' putative radii when searching for them in the environment.
 # Decreasing this parameter improves performance but may lead to critical warnings reporting that not
 # all cell postitions could be found.
@@ -44,11 +42,11 @@ divide = true
 # [default = true]
 migrate = true
 # Number of regulatory genes in the cell's GRN.
-n-regulatory-genes = 2
+n-regulatory-genes = 15
 # Mutation rate for each GRN parameter.
-mutation-rate = 0.01
+mutation-rate = 0.05
 # Standard deviation of the GRN parameter mutations.
-mutation-std = 0.01
+mutation-std = 0.05
 # Period (in MCS) with which the cell is updated.
 # This includes cell growth and genome
 update-period = 32
@@ -71,13 +69,11 @@ medium-energy = 16
 solid-energy = 16
 
 [io]
-# Output directory for files.
-outdir = "examples/1_cell"
 # Flag used to delete contents of `outdir` if it exists.
 # [default = false]
 replace-outdir = true
 # Period (in MCS) with which to save an image of the simulation.
-image-period = 2048
+image-period = 10000
 # Format used to save images.
 # Supports any format supported by the `image` crate.
 # [default = "webp"]
@@ -93,7 +89,7 @@ image-format = "webp"
 #   - "chem":         Plots the chem gradient.
 #   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["chem", "cell-type", "border"]
+order = ["chem", "spin", "maternal-factor", "border", "clones"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
@@ -109,7 +105,7 @@ clones-color = "#ff0000"
 chem-center-color = "#00ff00"
 # Set to true to display all clone pairs, even those span across the lattice due to periodic boundaries.
 # [default = false]
-all-clones = false
+all-clones = true
 # With which color to plot the minimum area in the cell population.
 area-min-color = "#ff00ff"
 # With which color to plot the maximum area in the cell population.
@@ -127,7 +123,7 @@ dividing-color = "#045a8d"
 # Whether the real-time movie should be shown or not.
 # This will slow down the simulation a lot.
 # [default = false]
-show = true
+show = false
 # Width of the movie window.
 width = 640
 # Height of the movie window.
