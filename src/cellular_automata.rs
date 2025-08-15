@@ -55,8 +55,8 @@ impl<A> CellularAutomata<A> {
         if denom <= 0. {
             0.
         } else {
-            // Non migrating cells sink
-            let sign = if is_migrating { -1. } else { 1. };
+            // Non migrating cells sink at half speed
+            let sign = if is_migrating { -1. } else { 0.5 };
             sign * chemotaxis_mu * (dot / denom)
         }
     }
