@@ -1,6 +1,6 @@
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ChemCenterPlot, ChemPlot, ClonesPlot, HexError, Plot, SpinPlot};
+use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ChemCenterPlot, ChemPlot, ClonesPlot, HexError, MaternalFactorPlot, Plot, SpinPlot};
 use crate::pond::Pond;
 use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
@@ -141,6 +141,11 @@ impl IoManager {
                             env,
                             mig_color: hex_to_srgb(&self.plots.migrating_color)?,
                             div_color: hex_to_srgb(&self.plots.dividing_color)?,
+                        }.plot(image)
+                    }
+                    PlotType::MaternalFactor => {
+                        MaternalFactorPlot {
+                            env,
                         }.plot(image)
                     }
                 }

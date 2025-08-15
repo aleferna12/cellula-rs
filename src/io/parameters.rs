@@ -173,7 +173,8 @@ pub enum PlotType {
     Border,
     CellType,
     Area,
-    Chem
+    Chem,
+    MaternalFactor
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

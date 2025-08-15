@@ -1,4 +1,4 @@
-use crate::cell::{CanDivide, CanMigrate, Cellular, ChemSniffer};
+use crate::cell::{CanDivide, CanMigrate, Cell, Cellular, ChemSniffer};
 use crate::constants::Spin;
 use crate::environment::{Environment, LatticeEntity};
 use crate::io::plot::HexError::ParseU8Error;
@@ -14,6 +14,7 @@ use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
+use crate::genome::Grn;
 
 pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);
@@ -77,6 +78,32 @@ impl<B: AsLatticeBoundary> Plot for SpinPlot<'_, B> {
                 self.medium_color
             };
             if let Some(color) = rgb {
+                image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
+            }
+        }
+    }
+}
+
+pub struct MaternalFactorPlot<'e, N, B: AsLatticeBoundary> {
+    pub env: &'e Environment<Cell<Grn<5, 7>>, N, B>
+}
+
+impl<'e, N, B: AsLatticeBoundary> MaternalFactorPlot<'e, N, B> {
+}
+
+impl<N, B: AsLatticeBoundary> Plot for MaternalFactorPlot<'_, N, B> {
+    fn plot(&self, image: &mut RgbaImage) {
+        for pos in self.env.space.cell_lattice.iter_positions() {
+            let spin = self.env.space.cell_lattice[pos];
+            if spin >= LatticeEntity::first_cell_spin() {
+                let cell = self.env.cells.get_entity(spin).unwrap_cell();
+                let repr = (1..5).map(|i| {
+                    let signal = cell.genome.input_signals[i];
+                    signal.round() as Spin
+                }).fold(0, |acc, bit| {
+                    (acc << 1) | bit
+                }) + 2;  // Skip a few colors because spin_to_rgb is hardwired to give black and white
+                let color = SpinPlot::<B>::spin_to_rgb(repr);
                 image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
             }
         }

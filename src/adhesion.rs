@@ -1,12 +1,12 @@
-use crate::cell::{Cellular, RelCell};
+use crate::cell::{Cell, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
 use crate::environment::{Environment, LatticeEntity};
-use crate::symmetric_table::SymmetricTable;
-use std::collections::HashSet;
-use std::fmt::Debug;
+use crate::genome::Grn;
 use crate::positional::boundary::AsLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
+use crate::symmetric_table::SymmetricTable;
+use std::collections::HashSet;
 
 pub trait AdhesionSystem {
     fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32;
@@ -30,7 +30,7 @@ impl ClonalAdhesion {
         &mut self,
         cell_spin: Spin,
         env: &Environment<
-            impl Cellular + Debug, 
+            Cell<Grn<5, 7>>,
             impl Neighbourhood, 
             impl AsLatticeBoundary
         >
@@ -63,6 +63,10 @@ impl ClonalAdhesion {
         for spin in mom_clones.difference(&mom_neighs) {
             self.clone_pairs[(mom_cell.spin as usize, *spin as usize)] = false;
         }
+
+        if cell.genome.nth_output_gene(2).active {
+            return Some(vec![]);
+        }
         let clones: Vec<_> = cell_neighs.intersection(&mom_clones).copied().collect();
         for spin in &clones {
             self.clone_pairs[(cell.spin as usize, *spin as usize)] = true;
@@ -81,7 +85,7 @@ impl AdhesionSystem for ClonalAdhesion {
             if self.clone_pairs[(c1.spin as usize, c2.spin as usize)] {
                 return 2. * self.static_adhesion.cell_energy;
             }
-            return 2. * self.static_adhesion.medium_energy;
+            return 2.5 * self.static_adhesion.medium_energy;
         }
         // Handle all other cases
         self.static_adhesion.adhesion_energy(entity1, entity2)

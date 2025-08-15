@@ -187,13 +187,13 @@ where Self: CanDivide {
     }
 }
 
-impl<const I: usize> CanMigrate for Cell<Grn<I, 6>> {
+impl<const I: usize> CanMigrate for Cell<Grn<I, 7>> {
     fn is_migrating(&self) -> bool {
         self.genome.nth_output_gene(0).active
     }
 }
 
-impl<const I: usize> CanDivide for Cell<Grn<I, 6>> {
+impl<const I: usize> CanDivide for Cell<Grn<I, 7>> {
     fn is_dividing(&self) -> bool {
         !self.is_migrating()
     }
@@ -208,7 +208,7 @@ impl<const I: usize> CanDivide for Cell<Grn<I, 6>> {
 }
 
 // O can't be a generic because the Cellular impl only exists for CanDivide, which only exists for O = 1
-impl ChemSniffer for Cell<Grn<5, 6>> {
+impl ChemSniffer for Cell<Grn<5, 7>> {
     fn chem_center(&self) -> Pos<f32> {
         self.chem_center
     }

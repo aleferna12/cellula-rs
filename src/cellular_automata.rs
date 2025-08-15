@@ -35,7 +35,8 @@ impl<A> CellularAutomata<A> {
         cell: &(impl CanMigrate + ChemSniffer),
         pos_to: Pos<usize>,
         chemotaxis_mu: f32,
-        bound: &B
+        bound: &B,
+        is_migrating: bool
     ) -> f32 {
         let (dx1, dy1) = bound.displacement(
             cell.center(),
@@ -54,7 +55,9 @@ impl<A> CellularAutomata<A> {
         if denom <= 0. {
             0.
         } else {
-            -chemotaxis_mu * (dot / denom)
+            // Non migrating cells sink
+            let sign = if is_migrating { -1. } else { 1. };
+            sign * chemotaxis_mu * (dot / denom)
         }
     }
 
@@ -145,8 +148,14 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
 
         let mut delta_h = self.delta_hamiltonian(entity_source, entity_target, neigh_entities);
         if let SomeCell(cell) = entity_source {
-            if env.cells.migrate && cell.is_migrating() {
-                delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, &env.space.bound);
+            if env.cells.migrate {
+                delta_h += self.chemotaxis_bias(
+                    &cell.cell,
+                    pos_target,
+                    self.chemotaxis_mu,
+                    &env.space.bound,
+                    cell.is_migrating()
+                );
             }
         }
         if !self.accept_site_copy(rng, delta_h) {
