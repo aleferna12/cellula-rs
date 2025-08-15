@@ -53,7 +53,7 @@ pub struct SpinPlot<'s, B: AsLatticeBoundary> {
     pub medium_color: Option<Srgb<u8>>
 }
 
-impl<'e, B: AsLatticeBoundary> SpinPlot<'e, B> {
+impl<'s, B: AsLatticeBoundary> SpinPlot<'s, B> {
     fn spin_to_rgb(spin: Spin) -> Srgb<u8> {
         let mut hasher = DefaultHasher::new();
         spin.hash(&mut hasher);
