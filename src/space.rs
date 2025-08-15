@@ -35,6 +35,8 @@ impl<B: AsLatticeBoundary> Space<B> {
         })
     }
 
+    // TODO!: Once Environment has been stripped down of its cell management functions, it can probably
+    //  take these functions, which is nice bc then we dont have to pass down a neighbourhood and boundary type
     /// This is the fastest cell search function possible, but it is NOT SAFE.
     ///
     /// <div class="warning">

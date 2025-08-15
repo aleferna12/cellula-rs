@@ -6,6 +6,7 @@ use rand::Rng;
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 
+#[derive(Debug)]
 pub struct Lattice<T> {
     array: Box<[T]>,
     pub rect: Rect<usize>
@@ -32,13 +33,10 @@ impl<T> Lattice<T> {
     pub fn iter_positions(&self) -> impl Iterator<Item = Pos<usize>> {
         self.rect.iter_positions()
     }
-
-    pub fn iter_values(&self) -> impl Iterator<Item = &T> {
-        self.iter_positions()
-            .map(|pos| {
-                &self[pos]
-            })
-    }
+    
+    pub fn iter_values(&self) -> impl Iterator<Item = &T> { self.array.iter() }
+    
+    pub fn iter_values_mut(&mut self) -> impl Iterator<Item = &mut T> { self.array.iter_mut() }
 }
 
 impl<T: Default + Clone> Lattice<T> {

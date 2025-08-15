@@ -11,8 +11,9 @@ use rand_xoshiro::Xoshiro256StarStar;
 pub struct Pond {
     pub env: Environment<Cell<Grn<1, 1>>, NeighbourhoodType, BoundaryType>,
     pub ca: CellularAutomata<ClonalAdhesion>,
-    pub(crate) rng: Xoshiro256StarStar,
-    time_step: u32
+    pub rng: Xoshiro256StarStar,
+    pub update_period: u32,
+    time_step: u32,
 }
 
 impl Pond {
@@ -20,18 +21,20 @@ impl Pond {
         env: Environment<Cell<Grn<1, 1>>, NeighbourhoodType, BoundaryType>,
         ca: CellularAutomata<ClonalAdhesion>,
         rng: Xoshiro256StarStar,
+        update_period: u32,
     ) -> Self {
         Self {
             env,
             ca,
             rng,
+            update_period,
             time_step: 0
         }
     }
     
     pub fn step(&mut self) {
         self.ca.step(&mut self.env, &mut self.rng);
-        if self.env.time_to_update(self.time_step) {
+        if self.time_step % self.update_period == 0 {
             self.env.cells.update_cells();
             let new_spins = self.env.reproduce();
             for spin in new_spins {
@@ -41,7 +44,7 @@ impl Pond {
                 if let LatticeEntity::SomeCell(cell) = self.env.cells.get_entity_mut(spin) {
                     cell.genome.attempt_mutate(&mut self.rng);
                 } else { 
-                    panic!("Newborn is not a cell")
+                    panic!("newborn is not a cell")
                 }
             }
         }
@@ -67,7 +70,11 @@ impl Pond {
     
     pub fn wipe_out(&mut self) {
         self.env.cells.wipe_out();
-        self.env.space.cell_lattice.clear();
+        self.env.space.cell_lattice.iter_values_mut().for_each(|value| {
+            if *value >= LatticeEntity::first_cell_spin() {
+                *value = LatticeEntity::Medium.discriminant();
+            }
+        });
         self.ca.adhesion.clone_pairs.clear();
     }
 }
@@ -77,10 +84,10 @@ impl Fit for Pond {
         let tot_fit: f32 = self
             .env
             .cells
-            .into_iter()
+            .iter()
             .filter(|cell| cell.is_valid())
             .map(|c| { c.fitness() })
             .sum();
-        tot_fit / self.env.cells.n_cells() as f32
+        tot_fit / self.env.cells.n_valid() as f32
     }
 }

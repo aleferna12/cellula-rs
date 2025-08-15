@@ -10,7 +10,7 @@ use rand::Rng;
 use std::f32::consts::E;
 use crate::constants::Spin;
 
-// This could be a module but it's convenient to be able to access the relevant parameters 
+// This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 pub struct CellularAutomata<A> {

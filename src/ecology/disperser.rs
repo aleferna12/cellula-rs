@@ -38,7 +38,7 @@ impl<S> SelectiveDispersion<S> {
         });
         
         subgraphs[0..n_props.min(subgraphs.len() - 1)]
-            .into_iter()
+            .iter()
             .map(|subgraph| {
                 subgraph.iter().map(|&index| neighs_graph[index]).collect()
             })

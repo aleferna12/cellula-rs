@@ -4,10 +4,12 @@ time-steps = 8192
 # Seed for the RNG.
 # Omit to pick a random seed.
 seed = 1241254152
-# Number of environments to create.
-n-environments = 1
+# Number of ponds to create.
+n-ponds = 1
+# Period (in MCS) with which to check and execute dispersion events.
+dispersion-period = 1000
 
-[environment]
+[pond]
 # Width of the lattice.
 width = 128
 # Height of the lattice.
@@ -50,6 +52,9 @@ n-regulatory-genes = 2
 mutation-rate = 0.01
 # Standard deviation of the GRN parameter mutations.
 mutation-std = 0.01
+# Period (in MCS) with which the cell is updated.
+# This includes cell growth, genome updates and reproduction.
+update-period = 32
 
 [cellular-automata]
 # Boltzmann temperature.

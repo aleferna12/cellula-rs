@@ -30,7 +30,7 @@ impl<C> CellContainer<C> {
     
     // TODO!: Reuse first free spin
     pub fn next_spin(&self) -> Spin {
-        self.n_cells() as Spin + LatticeEntity::first_cell_spin()
+        self.n_cells() + LatticeEntity::first_cell_spin()
     }
 
     pub fn push(&mut self, cell: C, mom_spin: Option<Spin>) -> &RelCell<C> {
@@ -69,32 +69,30 @@ impl<C> CellContainer<C> {
         SomeCell(&mut self.vec[(spin - LatticeEntity::first_cell_spin()) as usize])
     }
 
-    pub fn update_cells(&mut self)
-    where C: Cellular {
+    pub fn wipe_out(&mut self) {
+        self.vec.clear()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item=&RelCell<C>> {
+        self.vec.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut RelCell<C>> {
+        self.vec.iter_mut()
+    }
+}
+
+impl<C: Cellular> CellContainer<C> {
+    pub fn update_cells(&mut self) {
         for cell in &mut self.vec {
             cell.update();
         }
     }
 
-    pub fn wipe_out(&mut self) {
-        self.vec.clear()
-    }
-}
-
-impl<'a, C> IntoIterator for &'a CellContainer<C> {
-    type Item = &'a RelCell<C>;
-    type IntoIter = std::slice::Iter<'a, RelCell<C>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.vec.iter()
-    }
-}
-
-impl<'a, C> IntoIterator for &'a mut CellContainer<C> {
-    type Item = &'a mut RelCell<C>;
-    type IntoIter = std::slice::IterMut<'a, RelCell<C>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.vec.iter_mut()
+    pub fn n_valid(&self) -> Spin {
+        self.vec
+            .iter()
+            .filter(|cell| cell.is_valid())
+            .count() as Spin
     }
 }

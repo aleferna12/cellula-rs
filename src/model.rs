@@ -23,6 +23,7 @@ pub struct Model {
     pub ponds: Vec<Pond>,
     pub io: IoManager,
     pub rng: Xoshiro256StarStar,
+    pub dispersion_period: u32,
     time_steps: u32
 }
 
@@ -66,13 +67,11 @@ impl Model {
         let mut ponds = vec![];
         // TODO: if we make everything clonable then that helps here and also in model_bench
         //  (takes less time to reinitialise everything which means more samples)
-        for pond_i in 0..parameters.general.n_environments {
+        for pond_i in 0..parameters.general.n_ponds {
             log::info!("Making pond #{pond_i}");
             let mut env = Environment::new(
-                parameters.environment.update_period,
-                parameters.environment.cell_search_radius,
-                parameters.environment.max_cells,
-                parameters.environment.enclose,
+                parameters.pond.cell_search_radius,
+                parameters.pond.max_cells,
                 CellContainer::new(
                     parameters.cell.target_area,
                     parameters.cell.divide,
@@ -81,46 +80,41 @@ impl Model {
                 Space::new(
                     BoundaryType::new(Rect::new(
                         (0., 0.).into(),
-                        (parameters.environment.width as f32, parameters.environment.height as f32).into(),
+                        (parameters.pond.width as f32, parameters.pond.height as f32).into(),
                     ))
                 )?,
-                NeighbourhoodType::new(parameters.environment.neigh_r)
+                NeighbourhoodType::new(parameters.pond.neigh_r)
             );
 
-            log::info!("Creating cells");
-            let cell_side = (parameters.cell.starting_area as f32).sqrt() as usize;
-            for _ in 0..parameters.environment.starting_cells {
-                let pos = env.space.cell_lattice.random_pos(&mut rng);
-                env.spawn_rect_cell(
-                    Rect::new(
-                        pos,
-                        (pos.x + cell_side, pos.y + cell_side).into()
-                    ),
-                    Cell::new_empty(
-                        parameters.cell.target_area,
-                        parameters.cell.div_area,
-                        Grn::new(
-                            [1. / env.height() as f32],
-                            parameters.cell.n_regulatory_genes,
-                            parameters.cell.mutation_rate,
-                            parameters.cell.mutation_std,
-                            || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
-                        )
-                    )
-                );
+            if parameters.pond.enclose {
+                env.make_border();
             }
-            log::info!(
-                "Created {} out of the {} cells requested",
-                env.cells.n_cells(),
-                parameters.environment.starting_cells
+
+            let cell =Cell::new_empty(
+                parameters.cell.target_area,
+                parameters.cell.div_area,
+                Grn::new(
+                    [1. / env.height() as f32],
+                    parameters.cell.n_regulatory_genes,
+                    parameters.cell.mutation_rate,
+                    parameters.cell.mutation_std,
+                    || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
+                )
             );
+            let pop_n = env.spawn_cells_random(
+                parameters.pond.starting_cells,
+                parameters.cell.target_area,
+                cell,
+                &mut rng
+            );
+            log::info!("Created {pop_n} out of the {} cells requested", parameters.pond.starting_cells);
 
             let ca= CellularAutomata::new(
                 parameters.cellular_automata.boltz_t,
                 parameters.cellular_automata.size_lambda,
                 parameters.cellular_automata.chemotaxis_mu,
                 ClonalAdhesion::new(
-                    parameters.environment.max_cells + LatticeEntity::first_cell_spin(),
+                    parameters.pond.max_cells + LatticeEntity::first_cell_spin(),
                     StaticAdhesion {
                         cell_energy: parameters.cellular_automata.adhesion.cell_energy,
                         medium_energy: parameters.cellular_automata.adhesion.medium_energy,
@@ -128,10 +122,21 @@ impl Model {
                     }
                 )
             );
-            ponds.push(Pond::new(env, ca, rng.clone()));
+            ponds.push(Pond::new(
+                env,
+                ca,
+                rng.clone(),
+                parameters.cell.update_period,
+            ));
         }
 
-        Ok(Self { ponds, io, rng, time_steps: parameters.general.time_steps })
+        Ok(Self {
+            ponds,
+            io,
+            rng,
+            dispersion_period: parameters.general.dispersion_period,
+            time_steps: parameters.general.time_steps
+        })
     }
 
     pub fn run_for(&mut self, time_steps: u32) {
@@ -146,9 +151,8 @@ impl Model {
             for pond in &mut self.ponds {
                 pond.step();
             }
-            
-            // TODO!: Parameterize
-            if time_step > 0 && time_step % 2000 == 0 {
+
+            if time_step > 0 && time_step % self.dispersion_period == 0 {
                 let dispersed = SelectiveDispersion{ 
                     selector: WeightedOrderedSelection{
                         rng: &mut self.rng 

@@ -1,9 +1,8 @@
-use std::collections::HashMap;
 use crate::cell::{CanDivide, Cell, Cellular, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
-use crate::genome::MockGenome;
+use crate::genome::{MockGenome};
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
@@ -11,15 +10,16 @@ use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use crate::space::Space;
-use std::fmt::Debug;
+use rand::Rng;
 use rustworkx_core::petgraph::prelude::UnGraph;
+use std::collections::HashMap;
+use std::fmt::Debug;
 
 pub struct Environment<C, N, B: AsLatticeBoundary> {
     pub space: Space<B>,
     pub cells: CellContainer<C>,
     pub edge_book: EdgeBook,
     pub neighbourhood: N,
-    pub update_period: u32,
     pub cell_search_radius: f32,
     pub population_exploded: bool,
     pub max_cells: Spin
@@ -27,10 +27,8 @@ pub struct Environment<C, N, B: AsLatticeBoundary> {
 
 impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
     pub fn new(
-        update_period: u32,
         cell_search_radius: f32,
         max_cells: Spin,
-        enclose: bool,
         cells: CellContainer<C>,
         space: Space<B>,
         neighbourhood: N
@@ -41,21 +39,11 @@ impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
             neighbourhood,
             edge_book: EdgeBook::new(),
             max_cells,
-            update_period,
             cell_search_radius,
             population_exploded: false
         };
-
-        if enclose {
-            env.make_border();
-        }
-    
         env.make_chem_gradient();
         env
-    }
-
-    pub fn time_to_update(&self, time_step: u32) -> bool {
-        time_step % self.update_period == 0
     }
     
     pub fn width(&self) -> usize {
@@ -107,6 +95,22 @@ impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
             }
         }
     }
+
+    pub fn can_add_cell(&mut self) -> bool 
+    where C: Cellular {
+        if self.cells.n_valid() < self.max_cells {
+            return true;
+        }
+        if !self.population_exploded {
+            log::warn!(
+                        "Population exceeded maximum threshold `max-cells={}` during cell division",
+                        {self.max_cells}
+                    );
+            log::warn!("This warning will be suppressed from now on");
+            self.population_exploded = true;
+        }
+        false
+    }
 }
 
 impl<C, N, B> Environment<C, N, B> 
@@ -121,7 +125,7 @@ where
     // gain is minimal (although the ergonomic gains are significant)
     pub fn reproduce(&mut self) -> Vec<Spin> {
         let mut divide = vec![];
-        for cell in &self.cells {
+        for cell in self.cells.iter() {
             if !cell.is_alive() {
                 continue;
             }
@@ -131,15 +135,7 @@ where
             }
         }
         divide.into_iter().filter_map(|spin| {
-            if self.cells.n_cells() >= self.max_cells {
-                if !self.population_exploded {
-                    log::warn!(
-                        "Population exceeded maximum threshold `max-cells={}` during cell division", 
-                        {self.max_cells}
-                    );
-                    log::warn!("This warning will be suppressed from now on");
-                    self.population_exploded = true;
-                }
+            if !self.can_add_cell() {
                 return None;
             }
             match self.divide_cell(spin) {
@@ -217,6 +213,32 @@ where
 }
 
 impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
+    pub fn spawn_cells_random(
+        &mut self,
+        n_cells: Spin,
+        cell_area: u32,
+        empty_cell: C,
+        rng: &mut impl Rng,
+    ) -> u32
+    where C: Clone {
+        let cell_side = (cell_area as f32).sqrt() as usize;
+        let mut count = 0;
+        for _ in 0..n_cells {
+            let pos = self.space.cell_lattice.random_pos(rng);
+            let spawned = self.spawn_rect_cell(
+                Rect::new(
+                    pos,
+                    (pos.x + cell_side, pos.y + cell_side).into()
+                ),
+                empty_cell.clone()
+            );
+            if spawned.is_some() {
+                count += 1;
+            }
+        }
+        count
+    }
+
     pub fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
         let mut removed = 0;
         let mut added = 0;
@@ -247,8 +269,11 @@ impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environme
     }
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>> {
-        let spin = self.cells.n_cells() as Spin + LatticeEntity::first_cell_spin();
+        if !self.can_add_cell() {
+            return None;
+        }
 
+        let spin = self.cells.next_spin();
         for pos in rect.iter_positions() {
             if let Some(valid_pos) = self.space.lat_bound.valid_pos(pos.to_isize()) {
                 let lat_pos = valid_pos.to_usize();
@@ -274,7 +299,7 @@ impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environme
         let mut graph = UnGraph::new_undirected();
         let mut node_map = HashMap::new();
 
-        for cell in &self.cells {
+        for cell in self.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
@@ -310,10 +335,8 @@ impl Environment<Cell<MockGenome>, NeighbourhoodType, BoundaryType> {
     /// Do not use this in production, no cells can be added to an environment created through this method.
     pub fn new_empty_test(width:usize, height: usize) -> Self {
         Environment::new(
-            0,
             0.,
             0,
-            false,
             CellContainer::new(
                 0,
                 false,
@@ -415,10 +438,8 @@ pub mod tests {
 
     fn make_env_for_division() -> Environment<Cell<MockGenome>, NeighbourhoodType, BoundaryType> {
         let env = Environment::new(
-            1,
             2.0,
             10,
-            false,
             CellContainer::new(
                 4,
                 true,

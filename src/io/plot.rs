@@ -90,7 +90,7 @@ pub struct CenterPlot<'e, C, N, B: AsLatticeBoundary> {
 
 impl<C: Cellular, N, B: AsLatticeBoundary> Plot for CenterPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
-        for cell in &self.env.cells {
+        for cell in self.env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
@@ -112,7 +112,10 @@ pub struct ChemCenterPlot<'e, C, N, B: AsLatticeBoundary> {
 
 impl<C: ChemSniffer, N, B: AsLatticeBoundary> Plot for ChemCenterPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
-        for cell in &self.env.cells {
+        for cell in self.env.cells.iter() {
+            if !cell.is_valid() {
+                continue;
+            }
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
                 cell.chem_center().x as isize,
                 cell.chem_center().y as isize,
@@ -223,7 +226,10 @@ impl<C: Cellular, N, B: AsLatticeBoundary> Plot for AreaPlot<'_, C, N, B> {
     fn plot(&self, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
-        for cell in &self.env.cells {
+        for cell in self.env.cells.iter() {
+            if !cell.is_valid() {
+                continue;
+            }
             if cell.area() < min {
                 min = cell.area()
             }

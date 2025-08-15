@@ -28,7 +28,7 @@ pub struct Cli {
 #[serde(rename_all = "kebab-case")]
 pub struct Parameters {
     pub general: GeneralParameters,
-    pub environment: EnvironmentParameters,
+    pub pond: PondParameters,
     pub cell: CellParameters,
     pub cellular_automata: CellularAutomataParameters,
     pub io: IoParameters
@@ -55,7 +55,7 @@ impl Parameters {
     }
     
     pub fn check_conflicts(&self) {
-        if self.environment.enclose && self.environment.neigh_r > 1 {
+        if self.pond.enclose && self.pond.neigh_r > 1 {
             log::warn!("`enclose` can only be used when `neigh-r=1` by default");
             log::warn!("You can circumvent this issue by changing `LatticeBoundaryType` in `Model` \
                         from `UnsafePeriodicBoundary` to `FixedBoundary`");
@@ -69,12 +69,13 @@ pub struct GeneralParameters {
     pub time_steps: u32,
     pub seed: Option<u64>,
     // TODO: maybe this type of parameter should be in EnvironmentPar (and starting_cells in CellPar etc)
-    pub n_environments: u32,
+    pub n_ponds: u32,
+    pub dispersion_period: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
-pub struct EnvironmentParameters {
+pub struct PondParameters {
     pub width: usize,
     pub height: usize,
     #[serde(default = "param_defaults::false_flag")]
@@ -82,8 +83,7 @@ pub struct EnvironmentParameters {
     pub neigh_r: u8,
     pub starting_cells: Spin,
     pub max_cells: Spin,
-    pub cell_search_radius: f32,
-    pub update_period: u32
+    pub cell_search_radius: f32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -98,7 +98,8 @@ pub struct CellParameters {
     pub migrate: bool,
     pub n_regulatory_genes: usize,
     pub mutation_rate: f32,
-    pub mutation_std: f32
+    pub mutation_std: f32,
+    pub update_period: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]

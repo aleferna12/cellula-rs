@@ -8,6 +8,8 @@ TODO!:
         - Space
         - CA
         - Pond (at that point also move functions that modify environment out of environment)
+        - At the end, CA should be responsible for executing the steps (only),
+            while Pond calls the steps and manages creation/killing of cells
  */
 use clap::Parser;
 use evo_cpm::io::parameters::{Cli, Parameters};

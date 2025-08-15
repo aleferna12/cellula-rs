@@ -1,9 +1,10 @@
 [general]
 time-steps = 2048
 seed = 1241254152
-n-environments = 1
+n-ponds = 1
+dispersion-period = 1000
 
-[environment]
+[pond]
 width = 128
 height = 128
 enclose = false
@@ -11,7 +12,6 @@ neigh-r = 1
 starting-cells = 1024
 max-cells = 1024
 cell-search-radius = 2.5
-update-period = 32
 
 [cell]
 starting-area = 64
@@ -22,6 +22,7 @@ migrate = true
 n-regulatory-genes = 2
 mutation-rate = 0.01
 mutation-std = 0.01
+update-period = 32
 
 [cellular-automata]
 boltz-t = 16.0
