@@ -94,7 +94,7 @@ impl Model {
                 parameters.cell.target_area,
                 parameters.cell.div_area,
                 Grn::new(
-                    [1. / env.height() as f32],
+                    [1. / env.height() as f32, 1., 1., 1., 1.],
                     parameters.cell.n_regulatory_genes,
                     parameters.cell.mutation_rate,
                     parameters.cell.mutation_std,

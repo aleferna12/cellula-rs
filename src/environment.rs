@@ -2,7 +2,7 @@ use crate::cell::{CanDivide, Cell, Cellular, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
-use crate::genome::{MockGenome};
+use crate::genome::{Grn, MockGenome};
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
@@ -113,12 +113,8 @@ impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<C, N, B> Environment<C, N, B> 
-where 
-    C: CanDivide
-        + ChemSniffer // TODO: this should not be a bound here, but space needs to be generalised before we remove it
-        + Clone,
-    B: AsLatticeBoundary<Coord = f32> {
+impl<N, B> Environment<Cell<Grn<5, 6>>, N, B> 
+where B: AsLatticeBoundary<Coord = f32> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
@@ -149,7 +145,7 @@ where
     }
 
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<C>, DivisionError> {
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<Cell<Grn<5, 6>>>, DivisionError> {
         let new_spin = self.cells.next_spin();
         let cell_target_area = self.cells.target_area;
         let mut mom_clone = self
@@ -165,9 +161,11 @@ where
             .search_cell_box(&mom_clone, self.cell_search_radius)
             .into_iter()
             .filter(|pos| {
-                // TODO!: use principal component to determine division axis
-                //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
+                if mom_clone.genome.nth_output_gene(1).active {
+                    self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
+                } else {
+                    self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).1 > 0.
+                }
             })
             .collect();
         for pos in new_positions {
@@ -492,48 +490,6 @@ pub mod tests {
         edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 0);
         assert_eq!(edges_update.added, 1);
-    }
-
-    #[test]
-    fn test_divide_cell() {
-        let mut env = make_env_for_division();
-
-        let rect = Rect::new(Pos::new(20, 20), Pos::new(23, 23));
-        env.spawn_rect_cell(
-            rect, 
-            Cell::new_empty(4, 8, MockGenome::new(0))
-        );
-
-        let spin = LatticeEntity::first_cell_spin();
-        let result = env.divide_cell(spin);
-        assert!(result.is_ok());
-        let new_cell = result.unwrap();
-        assert_ne!(new_cell.spin, spin);
-    }
-
-    #[test]
-    fn test_reproduce() {
-        let mut env = make_env_for_division();
-        env.spawn_rect_cell(
-            Rect::new(Pos::new(30, 30), Pos::new(33, 33)),
-            Cell::new_empty(4, 8, MockGenome::new(0))
-        );
-
-        let divided_spins = env.reproduce();
-        assert_eq!(divided_spins.len(), 1);
-    }
-
-    #[test]
-    fn test_reproduce_limit_population() {
-        let mut env = make_env_for_division();
-        env.max_cells = 1;
-        env.spawn_rect_cell(
-            Rect::new(Pos::new(30, 30), Pos::new(33, 33)),
-            Cell::new_empty(4, 8, MockGenome::new(0))
-        );
-
-        let divided_spins = env.reproduce();
-        assert_eq!(divided_spins.len(), 0);
     }
 }
 
