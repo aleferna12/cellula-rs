@@ -28,25 +28,10 @@ impl<C> CellContainer<C> {
         self.vec.len().try_into().expect("there are more cells than supported by the type `Spin`")
     }
     
-    // TODO!: Reuse first free spin
-    pub fn next_spin(&self) -> Spin {
-        self.n_cells() + LatticeEntity::first_cell_spin()
-    }
-
-    pub fn push(&mut self, cell: C, mom_spin: Option<Spin>) -> &RelCell<C> {
-        let new_spin = self.next_spin();
-        self.vec.push(RelCell {
-            spin: new_spin,
-            mom: mom_spin.unwrap_or(new_spin),
-            cell
-        });
-        self.vec.last().unwrap()
-    }
-    
     /// Replaces the cell at `cell.spin`.
-    pub fn replace(&mut self, cell: RelCell<C>) {
+    pub fn replace(&mut self, cell: RelCell<C>) -> RelCell<C> {
         let index = cell.spin - LatticeEntity::first_cell_spin();
-        self.vec[index as usize] = cell
+        std::mem::replace(&mut self.vec[index as usize], cell)
     }
 
     pub fn get_entity(&self, spin: Spin) -> LatticeEntity<&RelCell<C>> {
@@ -94,5 +79,30 @@ impl<C: Cellular> CellContainer<C> {
             .iter()
             .filter(|cell| cell.is_valid())
             .count() as Spin
+    }
+
+    pub fn next_spin(&self) -> Spin {
+        self.vec
+            .iter()
+            .find(|cell| !cell.is_valid())
+            .map(|cell| cell.spin)
+            .unwrap_or(self.n_cells() + LatticeEntity::first_cell_spin())
+    }
+
+    pub fn push(&mut self, cell: C, mom_spin: Option<Spin>) -> &RelCell<C> {
+        let new_spin = self.next_spin();
+        let index = new_spin - LatticeEntity::first_cell_spin();
+        let rel_cell = RelCell {
+            spin: new_spin,
+            mom: mom_spin.unwrap_or(new_spin),
+            cell
+        };
+
+        if index == self.n_cells() {
+            self.vec.push(rel_cell);
+        } else {
+            self.replace(rel_cell);
+        }
+        &self.vec[index as usize]
     }
 }

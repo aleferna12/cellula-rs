@@ -55,7 +55,7 @@ impl ClonalAdhesion {
         );
         
         let mom_clones = HashSet::from_iter(
-            (LatticeEntity::first_cell_spin()..=env.cells.n_cells())
+            (LatticeEntity::first_cell_spin()..(env.cells.n_cells() + LatticeEntity::first_cell_spin()))
                 .filter(|spin| {
                     self.clone_pairs[(mom_cell.spin as usize, *spin as usize)]
                 })
