@@ -6,6 +6,7 @@ time-steps = 100000000
 seed = 1241254152345
 # Number of ponds to create.
 n-ponds = 100
+dispersion-period = 1000
 
 [pond]
 # Width of the lattice.
@@ -69,6 +70,7 @@ medium-energy = 16
 solid-energy = 16
 
 [io]
+outdir = "./examples/1_cell"
 # Flag used to delete contents of `outdir` if it exists.
 # [default = false]
 replace-outdir = true
