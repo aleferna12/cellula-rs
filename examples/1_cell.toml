@@ -91,7 +91,7 @@ image-format = "webp"
 #   - "chem":         Plots the chem gradient.
 #   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["chem", "spin", "maternal-factor", "border", "clones"]
+order = ["chem", "spin", "cell-type", "border", "clones"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
