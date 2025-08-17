@@ -58,7 +58,7 @@ impl<A> CellularAutomata<A> {
         if denom <= 0. {
             0.
         } else {
-            strength * chemotaxis_mu * (dot / denom)
+            strength * -chemotaxis_mu * (dot / denom)
         }
     }
 
