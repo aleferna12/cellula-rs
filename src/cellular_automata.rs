@@ -42,10 +42,13 @@ impl<A> CellularAutomata<A> {
             cell.center(),
             Pos::new(pos_to.x as f32, pos_to.y as f32)
         );
-        let (dx2, dy2) = bound.displacement(
-            cell.center(),
-            cell.chem_center()
-        );
+        let ((dx2, dy2), strength) = if is_migrating {
+            (bound.displacement(cell.center(), cell.chem_center()), 1.)
+        } else {
+            // Simulate cells sinking
+            // This is a placeholder, gravity shouldnt depend on the direction of the signal the cell senses
+            (bound.displacement(cell.chem_center(), cell.center()), 0.25)
+        };
 
         let dot = dx1 * dx2 + dy1 * dy2;
         let norm1_sq = dx1 * dx1 + dy1 * dy1;
@@ -55,9 +58,7 @@ impl<A> CellularAutomata<A> {
         if denom <= 0. {
             0.
         } else {
-            // Non migrating cells sink at half speed
-            let sign = if is_migrating { -1. } else { 0.5 };
-            sign * chemotaxis_mu * (dot / denom)
+            strength * chemotaxis_mu * (dot / denom)
         }
     }
 
