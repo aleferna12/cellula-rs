@@ -23,7 +23,7 @@ neigh-r = 1
 starting-cells = 1
 # Maximum number of cells allowed in the environment.
 # Cell division is prevented if it would cause the cell population to exceed this threshold.
-max-cells = 32
+max-cells = 16
 # How many times to enlarge the cells' putative radii when searching for them in the environment.
 # Decreasing this parameter improves performance but may lead to critical warnings reporting that not
 # all cell postitions could be found.
