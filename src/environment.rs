@@ -111,6 +111,36 @@ impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
         }
         false
     }
+
+    pub fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate
+    where N: Neighbourhood {
+        let mut removed = 0;
+        let mut added = 0;
+        let spin = self.space.cell_lattice[pos];
+        let valid_neighs = self
+            .space
+            .lat_bound
+            .valid_positions(self.neighbourhood.neighbours(pos.to_isize()))
+            .map(|neigh| neigh.to_usize());
+        for neigh in valid_neighs {
+            let edge = Edge::new(pos, neigh);
+            let spin_neigh = self.space.cell_lattice[neigh];
+            // The order of these if statements matter A LOT, dont mess with it
+            if spin == spin_neigh {
+                if self.edge_book.remove(&edge) {
+                    removed += 1;
+                }
+                continue;
+            }
+            if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
+                continue;
+            }
+            if self.edge_book.insert(edge) {
+                added += 1;
+            }
+        }
+        EdgesUpdate { added, removed }
+    }
 }
 
 impl<N, B> Environment<Cell<Grn<5, 7>>, N, B> 
@@ -210,7 +240,7 @@ where B: AsLatticeBoundary<Coord = f32> {
     }
 }
 
-impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
+impl<C: Cellular + ChemSniffer, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     pub fn spawn_cells_random(
         &mut self,
         n_cells: Spin,
@@ -237,35 +267,6 @@ impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environme
         count
     }
 
-    pub fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
-        let mut removed = 0;
-        let mut added = 0;
-        let spin = self.space.cell_lattice[pos];
-        let valid_neighs = self
-            .space
-            .lat_bound
-            .valid_positions(self.neighbourhood.neighbours(pos.to_isize()))
-            .map(|neigh| neigh.to_usize());
-        for neigh in valid_neighs {
-            let edge = Edge::new(pos, neigh);
-            let spin_neigh = self.space.cell_lattice[neigh];
-            // The order of these if statements matter A LOT, dont mess with it
-            if spin == spin_neigh {
-                if self.edge_book.remove(&edge) {
-                    removed += 1;
-                }
-                continue;
-            }
-            if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
-                continue;
-            }
-            if self.edge_book.insert(edge) {
-                added += 1;
-            }
-        }
-        EdgesUpdate { added, removed }
-    }
-
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>> {
         if !self.can_add_cell() {
             return None;
@@ -285,6 +286,12 @@ impl<C: Cellular, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environme
                     true,
                     &self.space.bound
                 );
+                empty_cell.shift_chem(
+                    lat_pos,
+                    self.space.chem_lattice[lat_pos] as f32,
+                    true,
+                    &self.space.bound
+                )
             }
         }
         if empty_cell.area() == 0 {
