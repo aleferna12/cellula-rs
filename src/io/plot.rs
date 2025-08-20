@@ -85,7 +85,7 @@ impl<B: AsLatticeBoundary> Plot for SpinPlot<'_, B> {
 }
 
 pub struct MaternalFactorPlot<'e, N, B: AsLatticeBoundary> {
-    pub env: &'e Environment<Cell<Grn<5, 7>>, N, B>
+    pub env: &'e Environment<Cell<Grn<5, 8>>, N, B>
 }
 
 impl<'e, N, B: AsLatticeBoundary> MaternalFactorPlot<'e, N, B> {

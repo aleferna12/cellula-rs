@@ -9,7 +9,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 pub struct Pond {
-    pub env: Environment<Cell<Grn<5, 7>>, NeighbourhoodType, BoundaryType>,
+    pub env: Environment<Cell<Grn<5, 8>>, NeighbourhoodType, BoundaryType>,
     pub ca: CellularAutomata<ClonalAdhesion>,
     pub rng: Xoshiro256StarStar,
     pub update_period: u32,
@@ -18,7 +18,7 @@ pub struct Pond {
 
 impl Pond {
     pub fn new(
-        env: Environment<Cell<Grn<5, 7>>, NeighbourhoodType, BoundaryType>,
+        env: Environment<Cell<Grn<5, 8>>, NeighbourhoodType, BoundaryType>,
         ca: CellularAutomata<ClonalAdhesion>,
         rng: Xoshiro256StarStar,
         update_period: u32,
@@ -43,7 +43,7 @@ impl Pond {
                 // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
                 if let LatticeEntity::SomeCell(cell) = self.env.cells.get_entity_mut(spin) {
                     for i in 1..cell.genome.input_signals.len() {
-                        if cell.genome.nth_output_gene(i + 2).active {
+                        if cell.genome.nth_output_gene(i + 3).active {
                             let prev_signal = cell.genome.nth_input_gene(i).signal.round() == 0.;
                             cell.genome.input_signals[i] = prev_signal as u32 as f32
                         }

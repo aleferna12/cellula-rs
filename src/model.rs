@@ -90,7 +90,7 @@ impl Model {
                 env.make_border();
             }
 
-            let cell =Cell::new_empty(
+            let cell = Cell::new_empty(
                 parameters.cell.target_area,
                 parameters.cell.div_area,
                 Grn::new(

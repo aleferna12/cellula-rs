@@ -143,7 +143,7 @@ impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<N, B> Environment<Cell<Grn<5, 7>>, N, B> 
+impl<N, B> Environment<Cell<Grn<5, 8>>, N, B> 
 where B: AsLatticeBoundary<Coord = f32> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
@@ -175,7 +175,7 @@ where B: AsLatticeBoundary<Coord = f32> {
     }
 
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<Cell<Grn<5, 7>>>, DivisionError> {
+    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<Cell<Grn<5, 8>>>, DivisionError> {
         let new_spin = self.cells.next_spin();
         let cell_target_area = self.cells.target_area;
         let mut mom_clone = self
@@ -192,9 +192,17 @@ where B: AsLatticeBoundary<Coord = f32> {
             .into_iter()
             .filter(|pos| {
                 if mom_clone.genome.nth_output_gene(1).active {
-                    self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
+                    if mom_clone.genome.nth_output_gene(2).active {
+                        self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
+                    } else {
+                        self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 < 0.
+                    } 
                 } else {
-                    self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).1 > 0.
+                    if mom_clone.genome.nth_output_gene(2).active {
+                        self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).1 > 0.
+                    } else {
+                        self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).1 < 0.
+                    }
                 }
             })
             .collect();

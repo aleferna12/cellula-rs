@@ -30,7 +30,7 @@ impl ClonalAdhesion {
         &mut self,
         cell_spin: Spin,
         env: &Environment<
-            Cell<Grn<5, 7>>,
+            Cell<Grn<5, 8>>,
             impl Neighbourhood, 
             impl AsLatticeBoundary
         >
