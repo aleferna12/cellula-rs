@@ -143,7 +143,7 @@ impl<C, N, B: AsLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<N, B> Environment<Cell<Grn<5, 8>>, N, B> 
+impl<N, B> Environment<Cell<Grn<5, 8>>, N, B>
 where B: AsLatticeBoundary<Coord = f32> {
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
@@ -191,14 +191,14 @@ where B: AsLatticeBoundary<Coord = f32> {
             .search_cell_box(&mom_clone, self.cell_search_radius)
             .into_iter()
             .filter(|pos| {
-                if mom_clone.genome.nth_output_gene(1).active {
-                    if mom_clone.genome.nth_output_gene(2).active {
+                if mom_clone.genome.nth_output_gene(2).active {
+                    if mom_clone.genome.nth_output_gene(3).active {
                         self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
                     } else {
                         self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 < 0.
-                    } 
+                    }
                 } else {
-                    if mom_clone.genome.nth_output_gene(2).active {
+                    if mom_clone.genome.nth_output_gene(3).active {
                         self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).1 > 0.
                     } else {
                         self.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).1 < 0.
