@@ -83,6 +83,7 @@ impl AdhesionSystem for ClonalAdhesion {
             }
             return 2. * self.static_adhesion.medium_energy;
         }
+        // TODO: Its potentially more efficient to handle all cases here since we skip checking cell-cell again
         // Handle all other cases
         self.static_adhesion.adhesion_energy(entity1, entity2)
     }
