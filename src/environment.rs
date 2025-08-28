@@ -243,30 +243,22 @@ where
 }
 
 impl<C: Cellular + ChemSniffer, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
-    pub fn spawn_cells_random(
+    pub fn spawn_cell_random(
         &mut self,
-        n_cells: Spin,
         cell_area: u32,
         empty_cell: C,
         rng: &mut impl Rng,
-    ) -> u32
+    ) -> Option<&RelCell<C>>
     where C: Clone {
         let cell_side = (cell_area as f32).sqrt() as usize;
-        let mut count = 0;
-        for _ in 0..n_cells {
-            let pos = self.space.cell_lattice.random_pos(rng);
-            let spawned = self.spawn_rect_cell(
-                Rect::new(
-                    pos,
-                    (pos.x + cell_side, pos.y + cell_side).into()
-                ),
-                empty_cell.clone()
-            );
-            if spawned.is_some() {
-                count += 1;
-            }
-        }
-        count
+        let pos = self.space.cell_lattice.random_pos(rng);
+        self.spawn_rect_cell(
+            Rect::new(
+                pos,
+                (pos.x + cell_side, pos.y + cell_side).into()
+            ),
+            empty_cell.clone()
+        )
     }
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>> {

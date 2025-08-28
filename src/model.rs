@@ -90,23 +90,28 @@ impl Model {
                 env.make_border();
             }
 
-            let cell =Cell::new_empty(
-                parameters.cell.target_area,
-                parameters.cell.div_area,
-                Grn::new(
-                    [1. / env.height() as f32],
-                    parameters.cell.n_regulatory_genes,
-                    parameters.cell.mutation_rate,
-                    parameters.cell.mutation_std,
-                    || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
-                )
-            );
-            let pop_n = env.spawn_cells_random(
-                parameters.pond.starting_cells,
-                parameters.cell.target_area,
-                cell,
-                &mut rng
-            );
+            let mut pop_n = 0;
+            for _ in 0..parameters.pond.starting_cells {
+                let cell = Cell::new_empty(
+                    parameters.cell.target_area,
+                    parameters.cell.div_area,
+                    Grn::new(
+                        [1. / env.height() as f32],
+                        parameters.cell.n_regulatory_genes,
+                        parameters.cell.mutation_rate,
+                        parameters.cell.mutation_std,
+                        || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
+                    )
+                );
+                let spawned = env.spawn_cell_random(
+                    parameters.cell.starting_area,
+                    cell,
+                    &mut rng
+                );
+                if spawned.is_some() {
+                    pop_n += 1;
+                }
+            }
             log::info!("Created {pop_n} out of the {} cells requested", parameters.pond.starting_cells);
 
             let ca= CellularAutomata::new(
