@@ -47,7 +47,7 @@ pub trait Fit {
 pub struct RelCell<C> {
     pub spin: Spin,
     pub mom: Spin,
-    pub(crate) cell: C
+    pub cell: C
 }
 
 impl<C> RelCell<C> {
@@ -279,7 +279,7 @@ fn shifted_com<B: Boundary<Coord = f32>>(
     bound.valid_pos(new_com).expect("shifted the center to outside the available space").into()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum CellType {
     Migrate,
     Divide
