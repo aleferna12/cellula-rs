@@ -50,7 +50,7 @@ pub struct Grn<const I: usize, const O: usize> {
     graph: DiGraph<GrnGeneType, f32>,
     input_ids: [NodeIndex; I],
     output_ids: [NodeIndex; O],
-    regulatory_ids: Vec<NodeIndex>,
+    regulatory_ids: Box<[NodeIndex]>,
     mut_rate: f32,
     mut_distr: Normal<f32>,
     pub input_signals: [f32; I]

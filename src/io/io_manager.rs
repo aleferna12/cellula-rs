@@ -229,7 +229,7 @@ pub trait ToDataFrame {
     fn to_dataframe(&self) -> PolarsResult<DataFrame>;
 }
 
-impl<const I: usize, const O: usize> ToDataFrame for CellContainer<Cell<Grn<I, O>>> {
+impl<G> ToDataFrame for CellContainer<Cell<G>> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
         df!(
             "spin" => self.iter().map(|cell| cell.spin).collect::<Vec<_>>(),
@@ -242,8 +242,7 @@ impl<const I: usize, const O: usize> ToDataFrame for CellContainer<Cell<Grn<I, O
             "chem_center_x" => self.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
             "chem_center_y" => self.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
             "chem_mass" => self.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
-            "cell_type" => self.iter().map(|cell| cell.cell_type as u32).collect::<Vec<_>>(),
-            // TODO: genome
+            "cell_type" => self.iter().map(|cell| cell.cell_type as u32).collect::<Vec<_>>()
         )
     }
 }
