@@ -1,7 +1,3 @@
-use std::error::Error;
-use rand::distr::{Distribution, Uniform};
-use rand::{RngCore, SeedableRng};
-use rand_xoshiro::Xoshiro256StarStar;
 use crate::adhesion::{ClonalAdhesion, StaticAdhesion};
 use crate::cell::Cell;
 use crate::cell_container::CellContainer;
@@ -11,13 +7,17 @@ use crate::ecology::disperser::{Disperser, SelectiveDispersion};
 use crate::ecology::selector::WeightedOrderedSelection;
 use crate::ecology::transporter::{Transporter, WipeOut};
 use crate::environment::{Environment, LatticeEntity};
-use crate::genome::Grn;
+use crate::genetics::grn::Grn;
 use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::pond::Pond;
 use crate::positional::rect::Rect;
 use crate::space::Space;
+use rand::distr::{Distribution, Uniform};
+use rand::{RngCore, SeedableRng};
+use rand_xoshiro::Xoshiro256StarStar;
+use std::error::Error;
 
 pub struct Model {
     pub ponds: Vec<Pond>,
@@ -90,23 +90,28 @@ impl Model {
                 env.make_border();
             }
 
-            let cell = Cell::new_empty(
-                parameters.cell.target_area,
-                parameters.cell.div_area,
-                Grn::new(
-                    [1. / env.height() as f32, 1., 1., 1., 1.],
-                    parameters.cell.n_regulatory_genes,
-                    parameters.cell.mutation_rate,
-                    parameters.cell.mutation_std,
-                    || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
-                )
-            );
-            let pop_n = env.spawn_cells_random(
-                parameters.pond.starting_cells,
-                parameters.cell.target_area,
-                cell,
-                &mut rng
-            );
+            let mut pop_n = 0;
+            for _ in 0..parameters.pond.starting_cells {
+                let cell = Cell::new_empty(
+                    parameters.cell.target_area,
+                    parameters.cell.div_area,
+                    Grn::new(
+                        [1. / env.height() as f32, 1., 1., 1., 1.],
+                        parameters.cell.n_regulatory_genes,
+                        parameters.cell.mutation_rate,
+                        parameters.cell.mutation_std,
+                        || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
+                    )
+                );
+                let spawned = env.spawn_cell_random(
+                    parameters.cell.starting_area,
+                    cell,
+                    &mut rng
+                );
+                if spawned.is_some() {
+                    pop_n += 1;
+                }
+            }
             log::info!("Created {pop_n} out of the {} cells requested", parameters.pond.starting_cells);
 
             let ca= CellularAutomata::new(

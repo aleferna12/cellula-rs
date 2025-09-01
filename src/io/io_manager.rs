@@ -6,6 +6,10 @@ use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use polars::df;
+use polars::prelude::{concat, DataFrame, IntoLazy, LazyFrame, PolarsResult, UnionArgs};
+use crate::cell::Cell;
+use crate::cell_container::CellContainer;
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -15,6 +19,7 @@ pub struct IoManager {
     pub image_period: u32,
     pub image_format: String,
     pub movie_maker: Option<MovieMaker>,
+    // TODO: Can we do something smarter about this? Maybe using dynamic dispatch
     pub plots: PlotParameters
 }
 
@@ -32,8 +37,17 @@ impl IoManager {
             image_format,
             plots,
             movie_maker
-
         }
+    }
+
+    pub fn cell_df(
+        &self,
+        ponds: &Vec<Pond>,
+    ) -> PolarsResult<LazyFrame> {
+        let mut dfs = vec![];
+        for pond in ponds {
+        }
+        concat(dfs, UnionArgs::default())
     }
 
     pub fn image_io(
@@ -210,5 +224,27 @@ impl IoManager {
             )
         )?;
         Ok(())
+    }
+}
+
+pub trait ToDataFrame {
+    fn to_dataframe(&self) -> PolarsResult<DataFrame>;
+}
+
+impl<G> ToDataFrame for CellContainer<Cell<G>> {
+    fn to_dataframe(&self) -> PolarsResult<DataFrame> {
+        df!(
+            "spin" => self.iter().map(|cell| cell.spin).collect::<Vec<_>>(),
+            "mom" => self.iter().map(|cell| cell.mom).collect::<Vec<_>>(),
+            "area" => self.iter().map(|cell| cell.area).collect::<Vec<_>>(),
+            "target_area" => self.iter().map(|cell| cell.target_area).collect::<Vec<_>>(),
+            "divide_area" => self.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
+            "center_x" => self.iter().map(|cell| cell.center.x).collect::<Vec<_>>(),
+            "center_y" => self.iter().map(|cell| cell.center.y).collect::<Vec<_>>(),
+            "chem_center_x" => self.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
+            "chem_center_y" => self.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
+            "chem_mass" => self.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
+            "cell_type" => self.iter().map(|cell| cell.cell_type as u32).collect::<Vec<_>>()
+        )
     }
 }

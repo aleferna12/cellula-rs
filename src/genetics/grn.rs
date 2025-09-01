@@ -1,56 +1,16 @@
-use crate::genome::GrnGeneType::{Input, Output, Regulatory};
+use crate::genetics::genome::Genome;
+use crate::genetics::grn::GrnGeneType::{Input, Output, Regulatory};
 use rand::Rng;
 use rand_distr::Distribution;
 use rand_distr::Normal;
-use rustworkx_core::petgraph::prelude::{DiGraph, NodeIndex};
-
-pub trait Genome {
-    fn attempt_mutate(&mut self, rng: &mut impl Rng) -> bool;
-    fn update_expression(&mut self);
-}
-
-/// This is a fake genome that just cycles through a boolean `state`.
-#[derive(Clone, Debug)]
-pub struct MockGenome {
-    period_updates: u32,
-    counter: u32,
-    state: bool
-}
-
-impl MockGenome {
-    /// Makes a new `MockGenome` with a specified period.
-    ///
-    /// `period_updates` is the period for which each cell type will last for.
-    /// The unit is the number of `update_expression()` calls, not MCS.
-    pub fn new(period_updates: u32) -> Self {
-        Self {
-            period_updates,
-            counter: 0,
-            state: false,
-        }
-    }
-}
-
-impl Genome for MockGenome {
-    fn attempt_mutate(&mut self, _rng: &mut impl Rng) -> bool {
-        false
-    }
-
-    fn update_expression(&mut self) {
-        self.counter += 1;
-        if self.counter > self.period_updates {
-            self.state = !self.state;
-            self.counter = 0;
-        }
-    }
-}
+use rustworkx_core::petgraph::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct Grn<const I: usize, const O: usize> {
     graph: DiGraph<GrnGeneType, f32>,
     input_ids: [NodeIndex; I],
     output_ids: [NodeIndex; O],
-    regulatory_ids: Vec<NodeIndex>,
+    regulatory_ids: Box<[NodeIndex]>,
     mut_rate: f32,
     mut_distr: Normal<f32>,
     pub input_signals: [f32; I]
@@ -301,7 +261,7 @@ pub enum GrnGeneType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{SeedableRng};
+    use rand::SeedableRng;
     use rand_xoshiro::Xoshiro256StarStar;
 
     fn fixed_sampler() -> impl FnMut() -> f32 {
@@ -312,26 +272,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn mockgenome_cycles_state_after_period() {
-        let mut g = MockGenome::new(2);
-        assert_eq!(g.state, false);
-
-        g.update_expression(); // counter=1
-        assert_eq!(g.state, false);
-
-        g.update_expression(); // counter=2
-        assert_eq!(g.state, false);
-
-        g.update_expression(); // counter resets, state flips
-        assert_eq!(g.state, true);
-        assert_eq!(g.counter, 0);
-    }
-
     // ---------- GRN Tests ----------
 
     #[test]
-    fn grn_graph_has_expected_nodes_and_edges() {
+    fn graph_has_expected_nodes_and_edges() {
         let grn: Grn<2, 1> = Grn::new([1.0, 2.0], 1, 0.1, 0.5, fixed_sampler());
 
         // 2 input + 1 output + 1 regulatory

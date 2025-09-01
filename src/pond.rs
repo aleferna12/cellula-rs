@@ -1,10 +1,11 @@
-use rand::Rng;
 use crate::adhesion::ClonalAdhesion;
 use crate::cell::{Cell, Cellular, Fit, RelCell};
 use crate::cellular_automata::CellularAutomata;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::environment::{Environment, LatticeEntity};
-use crate::genome::{Genome, Grn};
+use crate::genetics::genome::Genome;
+use crate::genetics::grn::Grn;
+use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
 
 // TODO: this struct can be made general if CellularAutomata is also general

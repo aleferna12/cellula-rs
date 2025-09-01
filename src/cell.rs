@@ -1,6 +1,8 @@
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::genome::{Genome, Grn, MockGenome};
+use crate::genetics::genome::Genome;
+use crate::genetics::grn::Grn;
+use crate::genetics::mock_genome::MockGenome;
 use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
@@ -47,7 +49,7 @@ pub trait Fit {
 pub struct RelCell<C> {
     pub spin: Spin,
     pub mom: Spin,
-    pub(crate) cell: C
+    pub cell: C
 }
 
 impl<C> RelCell<C> {
@@ -279,7 +281,7 @@ fn shifted_com<B: Boundary<Coord = f32>>(
     bound.valid_pos(new_com).expect("shifted the center to outside the available space").into()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum CellType {
     Migrate,
     Divide
@@ -288,7 +290,7 @@ pub enum CellType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::genome::MockGenome;
+    use crate::genetics::mock_genome::MockGenome;
     use crate::positional::boundary::UnsafePeriodicBoundary;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;

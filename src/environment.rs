@@ -2,7 +2,6 @@ use crate::cell::{CanDivide, Cell, Cellular, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
-use crate::genome::{Grn, MockGenome};
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
@@ -14,6 +13,7 @@ use rand::Rng;
 use rustworkx_core::petgraph::prelude::UnGraph;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use crate::genetics::mock_genome::MockGenome;
 
 pub struct Environment<C, N, B: AsLatticeBoundary> {
     pub space: Space<B>,
@@ -249,30 +249,22 @@ where B: AsLatticeBoundary<Coord = f32> {
 }
 
 impl<C: Cellular + ChemSniffer, N: Neighbourhood, B: AsLatticeBoundary<Coord = f32>> Environment<C, N, B> {
-    pub fn spawn_cells_random(
+    pub fn spawn_cell_random(
         &mut self,
-        n_cells: Spin,
         cell_area: u32,
         empty_cell: C,
         rng: &mut impl Rng,
-    ) -> u32
+    ) -> Option<&RelCell<C>>
     where C: Clone {
         let cell_side = (cell_area as f32).sqrt() as usize;
-        let mut count = 0;
-        for _ in 0..n_cells {
-            let pos = self.space.cell_lattice.random_pos(rng);
-            let spawned = self.spawn_rect_cell(
-                Rect::new(
-                    pos,
-                    (pos.x + cell_side, pos.y + cell_side).into()
-                ),
-                empty_cell.clone()
-            );
-            if spawned.is_some() {
-                count += 1;
-            }
-        }
-        count
+        let pos = self.space.cell_lattice.random_pos(rng);
+        self.spawn_rect_cell(
+            Rect::new(
+                pos,
+                (pos.x + cell_side, pos.y + cell_side).into()
+            ),
+            empty_cell.clone()
+        )
     }
 
     pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>> {
@@ -445,7 +437,6 @@ impl LatticeEntity<()> {
 pub mod tests {
     use super::*;
     use crate::cell::Cell;
-    use crate::genome::MockGenome;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
