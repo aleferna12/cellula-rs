@@ -2,7 +2,6 @@ use crate::cell::{CanDivide, Cell, Cellular, ChemSniffer, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::{BoundaryType, NeighbourhoodType, Spin};
 use crate::environment::LatticeEntity::*;
-use crate::genome::{MockGenome};
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
@@ -14,6 +13,7 @@ use rand::Rng;
 use rustworkx_core::petgraph::prelude::UnGraph;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use crate::genetics::mock_genome::MockGenome;
 
 pub struct Environment<C, N, B: AsLatticeBoundary> {
     pub space: Space<B>,
@@ -431,7 +431,6 @@ impl LatticeEntity<()> {
 pub mod tests {
     use super::*;
     use crate::cell::Cell;
-    use crate::genome::MockGenome;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 

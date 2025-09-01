@@ -6,7 +6,7 @@ use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use std::cmp::max;
-use std::collections::{HashSet};
+use std::collections::HashSet;
 use std::error::Error;
 use std::f32::consts::PI;
 
@@ -152,7 +152,7 @@ mod tests {
     use super::*;
     use crate::cell::{Cell, RelCell};
     use crate::constants::BoundaryType;
-    use crate::genome::MockGenome;
+    use crate::genetics::mock_genome::MockGenome;
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
 

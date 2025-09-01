@@ -1,6 +1,8 @@
 use crate::constants::Spin;
 use crate::environment::LatticeEntity;
-use crate::genome::{Genome, Grn, MockGenome};
+use crate::genetics::genome::Genome;
+use crate::genetics::grn::Grn;
+use crate::genetics::mock_genome::MockGenome;
 use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
@@ -288,7 +290,7 @@ pub enum CellType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::genome::MockGenome;
+    use crate::genetics::mock_genome::MockGenome;
     use crate::positional::boundary::UnsafePeriodicBoundary;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;

@@ -10,6 +10,6 @@ pub mod constants;
 pub mod cell_container;
 pub mod symmetric_table;
 pub mod space;
-pub mod genome;
+pub mod genetics;
 pub mod model;
 pub mod ecology;

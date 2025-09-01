@@ -1,7 +1,3 @@
-use std::error::Error;
-use rand::distr::{Distribution, Uniform};
-use rand::{RngCore, SeedableRng};
-use rand_xoshiro::Xoshiro256StarStar;
 use crate::adhesion::{ClonalAdhesion, StaticAdhesion};
 use crate::cell::Cell;
 use crate::cell_container::CellContainer;
@@ -11,13 +7,17 @@ use crate::ecology::disperser::{Disperser, SelectiveDispersion};
 use crate::ecology::selector::WeightedOrderedSelection;
 use crate::ecology::transporter::{Transporter, WipeOut};
 use crate::environment::{Environment, LatticeEntity};
-use crate::genome::Grn;
+use crate::genetics::grn::Grn;
 use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::pond::Pond;
 use crate::positional::rect::Rect;
 use crate::space::Space;
+use rand::distr::{Distribution, Uniform};
+use rand::{RngCore, SeedableRng};
+use rand_xoshiro::Xoshiro256StarStar;
+use std::error::Error;
 
 pub struct Model {
     pub ponds: Vec<Pond>,

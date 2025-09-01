@@ -6,13 +6,10 @@ use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use std::vec::IntoIter;
 use polars::df;
-use polars::functions::concat_df_horizontal;
 use polars::prelude::{concat, DataFrame, IntoLazy, LazyFrame, PolarsResult, UnionArgs};
 use crate::cell::Cell;
 use crate::cell_container::CellContainer;
-use crate::genome::Grn;
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";

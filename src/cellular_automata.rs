@@ -1,14 +1,14 @@
 use crate::adhesion::AdhesionSystem;
 use crate::cell::{CanMigrate, Cellular, ChemSniffer, RelCell};
-use crate::environment::{EdgesUpdate, Environment};
+use crate::constants::Spin;
 use crate::environment::LatticeEntity;
 use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
+use crate::environment::{EdgesUpdate, Environment};
 use crate::positional::boundary::{AsLatticeBoundary, Boundary};
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use rand::Rng;
 use std::f32::consts::E;
-use crate::constants::Spin;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -220,7 +220,7 @@ mod tests {
     use super::*;
     use crate::adhesion::{ClonalAdhesion, StaticAdhesion};
     use crate::cell::Cell;
-    use crate::genome::MockGenome;
+    use crate::genetics::mock_genome::MockGenome;
 
     #[test]
     fn test_delta_hamiltonian_size() {

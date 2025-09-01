@@ -1,18 +1,18 @@
-use std::default::Default;
 use criterion::BatchSize;
 use criterion::{criterion_group, criterion_main, Criterion};
+use evo_cpm::cell::Cell;
 use evo_cpm::environment::LatticeEntity::*;
 use evo_cpm::environment::{Environment, LatticeEntity};
+use evo_cpm::genetics::mock_genome::MockGenome;
+use evo_cpm::positional::boundary::{AsLatticeBoundary, Boundary, UnsafePeriodicBoundary};
 use evo_cpm::positional::edge::Edge;
 use evo_cpm::positional::pos::Pos;
 use evo_cpm::positional::rect::Rect;
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
+use std::default::Default;
 use std::hint::black_box;
-use evo_cpm::cell::Cell;
-use evo_cpm::genome::MockGenome;
-use evo_cpm::positional::boundary::{AsLatticeBoundary, Boundary, UnsafePeriodicBoundary};
 
 fn random_neighbour<C, N>(
     env: &Environment<C, N, impl AsLatticeBoundary>,

@@ -2,11 +2,11 @@ use crate::cell::{Cellular, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
 use crate::environment::{Environment, LatticeEntity};
+use crate::positional::boundary::AsLatticeBoundary;
+use crate::positional::neighbourhood::Neighbourhood;
 use crate::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
 use std::fmt::Debug;
-use crate::positional::boundary::AsLatticeBoundary;
-use crate::positional::neighbourhood::Neighbourhood;
 
 pub trait AdhesionSystem {
     fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32;
@@ -121,7 +121,7 @@ mod tests {
     use super::*;
     use crate::cell::{Cell, RelCell};
     use crate::constants::Spin;
-    use crate::genome::MockGenome;
+    use crate::genetics::mock_genome::MockGenome;
 
     // Helper to create a RelCell with given spin and mom by mocking and overriding
     fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<Cell<MockGenome>> {
