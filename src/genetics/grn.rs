@@ -62,7 +62,6 @@ impl<const I: usize, const O: usize> Grn<I, O> {
                 grn.graph.add_edge(reg, output, sampler());
             }
         }
-        println!("{:?}", &grn.graph.edge_references());
         grn
     }
 
