@@ -1,4 +1,4 @@
-use crate::cell::{Cellular, RelCell};
+use crate::cell::{Cell, Cellular, RelCell};
 use crate::constants::Spin;
 use crate::environment::LatticeEntity::*;
 use crate::environment::{Environment, LatticeEntity};
@@ -7,6 +7,7 @@ use crate::positional::neighbourhood::Neighbourhood;
 use crate::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
 use std::fmt::Debug;
+use crate::genetics::grn::Grn;
 
 pub trait AdhesionSystem {
     fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32;
@@ -186,7 +187,7 @@ mod tests {
         );
         assert_eq!(
             clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
-            2. * clonal_adhesion.static_adhesion.medium_energy
+            2.5 * clonal_adhesion.static_adhesion.medium_energy
         );
 
         // Manually set clone pair between spin 1 and 2

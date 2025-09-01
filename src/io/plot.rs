@@ -14,7 +14,7 @@ use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-use crate::genome::Grn;
+use crate::genetics::grn::Grn;
 
 pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);

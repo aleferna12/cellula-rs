@@ -13,6 +13,7 @@ use rand::Rng;
 use rustworkx_core::petgraph::prelude::UnGraph;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use crate::genetics::grn::Grn;
 use crate::genetics::mock_genome::MockGenome;
 
 pub struct Environment<C, N, B: AsLatticeBoundary> {
