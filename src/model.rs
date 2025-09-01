@@ -175,6 +175,9 @@ impl Model {
                 }
             }
         }
+        // TODO: integrate into the loop
+        println!("{}", self.io.cell_attrs_df(&self.ponds).unwrap().collect().unwrap());
+        println!("{}", serde_json::to_string(&self.io.cell_genomes(&self.ponds)).unwrap());
     }
 
     pub fn run(&mut self) {

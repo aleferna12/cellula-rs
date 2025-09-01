@@ -7,9 +7,12 @@ use image::{GenericImage, RgbaImage};
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use polars::df;
-use polars::prelude::{concat, DataFrame, IntoLazy, LazyFrame, PolarsResult, UnionArgs};
-use crate::cell::Cell;
+use polars::prelude::{concat, lit, DataFrame, IntoLazy, LazyFrame, PolarsResult, UnionArgs};
+use crate::cell::{CanDivide, Cell, Cellular};
 use crate::cell_container::CellContainer;
+use crate::genetics::genome::Genome;
+use crate::genetics::grn::{EdgeWeight, GrnGeneType};
+use crate::io::node_link::{NodeLinkData, ToNodeLink};
 
 pub(crate) static IMAGES_PATH: &str = "images";
 pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
@@ -40,14 +43,32 @@ impl IoManager {
         }
     }
 
-    pub fn cell_df(
+    pub fn cell_attrs_df(
         &self,
-        ponds: &Vec<Pond>,
+        ponds: &[Pond],
     ) -> PolarsResult<LazyFrame> {
         let mut dfs = vec![];
-        for pond in ponds {
+        for (i, pond) in ponds.iter().enumerate() {
+            let cell_df = pond.env.cells.to_dataframe()?.lazy();
+            dfs.push(cell_df.with_column(lit(i as u32).alias("pond")));
         }
         concat(dfs, UnionArgs::default())
+    }
+
+    pub fn cell_genomes(
+        &self,
+        ponds: &[Pond]
+    ) -> Vec<NodeLinkData<GrnGeneType, EdgeWeight>> {
+        let mut res = vec![];
+        for (i, pond) in ponds.iter().enumerate() {
+            for cell in pond.env.cells.iter() {
+                let mut node_link = cell.genome.to_node_link();
+                node_link.graph.insert("pond".to_string(), serde_json::json!(i));
+                node_link.graph.insert("spin".to_string(), serde_json::json!(cell.spin));
+                res.push(node_link);
+            }
+        }
+        res
     }
 
     pub fn image_io(
@@ -222,24 +243,28 @@ impl IoManager {
     }
 }
 
-pub trait ToDataFrame {
+trait ToDataFrame {
     fn to_dataframe(&self) -> PolarsResult<DataFrame>;
 }
 
-impl<G> ToDataFrame for CellContainer<Cell<G>> {
+impl<G> ToDataFrame for CellContainer<Cell<G>>
+where
+    Cell<G>: CanDivide,
+    G: Genome + Clone {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
+        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
-            "spin" => self.iter().map(|cell| cell.spin).collect::<Vec<_>>(),
-            "mom" => self.iter().map(|cell| cell.mom).collect::<Vec<_>>(),
-            "area" => self.iter().map(|cell| cell.area).collect::<Vec<_>>(),
-            "target_area" => self.iter().map(|cell| cell.target_area).collect::<Vec<_>>(),
-            "divide_area" => self.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
-            "center_x" => self.iter().map(|cell| cell.center.x).collect::<Vec<_>>(),
-            "center_y" => self.iter().map(|cell| cell.center.y).collect::<Vec<_>>(),
-            "chem_center_x" => self.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
-            "chem_center_y" => self.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
-            "chem_mass" => self.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
-            "cell_type" => self.iter().map(|cell| cell.cell_type as u32).collect::<Vec<_>>()
+            "spin" => valid.iter().map(|cell| cell.spin).collect::<Vec<_>>(),
+            "mom" => valid.iter().map(|cell| cell.mom).collect::<Vec<_>>(),
+            "area" => valid.iter().map(|cell| cell.area).collect::<Vec<_>>(),
+            "target_area" => valid.iter().map(|cell| cell.target_area).collect::<Vec<_>>(),
+            "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
+            "center_x" => valid.iter().map(|cell| cell.center.x).collect::<Vec<_>>(),
+            "center_y" => valid.iter().map(|cell| cell.center.y).collect::<Vec<_>>(),
+            "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
+            "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
+            "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
+            "cell_type" => valid.iter().map(|cell| cell.cell_type as u32).collect::<Vec<_>>()
         )
     }
 }

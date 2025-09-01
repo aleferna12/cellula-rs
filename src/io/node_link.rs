@@ -19,7 +19,7 @@ pub struct Link<E> {
 pub struct NodeLinkData<N, E> {
     pub directed: bool,
     pub multigraph: bool,
-    pub graph: serde_json::Value, // empty object {}
+    pub graph: serde_json::Map<String, serde_json::Value>,
     pub nodes: Vec<Node<N>>,
     pub links: Vec<Link<E>>,
 }

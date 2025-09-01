@@ -65,7 +65,6 @@ impl<const I: usize, const O: usize> Grn<I, O> {
                 grn.graph.add_edge(reg, output, sampler());
             }
         }
-        println!("{}", serde_json::to_string(&grn.to_node_link()).unwrap());
         grn
     }
 
@@ -251,14 +250,14 @@ impl<const I: usize, const O: usize> ToNodeLink for Grn<I, O> {
             .map(|e| Link {
                 source: e.source().index(),
                 target: e.target().index(),
-                data: EdgeWeight { weight: e.weight().clone() },
+                data: EdgeWeight { weight: *e.weight() },
             })
             .collect();
 
         NodeLinkData {
             directed: true,
             multigraph: false,
-            graph: serde_json::json!({}),
+            graph: serde_json::Map::new(),
             nodes,
             links,
         }
