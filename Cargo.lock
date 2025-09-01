@@ -1013,7 +1013,6 @@ dependencies = [
  "minifb",
  "num",
  "palette",
- "petgraph-graphml",
  "planus",
  "polars",
  "rand 0.9.2",
@@ -2423,16 +2422,6 @@ dependencies = [
  "hashbrown 0.15.3",
  "indexmap",
  "serde",
-]
-
-[[package]]
-name = "petgraph-graphml"
-version = "5.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18e8697802703811a7d421bf4da49b69ae6b4ce18e52236c98d2175d71d4538e"
-dependencies = [
- "petgraph",
- "xml-rs",
 ]
 
 [[package]]
