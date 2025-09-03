@@ -1,12 +1,13 @@
-use crate::cell::{Cellular, RelCell};
+use crate::cellular::{Cellular, RelCell};
 use crate::constants::Spin;
-use crate::environment::LatticeEntity::*;
-use crate::environment::{Environment, LatticeEntity};
+use crate::environment::Environment;
 use crate::positional::boundary::AsLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
 use std::fmt::Debug;
+use crate::lattice_entity::LatticeEntity;
+use crate::lattice_entity::LatticeEntity::SomeCell;
 
 pub trait AdhesionSystem {
     fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32;
@@ -119,7 +120,6 @@ impl AdhesionSystem for StaticAdhesion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cell::{Cell, RelCell};
     use crate::constants::Spin;
     use crate::genetics::mock_genome::MockGenome;
 
