@@ -7,43 +7,128 @@ use image::{GenericImage, RgbaImage};
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use polars::df;
-use polars::prelude::{concat, lit, DataFrame, IntoLazy, LazyFrame, PolarsResult, UnionArgs};
+use polars::prelude::{concat, lit, DataFrame, IntoLazy, LazyFrame, ParquetWriter, PolarsResult, UnionArgs};
+use serde::Serialize;
 use crate::cell::{CanDivide, Cell, Cellular};
 use crate::cell_container::CellContainer;
+use crate::constants::Spin;
 use crate::genetics::genome::Genome;
 use crate::genetics::grn::{EdgeWeight, GrnGeneType};
 use crate::io::node_link::{NodeLinkData, ToNodeLink};
 
-pub(crate) static IMAGES_PATH: &str = "images";
-pub(crate) static CONFIG_COPY_PATH: &str = "config.toml";
+static IMAGES_PATH: &str = "images";
+static CELLS_PATH: &str = "cells";
+static GENOMES_PATH: &str = "genomes";
+static LATTICES_PATH: &str = "lattices";
+static CONFIG_COPY_PATH: &str = "config.toml";
 
 pub struct IoManager {
     pub outdir: PathBuf,
-    pub image_period: u32,
     pub image_format: String,
     pub movie_maker: Option<MovieMaker>,
     // TODO: Can we do something smarter about this? Maybe using dynamic dispatch
-    pub plots: PlotParameters
+    pub plots: PlotParameters,
+    image_period: u32,
+    cell_period: u32,
+    genome_period: u32,
+    lattice_period: u32,
 }
 
 impl IoManager {
     pub fn new(
         outdir: impl AsRef<Path>,
-        image_period: u32,
         image_format: String,
+        image_period: u32,
+        cell_period: u32,
+        genome_period: u32,
+        lattice_period: u32,
         plots: PlotParameters,
-        movie_maker: Option<MovieMaker>
+        movie_maker: Option<MovieMaker>,
     ) -> Self {
         Self {
             outdir: outdir.as_ref().to_path_buf(),
-            image_period,
             image_format,
             plots,
-            movie_maker
+            movie_maker,
+            image_period,
+            cell_period,
+            genome_period,
+            lattice_period,
         }
     }
 
-    pub fn cell_attrs_df(
+    pub fn create_directories(&self, replace_outdir: bool) -> std::io::Result<()> {
+        let outdir_exists = self.outdir.try_exists()?;
+        if outdir_exists {
+            if replace_outdir {
+                log::info!("Cleaning contents of '{}'", self.outdir.display());
+                std::fs::remove_dir_all(&self.outdir)?;
+            } else {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::AlreadyExists,
+                    "`outdir` already exists and `replace_outdir` is `false`"
+                ));
+            }
+        }
+        std::fs::create_dir_all(&self.outdir)?;
+        std::fs::create_dir(self.outdir.join(IMAGES_PATH))?;
+        std::fs::create_dir(self.outdir.join(CELLS_PATH))?;
+        std::fs::create_dir(self.outdir.join(GENOMES_PATH))?;
+        std::fs::create_dir(self.outdir.join(LATTICES_PATH))
+    }
+
+    pub fn create_parameters_file(&self, parameters: &Parameters) -> Result<(), Box<dyn Error>> {
+        let params_copy = self.outdir.join(CONFIG_COPY_PATH);
+        std::fs::write(
+            params_copy,
+            format!(
+                "{}\n{}",
+                "# This is a copy of the parameters used in the simulation",
+                toml::to_string(parameters)?
+            )
+        )?;
+        Ok(())
+    }
+
+    pub fn try_io(
+        &mut self,
+        time_step: u32,
+        ponds: &[Pond]
+    ) -> Result<(), Box<dyn Error>> {
+        self.try_data_io(time_step, ponds)?;
+        self.try_image_io(time_step, ponds)
+    }
+
+    fn try_data_io(
+        &self,
+        time_step: u32,
+        ponds: &[Pond]
+    ) -> Result<(), Box<dyn Error>> {
+        let time_str = time_step.to_string();
+        if time_step % self.cell_period == 0 {
+            let mut celldf = self.make_cell_dataframe(ponds)?.collect()?;
+            let file_name = format!("{time_str}.parquet");
+            let file = std::fs::File::create(self.outdir.join(CELLS_PATH).join(file_name))?;
+            ParquetWriter::new(file).finish(&mut celldf)?;
+        }
+
+        if time_step % self.genome_period == 0 {
+            let genomes = self.make_cell_node_links(ponds);
+            let json = serde_json::to_string(&genomes)?;
+            let file_name = format!("{time_str}.json");
+            std::fs::write(self.outdir.join(GENOMES_PATH).join(file_name), json)?;
+        }
+
+        if time_step % self.lattice_period == 0 {
+            let lattices = self.make_cell_lattices(ponds);
+            let json = serde_json::to_string(&lattices)?;
+            let file_name = format!("{time_str}.json");
+            std::fs::write(self.outdir.join(LATTICES_PATH).join(file_name), json)?;
+        }
+        Ok(())
+    }
+
+    fn make_cell_dataframe(
         &self,
         ponds: &[Pond],
     ) -> PolarsResult<LazyFrame> {
@@ -55,7 +140,7 @@ impl IoManager {
         concat(dfs, UnionArgs::default())
     }
 
-    pub fn cell_genomes(
+    fn make_cell_node_links(
         &self,
         ponds: &[Pond]
     ) -> Vec<NodeLinkData<GrnGeneType, EdgeWeight>> {
@@ -71,11 +156,23 @@ impl IoManager {
         res
     }
 
-    pub fn image_io(
+    fn make_cell_lattices<'a>(&self, ponds: &'a [Pond]) -> Vec<PondCellLatttice<'a>> {
+        let mut res = vec![];
+        for (i, pond) in ponds.iter().enumerate() {
+            res.push(PondCellLatttice {
+                pond: i as u32,
+                lattice: pond.env.space.cell_lattice.as_array()
+            })
+        }
+        res
+    }
+
+    fn try_image_io(
         &mut self,
         time_step: u32,
-        ponds: &Vec<Pond>,
+        ponds: &[Pond],
     ) -> Result<(), Box<dyn Error>> {
+        // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
         let movie_update = if let Some(mm) = &self.movie_maker {
             time_step % mm.frame_period == 0 && mm.window_works()
@@ -83,7 +180,7 @@ impl IoManager {
             false
         };
         if movie_update {
-            frame = Some(self.simulation_image(ponds)?);
+            frame = Some(self.make_simulation_image(ponds)?);
             let mm = self.movie_maker.as_mut().unwrap();
             let resized = image::imageops::resize(
                 frame.as_ref().unwrap(),
@@ -96,20 +193,20 @@ impl IoManager {
 
         if time_step % self.image_period == 0 {
             if frame.is_none() {
-                frame = Some(self.simulation_image(ponds)?);
+                frame = Some(self.make_simulation_image(ponds)?);
             }
             frame.unwrap().save(
                 &self.outdir
                     .join(IMAGES_PATH)
                     .join(format!("{time_step}.{}", self.image_format.to_lowercase())
-            ))?;
+                    ))?;
         }
         Ok(())
     }
 
-    pub fn simulation_image(
-        &self, 
-        ponds: &Vec<Pond>
+    pub fn make_simulation_image(
+        &self,
+        ponds: &[Pond]
     ) -> Result<RgbaImage, HexError> {
         let mut images = vec![];
         for pond in ponds {
@@ -186,7 +283,7 @@ impl IoManager {
         Ok(grid)
     }
 
-    pub fn grid_layout(images: &[RgbaImage]) -> Option<RgbaImage> {
+    fn grid_layout(images: &[RgbaImage]) -> Option<RgbaImage> {
         if images.is_empty() {
             return None;
         }
@@ -211,36 +308,6 @@ impl IoManager {
 
         Some(result)
     }
-
-    pub fn create_directories(&self, replace_outdir: bool) -> std::io::Result<()> {
-        let outdir_exists = self.outdir.try_exists()?;
-        if outdir_exists {
-            if replace_outdir {
-                log::info!("Cleaning contents of '{}'", self.outdir.display());
-                std::fs::remove_dir_all(&self.outdir)?;
-            } else {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::AlreadyExists,
-                    "`outdir` already exists and `replace_outdir` is `false`"
-                ));
-            }
-        }
-        std::fs::create_dir_all(&self.outdir)?;
-        std::fs::create_dir(self.outdir.join(IMAGES_PATH))
-    }
-
-    pub fn create_parameters_file(&self, parameters: &Parameters) -> Result<(), Box<dyn Error>> {
-        let params_copy = self.outdir.join(CONFIG_COPY_PATH);
-        std::fs::write(
-            params_copy,
-            format!(
-                "{}\n{}",
-                "# This is a copy of the parameters used in the simulation",
-                toml::to_string(parameters)?
-            )
-        )?;
-        Ok(())
-    }
 }
 
 trait ToDataFrame {
@@ -264,7 +331,13 @@ where
             "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
             "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
-            "cell_type" => valid.iter().map(|cell| cell.cell_type as u32).collect::<Vec<_>>()
+            "cell_type" => valid.iter().map(|cell| cell.is_dividing()).collect::<Vec<_>>()
         )
     }
+}
+
+#[derive(Serialize)]
+struct PondCellLatttice<'a> {
+    pond: u32,
+    lattice: &'a[Spin]
 }

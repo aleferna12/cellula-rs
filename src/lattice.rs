@@ -37,6 +37,10 @@ impl<T> Lattice<T> {
     pub fn iter_values(&self) -> impl Iterator<Item = &T> { self.array.iter() }
     
     pub fn iter_values_mut(&mut self) -> impl Iterator<Item = &mut T> { self.array.iter_mut() }
+
+    pub fn as_array(&self) -> &[T] {
+        &self.array
+    }
 }
 
 impl<T: Default + Clone> Lattice<T> {

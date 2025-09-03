@@ -78,6 +78,12 @@ outdir = "examples/1_cell"
 replace-outdir = true
 # Period (in MCS) with which to save an image of the simulation.
 image-period = 2048
+# Period (in MCS) with which to save a parquet file containing cell attributes.
+cell-period = 2048
+# Period (in MCS) with which to save a JSON file in the node-link format containing the cell's genomes.
+genome-period = 4096
+# Period (in MCS) with which to save a JSON file containing the cell lattices for each pond.
+lattice-period = 4096
 # Format used to save images.
 # Supports any format supported by the `image` crate.
 # [default = "webp"]

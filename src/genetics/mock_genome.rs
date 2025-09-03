@@ -6,7 +6,7 @@ use rand::Rng;
 pub struct MockGenome {
     period_updates: u32,
     counter: u32,
-    state: bool
+    pub state: bool
 }
 
 impl MockGenome {

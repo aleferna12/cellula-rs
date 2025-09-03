@@ -37,8 +37,11 @@ impl Model {
 
         let io = IoManager::new(
             &parameters.io.outdir,
-            parameters.io.image_period,
             parameters.io.image_format.clone(),
+            parameters.io.image_period,
+            parameters.io.cell_period,
+            parameters.io.genome_period,
+            parameters.io.lattice_period,
             parameters.io.plot.clone(),
             if parameters.io.movie.show {
                 match MovieMaker::new(
@@ -146,7 +149,7 @@ impl Model {
 
     pub fn run_for(&mut self, time_steps: u32) {
         for time_step in 0..=time_steps {
-            let saved = self.io.image_io(
+            let saved = self.io.try_io(
                 time_step,
                 &self.ponds
             );
@@ -175,9 +178,6 @@ impl Model {
                 }
             }
         }
-        // TODO: integrate into the loop
-        println!("{}", self.io.cell_attrs_df(&self.ponds).unwrap().collect().unwrap());
-        println!("{}", serde_json::to_string(&self.io.cell_genomes(&self.ponds)).unwrap());
     }
 
     pub fn run(&mut self) {

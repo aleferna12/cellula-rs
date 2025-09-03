@@ -126,6 +126,9 @@ pub struct IoParameters {
     #[serde(default = "param_defaults::false_flag")]
     pub replace_outdir: bool,
     pub image_period: u32,
+    pub cell_period: u32,
+    pub genome_period: u32,
+    pub lattice_period: u32,
     #[serde(default = "param_defaults::webp")]
     pub image_format: String,
     pub movie: MovieParameters,

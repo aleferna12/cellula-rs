@@ -38,6 +38,9 @@ solid-energy = 16.0
 outdir = "benches/model_outputs/large_lattice"
 replace-outdir = true
 image-period = 1000
+cell-period = 1000
+genome-period = 1000
+lattice-period = 1000
 image-format = "webp"
 
 [io.movie]

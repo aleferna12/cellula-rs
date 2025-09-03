@@ -24,7 +24,7 @@ fn bench_io(c: &mut Criterion) {
                     model
                 },
                 |model| {
-                    model.io.simulation_image(&model.ponds).unwrap();
+                    model.io.make_simulation_image(&model.ponds).unwrap();
                 },
                 BatchSize::LargeInput
             )}

@@ -85,7 +85,6 @@ pub struct Cell<G> {
     pub center: Pos<f32>,
     pub chem_center: Pos<f32>,
     pub chem_mass: f32,
-    pub cell_type: CellType,
     pub genome: G
 }
 
@@ -99,7 +98,6 @@ impl<G> Cell<G> {
             center: Pos::new(0., 0.),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0.,
-            cell_type: CellType::Migrate,
             genome
         }
     }
@@ -223,13 +221,13 @@ impl ChemSniffer for Cell<Grn<1, 1>> {
 
 impl CanMigrate for Cell<MockGenome> {
     fn is_migrating(&self) -> bool {
-        matches!(self.cell_type, CellType::Migrate)
+        self.genome.state
     }
 }
 
 impl CanDivide for Cell<MockGenome> {
     fn is_dividing(&self) -> bool {
-        matches!(self.cell_type, CellType::Divide)
+        !self.is_migrating()
     }
 
     fn divide_area(&self) -> u32 {
@@ -279,12 +277,6 @@ fn shifted_com<B: Boundary<Coord = f32>>(
     );
     // We call this to rewrap the position if necessary
     bound.valid_pos(new_com).expect("shifted the center to outside the available space").into()
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum CellType {
-    Migrate,
-    Divide
 }
 
 #[cfg(test)]

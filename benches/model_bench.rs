@@ -13,7 +13,7 @@ fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {
         .filter_map(|entry| match entry {
             Ok(e) => {
                 let p = e.path();
-                if !p.is_file() || !p.extension().unwrap().eq_ignore_ascii_case("toml") {
+                if !p.is_file() || !p.extension().is_some_and(|ex| ex.eq_ignore_ascii_case("toml")) {
                     return None;
                 }
                 let bench_name = p.file_stem()
