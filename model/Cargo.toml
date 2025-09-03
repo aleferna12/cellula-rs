@@ -4,12 +4,17 @@ version = "0.0.1"
 edition = "2024"
 description = "A really fast, extensible CPM implementation."
 
-[profile.fastest]
-inherits = "release"
-# These flags can drive up compilation time quite significantly,
-# but they do have a measurable effect on performance
-lto = "fat"
-codegen-units = 1
+[[bench]]
+name = "main"
+harness = false
+
+[[bench]]
+name = "model_bench"
+harness = false
+
+[[bench]]
+name = "io_bench"
+harness = false
 
 [dependencies]
 cellulars-lib = { path = "../cellulars-lib" }
@@ -39,19 +44,3 @@ toml = "0.8.23"
 
 [dev-dependencies]
 criterion = { version = "0.6.0", features = ["html_reports"] }
-
-[[bench]]
-name = "main"
-harness = false
-
-[[bench]]
-name = "env_bench"
-harness = false
-
-[[bench]]
-name = "model_bench"
-harness = false
-
-[[bench]]
-name = "io_bench"
-harness = false

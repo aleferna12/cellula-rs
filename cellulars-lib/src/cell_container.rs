@@ -1,25 +1,15 @@
-use crate::cell::{Cellular, RelCell};
+use crate::cellular::{Cellular, RelCell};
 use crate::constants::Spin;
-use crate::environment::LatticeEntity;
-use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
+use crate::lattice_entity::LatticeEntity;
+use crate::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
 
 pub struct CellContainer<C> {
-    pub target_area: u32,
-    pub divide: bool,
-    pub migrate: bool,
     vec: Vec<RelCell<C>>
 }
 
 impl<C> CellContainer<C> {
-    pub fn new(
-        target_area: u32,
-        divide: bool,
-        migrate: bool
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
-            target_area,
-            divide,
-            migrate,
             vec: vec![],
         }
     }
@@ -104,5 +94,11 @@ impl<C: Cellular> CellContainer<C> {
             self.replace(rel_cell);
         }
         &self.vec[index as usize]
+    }
+}
+
+impl<C> Default for CellContainer<C> {
+    fn default() -> Self {
+        Self::new()
     }
 }

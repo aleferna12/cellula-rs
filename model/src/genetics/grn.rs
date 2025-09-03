@@ -4,9 +4,7 @@ use rand::Rng;
 use rand_distr::Distribution;
 use rand_distr::Normal;
 use rustworkx_core::petgraph::prelude::*;
-use rustworkx_core::petgraph::visit::IntoNodeReferences;
 use serde::Serialize;
-use crate::io::node_link::{Link, Node, NodeLinkData, ToNodeLink};
 
 #[derive(Clone, Debug)]
 pub struct Grn<const I: usize, const O: usize> {
@@ -66,6 +64,10 @@ impl<const I: usize, const O: usize> Grn<I, O> {
             }
         }
         grn
+    }
+    
+    pub fn graph(&self) -> &DiGraph<GrnGeneType, f32> {
+        &self.graph
     }
 
     pub fn nth_input_gene(&self, index: usize) -> &InputGene {
@@ -232,38 +234,6 @@ impl<const I: usize, const O: usize> Genome for Grn<I, O> {
     }
 }
 
-impl<const I: usize, const O: usize> ToNodeLink for Grn<I, O> {
-    type Node = GrnGeneType;
-    type Edge = EdgeWeight;
-
-    fn to_node_link(&self) -> NodeLinkData<Self::Node, Self::Edge> {
-        let nodes: Vec<Node<GrnGeneType>> = self.graph
-            .node_references()
-            .map(|(i, node)| Node {
-                id: i.index(),
-                data: node.clone(),
-            })
-            .collect();
-
-        let links: Vec<Link<EdgeWeight>> = self.graph
-            .edge_references()
-            .map(|e| Link {
-                source: e.source().index(),
-                target: e.target().index(),
-                data: EdgeWeight { weight: *e.weight() },
-            })
-            .collect();
-
-        NodeLinkData {
-            directed: true,
-            multigraph: false,
-            graph: serde_json::Map::new(),
-            nodes,
-            links,
-        }
-    }
-}
-
 #[derive(Clone, Debug, Serialize)]
 pub struct InputGene {
     pub signal: f32,
@@ -293,7 +263,7 @@ pub enum GrnGeneType {
 
 #[derive(Serialize)]
 pub struct EdgeWeight {
-    weight: f32,
+    pub weight: f32,
 }
 
 #[cfg(test)]

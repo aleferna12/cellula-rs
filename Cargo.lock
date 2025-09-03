@@ -509,6 +509,31 @@ dependencies = [
 [[package]]
 name = "cellulars-lib"
 version = "0.0.1"
+dependencies = [
+ "clap",
+ "config",
+ "criterion",
+ "env_logger",
+ "image",
+ "imageproc",
+ "indexmap",
+ "log",
+ "minifb",
+ "num",
+ "palette",
+ "planus",
+ "polars",
+ "rand 0.9.2",
+ "rand_distr 0.5.1",
+ "rand_xoshiro",
+ "rustworkx-core",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "thiserror 2.0.16",
+ "toml 0.8.23",
+]
 
 [[package]]
 name = "cfg-expr"

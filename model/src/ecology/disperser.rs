@@ -1,32 +1,32 @@
-use crate::constants::Spin;
-use crate::ecology::selector::PreservesOrder;
 use crate::pond::Pond;
+use cellulars_lib::constants::Spin;
+use cellulars_lib::selector::PreservesOrder;
 use rustworkx_core::connectivity::connected_components;
 
 pub trait Disperser {
     fn disperse(&mut self, dispersable: &[Pond]) -> Vec<DispersionEvent>;
 }
 
-// This can become a trait in the future if needed
 #[derive(Debug)]
 pub struct DispersionEvent {
-    pub(crate) from: usize,
-    pub(crate) to: usize,
-    pub(crate) spins: Vec<Spin>,
+    pub from: usize,
+    pub to: usize,
+    pub spins: Vec<Spin>,
 }
 
 pub struct SelectiveDispersion<S> {
-    pub selector: S
+    pub selector: S,
+    cell_search_radius: f32,
 }
 
 impl<S> SelectiveDispersion<S> {
     /// Returns at most `n_props` 
-    pub fn get_prop_spins(pond: &Pond, n_props: usize) -> Vec<Vec<Spin>> {
+    pub fn get_prop_spins(&self, pond: &Pond, n_props: usize) -> Vec<Vec<Spin>> {
         if n_props < 1 {
             return vec![];
         }
         
-        let neighs_graph = pond.env.build_neighbours_graph();
+        let neighs_graph = pond.env.build_neighbours_graph(self.cell_search_radius);
         let mut subgraphs = connected_components(&neighs_graph);
         // There is only one cluster
         if subgraphs.len() <= 1 {
@@ -55,7 +55,7 @@ impl<S: PreservesOrder> Disperser for SelectiveDispersion<S> {
         }
         let mut props: Vec<_> = prop_counts.into_iter()
             .enumerate()
-            .map(|(i, count)| Self::get_prop_spins(&dispersable[i], count.saturating_sub(1)))
+            .map(|(i, count)| self.get_prop_spins(&dispersable[i], count.saturating_sub(1)))
             .collect();
         
         selected.into_iter()

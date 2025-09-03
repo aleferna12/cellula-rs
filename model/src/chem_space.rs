@@ -1,33 +1,44 @@
-use crate::constants::Spin;
-use crate::lattice::Lattice;
-use crate::positional::boundary::AsLatticeBoundary;
-use crate::positional::rect::Rect;
-use crate::spatial::Spatial;
-use std::error::Error;
+use std::ops::{Deref, DerefMut};
+use crate::cell::Cell;
+use crate::constants::{BoundaryType, NeighbourhoodType};
+use cellulars_lib::constants::Spin;
+use cellulars_lib::environment::Environment;
+use cellulars_lib::lattice::Lattice;
+use cellulars_lib::positional::boundary::AsLatticeBoundary;
+use cellulars_lib::space::Space;
+use cellulars_lib::spatial::Spatial;
 
-pub struct Space<B: AsLatticeBoundary> {
-    pub bound: B,
-    pub lat_bound: B::LatticeBoundary,
-    pub cell_lattice: Lattice<Spin>,
+pub struct ChemSpace {
+    space: Space<BoundaryType>,
+    pub chem_lattice: Lattice<u32>,
 }
 
-impl<B: AsLatticeBoundary> Space<B> {
-    pub fn new(bound: B) -> Result<Self, Box<dyn Error>>
-    where 
-        B: AsLatticeBoundary<Coord = f32>,
-        B::Error: 'static + Error {
-        let rect: Rect<usize> = bound.rect().clone().try_into()?;
+impl ChemSpace {
+    pub fn new(bound: BoundaryType) -> Result<Self, <BoundaryType as AsLatticeBoundary>::Error> {
+        let space = Space::new(bound)?;
         Ok(Self {
-            lat_bound: bound.as_lattice_boundary()?,
-            cell_lattice: Lattice::<Spin>::new(rect.clone()),
-            bound,
+            chem_lattice: space.cell_lattice.clone(),
+            space,
         })
     }
 }
 
-impl<B: AsLatticeBoundary> Spatial for Space<B> {
-    type Boundary = B;
+impl Deref for ChemSpace {
+    type Target = Space<BoundaryType>;
 
+    fn deref(&self) -> &Self::Target {
+        &self.space
+    }
+}
+
+impl DerefMut for ChemSpace {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.space
+    }
+}
+
+impl Spatial for ChemSpace {
+    type Boundary = BoundaryType;
     fn cell_lattice(&self) -> &Lattice<Spin> {
         &self.cell_lattice
     }
@@ -36,14 +47,16 @@ impl<B: AsLatticeBoundary> Spatial for Space<B> {
         &mut self.cell_lattice
     }
 
-    fn boundary(&self) -> &Self::Boundary {
+    fn boundary(&self) -> &BoundaryType {
         &self.bound
     }
 
-    fn lattice_boundary(&self) -> &<<Self as Spatial>::Boundary as AsLatticeBoundary>::LatticeBoundary {
+    fn lattice_boundary(&self) -> &<BoundaryType as AsLatticeBoundary>::LatticeBoundary {
         &self.lat_bound
     }
 }
+
+pub type ChemEnvironment = Environment<Cell, NeighbourhoodType, ChemSpace>;
 
 // #[cfg(test)]
 // mod tests {

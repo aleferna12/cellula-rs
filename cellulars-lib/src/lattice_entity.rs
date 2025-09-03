@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use crate::cellular::RelCell;
 use crate::constants::Spin;
-use crate::lattice_entity::LatticeEntity::SomeCell;
+use crate::lattice_entity::LatticeEntity::*;
 
 /// This enum represents anything that can be on the cell lattice.
 #[derive(Debug, Copy, Clone)]

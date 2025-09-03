@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 use crate::constants::Spin;
-use crate::environment::LatticeEntity;
+use crate::lattice_entity::LatticeEntity;
 use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
 

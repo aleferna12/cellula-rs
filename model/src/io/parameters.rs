@@ -1,4 +1,4 @@
-use crate::constants::Spin;
+use cellulars_lib::constants::Spin;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::path::Path;

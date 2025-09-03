@@ -1,4 +1,3 @@
-use crate::cell::Fit;
 use rand::Rng;
 
 pub trait Selector {
@@ -82,6 +81,10 @@ impl<R: Rng> Selector for WeightedOrderedSelection<R> {
 }
 
 impl<R: Rng> PreservesOrder for WeightedOrderedSelection<R> {}
+
+pub trait Fit {
+    fn fitness(&self) -> f32;
+}
 
 #[cfg(test)]
 mod tests {

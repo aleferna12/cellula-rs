@@ -1,4 +1,3 @@
-mod env_bench;
 mod model_bench;
 mod io_bench;
 use criterion::criterion_main;

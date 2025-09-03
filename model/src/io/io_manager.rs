@@ -1,20 +1,20 @@
+use crate::cell::Cell;
+use crate::genetics::grn::{EdgeWeight, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
+use crate::io::node_link::{NodeLinkData, ToNodeLink};
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
-use crate::io::plot::{hex_to_srgb, srgb_to_luv, AreaPlot, BorderPlot, CellTypePlot, CenterPlot, ChemCenterPlot, ChemPlot, ClonesPlot, HexError, Plot, SpinPlot};
+use crate::io::plot::*;
 use crate::pond::Pond;
+use cellulars_lib::cell_container::CellContainer;
+use cellulars_lib::cellular::Cellular;
+use cellulars_lib::constants::Spin;
 use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
+use polars::df;
+use polars::prelude::*;
+use serde::Serialize;
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use polars::df;
-use polars::prelude::{concat, lit, DataFrame, IntoLazy, LazyFrame, ParquetWriter, PolarsResult, UnionArgs};
-use serde::Serialize;
-use crate::cell::{CanDivide, Cell, Cellular};
-use crate::cell_container::CellContainer;
-use crate::constants::Spin;
-use crate::genetics::genome::Genome;
-use crate::genetics::grn::{EdgeWeight, GrnGeneType};
-use crate::io::node_link::{NodeLinkData, ToNodeLink};
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -314,10 +314,7 @@ trait ToDataFrame {
     fn to_dataframe(&self) -> PolarsResult<DataFrame>;
 }
 
-impl<G> ToDataFrame for CellContainer<Cell<G>>
-where
-    Cell<G>: CanDivide,
-    G: Genome + Clone {
+impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
         let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
