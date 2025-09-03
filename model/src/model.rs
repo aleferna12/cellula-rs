@@ -1,7 +1,7 @@
 use crate::adhesion::{ClonalAdhesion, StaticAdhesion};
 use crate::cell::Cell;
 use crate::cell_container::CellContainer;
-use crate::cellular_automata::Ca;
+use crate::cellular_automata::CellularAutomata;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::ecology::disperser::{Disperser, SelectiveDispersion};
 use crate::ecology::selector::WeightedOrderedSelection;
@@ -117,7 +117,7 @@ impl Model {
             }
             log::info!("Created {pop_n} out of the {} cells requested", parameters.pond.starting_cells);
 
-            let ca= Ca::new(
+            let ca= CellularAutomata::new(
                 parameters.cellular_automata.boltz_t,
                 parameters.cellular_automata.size_lambda,
                 parameters.cellular_automata.chemotaxis_mu,

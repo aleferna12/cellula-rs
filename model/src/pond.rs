@@ -1,37 +1,39 @@
-use crate::cellular_automata::Ca;
+use crate::cell::Cell;
+use crate::cellular_automata::CellularAutomata;
+use crate::chem_space::ChemEnvironment;
+use crate::genetics::genome::Genome;
 use cellulars_lib::adhesion::ClonalAdhesion;
+use cellulars_lib::cellular::{Cellular, RelCell};
 use cellulars_lib::constants::Spin;
 use cellulars_lib::environment::DivisionError;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::Medium;
+use cellulars_lib::positional::boundary::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::selector::Fit;
 use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
-use cellulars_lib::cellular::{Cellular, RelCell};
-use cellulars_lib::positional::boundary::Boundary;
-use cellulars_lib::selector::Fit;
-use crate::cell::Cell;
-use crate::chem_space::ChemEnvironment;
-use crate::genetics::genome::Genome;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 pub struct Pond {
     pub env: ChemEnvironment,
-    pub ca: Ca<ClonalAdhesion>,
+    pub ca: CellularAutomata<ClonalAdhesion>,
     pub rng: Xoshiro256StarStar,
     pub update_period: u32,
     pub cell_search_radius: f32,
+    pub cell_target_area: u32,
     time_step: u32,
 }
 
 impl Pond {
     pub fn new(
         env: ChemEnvironment,
-        ca: Ca<ClonalAdhesion>,
+        ca: CellularAutomata<ClonalAdhesion>,
         rng: Xoshiro256StarStar,
         update_period: u32,
         cell_search_radius: f32,
+        cell_target_area: u32,
     ) -> Self {
         Self {
             env,
@@ -39,6 +41,7 @@ impl Pond {
             rng,
             update_period,
             cell_search_radius,
+            cell_target_area,
             time_step: 0
         }
     }
@@ -61,6 +64,7 @@ impl Pond {
         }
         self.time_step += 1;
     }
+
     pub fn spawn_cell_random(
         &mut self,
         cell_area: u32,
@@ -115,7 +119,7 @@ impl Pond {
         for pos in self.env.search_cell_box(cell, self.cell_search_radius) {
             // TODO!: Parameterize chance of medium
             if self.rng.random::<f32>() < 0.1 {
-                self.env.space.cell_lattice[pos] = LatticeEntity::Medium.discriminant();
+                self.env.space.cell_lattice[pos] = Medium.discriminant();
             }
         }
         for i in 0..self.ca.adhesion.clone_pairs.length() {
@@ -128,7 +132,7 @@ impl Pond {
         self.env.cells.wipe_out();
         self.env.space.cell_lattice.iter_values_mut().for_each(|value| {
             if *value >= LatticeEntity::first_cell_spin() {
-                *value = LatticeEntity::Medium.discriminant();
+                *value = Medium.discriminant();
             }
         });
         self.ca.adhesion.clone_pairs.clear();
@@ -137,7 +141,7 @@ impl Pond {
     // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
     pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<Cell>, DivisionError> {
         let new_spin = self.env.cells.next_spin();
-        let cell_target_area = self.env.cells.target_area;
+        let cell_target_area = self.cell_target_area;
         let mut mom_clone = self
             .env
             .cells
@@ -146,7 +150,7 @@ impl Pond {
             .clone();
 
         let mut new_cell = mom_clone.birth();
-        new_cell.set_target_area(self.env.cells.target_area);
+        new_cell.set_target_area(self.cell_target_area);
         let new_positions: Vec<_> = self
             .env
             .search_cell_box(&mom_clone, self.cell_search_radius)
