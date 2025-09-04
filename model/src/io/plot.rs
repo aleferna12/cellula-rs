@@ -16,6 +16,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
 use crate::chem_space::ChemEnvironment;
 
+// TODO: This should most definitely take a pond as an arg, which let us use dynamic dispatch to write better code
 pub trait Plot {
     fn plot(&self, image: &mut RgbaImage);
 }
