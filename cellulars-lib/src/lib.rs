@@ -7,6 +7,6 @@ pub mod symmetric_table;
 pub mod cellular;
 pub mod constants;
 pub mod lattice_entity;
-pub mod selector;
+pub mod evolution;
 pub mod spatial;
 pub mod space;

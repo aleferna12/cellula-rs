@@ -14,9 +14,9 @@ use rand_xoshiro::Xoshiro256StarStar;
 use std::error::Error;
 use cellulars_lib::adhesion::{ClonalAdhesion, StaticAdhesion};
 use cellulars_lib::cell_container::CellContainer;
+use cellulars_lib::evolution::selector::WeightedOrderedSelection;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::selector::WeightedOrderedSelection;
 use crate::chem_space::{ChemEnvironment, ChemSpace};
 
 pub struct Model {
@@ -74,11 +74,11 @@ impl Model {
             log::info!("Making pond #{pond_i}");
             let mut env = ChemEnvironment::new(
                 CellContainer::default(),
+                NeighbourhoodType::new(parameters.pond.neigh_r),
                 ChemSpace::new(BoundaryType::new(Rect::new(
                     (0., 0.).into(),
                     (parameters.pond.width as f32, parameters.pond.height as f32).into(),
-                )))?,
-                NeighbourhoodType::new(parameters.pond.neigh_r)
+                )))?
             );
 
             if parameters.pond.enclose {

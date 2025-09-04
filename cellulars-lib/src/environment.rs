@@ -25,8 +25,8 @@ pub struct Environment<C, N, S> {
 impl<C, N, S: Spatial> Environment<C, N, S> {
     pub fn new(
         cells: CellContainer<C>,
-        space: S,
-        neighbourhood: N
+        neighbourhood: N,
+        space: S
     ) -> Self {
         Self {
             space,
@@ -273,111 +273,147 @@ pub enum DivisionError {
     NewCellTooBig
 }
 
-// #[cfg(test)]
-// pub mod tests {
-//     use super::*;
-//     use crate::cell::Cell;
-//     use crate::positional::pos::Pos;
-//     use crate::positional::rect::Rect;
-// 
-//     fn make_env_for_division() -> Environment<Cell<MockGenome>, NeighbourhoodType, BoundaryType> {
-//         let env = Environment::new(
-//             2.0,
-//             10,
-//             CellContainer::new(
-//                 4,
-//                 true,
-//                 false
-//             ),
-//             Space::new(BoundaryType::new(Rect::new(
-//                 (0., 0.,).into(),
-//                 (100., 100.).into()
-//             ))).expect("failed to make test `Space`"),
-//             NeighbourhoodType::new(1)
-//         );
-//         env
-//     }
-// 
-//     #[test]
-//     fn test_spawn_solid() {
-//         let mut env = Environment::new_empty_test(10, 10);
-//         let positions = vec![
-//             Pos::new(1, 1),
-//             Pos::new(2, 2),
-//             Pos::new(3, 3),
-//             Pos::new(1, 1), // duplicate to test deduplication
-//         ];
-//         let area = env.spawn_solid(positions.into_iter());
-//         assert_eq!(area, 3); // One was a duplicate
-//         for pos in &[
-//             Pos::new(1, 1),
-//             Pos::new(2, 2),
-//             Pos::new(3, 3),
-//         ] {
-//             assert_eq!(env.space.cell_lattice[*pos], Solid.discriminant());
-//         }
-//     }
-// 
-//     #[test]
-//     fn test_update_edges_adds_and_removes() {
-//         let mut env = Environment::new_empty_test(10, 10);
-//         let spin = LatticeEntity::first_cell_spin();
-//         env.space.cell_lattice[Pos::new(5, 5)] = spin;
-//         let mut edges_update = env.update_edges(Pos::new(5, 5));
-//         assert_eq!(edges_update.removed, 0);
-//         assert_eq!(edges_update.added, 8);
-//         
-//         env.space.cell_lattice[Pos::new(6, 5)] = spin;
-//         edges_update = env.update_edges(Pos::new(5, 5));
-//         assert_eq!(edges_update.removed, 1);
-//         assert_eq!(edges_update.added, 0);
-// 
-//         env.space.cell_lattice[Pos::new(6, 5)] = spin + 1;
-//         edges_update = env.update_edges(Pos::new(5, 5));
-//         assert_eq!(edges_update.removed, 0);
-//         assert_eq!(edges_update.added, 1);
-//     }
-// 
-//     #[test]
-//     fn test_divide_cell() {
-//         let mut env = make_env_for_division();
-// 
-//         let rect = Rect::new(Pos::new(20, 20), Pos::new(23, 23));
-//         env.spawn_rect_cell(
-//             rect, 
-//             Cell::new_empty(4, 8, MockGenome::new(0))
-//         );
-// 
-//         let spin = LatticeEntity::first_cell_spin();
-//         let result = env.divide_cell(spin);
-//         assert!(result.is_ok());
-//         let new_cell = result.unwrap();
-//         assert_ne!(new_cell.spin, spin);
-//     }
-// 
-//     #[test]
-//     fn test_reproduce() {
-//         let mut env = make_env_for_division();
-//         env.spawn_rect_cell(
-//             Rect::new(Pos::new(30, 30), Pos::new(33, 33)),
-//             Cell::new_empty(4, 8, MockGenome::new(0))
-//         );
-// 
-//         let divided_spins = env.reproduce();
-//         assert_eq!(divided_spins.len(), 1);
-//     }
-// 
-//     #[test]
-//     fn test_reproduce_limit_population() {
-//         let mut env = make_env_for_division();
-//         env.max_cells = 1;
-//         env.spawn_rect_cell(
-//             Rect::new(Pos::new(30, 30), Pos::new(33, 33)),
-//             Cell::new_empty(4, 8, MockGenome::new(0))
-//         );
-// 
-//         let divided_spins = env.reproduce();
-//         assert_eq!(divided_spins.len(), 0);
-//     }
-// }
-// 
+#[cfg(test)]
+pub mod tests {
+    use crate::cellular::BasicCell;
+    use crate::positional::boundary::UnsafePeriodicBoundary;
+    use crate::positional::neighbourhood::MooreNeighbourhood;
+    use super::*;
+    use crate::positional::pos::Pos;
+    use crate::positional::rect::Rect;
+    use crate::space::Space;
+
+    fn make_test_env() -> Environment<BasicCell, MooreNeighbourhood, Space<UnsafePeriodicBoundary<f32>>> {
+        let env = Environment::new(
+            CellContainer::default(),
+            MooreNeighbourhood::new(1),
+            Space::new(UnsafePeriodicBoundary::new(Rect::new(
+                (0., 0.,).into(),
+                (10., 10.).into()
+            ))).expect("failed to make test `Space`")
+        );
+        env
+    }
+
+    fn add_cell(
+        positions: &[Pos<usize>],
+        env: &mut Environment<BasicCell, MooreNeighbourhood, Space<UnsafePeriodicBoundary<f32>>>
+    ) -> RelCell<BasicCell> {
+        let mut cell = RelCell::mock(BasicCell::new_empty(2));
+        for &pos in positions {
+            cell.shift_position(pos, true, env.space.boundary());
+            env.space.cell_lattice_mut()[pos] = cell.spin;
+        }
+        cell
+    }
+
+    #[test]
+    fn test_spawn_solid() {
+        let mut env = make_test_env();
+        let positions = vec![
+            Pos::new(1, 1),
+            Pos::new(2, 2),
+            Pos::new(3, 3),
+            Pos::new(1, 1), // duplicate to test deduplication
+        ];
+        let area = env.spawn_solid(positions.into_iter());
+        assert_eq!(area, 3); // One was a duplicate
+        for pos in &[
+            Pos::new(1, 1),
+            Pos::new(2, 2),
+            Pos::new(3, 3),
+        ] {
+            assert_eq!(env.space.cell_lattice[*pos], Solid.discriminant());
+        }
+    }
+
+    #[test]
+    fn test_update_edges_adds_and_removes() {
+        let mut env = make_test_env();
+        let spin = LatticeEntity::first_cell_spin();
+        env.space.cell_lattice[Pos::new(5, 5)] = spin;
+        let mut edges_update = env.update_edges(Pos::new(5, 5));
+        assert_eq!(edges_update.removed, 0);
+        assert_eq!(edges_update.added, 8);
+
+        env.space.cell_lattice[Pos::new(6, 5)] = spin;
+        edges_update = env.update_edges(Pos::new(5, 5));
+        assert_eq!(edges_update.removed, 1);
+        assert_eq!(edges_update.added, 0);
+
+        env.space.cell_lattice[Pos::new(6, 5)] = spin + 1;
+        edges_update = env.update_edges(Pos::new(5, 5));
+        assert_eq!(edges_update.removed, 0);
+        assert_eq!(edges_update.added, 1);
+    }
+
+    #[test]
+    fn test_box_cell_positions() {
+        let positions = [
+            Pos::new(5, 5),
+            Pos::new(5, 6),
+            Pos::new(6, 5),
+            Pos::new(6, 6),
+        ];
+        let mut env = make_test_env();
+        let cell = add_cell(&positions, &mut env);
+        let boxed_positions = env.search_cell_box(&cell, 2.0);
+        assert_eq!(boxed_positions.len(), positions.len());
+        for pos in &positions {
+            assert!(boxed_positions.contains(pos));
+        }
+    }
+
+    #[test]
+    fn test_contiguous_cell_positions() {
+        let positions = [
+            Pos::new(5, 5),
+            Pos::new(5, 6),
+            Pos::new(6, 5),
+            Pos::new(6, 6),
+        ];
+        let mut env = make_test_env();
+        let cell = add_cell(&positions, &mut env);
+        let contiguous_positions = env.search_cell_contiguous(&cell);
+
+        // Should find all 4 contiguous positions
+        assert_eq!(contiguous_positions.len(), positions.len());
+        for pos in &positions {
+            assert!(contiguous_positions.contains(pos));
+        }
+    }
+
+    #[test]
+    fn test_contiguous_cell_positions_discontiguous() {
+        let positions = [
+            Pos::new(5, 5),
+            Pos::new(5, 6),
+            Pos::new(7, 7), // discontiguous point
+        ];
+        let mut env = make_test_env();
+        let cell = add_cell(&positions, &mut env);
+        let result = env.search_cell_contiguous(&cell);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_cell_neighbours() {
+        let positions = [
+            Pos::new(2, 2),
+            Pos::new(2, 1),
+        ];
+        let mut env = make_test_env();
+        let cell = add_cell(&positions, &mut env);
+
+        let neighbour_spins = [cell.spin + 1, cell.spin + 2];
+        env.space.cell_lattice_mut()[Pos::new(1, 2)] = neighbour_spins[0];
+        env.space.cell_lattice_mut()[Pos::new(2, 0)] = neighbour_spins[1];
+
+        let neighs = env.cell_neighbours(&cell, 1.0);
+
+        assert!(neighs.contains(&neighbour_spins[0]));
+        assert!(neighs.contains(&neighbour_spins[1]));
+        assert!(!neighs.contains(&cell.spin));
+    }
+}
+

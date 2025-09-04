@@ -1,16 +1,15 @@
+use std::ops::{Deref, DerefMut};
 use crate::genetics::genome::Genome;
 use crate::genetics::grn::Grn;
-use cellulars_lib::cellular::Cellular;
+use cellulars_lib::cellular::{shifted_com, BasicCell, Cellular};
+use cellulars_lib::evolution::selector::Fit;
 use cellulars_lib::positional::boundary::Boundary;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::selector::Fit;
 
 #[derive(Clone, Debug)]
 pub struct Cell {
-    pub area: u32,
-    pub target_area: u32,
+    basic_cell: BasicCell,
     pub divide_area: u32,
-    pub center: Pos<f32>,
     pub chem_center: Pos<f32>,
     pub chem_mass: f32,
     pub genome: Grn<1, 1>
@@ -20,10 +19,8 @@ impl Cell {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
     pub fn new_empty(target_area: u32, divide_area: u32, genome: Grn<1, 1>) -> Self {
         Self {
-            area: 0,
-            target_area,
+            basic_cell: BasicCell::new_empty(target_area),
             divide_area,
-            center: Pos::new(0., 0.),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0.,
             genome
@@ -32,22 +29,18 @@ impl Cell {
 
     pub fn birth(&self) -> Self {
         Self::new_empty(
-            self.target_area,
+            self.target_area(),
             self.divide_area,
             self.genome.clone()
         )
     }
 
     pub fn apoptosis(&mut self) {
-        self.target_area = 0;
+        self.set_target_area(0);
     }
 
     pub fn is_dying(&self) -> bool {
-        self.target_area <= 0
-    }
-
-    pub fn set_target_area(&mut self, value: u32) {
-        self.target_area = value;
+        self.target_area() <= 0
     }
 
     pub fn chem_center(&self) -> Pos<f32> {
@@ -83,56 +76,54 @@ impl Cell {
         ) {
             self.chem_center = new_chem;
         } else {
-            self.chem_center = self.center;
+            self.chem_center = self.center();
         }
         self.chem_mass += shift as f32 * chem_at;
         self.genome.input_signals[0] = self.chem_mass;
     }
 
-    pub fn shift_position<B: Boundary<Coord = f32>>(
-        &mut self,
-        pos: Pos<usize>,
-        add: bool,
-        bound: &B
-    ) {
-        let shift = if add { 1 } else { -1 };
-        // The order here matters (area is last), be careful
-        if let Some(new_center) = shifted_com(
-            self.center,
-            pos,
-            self.area as f32,
-            1.,
-            shift,
-            bound
-        ) {
-            self.center = new_center;
-        }
-        self.area = self.area.saturating_add_signed(shift);
-    }
-
     pub fn update(&mut self) {
-        if self.is_dividing() && self.target_area < self.divide_area {
-            self.target_area += 1;
+        if self.is_dividing() && self.target_area() < self.divide_area {
+            let new_target_area = self.target_area() + 1;
+            self.set_target_area(new_target_area);
         }
         self.genome.update_expression();
     }
 }
 
+impl Deref for Cell {
+    type Target = BasicCell;
+
+    fn deref(&self) -> &Self::Target {
+        &self.basic_cell
+    }
+}
+
+impl DerefMut for Cell {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.basic_cell
+    }
+}
+
 impl Cellular for Cell {
     fn target_area(&self) -> u32 {
-        self.target_area
+        self.basic_cell.target_area()
     }
 
     fn area(&self) -> u32 {
-        self.area
+        self.basic_cell.area()
     }
 
     fn center(&self) -> Pos<f32> {
-        self.center
+        self.basic_cell.center()
     }
 
     fn is_alive(&self) -> bool {
-        self.area > 0
+        self.basic_cell.is_alive()
+    }
+
+    fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
+        self.basic_cell.shift_position(pos, add, bound)
     }
 }
 
@@ -140,30 +131,6 @@ impl Fit for Cell {
     fn fitness(&self) -> f32 {
         self.chem_mass
     }
-}
-
-/// Shifts a center of mass (`com`) with associated `mass` by `pos`.
-fn shifted_com<B: Boundary<Coord = f32>>(
-    com: Pos<f32>,
-    pos: Pos<usize>,
-    com_mass: f32,
-    pos_mass: f32,
-    shift: i32,
-    bound: &B
-) -> Option<Pos<f32>> {
-    let shift = shift as f32;
-    let added_mass = shift * pos_mass;
-    let new_mass = com_mass + added_mass;
-    if new_mass <= 0. { 
-        return None;
-    }
-    let (dx, dy) = bound.displacement(com, Pos::new(pos.x as f32, pos.y as f32));
-    let new_com = Pos::new(
-        com.x + dx * added_mass / new_mass,
-        com.y + dy * added_mass / new_mass,
-    );
-    // We call this to rewrap the position if necessary
-    bound.valid_pos(new_com).expect("shifted the center to outside the available space").into()
 }
 
 // #[cfg(test)]

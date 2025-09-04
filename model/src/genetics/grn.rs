@@ -66,6 +66,16 @@ impl<const I: usize, const O: usize> Grn<I, O> {
         grn
     }
     
+    pub fn empty() -> Self {
+        Self::new(
+            [0.; I],
+            0,
+            0.,
+            0.,
+            || 0.
+        )
+    }
+    
     pub fn graph(&self) -> &DiGraph<GrnGeneType, f32> {
         &self.graph
     }

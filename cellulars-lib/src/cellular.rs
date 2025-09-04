@@ -2,12 +2,19 @@ use crate::constants::Spin;
 use crate::lattice_entity::LatticeEntity;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
+use crate::positional::boundary::Boundary;
 
 pub trait Cellular {
     fn target_area(&self) -> u32;
     fn area(&self) -> u32;
     fn center(&self) -> Pos<f32>;
     fn is_alive(&self) -> bool;
+    fn shift_position(
+        &mut self,
+        pos: Pos<usize>,
+        add: bool,
+        bound: &impl Boundary<Coord = f32>
+    );
 }
 
 /// Represents a cell that is bound to an `Environment`.
@@ -48,22 +55,88 @@ impl<C> DerefMut for RelCell<C> {
     }
 }
 
-pub struct _TestCell {}
+#[derive(Clone, Debug)]
+pub struct BasicCell {
+    target_area: u32,
+    area: u32,
+    center: Pos<f32>,
+}
 
-impl Cellular for _TestCell {
+impl BasicCell {
+    pub fn new_empty(target_area: u32) -> Self {
+        Self {
+            target_area,
+            area: 0,
+            center: Pos::new(0., 0.,)
+        }
+    }
+}
+
+impl BasicCell {
+    pub fn set_target_area(&mut self, value: u32) {
+        self.target_area = value;
+    }
+}
+
+impl Cellular for BasicCell {
     fn target_area(&self) -> u32 {
-        todo!()
+        self.target_area
     }
 
     fn area(&self) -> u32 {
-        todo!()
+        self.area
     }
 
     fn center(&self) -> Pos<f32> {
-        todo!()
+        self.center
     }
 
     fn is_alive(&self) -> bool {
-        todo!()
+        self.area > 0
     }
+
+    fn shift_position(
+        &mut self,
+        pos: Pos<usize>,
+        add: bool,
+        bound: &impl Boundary<Coord = f32>
+    ) {
+        let shift = if add { 1 } else { -1 };
+        // The order here matters (area is last), be careful
+        if let Some(new_center) = shifted_com(
+            self.center,
+            pos,
+            self.area as f32,
+            1.,
+            shift,
+            bound
+        ) {
+            self.center = new_center;
+        }
+        self.area = self.area.saturating_add_signed(shift);
+    }
+}
+
+/// Shifts a center of mass (`com`) with associated `mass` by `pos`.
+pub fn shifted_com<B: Boundary<Coord = f32>>(
+    com: Pos<f32>,
+    pos: Pos<usize>,
+    com_mass: f32,
+    pos_mass: f32,
+    shift: i32,
+    bound: &B
+) -> Option<Pos<f32>> {
+    let shift = shift as f32;
+    let added_mass = shift * pos_mass;
+    let new_mass = com_mass + added_mass;
+    if new_mass <= 0. {
+        return None;
+    }
+    let (dx, dy) = bound.displacement(com, Pos::new(pos.x as f32, pos.y as f32));
+    let new_com = Pos::new(
+        com.x + dx * added_mass / new_mass,
+        com.y + dy * added_mass / new_mass,
+    );
+    // We call this to rewrap the position if necessary
+    bound.valid_pos(new_com).expect("shifted the center to outside the available space").into()
 }

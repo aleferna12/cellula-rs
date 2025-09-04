@@ -6,12 +6,12 @@ use cellulars_lib::adhesion::ClonalAdhesion;
 use cellulars_lib::cellular::{Cellular, RelCell};
 use cellulars_lib::constants::Spin;
 use cellulars_lib::environment::DivisionError;
+use cellulars_lib::evolution::selector::Fit;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::Medium;
 use cellulars_lib::positional::boundary::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::selector::Fit;
 use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
 
