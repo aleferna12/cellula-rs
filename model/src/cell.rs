@@ -5,10 +5,6 @@ use cellulars_lib::positional::boundary::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::selector::Fit;
 
-pub trait CanMigrate: Cellular {
-    fn is_migrating(&self) -> bool;
-}
-
 #[derive(Clone, Debug)]
 pub struct Cell {
     pub area: u32,
@@ -34,6 +30,26 @@ impl Cell {
         }
     }
 
+    pub fn birth(&self) -> Self {
+        Self::new_empty(
+            self.target_area,
+            self.divide_area,
+            self.genome.clone()
+        )
+    }
+
+    pub fn apoptosis(&mut self) {
+        self.target_area = 0;
+    }
+
+    pub fn is_dying(&self) -> bool {
+        self.target_area <= 0
+    }
+
+    pub fn set_target_area(&mut self, value: u32) {
+        self.target_area = value;
+    }
+
     pub fn chem_center(&self) -> Pos<f32> {
         self.chem_center
     }
@@ -55,7 +71,7 @@ impl Cell {
     }
 
     // TODO!: Pretty sure i can merge this and shift_position
-    pub(crate) fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
+    pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
         let shift = if add { 1 } else { -1 };
         if let Some(new_chem) = shifted_com(
             self.chem_center,
@@ -72,26 +88,8 @@ impl Cell {
         self.chem_mass += shift as f32 * chem_at;
         self.genome.input_signals[0] = self.chem_mass;
     }
-}
 
-impl Cellular for Cell {
-    fn target_area(&self) -> u32 {
-        self.target_area
-    }
-
-    fn set_target_area(&mut self, value: u32) {
-        self.target_area = value;
-    }
-
-    fn area(&self) -> u32 {
-        self.area
-    }
-
-    fn center(&self) -> Pos<f32> {
-        self.center
-    }
-
-    fn shift_position<B: Boundary<Coord = f32>>(
+    pub fn shift_position<B: Boundary<Coord = f32>>(
         &mut self,
         pos: Pos<usize>,
         add: bool,
@@ -112,30 +110,28 @@ impl Cellular for Cell {
         self.area = self.area.saturating_add_signed(shift);
     }
 
-    fn update(&mut self) {
+    pub fn update(&mut self) {
         if self.is_dividing() && self.target_area < self.divide_area {
             self.target_area += 1;
         }
         self.genome.update_expression();
     }
+}
 
-    fn birth(&self) -> Self {
-        Self::new_empty(
-            self.target_area,
-            self.divide_area,
-            self.genome.clone()
-        )
+impl Cellular for Cell {
+    fn target_area(&self) -> u32 {
+        self.target_area
     }
 
-    fn die(&mut self) {
-        self.target_area = 0;
+    fn area(&self) -> u32 {
+        self.area
+    }
+
+    fn center(&self) -> Pos<f32> {
+        self.center
     }
 
     fn is_alive(&self) -> bool {
-        self.target_area > 0
-    }
-
-    fn is_valid(&self) -> bool {
         self.area > 0
     }
 }

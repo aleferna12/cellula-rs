@@ -11,9 +11,9 @@ TODO!:
         - At the end, CA should be responsible for executing the steps (only),
             while Pond calls the steps and manages creation/killing of cells
  */
+use std::error::Error;
 use clap::Parser;
 use model::io::parameters::{Cli, Parameters};
-use std::error::Error;
 use model::model::Model;
 
 fn main() -> Result<(), Box<dyn Error>> {

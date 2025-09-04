@@ -23,6 +23,9 @@ pub struct Pond {
     pub update_period: u32,
     pub cell_search_radius: f32,
     pub cell_target_area: u32,
+    pub division_enabled: bool,
+    pub max_cells: u32,
+    population_exploded: bool,
     time_step: u32,
 }
 
@@ -34,6 +37,8 @@ impl Pond {
         update_period: u32,
         cell_search_radius: f32,
         cell_target_area: u32,
+        division_enabled: bool,
+        max_cells: u32
     ) -> Self {
         Self {
             env,
@@ -42,6 +47,9 @@ impl Pond {
             update_period,
             cell_search_radius,
             cell_target_area,
+            division_enabled,
+            max_cells,
+            population_exploded: false,
             time_step: 0
         }
     }
@@ -49,10 +57,9 @@ impl Pond {
     pub fn step(&mut self) {
         self.ca.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
-            self.env.cells.update_cells();
+            self.env.cells.iter_mut().for_each(|cell| cell.update());
             let new_spins = self.reproduce();
             for spin in new_spins {
-                // TODO!: This function is preventing CA to be generalised in Pond
                 self.ca.adhesion.update_clones(spin, self.cell_search_radius, &self.env);
                 // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
                 if let LatticeEntity::SomeCell(cell) = self.env.cells.get_entity_mut(spin) {
@@ -95,7 +102,7 @@ impl Pond {
                     continue
                 }
                 self.env.space.cell_lattice[lat_pos] = spin;
-                self.update_edges(lat_pos);
+                self.env.update_edges(lat_pos);
                 empty_cell.shift_position(
                     lat_pos,
                     true,
@@ -115,7 +122,7 @@ impl Pond {
         Some(self.env.cells.push(empty_cell, None))
     }
 
-    pub fn kill_cell(&mut self, cell: &mut RelCell<impl Cellular>) {
+    pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
         for pos in self.env.search_cell_box(cell, self.cell_search_radius) {
             // TODO!: Parameterize chance of medium
             if self.rng.random::<f32>() < 0.1 {
@@ -125,7 +132,7 @@ impl Pond {
         for i in 0..self.ca.adhesion.clone_pairs.length() {
             self.ca.adhesion.clone_pairs[(cell.spin as usize, i)] = false
         }
-        cell.die();
+        cell.apoptosis();
     }
     
     pub fn wipe_out(&mut self) {
@@ -208,8 +215,12 @@ impl Pond {
     // gain is minimal (although the ergonomic gains are significant)
     pub fn reproduce(&mut self) -> Vec<Spin> {
         let mut divide = vec![];
+        if !self.division_enabled {
+            return divide;
+        }
+        
         for cell in self.env.cells.iter() {
-            if !cell.is_alive() {
+            if cell.is_dying() {
                 continue;
             }
             // Currently cells don't need to express the dividing type to divide, they just need to be big enough
@@ -238,6 +249,21 @@ impl Pond {
             }
         }
     }
+
+    pub fn can_add_cell(&mut self) -> bool {
+        if self.env.cells.n_alive() < self.max_cells {
+            return true;
+        }
+        if !self.population_exploded {
+            log::warn!(
+                        "Population exceeded maximum threshold `max-cells={}` during cell division",
+                        {self.max_cells}
+                    );
+            log::warn!("This warning will be suppressed from now on");
+            self.population_exploded = true;
+        }
+        false
+    }
 }
 
 impl Fit for Pond {
@@ -246,9 +272,9 @@ impl Fit for Pond {
             .env
             .cells
             .iter()
-            .filter(|cell| cell.is_valid())
+            .filter(|cell| cell.is_alive())
             .map(|c| { c.fitness() })
             .sum();
-        tot_fit / self.env.cells.n_valid() as f32
+        tot_fit / self.env.cells.n_alive() as f32
     }
 }

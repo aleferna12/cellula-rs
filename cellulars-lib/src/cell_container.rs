@@ -58,23 +58,17 @@ impl<C> CellContainer<C> {
 }
 
 impl<C: Cellular> CellContainer<C> {
-    pub fn update_cells(&mut self) {
-        for cell in &mut self.vec {
-            cell.update();
-        }
-    }
-
-    pub fn n_valid(&self) -> Spin {
+    pub fn n_alive(&self) -> Spin {
         self.vec
             .iter()
-            .filter(|cell| cell.is_valid())
+            .filter(|cell| cell.is_alive())
             .count() as Spin
     }
 
     pub fn next_spin(&self) -> Spin {
         self.vec
             .iter()
-            .find(|cell| !cell.is_valid())
+            .find(|cell| !cell.is_alive())
             .map(|cell| cell.spin)
             .unwrap_or(self.n_cells() + LatticeEntity::first_cell_spin())
     }

@@ -234,7 +234,7 @@ impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
         let mut node_map = HashMap::new();
 
         for cell in self.cells.iter() {
-            if !cell.is_valid() {
+            if !cell.is_alive() {
                 continue;
             }
 

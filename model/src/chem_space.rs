@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::ops::{Deref, DerefMut};
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, NeighbourhoodType};
@@ -14,7 +15,7 @@ pub struct ChemSpace {
 }
 
 impl ChemSpace {
-    pub fn new(bound: BoundaryType) -> Result<Self, <BoundaryType as AsLatticeBoundary>::Error> {
+    pub fn new(bound: BoundaryType) -> Result<Self, Box<dyn Error>> {
         let space = Space::new(bound)?;
         Ok(Self {
             chem_lattice: space.cell_lattice.clone(),

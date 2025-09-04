@@ -316,7 +316,7 @@ trait ToDataFrame {
 
 impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
+        let valid = self.iter().filter(|cell| cell.is_alive()).collect::<Vec<_>>();
         df!(
             "spin" => valid.iter().map(|cell| cell.spin).collect::<Vec<_>>(),
             "mom" => valid.iter().map(|cell| cell.mom).collect::<Vec<_>>(),

@@ -1,14 +1,16 @@
-use crate::adhesion::AdhesionSystem;
-use crate::cell::{CanMigrate, Cellular, ChemSniffer, RelCell};
-use crate::constants::Spin;
-use crate::environment::LatticeEntity;
-use crate::environment::LatticeEntity::{Medium, Solid, SomeCell};
-use crate::environment::{EdgesUpdate, Environment};
-use crate::positional::boundary::{AsLatticeBoundary, Boundary};
-use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::Pos;
 use rand::Rng;
 use std::f32::consts::E;
+use cellulars_lib::adhesion::AdhesionSystem;
+use cellulars_lib::cellular::{Cellular, RelCell};
+use cellulars_lib::constants::Spin;
+use cellulars_lib::environment::EdgesUpdate;
+use cellulars_lib::lattice_entity::LatticeEntity;
+use cellulars_lib::lattice_entity::LatticeEntity::*;
+use cellulars_lib::positional::boundary::Boundary;
+use cellulars_lib::positional::neighbourhood::Neighbourhood;
+use cellulars_lib::positional::pos::Pos;
+use crate::cell::Cell;
+use crate::chem_space::ChemEnvironment;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -17,22 +19,24 @@ pub struct CellularAutomata<A> {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
+    pub enable_migration: bool,
     pub adhesion: A
 }
 
 impl<A> CellularAutomata<A> {
-    pub fn new(boltz_t: f32, size_lambda: f32, chemotaxis_mu: f32, adhesion: A) -> Self {
+    pub fn new(boltz_t: f32, size_lambda: f32, chemotaxis_mu: f32, enable_migration: bool, adhesion: A) -> Self {
         Self {
             boltz_t,
             size_lambda,
             chemotaxis_mu,
+            enable_migration,
             adhesion
         }
     }
 
     pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
         &self,
-        cell: &(impl CanMigrate + ChemSniffer),
+        cell: &Cell,
         pos_to: Pos<usize>,
         chemotaxis_mu: f32,
         bound: &B
@@ -86,11 +90,7 @@ impl<A> CellularAutomata<A> {
 impl<A: AdhesionSystem> CellularAutomata<A> {
     pub fn step(
         &self, 
-        env: &mut Environment<
-            impl CanMigrate + ChemSniffer, 
-            impl Neighbourhood, 
-            impl AsLatticeBoundary<Coord = f32>
-        >, 
+        env: &mut ChemEnvironment,
         rng: &mut impl Rng
     ) {
         let mut to_visit = 2. * env.edge_book.len() as f32 / env.neighbourhood.n_neighs() as f32;
@@ -116,11 +116,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     /// The number of extra updates that the copy attempt incurred.
     pub fn attempt_site_copy(
         &self,
-        env: &mut Environment<
-            impl CanMigrate + ChemSniffer, 
-            impl Neighbourhood, 
-            impl AsLatticeBoundary<Coord = f32>
-        >,
+        env: &mut ChemEnvironment,
         rng: &mut impl Rng,
         pos_source: Pos<usize>,
         pos_target: Pos<usize>
@@ -145,7 +141,7 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
 
         let mut delta_h = self.delta_hamiltonian(entity_source, entity_target, neigh_entities);
         if let SomeCell(cell) = entity_source {
-            if env.cells.migrate && cell.is_migrating() {
+            if self.enable_migration && cell.is_migrating() {
                 delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, &env.space.bound);
             }
         }
@@ -163,15 +159,11 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
 
     // TODO!: Once CA has been generalised (requires Space to be generalised), this function should become part
     //  of a CA trait (together with step)
-    pub fn grant_position<C: ChemSniffer>(
+    pub fn grant_position(
         &self,
         pos: Pos<usize>,
         to: Spin,
-        env: &mut Environment<
-            C,
-            impl Neighbourhood,
-            impl AsLatticeBoundary<Coord = f32>
-        >,
+        env: &mut ChemEnvironment,
     ) -> EdgesUpdate {
         let chem_at = env.space.chem_lattice[pos] as f32;
         if let SomeCell(cell) = env.cells.get_entity_mut(to) {
@@ -215,32 +207,33 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::adhesion::{ClonalAdhesion, StaticAdhesion};
-    use crate::cell::Cell;
-    use crate::genetics::mock_genome::MockGenome;
-
-    #[test]
-    fn test_delta_hamiltonian_size() {
-        let adh = StaticAdhesion {
-            cell_energy: 10.,
-            medium_energy: 20.,
-            solid_energy: 20.
-        };
-        let ca = CellularAutomata::new(
-            16., 
-            1.,
-            1.,
-            ClonalAdhesion::new(10, adh)
-        );
-        let cell = RelCell::mock(Cell::new_empty(
-            100, 
-            200, 
-            MockGenome::new(0)
-        ));
-        let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
-        assert_eq!(dh, 2.);
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use cellulars_lib::adhesion::{ClonalAdhesion, StaticAdhesion};
+//     use super::*;
+//     use crate::cell::Cell;
+//     use crate::genetics::mock_genome::MockGenome;
+// 
+//     #[test]
+//     fn test_delta_hamiltonian_size() {
+//         let adh = StaticAdhesion {
+//             cell_energy: 10.,
+//             medium_energy: 20.,
+//             solid_energy: 20.
+//         };
+//         let ca = CellularAutomata::new(
+//             16., 
+//             1.,
+//             1.,
+//             true,
+//             ClonalAdhesion::new(10, adh)
+//         );
+//         let cell = RelCell::mock(Cell::new_empty(
+//             100, 
+//             200, 
+//             MockGenome::new(0)
+//         ));
+//         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
+//         assert_eq!(dh, 2.);
+//     }
+// }

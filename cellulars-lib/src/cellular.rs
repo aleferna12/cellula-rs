@@ -1,20 +1,13 @@
-use std::ops::{Deref, DerefMut};
 use crate::constants::Spin;
 use crate::lattice_entity::LatticeEntity;
-use crate::positional::boundary::Boundary;
 use crate::positional::pos::Pos;
+use std::ops::{Deref, DerefMut};
 
 pub trait Cellular {
     fn target_area(&self) -> u32;
-    fn set_target_area(&mut self, value: u32);
     fn area(&self) -> u32;
     fn center(&self) -> Pos<f32>;
-    fn shift_position<B: Boundary<Coord = f32>>(&mut self, pos: Pos<usize>, add: bool, bound: &B);
-    fn update(&mut self);
-    fn birth(&self) -> Self;
-    fn die(&mut self);
     fn is_alive(&self) -> bool;
-    fn is_valid(&self) -> bool;
 }
 
 /// Represents a cell that is bound to an `Environment`.
@@ -52,5 +45,25 @@ impl<C> Deref for RelCell<C> {
 impl<C> DerefMut for RelCell<C> {
     fn deref_mut(&mut self) -> &mut <Self as Deref>::Target {
         &mut self.cell
+    }
+}
+
+pub struct _TestCell {}
+
+impl Cellular for _TestCell {
+    fn target_area(&self) -> u32 {
+        todo!()
+    }
+
+    fn area(&self) -> u32 {
+        todo!()
+    }
+
+    fn center(&self) -> Pos<f32> {
+        todo!()
+    }
+
+    fn is_alive(&self) -> bool {
+        todo!()
     }
 }

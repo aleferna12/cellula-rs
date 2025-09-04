@@ -1,23 +1,23 @@
-use crate::adhesion::{ClonalAdhesion, StaticAdhesion};
 use crate::cell::Cell;
-use crate::cell_container::CellContainer;
 use crate::cellular_automata::CellularAutomata;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::ecology::disperser::{Disperser, SelectiveDispersion};
-use crate::ecology::selector::WeightedOrderedSelection;
 use crate::ecology::transporter::{Transporter, WipeOut};
-use crate::environment::{Environment, LatticeEntity};
 use crate::genetics::grn::Grn;
 use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::pond::Pond;
-use crate::positional::rect::Rect;
-use crate::space::Space;
 use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::error::Error;
+use cellulars_lib::adhesion::{ClonalAdhesion, StaticAdhesion};
+use cellulars_lib::cell_container::CellContainer;
+use cellulars_lib::lattice_entity::LatticeEntity;
+use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::selector::WeightedOrderedSelection;
+use crate::chem_space::{ChemEnvironment, ChemSpace};
 
 pub struct Model {
     pub ponds: Vec<Pond>,
@@ -72,55 +72,24 @@ impl Model {
         //  (takes less time to reinitialise everything which means more samples)
         for pond_i in 0..parameters.general.n_ponds {
             log::info!("Making pond #{pond_i}");
-            let mut env = Environment::new(
-                parameters.pond.cell_search_radius,
-                parameters.pond.max_cells,
-                CellContainer::new(
-                    parameters.cell.target_area,
-                    parameters.cell.divide,
-                    parameters.cell.migrate,
-                ),
-                Space::new(
-                    BoundaryType::new(Rect::new(
-                        (0., 0.).into(),
-                        (parameters.pond.width as f32, parameters.pond.height as f32).into(),
-                    ))
-                )?,
+            let mut env = ChemEnvironment::new(
+                CellContainer::default(),
+                ChemSpace::new(BoundaryType::new(Rect::new(
+                    (0., 0.).into(),
+                    (parameters.pond.width as f32, parameters.pond.height as f32).into(),
+                )))?,
                 NeighbourhoodType::new(parameters.pond.neigh_r)
             );
 
             if parameters.pond.enclose {
-                env.make_border();
+                env.make_border(true, true, true, true);
             }
-
-            let mut pop_n = 0;
-            for _ in 0..parameters.pond.starting_cells {
-                let cell = Cell::new_empty(
-                    parameters.cell.target_area,
-                    parameters.cell.div_area,
-                    Grn::new(
-                        [1. / env.height() as f32],
-                        parameters.cell.n_regulatory_genes,
-                        parameters.cell.mutation_rate,
-                        parameters.cell.mutation_std,
-                        || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
-                    )
-                );
-                let spawned = env.spawn_cell_random(
-                    parameters.cell.starting_area,
-                    cell,
-                    &mut rng
-                );
-                if spawned.is_some() {
-                    pop_n += 1;
-                }
-            }
-            log::info!("Created {pop_n} out of the {} cells requested", parameters.pond.starting_cells);
 
             let ca= CellularAutomata::new(
                 parameters.cellular_automata.boltz_t,
                 parameters.cellular_automata.size_lambda,
                 parameters.cellular_automata.chemotaxis_mu,
+                parameters.cell.migrate,
                 ClonalAdhesion::new(
                     parameters.pond.max_cells + LatticeEntity::first_cell_spin(),
                     StaticAdhesion {
@@ -130,12 +99,42 @@ impl Model {
                     }
                 )
             );
-            ponds.push(Pond::new(
+            
+            let mut pond = Pond::new(
                 env,
                 ca,
                 rng.clone(),
                 parameters.cell.update_period,
-            ));
+                parameters.pond.cell_search_radius,
+                parameters.cell.target_area,
+                parameters.cell.divide,
+                parameters.pond.max_cells
+            );
+
+            let mut pop_n = 0;
+            for _ in 0..parameters.pond.starting_cells {
+                let cell = Cell::new_empty(
+                    parameters.cell.target_area,
+                    parameters.cell.div_area,
+                    Grn::new(
+                        [1. / pond.env.height() as f32],
+                        parameters.cell.n_regulatory_genes,
+                        parameters.cell.mutation_rate,
+                        parameters.cell.mutation_std,
+                        || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
+                    )
+                );
+                let spawned = pond.spawn_cell_random(
+                    parameters.cell.starting_area,
+                    cell,
+                    &mut rng
+                );
+                if spawned.is_some() {
+                    pop_n += 1;
+                }
+            }
+            log::info!("Created {pop_n} out of the {} cells requested", parameters.pond.starting_cells);
+            ponds.push(pond);
         }
 
         Ok(Self {
@@ -161,7 +160,7 @@ impl Model {
             }
 
             if time_step > 0 && time_step % self.dispersion_period == 0 {
-                let dispersed = SelectiveDispersion{ 
+                let dispersed = SelectiveDispersion { 
                     selector: WeightedOrderedSelection{
                         rng: &mut self.rng 
                     } 

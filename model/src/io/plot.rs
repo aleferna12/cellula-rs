@@ -92,7 +92,7 @@ pub struct CenterPlot<'e> {
 impl Plot for CenterPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in self.env.cells.iter() {
-            if !cell.is_valid() {
+            if !cell.is_alive() {
                 continue;
             }
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -114,7 +114,7 @@ pub struct ChemCenterPlot<'e> {
 impl Plot for ChemCenterPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in self.env.cells.iter() {
-            if !cell.is_valid() {
+            if !cell.is_alive() {
                 continue;
             }
             let center = self.env.space.lat_bound.valid_pos(Pos::new(
@@ -148,7 +148,7 @@ impl Plot for ClonesPlot<'_> {
             let message = "Non-cell stored as clone";
             let cell1 = self.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
             let cell2 = self.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
-            if !cell1.is_valid() || !cell2.is_valid() {
+            if !cell1.is_alive() || !cell2.is_alive() {
                 continue;
             }
             let center1 = cell1.center();
@@ -231,7 +231,7 @@ impl Plot for AreaPlot<'_> {
         let mut min = u32::MAX;
         let mut max = 0;
         for cell in self.env.cells.iter() {
-            if !cell.is_valid() {
+            if !cell.is_alive() {
                 continue;
             }
             if cell.area() < min {

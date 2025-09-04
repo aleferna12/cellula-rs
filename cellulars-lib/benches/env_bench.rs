@@ -5,9 +5,18 @@ use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
+use cellulars_lib::environment::Environment;
+use cellulars_lib::lattice_entity::LatticeEntity::*;
+use cellulars_lib::positional::edge::Edge;
+use cellulars_lib::positional::pos::Pos;
+use cellulars_lib::spatial::Spatial;
+
+fn empty_env(width: u32, height: u32) -> Environment<> {
+
+}
 
 fn random_neighbour<C, N>(
-    env: &Environment<C, N, impl AsLatticeBoundary>,
+    env: &Environment<C, N, impl Spatial>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl Rng
@@ -17,24 +26,24 @@ fn random_neighbour<C, N>(
     let dist = neigh_r as i32;
     while oldp == newp {
         newp.0 = oldp.0 + rng.random_range(
-            -min(dist, oldp.0)..min(dist + 1, env.space.cell_lattice.width() as i32 - oldp.0)
+            -min(dist, oldp.0)..min(dist + 1, env.space.cell_lattice().width() as i32 - oldp.0)
         );
         newp.1 = oldp.1 + rng.random_range(
-            -min(dist, oldp.1)..min(dist + 1, env.space.cell_lattice.height() as i32 - oldp.1)
+            -min(dist, oldp.1)..min(dist + 1, env.space.cell_lattice().height() as i32 - oldp.1)
         );
     }
     Pos::new(newp.0 as usize, newp.1 as usize)
 }
 
-fn add_random_edge<C, N>(env: &mut Environment<C, N, impl AsLatticeBoundary>, rng: &mut impl Rng) -> bool {
-    let p1 = env.space.cell_lattice.random_pos(rng);
+fn add_random_edge<C, N>(env: &mut Environment<C, N, impl Spatial>, rng: &mut impl Rng) -> bool {
+    let p1 = env.space.cell_lattice().random_pos(rng);
     let e = Edge::new(p1, random_neighbour(env, p1, 1, rng));
     env.edge_book.insert(e)
 }
 
 fn replace_random_edges<C, N>(
     n_edges: usize, 
-    env: &mut Environment<C, N, impl AsLatticeBoundary>, 
+    env: &mut Environment<C, N, impl Spatial>,
     rng: &mut impl Rng
 ) {
     for _ in 0..n_edges {

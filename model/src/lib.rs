@@ -1,9 +1,9 @@
+pub mod model;
+pub mod io;
 mod cellular_automata;
 mod constants;
-mod model;
 mod pond;
 mod cell;
-mod io;
 mod ecology;
 mod genetics;
 mod chem_space;

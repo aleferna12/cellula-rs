@@ -1,7 +1,5 @@
-use cellulars_lib::environment::Environment;
 use cellulars_lib::positional::boundary::UnsafePeriodicBoundary;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
-use crate::cell::Cell;
 
 /// Boundary type of the environment.
 ///

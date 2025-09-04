@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
-use evo_cpm::io::parameters::{Parameters, PlotType};
 use strum::IntoEnumIterator;
-use evo_cpm::model::Model;
+use model::io::parameters::{Parameters, PlotType};
+use model::model::Model;
 
 fn make_model() -> Model {
     let mut params = Parameters::parse("examples/64_cells.toml").unwrap();

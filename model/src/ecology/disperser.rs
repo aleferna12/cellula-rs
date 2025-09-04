@@ -15,8 +15,7 @@ pub struct DispersionEvent {
 }
 
 pub struct SelectiveDispersion<S> {
-    pub selector: S,
-    cell_search_radius: f32,
+    pub selector: S
 }
 
 impl<S> SelectiveDispersion<S> {
@@ -26,7 +25,7 @@ impl<S> SelectiveDispersion<S> {
             return vec![];
         }
         
-        let neighs_graph = pond.env.build_neighbours_graph(self.cell_search_radius);
+        let neighs_graph = pond.env.build_neighbours_graph(pond.cell_search_radius);
         let mut subgraphs = connected_components(&neighs_graph);
         // There is only one cluster
         if subgraphs.len() <= 1 {
