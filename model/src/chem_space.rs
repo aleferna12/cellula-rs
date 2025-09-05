@@ -18,7 +18,7 @@ impl ChemSpace {
     pub fn new(bound: BoundaryType) -> Result<Self, Box<dyn Error>> {
         let space = Space::new(bound)?;
         Ok(Self {
-            chem_lattice: space.cell_lattice.clone(),
+            chem_lattice: space.cell_lattice().clone(),
             space,
         })
     }
@@ -41,19 +41,19 @@ impl DerefMut for ChemSpace {
 impl Spatial for ChemSpace {
     type Boundary = BoundaryType;
     fn cell_lattice(&self) -> &Lattice<Spin> {
-        &self.cell_lattice
+        self.space.cell_lattice()
     }
 
     fn cell_lattice_mut(&mut self) -> &mut Lattice<Spin> {
-        &mut self.cell_lattice
+        self.space.cell_lattice_mut()
     }
 
     fn boundary(&self) -> &BoundaryType {
-        &self.bound
+        self.space.boundary()
     }
 
     fn lattice_boundary(&self) -> &<BoundaryType as AsLatticeBoundary>::LatticeBoundary {
-        &self.lat_bound
+        self.space.lattice_boundary()
     }
 }
 

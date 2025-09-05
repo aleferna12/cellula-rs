@@ -15,6 +15,7 @@ use polars::prelude::*;
 use serde::Serialize;
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use cellulars_lib::spatial::Spatial;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -161,7 +162,7 @@ impl IoManager {
         for (i, pond) in ponds.iter().enumerate() {
             res.push(PondCellLatttice {
                 pond: i as u32,
-                lattice: pond.env.space.cell_lattice.as_array()
+                lattice: pond.env.space.cell_lattice().as_array()
             })
         }
         res

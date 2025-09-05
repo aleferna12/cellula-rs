@@ -323,7 +323,7 @@ pub mod tests {
             Pos::new(2, 2),
             Pos::new(3, 3),
         ] {
-            assert_eq!(env.space.cell_lattice[*pos], Solid.discriminant());
+            assert_eq!(env.space.cell_lattice()[*pos], Solid.discriminant());
         }
     }
 
@@ -331,17 +331,17 @@ pub mod tests {
     fn test_update_edges_adds_and_removes() {
         let mut env = make_test_env();
         let spin = LatticeEntity::first_cell_spin();
-        env.space.cell_lattice[Pos::new(5, 5)] = spin;
+        env.space.cell_lattice_mut()[Pos::new(5, 5)] = spin;
         let mut edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 0);
         assert_eq!(edges_update.added, 8);
 
-        env.space.cell_lattice[Pos::new(6, 5)] = spin;
+        env.space.cell_lattice_mut()[Pos::new(6, 5)] = spin;
         edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 1);
         assert_eq!(edges_update.added, 0);
 
-        env.space.cell_lattice[Pos::new(6, 5)] = spin + 1;
+        env.space.cell_lattice_mut()[Pos::new(6, 5)] = spin + 1;
         edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 0);
         assert_eq!(edges_update.added, 1);

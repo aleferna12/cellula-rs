@@ -9,6 +9,7 @@ use cellulars_lib::lattice_entity::LatticeEntity::*;
 use cellulars_lib::positional::boundary::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
+use cellulars_lib::spatial::Spatial;
 use crate::cell::Cell;
 use crate::chem_space::ChemEnvironment;
 
@@ -121,28 +122,28 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         pos_source: Pos<usize>,
         pos_target: Pos<usize>
     ) -> f32 {
-        let spin_target = env.space.cell_lattice[pos_target];
+        let spin_target = env.space.cell_lattice()[pos_target];
         if spin_target == Solid.discriminant() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_source = {
-            let spin = env.space.cell_lattice[pos_source];
+            let spin = env.space.cell_lattice()[pos_source];
             if spin == Solid.discriminant() { Medium.discriminant() } else { spin }
         };
 
         let entity_source = env.cells.get_entity(spin_source);
         let entity_target = env.cells.get_entity(spin_target);
-        let neigh_entities = env.space.lat_bound.valid_positions(
+        let neigh_entities = env.space.lattice_boundary().valid_positions(
             env.neighbourhood.neighbours(pos_target.to_isize())
         ).map(|neigh| {
-            env.cells.get_entity(env.space.cell_lattice[neigh.to_usize()])
+            env.cells.get_entity(env.space.cell_lattice()[neigh.to_usize()])
         });
 
         let mut delta_h = self.delta_hamiltonian(entity_source, entity_target, neigh_entities);
         if let SomeCell(cell) = entity_source {
             if self.enable_migration && cell.is_migrating() {
-                delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, &env.space.bound);
+                delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, env.space.boundary());
             }
         }
         if !self.accept_site_copy(rng, delta_h) {
@@ -167,15 +168,15 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     ) -> EdgesUpdate {
         let chem_at = env.space.chem_lattice[pos] as f32;
         if let SomeCell(cell) = env.cells.get_entity_mut(to) {
-            cell.shift_position(pos, true, &env.space.bound);
-            cell.shift_chem(pos, chem_at, true, &env.space.bound);
+            cell.shift_position(pos, true, env.space.boundary());
+            cell.shift_chem(pos, chem_at, true, env.space.boundary());
         }
-        if let SomeCell(cell) = env.cells.get_entity_mut(env.space.cell_lattice[pos]) {
-            cell.shift_position(pos, false, &env.space.bound);
-            cell.shift_chem(pos, chem_at, false, &env.space.bound);
+        if let SomeCell(cell) = env.cells.get_entity_mut(env.space.cell_lattice()[pos]) {
+            cell.shift_position(pos, false, env.space.boundary());
+            cell.shift_chem(pos, chem_at, false, env.space.boundary());
         }
         // Executes the copy
-        env.space.cell_lattice[pos] = to;
+        env.space.cell_lattice_mut()[pos] = to;
         env.update_edges(pos)
     }
 

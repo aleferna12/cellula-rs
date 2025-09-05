@@ -5,14 +5,27 @@ use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
+use cellulars_lib::cell_container::CellContainer;
+use cellulars_lib::cellular::BasicCell;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::lattice_entity::LatticeEntity::*;
+use cellulars_lib::positional::boundary::{Boundary, UnsafePeriodicBoundary};
 use cellulars_lib::positional::edge::Edge;
+use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;
+use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::space::Space;
 use cellulars_lib::spatial::Spatial;
 
-fn empty_env(width: u32, height: u32) -> Environment<> {
-
+fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourhood, Space<UnsafePeriodicBoundary<f32>>> {
+    Environment::new(
+        CellContainer::default(),
+        MooreNeighbourhood::new(1),
+        Space::new(UnsafePeriodicBoundary::new(Rect::new(
+            (0., 0.).into(),
+            (width, height).into()
+        ))).unwrap()
+    )
 }
 
 fn random_neighbour<C, N>(
@@ -64,7 +77,7 @@ fn bench_env(c: &mut Criterion) {
     c.bench_function("replace_edges", |b| {
         b.iter_batched_ref(
             || {
-                let mut env = Environment::new_empty_test(100, 100);
+                let mut env = empty_env(100., 100.);
                 let mut rng = Xoshiro256StarStar::seed_from_u64(1241254152);
                 for _ in 0..env.space.cell_lattice.width() * env.space.cell_lattice.height() / 2 {
                     add_random_edge(&mut env, &mut rng);
@@ -100,7 +113,7 @@ fn bench_env(c: &mut Criterion) {
         );
     });
 
-    let mut env = Environment::new_empty_test(100, 100);
+    let mut env = empty_env(100., 100.);
     env.spawn_rect_cell(
         Rect::new((10, 10).into(), (20, 20).into()),
         Cell::new_empty(100, 200, MockGenome::new(0))

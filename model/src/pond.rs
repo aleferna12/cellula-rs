@@ -14,6 +14,7 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
+use cellulars_lib::spatial::Spatial;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 pub struct Pond {
@@ -79,7 +80,7 @@ impl Pond {
         rng: &mut impl Rng,
     ) -> Option<&RelCell<Cell>> {
         let cell_side = (cell_area as f32).sqrt() as usize;
-        let pos = self.env.space.cell_lattice.random_pos(rng);
+        let pos = self.env.space.cell_lattice().random_pos(rng);
         self.spawn_rect_cell(
             Rect::new(
                 pos,
@@ -96,23 +97,23 @@ impl Pond {
 
         let spin = self.env.cells.next_spin();
         for pos in rect.iter_positions() {
-            if let Some(valid_pos) = self.env.space.lat_bound.valid_pos(pos.to_isize()) {
+            if let Some(valid_pos) = self.env.space.lattice_boundary().valid_pos(pos.to_isize()) {
                 let lat_pos = valid_pos.to_usize();
-                if self.env.space.cell_lattice[lat_pos] != Medium.discriminant() {
+                if self.env.space.cell_lattice_mut()[lat_pos] != Medium.discriminant() {
                     continue
                 }
-                self.env.space.cell_lattice[lat_pos] = spin;
+                self.env.space.cell_lattice_mut()[lat_pos] = spin;
                 self.env.update_edges(lat_pos);
                 empty_cell.shift_position(
                     lat_pos,
                     true,
-                    &self.env.space.bound
+                    self.env.space.boundary()
                 );
                 empty_cell.shift_chem(
                     lat_pos,
                     self.env.space.chem_lattice[lat_pos] as f32,
                     true,
-                    &self.env.space.bound
+                    self.env.space.boundary()
                 )
             }
         }
@@ -126,7 +127,7 @@ impl Pond {
         for pos in self.env.search_cell_box(cell, self.cell_search_radius) {
             // TODO!: Parameterize chance of medium
             if self.rng.random::<f32>() < 0.1 {
-                self.env.space.cell_lattice[pos] = Medium.discriminant();
+                self.env.space.cell_lattice_mut()[pos] = Medium.discriminant();
             }
         }
         for i in 0..self.ca.adhesion.clone_pairs.length() {
@@ -137,7 +138,7 @@ impl Pond {
     
     pub fn wipe_out(&mut self) {
         self.env.cells.wipe_out();
-        self.env.space.cell_lattice.iter_values_mut().for_each(|value| {
+        self.env.space.cell_lattice_mut().iter_values_mut().for_each(|value| {
             if *value >= LatticeEntity::first_cell_spin() {
                 *value = Medium.discriminant();
             }
@@ -165,7 +166,7 @@ impl Pond {
             .filter(|pos| {
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                self.env.space.bound.displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
+                self.env.space.boundary().displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
             })
             .collect();
         for pos in new_positions {
@@ -174,29 +175,29 @@ impl Pond {
             }
             // TODO: this is basically the same as executing a lattice copy, unify the APIs
             //  This can happen when we move functions that change the env to Pond and CA
-            self.env.space.cell_lattice[pos] = new_spin;
+            self.env.space.cell_lattice_mut()[pos] = new_spin;
             let chem_at = self.env.space.chem_lattice[pos] as f32;
             new_cell.shift_position(
                 pos,
                 true,
-                &self.env.space.bound
+                self.env.space.boundary()
             );
             new_cell.shift_chem(
                 pos,
                 chem_at,
                 true,
-                &self.env.space.bound
+                self.env.space.boundary()
             );
             mom_clone.shift_position(
                 pos,
                 false,
-                &self.env.space.bound
+                self.env.space.boundary()
             );
             mom_clone.shift_chem(
                 pos,
                 chem_at,
                 false,
-                &self.env.space.bound
+                self.env.space.boundary()
             );
         }
         if new_cell.area() > 0 {

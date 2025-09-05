@@ -6,9 +6,9 @@ use crate::spatial::Spatial;
 use std::error::Error;
 
 pub struct Space<B: AsLatticeBoundary> {
-    pub bound: B,
-    pub lat_bound: B::LatticeBoundary,
-    pub cell_lattice: Lattice<Spin>,
+    bound: B,
+    lat_bound: B::LatticeBoundary,
+    cell_lattice: Lattice<Spin>,
 }
 
 impl<B: AsLatticeBoundary> Space<B> {
