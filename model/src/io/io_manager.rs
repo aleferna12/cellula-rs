@@ -8,6 +8,7 @@ use crate::pond::Pond;
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::cellular::Cellular;
 use cellulars_lib::constants::Spin;
+use cellulars_lib::space::{Habitable, Spatial};
 use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
 use polars::df;
@@ -15,7 +16,6 @@ use polars::prelude::*;
 use serde::Serialize;
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use cellulars_lib::spatial::Spatial;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";

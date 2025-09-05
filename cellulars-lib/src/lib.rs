@@ -8,5 +8,4 @@ pub mod cellular;
 pub mod constants;
 pub mod lattice_entity;
 pub mod evolution;
-pub mod spatial;
 pub mod space;

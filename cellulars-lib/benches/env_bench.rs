@@ -15,7 +15,7 @@ use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::space::Space;
-use cellulars_lib::spatial::Spatial;
+use cellulars_lib::space::Spatial;
 
 fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourhood, Space<UnsafePeriodicBoundary<f32>>> {
     Environment::new(

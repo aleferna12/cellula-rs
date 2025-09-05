@@ -3,10 +3,10 @@ use cellulars_lib::cellular::Cellular;
 use cellulars_lib::constants::Spin;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity;
-use cellulars_lib::positional::boundary::{AsLatticeBoundary, Boundary};
+use cellulars_lib::positional::boundary::{ToLatticeBoundary, Boundary};
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::space::Space;
+use cellulars_lib::space::{Habitable, Space};
 use cellulars_lib::symmetric_table::SymmetricTable;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
@@ -14,7 +14,7 @@ use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-use cellulars_lib::spatial::Spatial;
+use cellulars_lib::space::Spatial;
 use crate::chem_space::ChemEnvironment;
 
 // TODO: This should most definitely take a pond as an arg, which let us use dynamic dispatch to write better code
@@ -49,13 +49,13 @@ pub enum LerpError {
     NegativeRange
 }
 
-pub struct SpinPlot<'s, B: AsLatticeBoundary> {
+pub struct SpinPlot<'s, B: ToLatticeBoundary> {
     pub space: &'s Space<B>,
     pub solid_color: Srgb<u8>,
     pub medium_color: Option<Srgb<u8>>
 }
 
-impl<'s, B: AsLatticeBoundary> SpinPlot<'s, B> {
+impl<'s, B: ToLatticeBoundary> SpinPlot<'s, B> {
     fn spin_to_rgb(spin: Spin) -> Srgb<u8> {
         let mut hasher = DefaultHasher::new();
         spin.hash(&mut hasher);
@@ -68,7 +68,7 @@ impl<'s, B: AsLatticeBoundary> SpinPlot<'s, B> {
     }
 }
 
-impl<B: AsLatticeBoundary> Plot for SpinPlot<'_, B> {
+impl<B: ToLatticeBoundary> Plot for SpinPlot<'_, B> {
     fn plot(&self, image: &mut RgbaImage) {
         for pos in self.space.cell_lattice().iter_positions() {
             let spin = self.space.cell_lattice()[pos];

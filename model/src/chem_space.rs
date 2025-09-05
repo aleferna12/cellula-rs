@@ -5,9 +5,9 @@ use crate::constants::{BoundaryType, NeighbourhoodType};
 use cellulars_lib::constants::Spin;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::lattice::Lattice;
-use cellulars_lib::positional::boundary::AsLatticeBoundary;
-use cellulars_lib::space::Space;
-use cellulars_lib::spatial::Spatial;
+use cellulars_lib::positional::boundary::ToLatticeBoundary;
+use cellulars_lib::space::{Habitable, Space};
+use cellulars_lib::space::Spatial;
 
 pub struct ChemSpace {
     space: Space<BoundaryType>,
@@ -40,20 +40,23 @@ impl DerefMut for ChemSpace {
 
 impl Spatial for ChemSpace {
     type Boundary = BoundaryType;
+
+    fn boundary(&self) -> &BoundaryType {
+        self.space.boundary()
+    }
+
+    fn lattice_boundary(&self) -> &<BoundaryType as ToLatticeBoundary>::LatticeBoundary {
+        self.space.lattice_boundary()
+    }
+}
+
+impl Habitable for ChemSpace {
     fn cell_lattice(&self) -> &Lattice<Spin> {
         self.space.cell_lattice()
     }
 
     fn cell_lattice_mut(&mut self) -> &mut Lattice<Spin> {
         self.space.cell_lattice_mut()
-    }
-
-    fn boundary(&self) -> &BoundaryType {
-        self.space.boundary()
-    }
-
-    fn lattice_boundary(&self) -> &<BoundaryType as AsLatticeBoundary>::LatticeBoundary {
-        self.space.lattice_boundary()
     }
 }
 

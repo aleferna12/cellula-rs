@@ -52,10 +52,10 @@ where
     fn wrap_scalar(val: Self::Coord, min: Self::Coord, max: Self::Coord) -> Self::Coord;
 }
 
-pub trait AsLatticeBoundary: Boundary {
+pub trait ToLatticeBoundary: Boundary {
     type LatticeBoundary: Boundary<Coord = isize>;
     type Error;
-    fn as_lattice_boundary(&self) -> Result<Self::LatticeBoundary, Self::Error>;
+    fn to_lattice_boundary(&self) -> Result<Self::LatticeBoundary, Self::Error>;
 }
 
 #[derive(Clone)]
@@ -98,11 +98,11 @@ where
     }
 }
 
-impl AsLatticeBoundary for FixedBoundary<f32> {
+impl ToLatticeBoundary for FixedBoundary<f32> {
     type LatticeBoundary = FixedBoundary<isize>;
     type Error = RectConversionError;
 
-    fn as_lattice_boundary(&self) -> Result<FixedBoundary<isize>, Self::Error> {
+    fn to_lattice_boundary(&self) -> Result<FixedBoundary<isize>, Self::Error> {
         Ok(FixedBoundary::new(Rect::try_from(self.rect.clone())?))
     }
 }
@@ -151,11 +151,11 @@ where
     }
 }
 
-impl AsLatticeBoundary for SafePeriodicBoundary<f32> {
+impl ToLatticeBoundary for SafePeriodicBoundary<f32> {
     type LatticeBoundary = SafePeriodicBoundary<isize>;
     type Error = RectConversionError;
 
-    fn as_lattice_boundary(&self) -> Result<SafePeriodicBoundary<isize>, Self::Error> {
+    fn to_lattice_boundary(&self) -> Result<SafePeriodicBoundary<isize>, Self::Error> {
         Ok(SafePeriodicBoundary::new(Rect::try_from(self.rect.clone())?))
     }
 }
@@ -214,11 +214,11 @@ where
     }
 }
 
-impl AsLatticeBoundary for UnsafePeriodicBoundary<f32> {
+impl ToLatticeBoundary for UnsafePeriodicBoundary<f32> {
     type LatticeBoundary = UnsafePeriodicBoundary<isize>;
     type Error = RectConversionError;
 
-    fn as_lattice_boundary(&self) -> Result<UnsafePeriodicBoundary<isize>, Self::Error> {
+    fn to_lattice_boundary(&self) -> Result<UnsafePeriodicBoundary<isize>, Self::Error> {
         Ok(UnsafePeriodicBoundary::new(Rect::try_from(self.rect.clone())?))
     }
 }

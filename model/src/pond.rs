@@ -5,7 +5,6 @@ use crate::genetics::genome::Genome;
 use cellulars_lib::adhesion::ClonalAdhesion;
 use cellulars_lib::cellular::{Cellular, RelCell};
 use cellulars_lib::constants::Spin;
-use cellulars_lib::environment::DivisionError;
 use cellulars_lib::evolution::selector::Fit;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::Medium;
@@ -14,7 +13,6 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
-use cellulars_lib::spatial::Spatial;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 pub struct Pond {
@@ -73,142 +71,7 @@ impl Pond {
         self.time_step += 1;
     }
 
-    pub fn spawn_cell_random(
-        &mut self,
-        cell_area: u32,
-        empty_cell: Cell,
-        rng: &mut impl Rng,
-    ) -> Option<&RelCell<Cell>> {
-        let cell_side = (cell_area as f32).sqrt() as usize;
-        let pos = self.env.space.cell_lattice().random_pos(rng);
-        self.spawn_rect_cell(
-            Rect::new(
-                pos,
-                (pos.x + cell_side, pos.y + cell_side).into()
-            ),
-            empty_cell.clone()
-        )
-    }
-
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: Cell) -> Option<&RelCell<Cell>> {
-        if !self.can_add_cell() {
-            return None;
-        }
-
-        let spin = self.env.cells.next_spin();
-        for pos in rect.iter_positions() {
-            if let Some(valid_pos) = self.env.space.lattice_boundary().valid_pos(pos.to_isize()) {
-                let lat_pos = valid_pos.to_usize();
-                if self.env.space.cell_lattice_mut()[lat_pos] != Medium.discriminant() {
-                    continue
-                }
-                self.env.space.cell_lattice_mut()[lat_pos] = spin;
-                self.env.update_edges(lat_pos);
-                empty_cell.shift_position(
-                    lat_pos,
-                    true,
-                    self.env.space.boundary()
-                );
-                empty_cell.shift_chem(
-                    lat_pos,
-                    self.env.space.chem_lattice[lat_pos] as f32,
-                    true,
-                    self.env.space.boundary()
-                )
-            }
-        }
-        if empty_cell.area() == 0 {
-            return None;
-        }
-        Some(self.env.cells.push(empty_cell, None))
-    }
-
-    pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
-        for pos in self.env.search_cell_box(cell, self.cell_search_radius) {
-            // TODO!: Parameterize chance of medium
-            if self.rng.random::<f32>() < 0.1 {
-                self.env.space.cell_lattice_mut()[pos] = Medium.discriminant();
-            }
-        }
-        for i in 0..self.ca.adhesion.clone_pairs.length() {
-            self.ca.adhesion.clone_pairs[(cell.spin as usize, i)] = false
-        }
-        cell.apoptosis();
-    }
     
-    pub fn wipe_out(&mut self) {
-        self.env.cells.wipe_out();
-        self.env.space.cell_lattice_mut().iter_values_mut().for_each(|value| {
-            if *value >= LatticeEntity::first_cell_spin() {
-                *value = Medium.discriminant();
-            }
-        });
-        self.ca.adhesion.clone_pairs.clear();
-    }
-
-    // We take spin here because this operation is not safe with &Cell (pushing to vec can cause reallocation)
-    pub fn divide_cell(&mut self, spin: Spin) -> Result<&RelCell<Cell>, DivisionError> {
-        let new_spin = self.env.cells.next_spin();
-        let cell_target_area = self.cell_target_area;
-        let mut mom_clone = self
-            .env
-            .cells
-            .get_entity_mut(spin)
-            .expect_cell(&format!("passed non-cell with spin {spin} to `divide_cel()`"))
-            .clone();
-
-        let mut new_cell = mom_clone.birth();
-        new_cell.set_target_area(self.cell_target_area);
-        let new_positions: Vec<_> = self
-            .env
-            .search_cell_box(&mom_clone, self.cell_search_radius)
-            .into_iter()
-            .filter(|pos| {
-                // TODO!: use principal component to determine division axis
-                //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                self.env.space.boundary().displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
-            })
-            .collect();
-        for pos in new_positions {
-            if mom_clone.area() == 1 {
-                return Err(DivisionError::NewCellTooBig);
-            }
-            // TODO: this is basically the same as executing a lattice copy, unify the APIs
-            //  This can happen when we move functions that change the env to Pond and CA
-            self.env.space.cell_lattice_mut()[pos] = new_spin;
-            let chem_at = self.env.space.chem_lattice[pos] as f32;
-            new_cell.shift_position(
-                pos,
-                true,
-                self.env.space.boundary()
-            );
-            new_cell.shift_chem(
-                pos,
-                chem_at,
-                true,
-                self.env.space.boundary()
-            );
-            mom_clone.shift_position(
-                pos,
-                false,
-                self.env.space.boundary()
-            );
-            mom_clone.shift_chem(
-                pos,
-                chem_at,
-                false,
-                self.env.space.boundary()
-            );
-        }
-        if new_cell.area() > 0 {
-            let mom_spin = mom_clone.spin;
-            mom_clone.set_target_area(cell_target_area);
-            self.env.cells.replace(mom_clone);
-            Ok(self.env.cells.push(new_cell, Some(mom_spin)))
-        } else {
-            Err(DivisionError::NewCellTooSmall)
-        }
-    }
 
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
@@ -242,29 +105,6 @@ impl Pond {
             }
         }).collect()
     }
-
-    pub fn make_chem_gradient(&mut self) {
-        for row in 0..self.env.height() {
-            for col in 0..self.env.width() {
-                self.env.space.chem_lattice[(col, row).into()] = row.try_into().expect("lattice is too big");
-            }
-        }
-    }
-
-    pub fn can_add_cell(&mut self) -> bool {
-        if self.env.cells.n_alive() < self.max_cells {
-            return true;
-        }
-        if !self.population_exploded {
-            log::warn!(
-                        "Population exceeded maximum threshold `max-cells={}` during cell division",
-                        {self.max_cells}
-                    );
-            log::warn!("This warning will be suppressed from now on");
-            self.population_exploded = true;
-        }
-        false
-    }
 }
 
 impl Fit for Pond {
@@ -278,4 +118,10 @@ impl Fit for Pond {
             .sum();
         tot_fit / self.env.cells.n_alive() as f32
     }
+}
+
+#[derive(Debug)]
+pub enum DivisionError {
+    NewCellTooSmall,
+    NewCellTooBig
 }

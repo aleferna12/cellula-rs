@@ -9,7 +9,7 @@ use cellulars_lib::lattice_entity::LatticeEntity::*;
 use cellulars_lib::positional::boundary::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::spatial::Spatial;
+use cellulars_lib::space::{Habitable, Spatial};
 use crate::cell::Cell;
 use crate::chem_space::ChemEnvironment;
 
@@ -156,28 +156,6 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         );
         // Times 2 to represent the symmetric edge
         2. * (edges_update.added as f32 - edges_update.removed as f32) / env.neighbourhood.n_neighs() as f32
-    }
-
-    // TODO!: Once CA has been generalised (requires Space to be generalised), this function should become part
-    //  of a CA trait (together with step)
-    pub fn grant_position(
-        &self,
-        pos: Pos<usize>,
-        to: Spin,
-        env: &mut ChemEnvironment,
-    ) -> EdgesUpdate {
-        let chem_at = env.space.chem_lattice[pos] as f32;
-        if let SomeCell(cell) = env.cells.get_entity_mut(to) {
-            cell.shift_position(pos, true, env.space.boundary());
-            cell.shift_chem(pos, chem_at, true, env.space.boundary());
-        }
-        if let SomeCell(cell) = env.cells.get_entity_mut(env.space.cell_lattice()[pos]) {
-            cell.shift_position(pos, false, env.space.boundary());
-            cell.shift_chem(pos, chem_at, false, env.space.boundary());
-        }
-        // Executes the copy
-        env.space.cell_lattice_mut()[pos] = to;
-        env.update_edges(pos)
     }
 
     pub fn delta_hamiltonian<'a, C: 'a + Cellular>(

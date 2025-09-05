@@ -4,7 +4,7 @@ use crate::environment::Environment;
 use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::*;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::spatial::Spatial;
+use crate::space::Habitable;
 use crate::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -35,7 +35,7 @@ impl ClonalAdhesion {
         env: &Environment<
             impl Cellular + Debug, 
             impl Neighbourhood,
-            impl Spatial
+            impl Habitable
         >
     ) -> Option<Vec<Spin>> {
         let entity = env.cells.get_entity(cell_spin);
