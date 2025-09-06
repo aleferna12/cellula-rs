@@ -1,11 +1,10 @@
-use crate::basic_cell::{Alive, Cellular, RelCell};
-use crate::boundaries::boundaries;
+use crate::basic_cell::{Cellular, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::Spin;
 use crate::lattice::Lattice;
 use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::*;
-use crate::positional::boundary::{Boundary, PosValidator, ToLatticeBoundary};
+use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::Neighbourhood;
@@ -17,7 +16,7 @@ use std::collections::{HashMap, HashSet};
 use std::f32::consts::PI;
 
 pub struct Environment<C, N, B: ToLatticeBoundary> {
-    boundaries: boundaries<B>,
+    bounds: Boundaries<B>,
     cells: CellContainer<C>,
     cell_lattice: Lattice<Spin>,
     pub edge_book: EdgeBook,
@@ -28,15 +27,16 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     pub fn new(
         cells: CellContainer<C>,
         neighbourhood: N,
-        space: boundaries<B>
-    ) -> Result<Self, RectConversionError> {
-        Ok(Self {
-            cell_lattice: Lattice::new(space.boundary.rect().clone().try_into()?),
-            boundaries: space,
+        bounds: Boundaries<B>,
+        cell_lattice: Lattice<Spin>,
+    ) -> Self {
+        Self {
+            cell_lattice,
+            bounds,
             cells,
             neighbourhood,
             edge_book: EdgeBook::new(),
-        })
+        }
     }
 
     fn width(&self) -> usize {
@@ -121,7 +121,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
             &cell.spin,
             cell.center().to_usize(),
             search_diam,
-            &self.boundaries.lattice_boundary,
+            &self.bounds.lattice_boundary,
         )
     }
 
@@ -154,7 +154,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
         let found = self.cell_lattice.search_contiguous(
             &cell.spin,
             cell.center().to_usize(),
-            &self.boundaries.lattice_boundary,
+            &self.bounds.lattice_boundary,
             &self.neighbourhood
         );
 
@@ -185,7 +185,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
             &cell.spin,
             cell.center().to_usize(),
             search_diam,
-            &self.boundaries.lattice_boundary,
+            &self.bounds.lattice_boundary,
             &self.neighbourhood
         )
     }
@@ -230,45 +230,13 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
         }
         graph
     }
-}
-
-impl<C, N, B: ToLatticeBoundary<Coord = f32>> PosValidator for Environment<C, N, B> {
-    type Boundary = B;
-
-    fn boundary(&self) -> &Self::Boundary {
-        &self.boundaries.boundary
-    }
-
-    fn lattice_boundary(&self) -> &<Self::Boundary as ToLatticeBoundary>::LatticeBoundary {
-        &self.boundaries.lattice_boundary
-    }
-}
-
-impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environment<C, N, B> {
-    type Cell = C;
-
-    fn cells(&self) -> &CellContainer<Self::Cell> {
-        &self.cells
-    }
-
-    fn cells_mut(&mut self) -> &mut CellContainer<Self::Cell> {
-        &mut self.cells
-    }
-
-    fn cell_lattice(&self) -> &Lattice<Spin> {
-        &self.cell_lattice
-    }
-
-    fn cell_lattice_mut(&mut self) -> &mut Lattice<Spin> {
-        &mut self.cell_lattice
-    }
 
     fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
         let mut removed = 0;
         let mut added = 0;
         let spin = self.cell_lattice[pos];
         let valid_neighs = self
-            .boundaries
+            .bounds
             .lattice_boundary
             .valid_positions(self.neighbourhood.neighbours(pos.to_isize()))
             .map(|neigh| neigh.to_usize());
@@ -293,32 +261,55 @@ impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitabl
     }
 }
 
+impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environment<C, N, B> {
+    type Cell = C;
+    fn grant_position(
+        &mut self,
+        pos: Pos<usize>,
+        to: Spin
+    ) -> EdgesUpdate {
+        let valid_pos = match self.bounds.lattice_boundary.valid_pos(pos.to_isize()) {
+            None => return EdgesUpdate {added: 0, removed: 0},
+            Some(pos_isize) => {pos_isize.to_usize()}
+        };
+        if let SomeCell(to_cell) = self.cells.get_entity_mut(to) {
+            to_cell.shift_position(valid_pos, true, &self.bounds.boundary);
+        }
+        let from = self.cell_lattice[valid_pos];
+        if let SomeCell(from_cell) = self.cells.get_entity_mut(from) {
+            from_cell.shift_position(valid_pos, false, &self.bounds.boundary);
+        }
+        // Executes the copy
+        self.cell_lattice[valid_pos] = to;
+        self.update_edges(valid_pos)
+    }
+}
+
 pub trait Habitable {
     type Cell: Cellular;
     fn cells(&self) -> &CellContainer<Self::Cell>;
     fn cells_mut(&mut self) -> &mut CellContainer<Self::Cell>;
-    fn cell_lattice(&self) -> &Lattice<Spin>;
-    fn cell_lattice_mut(&mut self) -> &mut Lattice<Spin>;
-    fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate;
-
-    // TODO!: I think the only way to do this is to make a higher struct that contains Env and Boundaries
-    //  Or the higher struct contains all positional information ('Habitat'?) and the CellContainer (which we pass to grant_position)
-    fn grant_position(
-        &mut self,
-        pos: Pos<usize>,
-        to: Spin,
-        boundary: &impl Boundary<Coord = f32>
-    ) -> EdgesUpdate {
-        if let SomeCell(to_cell) = self.cells_mut().get_entity_mut(to) {
-            to_cell.shift_position(pos, true, boundary);
+    
+    fn grant_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate;
+    
+    fn spawn_cell(
+        &mut self, 
+        empty_cell: Self::Cell, 
+        positions: impl IntoIterator<Item = Pos<usize>>
+    ) -> &RelCell<impl Cellular> {
+        let new_spin = self.cells_mut().push(empty_cell, None).spin;
+        for pos in positions {
+            self.grant_position(pos, new_spin);
         }
-        let from = self.cell_lattice()[pos];
-        if let SomeCell(from_cell) = self.cells_mut().get_entity_mut(from) {
-            from_cell.shift_position(pos, false, boundary);
-        }
-        // Executes the copy
-        self.cell_lattice_mut()[pos] = to;
-        self.update_edges(pos)
+        self.cells().get_entity(new_spin).expect_cell("retrieved non-cell while spawning cell")
+    }
+    
+    fn divide_cell(...) {
+        // Uses grant_position
+    }
+    
+    fn kill_cell(...) {
+        // Uses grant_position
     }
 }
 
@@ -338,7 +329,7 @@ pub mod tests {
     use super::*;
     use crate::basic_cell::BasicCell;
     use crate::boundaries::boundaries;
-    use crate::positional::boundary::UnsafePeriodicBoundary;
+    use crate::positional::boundaries::UnsafePeriodicBoundary;
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
@@ -361,7 +352,7 @@ pub mod tests {
     ) -> RelCell<BasicCell> {
         let mut cell = RelCell::mock(BasicCell::new_empty(2));
         for &pos in positions {
-            cell.shift_position(pos, true, &env.boundaries.boundary);
+            cell.shift_position(pos, true, &env.bounds.boundary);
             env.cell_lattice[pos] = cell.spin;
         }
         cell

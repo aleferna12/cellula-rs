@@ -3,7 +3,7 @@ use crate::genetics::genome::Genome;
 use crate::genetics::grn::Grn;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
 use cellulars_lib::evolution::selector::Fit;
-use cellulars_lib::positional::boundary::Boundary;
+use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 
 #[derive(Clone, Debug)]

@@ -4,7 +4,7 @@ use cellulars_lib::adhesion::AdhesionSystem;
 use cellulars_lib::basic_cell::{Cellular, RelCell};
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::*;
-use cellulars_lib::positional::boundary::Boundary;
+use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use rand::Rng;

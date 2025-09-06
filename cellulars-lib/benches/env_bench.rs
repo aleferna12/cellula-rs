@@ -9,7 +9,7 @@ use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::basic_cell::BasicCell;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::lattice_entity::LatticeEntity::*;
-use cellulars_lib::positional::boundary::{Boundary, UnsafePeriodicBoundary};
+use cellulars_lib::positional::boundaries::{Boundary, UnsafePeriodicBoundary};
 use cellulars_lib::positional::edge::Edge;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;

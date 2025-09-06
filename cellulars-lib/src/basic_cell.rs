@@ -2,7 +2,7 @@ use crate::constants::Spin;
 use crate::lattice_entity::LatticeEntity;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
-use crate::positional::boundary::Boundary;
+use crate::positional::boundaries::Boundary;
 
 #[derive(Clone, Debug)]
 pub struct BasicCell {

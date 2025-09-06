@@ -1,9 +1,27 @@
+use std::error::Error;
 // TODO! remove inlines in this mod and benchmark
 use crate::positional::pos::Pos;
 use crate::positional::rect::{Rect, RectConversionError};
 use num::traits::Euclid;
 use num::{Num};
 use std::ops::Sub;
+
+pub struct Boundaries<B: ToLatticeBoundary> {
+    pub boundary: B,
+    pub lattice_boundary: B::LatticeBoundary,
+}
+
+impl<B: ToLatticeBoundary> Boundaries<B> {
+    pub fn new(bound: B) -> Result<Self, B::Error>
+    where
+        B: ToLatticeBoundary<Coord = f32>,
+        B::Error: 'static + Error {
+        Ok(Self {
+            lattice_boundary: bound.to_lattice_boundary()?,
+            boundary: bound,
+        })
+    }
+}
 
 pub trait Boundary {
     type Coord;
@@ -57,12 +75,6 @@ pub trait ToLatticeBoundary: Boundary {
     type LatticeBoundary: Boundary<Coord = isize>;
     type Error;
     fn to_lattice_boundary(&self) -> Result<Self::LatticeBoundary, Self::Error>;
-}
-
-pub trait PosValidator {
-    type Boundary: ToLatticeBoundary<Coord = f32>;
-    fn boundary(&self) -> &Self::Boundary;
-    fn lattice_boundary(&self) -> &<Self::Boundary as ToLatticeBoundary>::LatticeBoundary;
 }
 
 #[derive(Clone)]

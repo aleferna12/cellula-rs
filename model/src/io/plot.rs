@@ -3,7 +3,7 @@ use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::Spin;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity;
-use cellulars_lib::positional::boundary::{ToLatticeBoundary, Boundary};
+use cellulars_lib::positional::boundaries::{ToLatticeBoundary, Boundary};
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::boundaries::{Habitable, boundaries};
@@ -345,7 +345,7 @@ pub enum HexError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cellulars_lib::positional::boundary::UnsafePeriodicBoundary;
+    use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
     use std::collections::HashSet;
 
     #[test]

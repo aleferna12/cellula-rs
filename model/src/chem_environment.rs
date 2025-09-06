@@ -7,7 +7,7 @@ use crate::constants::BoundaryType;
 use cellulars_lib::environment::{EdgesUpdate, Environment, Habitable};
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity::SomeCell;
-use cellulars_lib::positional::boundary::Boundary;
+use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;
 

@@ -1,4 +1,4 @@
-use crate::positional::boundary::Boundary;
+use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;

@@ -8,4 +8,3 @@ pub mod basic_cell;
 pub mod constants;
 pub mod lattice_entity;
 pub mod evolution;
-pub mod boundaries;
