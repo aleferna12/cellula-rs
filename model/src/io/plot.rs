@@ -1,12 +1,12 @@
 use crate::io::plot::HexError::ParseU8Error;
-use cellulars_lib::cellular::Cellular;
+use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::Spin;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::positional::boundary::{ToLatticeBoundary, Boundary};
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::space::{Habitable, Space};
+use cellulars_lib::boundaries::{Habitable, boundaries};
 use cellulars_lib::symmetric_table::SymmetricTable;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
@@ -14,7 +14,7 @@ use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-use cellulars_lib::space::Spatial;
+use cellulars_lib::boundaries::boundaries;
 use crate::chem_space::ChemEnvironment;
 
 // TODO: This should most definitely take a pond as an arg, which let us use dynamic dispatch to write better code
@@ -50,7 +50,7 @@ pub enum LerpError {
 }
 
 pub struct SpinPlot<'s, B: ToLatticeBoundary> {
-    pub space: &'s Space<B>,
+    pub space: &'s boundaries<B>,
     pub solid_color: Srgb<u8>,
     pub medium_color: Option<Srgb<u8>>
 }
@@ -94,7 +94,7 @@ pub struct CenterPlot<'e> {
 impl Plot for CenterPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in self.env.cells.iter() {
-            if !cell.is_alive() {
+            if !cell.is_valid() {
                 continue;
             }
             let center = self.env.space.lattice_boundary().valid_pos(Pos::new(
@@ -116,7 +116,7 @@ pub struct ChemCenterPlot<'e> {
 impl Plot for ChemCenterPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
         for cell in self.env.cells.iter() {
-            if !cell.is_alive() {
+            if !cell.is_valid() {
                 continue;
             }
             let center = self.env.space.lattice_boundary().valid_pos(Pos::new(
@@ -150,7 +150,7 @@ impl Plot for ClonesPlot<'_> {
             let message = "Non-cell stored as clone";
             let cell1 = self.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
             let cell2 = self.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
-            if !cell1.is_alive() || !cell2.is_alive() {
+            if !cell1.is_valid() || !cell2.is_valid() {
                 continue;
             }
             let center1 = cell1.center();
@@ -233,7 +233,7 @@ impl Plot for AreaPlot<'_> {
         let mut min = u32::MAX;
         let mut max = 0;
         for cell in self.env.cells.iter() {
-            if !cell.is_alive() {
+            if !cell.is_valid() {
                 continue;
             }
             if cell.area() < min {

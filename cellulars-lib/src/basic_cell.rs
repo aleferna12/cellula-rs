@@ -4,11 +4,91 @@ use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
 use crate::positional::boundary::Boundary;
 
+#[derive(Clone, Debug)]
+pub struct BasicCell {
+    target_area: u32,
+    newborn_target_area: u32,
+    area: u32,
+    center: Pos<f32>,
+}
+
+impl BasicCell {
+    pub fn new_empty(target_area: u32) -> Self {
+        Self {
+            target_area,
+            newborn_target_area: target_area,
+            area: 0,
+            center: Pos::new(0., 0.,)
+        }
+    }
+}
+
+impl BasicCell {
+    pub fn set_target_area(&mut self, value: u32) {
+        self.target_area = value;
+    }
+}
+
+impl Cellular for BasicCell {
+    fn target_area(&self) -> u32 {
+        self.target_area
+    }
+
+    fn area(&self) -> u32 {
+        self.area
+    }
+
+    fn center(&self) -> Pos<f32> {
+        self.center
+    }
+
+    fn is_valid(&self) -> bool {
+        self.area > 0
+    }
+
+    fn shift_position(
+        &mut self,
+        pos: Pos<usize>,
+        add: bool,
+        bound: &impl Boundary<Coord = f32>
+    ) {
+        let shift = if add { 1 } else { -1 };
+        // The order here matters (area is last), be careful
+        if let Some(new_center) = shifted_com(
+            self.center,
+            pos,
+            self.area as f32,
+            1.,
+            shift,
+            bound
+        ) {
+            self.center = new_center;
+        }
+        self.area = self.area.saturating_add_signed(shift);
+    }
+}
+
+impl Alive for BasicCell {
+    fn is_alive(&self) -> bool {
+        self.target_area() > 0
+    }
+
+    fn apoptosis(&mut self) {
+        self.set_target_area(0)
+    }
+
+    fn birth(&self) -> Self {
+        let mut newborn = self.clone();
+        newborn.set_target_area(self.newborn_target_area);
+        newborn
+    }
+}
+
 pub trait Cellular {
     fn target_area(&self) -> u32;
     fn area(&self) -> u32;
     fn center(&self) -> Pos<f32>;
-    fn is_alive(&self) -> bool;
+    fn is_valid(&self) -> bool;
     fn shift_position(
         &mut self,
         pos: Pos<usize>,
@@ -55,66 +135,10 @@ impl<C> DerefMut for RelCell<C> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct BasicCell {
-    target_area: u32,
-    area: u32,
-    center: Pos<f32>,
-}
-
-impl BasicCell {
-    pub fn new_empty(target_area: u32) -> Self {
-        Self {
-            target_area,
-            area: 0,
-            center: Pos::new(0., 0.,)
-        }
-    }
-}
-
-impl BasicCell {
-    pub fn set_target_area(&mut self, value: u32) {
-        self.target_area = value;
-    }
-}
-
-impl Cellular for BasicCell {
-    fn target_area(&self) -> u32 {
-        self.target_area
-    }
-
-    fn area(&self) -> u32 {
-        self.area
-    }
-
-    fn center(&self) -> Pos<f32> {
-        self.center
-    }
-
-    fn is_alive(&self) -> bool {
-        self.area > 0
-    }
-
-    fn shift_position(
-        &mut self,
-        pos: Pos<usize>,
-        add: bool,
-        bound: &impl Boundary<Coord = f32>
-    ) {
-        let shift = if add { 1 } else { -1 };
-        // The order here matters (area is last), be careful
-        if let Some(new_center) = shifted_com(
-            self.center,
-            pos,
-            self.area as f32,
-            1.,
-            shift,
-            bound
-        ) {
-            self.center = new_center;
-        }
-        self.area = self.area.saturating_add_signed(shift);
-    }
+pub trait Alive: Cellular {
+    fn is_alive(&self) -> bool;
+    fn apoptosis(&mut self);
+    fn birth(&self) -> Self;
 }
 
 /// Shifts a center of mass (`com`) with associated `mass` by `pos`.

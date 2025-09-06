@@ -1,4 +1,4 @@
-use crate::cellular::{Cellular, RelCell};
+use crate::basic_cell::{Cellular, RelCell};
 use crate::constants::Spin;
 use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
@@ -58,22 +58,22 @@ impl<C> CellContainer<C> {
 }
 
 impl<C: Cellular> CellContainer<C> {
-    pub fn n_alive(&self) -> Spin {
+    pub fn n_valid(&self) -> Spin {
         self.vec
             .iter()
-            .filter(|cell| cell.is_alive())
+            .filter(|cell| cell.is_valid())
             .count() as Spin
     }
 
     pub fn next_spin(&self) -> Spin {
         self.vec
             .iter()
-            .find(|cell| !cell.is_alive())
+            .find(|cell| !cell.is_valid())
             .map(|cell| cell.spin)
             .unwrap_or(self.n_cells() + LatticeEntity::first_cell_spin())
     }
 
-    pub fn push(&mut self, cell: C, mom_spin: Option<Spin>) -> &RelCell<C> {
+    pub fn push(&mut self, cell: C, mom_spin: Option<Spin>) -> &mut RelCell<C> {
         let new_spin = self.next_spin();
         let index = new_spin - LatticeEntity::first_cell_spin();
         let rel_cell = RelCell {
@@ -87,7 +87,7 @@ impl<C: Cellular> CellContainer<C> {
         } else {
             self.replace(rel_cell);
         }
-        &self.vec[index as usize]
+        &mut self.vec[index as usize]
     }
 }
 

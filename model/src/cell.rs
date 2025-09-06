@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 use crate::genetics::genome::Genome;
 use crate::genetics::grn::Grn;
-use cellulars_lib::cellular::{shifted_com, BasicCell, Cellular};
+use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
 use cellulars_lib::evolution::selector::Fit;
 use cellulars_lib::positional::boundary::Boundary;
 use cellulars_lib::positional::pos::Pos;
@@ -20,27 +20,11 @@ impl Cell {
     pub fn new_empty(target_area: u32, divide_area: u32, genome: Grn<1, 1>) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
-            divide_area,
             chem_center: Pos::new(0., 0.),
             chem_mass: 0.,
+            divide_area,
             genome
         }
-    }
-
-    pub fn birth(&self) -> Self {
-        Self::new_empty(
-            self.target_area(),
-            self.divide_area,
-            self.genome.clone()
-        )
-    }
-
-    pub fn apoptosis(&mut self) {
-        self.set_target_area(0);
-    }
-
-    pub fn is_dying(&self) -> bool {
-        self.target_area() <= 0
     }
 
     pub fn chem_center(&self) -> Pos<f32> {
@@ -63,7 +47,6 @@ impl Cell {
         !self.is_migrating()
     }
 
-    // TODO!: Pretty sure i can merge this and shift_position
     pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
         let shift = if add { 1 } else { -1 };
         if let Some(new_chem) = shifted_com(
@@ -118,12 +101,29 @@ impl Cellular for Cell {
         self.basic_cell.center()
     }
 
-    fn is_alive(&self) -> bool {
-        self.basic_cell.is_alive()
+    fn is_valid(&self) -> bool {
+        self.basic_cell.is_valid()
     }
 
     fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
         self.basic_cell.shift_position(pos, add, bound)
+    }
+}
+
+impl Alive for Cell {
+    fn is_alive(&self) -> bool {
+        self.basic_cell.is_alive()
+    }
+
+    fn apoptosis(&mut self) {
+        self.basic_cell.apoptosis()
+    }
+
+    fn birth(&self) -> Self {
+        Self { 
+            basic_cell: self.basic_cell.birth(),
+            ..self.clone()
+        }
     }
 }
 

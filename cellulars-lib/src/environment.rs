@@ -1,81 +1,65 @@
+use crate::basic_cell::{Alive, Cellular, RelCell};
+use crate::boundaries::boundaries;
 use crate::cell_container::CellContainer;
-use crate::cellular::{Cellular, RelCell};
 use crate::constants::Spin;
+use crate::lattice::Lattice;
 use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::*;
-use crate::positional::boundary::{ToLatticeBoundary, Boundary};
+use crate::positional::boundary::{Boundary, PosValidator, ToLatticeBoundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
-use crate::space::{Spatial};
+use crate::positional::rect::RectConversionError;
 use rustworkx_core::petgraph::prelude::UnGraph;
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::f32::consts::PI;
-use rand::Rng;
-use rand_xoshiro::Xoshiro256StarStar;
-use crate::lattice::Lattice;
-use crate::positional::rect::Rect;
 
-pub trait Habitable {
-    type Cell;
-    fn cell_lattice(&self) -> &Lattice<Spin>;
-    fn cell_lattice_mut(&mut self) -> &mut Lattice<Spin>;
-    fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate;
-}
-
-pub struct Environment<C, N, S> {
-    pub space: S,
-    pub cells: CellContainer<C>,
-    pub cell_lattice: Lattice<Spin>,
+pub struct Environment<C, N, B: ToLatticeBoundary> {
+    boundaries: boundaries<B>,
+    cells: CellContainer<C>,
+    cell_lattice: Lattice<Spin>,
     pub edge_book: EdgeBook,
-    pub neighbourhood: N,
-    pub rng: Xoshiro256StarStar,
-    pub cell_search_scaler: f32
+    pub neighbourhood: N
 }
 
-impl<C, N, S: Spatial> Environment<C, N, S> {
+impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     pub fn new(
-        cell_search_scaler: f32,
         cells: CellContainer<C>,
         neighbourhood: N,
-        space: S,
-        cell_lattice: Lattice<Spin>,
-        rng: Xoshiro256StarStar,
-    ) -> Self {
-        Self {
-            space,
+        space: boundaries<B>
+    ) -> Result<Self, RectConversionError> {
+        Ok(Self {
+            cell_lattice: Lattice::new(space.boundary.rect().clone().try_into()?),
+            boundaries: space,
             cells,
             neighbourhood,
-            cell_lattice,
-            cell_search_scaler,
-            rng,
             edge_book: EdgeBook::new(),
-        }
-    }
-    
-    pub fn width(&self) -> usize {
-        self.space.cell_lattice().width()
+        })
     }
 
-    pub fn height(&self) -> usize {
-        self.space.cell_lattice().height()
+    fn width(&self) -> usize {
+        self.cell_lattice.width()
     }
-    
-    pub fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) -> usize {
+
+    fn height(&self) -> usize {
+        self.cell_lattice.height()
+    }
+
+    fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) -> usize {
         let mut area = 0;
         for pos in positions {
-            if self.space.cell_lattice()[pos] != Medium.discriminant() {
+            if self.cell_lattice[pos] != Medium.discriminant() {
                 continue
             }
-            self.space.cell_lattice_mut()[pos] = Solid.discriminant();
+            self.cell_lattice[pos] = Solid.discriminant();
             area += 1;
         }
         area
     }
-    
-    pub fn make_border(
+
+    fn make_border(
         &mut self,
         bottom: bool,
         top: bool,
@@ -107,56 +91,12 @@ impl<C, N, S: Spatial> Environment<C, N, S> {
                 border_positions.push((self.width() - 1, y).into());
             }
         }
-        
-        self.spawn_solid(border_positions.into_iter());
-    }
 
-    pub fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate
-    where N: Neighbourhood {
-        let mut removed = 0;
-        let mut added = 0;
-        let spin = self.space.cell_lattice()[pos];
-        let valid_neighs = self
-            .space
-            .lattice_boundary()
-            .valid_positions(self.neighbourhood.neighbours(pos.to_isize()))
-            .map(|neigh| neigh.to_usize());
-        for neigh in valid_neighs {
-            let edge = Edge::new(pos, neigh);
-            let spin_neigh = self.space.cell_lattice()[neigh];
-            // The order of these if statements matter A LOT, dont mess with it
-            if spin == spin_neigh {
-                if self.edge_book.remove(&edge) {
-                    removed += 1;
-                }
-                continue;
-            }
-            if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
-                continue;
-            }
-            if self.edge_book.insert(edge) {
-                added += 1;
-            }
-        }
-        EdgesUpdate { added, removed }
+        self.spawn_solid(border_positions.into_iter());
     }
 }
 
-impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
-    pub fn grant_position(
-        &mut self,
-        pos: Pos<usize>,
-        to: &mut RelCell<C>,
-    ) -> EdgesUpdate {
-        to.shift_position(pos, true, self.space.boundary());
-        if let SomeCell(from) = self.cells.get_entity_mut(self.cell_lattice()[pos]) {
-            from.shift_position(pos, false, self.space.boundary());
-        }
-        // Executes the copy
-        self.cell_lattice_mut()[pos] = to.spin;
-        self.update_edges(pos)
-    }
-
+impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     /// This is the fastest cell search function possible, but it is NOT SAFE.
     ///
     /// <div class="warning">
@@ -168,10 +108,11 @@ impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
     /// </div>
     pub fn search_cell_box_iter(
         &self,
-        cell: &RelCell<impl Cellular>
+        cell: &RelCell<impl Cellular>,
+        search_scaler: f32
     ) -> impl Iterator<Item = Pos<usize>> {
         let search_diam = (
-            self.cell_search_scaler
+            search_scaler
                 * 2.
                 * (max(cell.target_area(), cell.area()) as f32 / PI)
                 .sqrt()
@@ -180,7 +121,7 @@ impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
             &cell.spin,
             cell.center().to_usize(),
             search_diam,
-            self.space.lattice_boundary(),
+            &self.boundaries.lattice_boundary,
         )
     }
 
@@ -188,8 +129,8 @@ impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
     /// May fail if `radius_scaler` is too small, in which case logs a warning.
-    pub fn search_cell_box(&self, cell: &RelCell<impl Cellular>) -> Vec<Pos<usize>> {
-        let found: Vec<_> = self.search_cell_box_iter(cell).collect();
+    pub fn search_cell_box(&self, cell: &RelCell<impl Cellular>, search_scaler: f32) -> Vec<Pos<usize>> {
+        let found: Vec<_> = self.search_cell_box_iter(cell, search_scaler).collect();
         if found.len() != cell.area() as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with spin {} \
@@ -210,10 +151,10 @@ impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
         &self,
         cell: &RelCell<impl Cellular>,
     ) -> Vec<Pos<usize>> {
-        let found = self.space.cell_lattice().search_contiguous(
+        let found = self.cell_lattice.search_contiguous(
             &cell.spin,
             cell.center().to_usize(),
-            self.space.lattice_boundary(),
+            &self.boundaries.lattice_boundary,
             &self.neighbourhood
         );
 
@@ -231,40 +172,42 @@ impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
 
     pub fn search_cell_outline(
         &self,
-        cell: &RelCell<impl Cellular>
+        cell: &RelCell<impl Cellular>,
+        search_scaler: f32
     ) -> Vec<Pos<usize>> {
         let search_diam = (
-            self.cell_search_scaler
+            search_scaler
                 * 2.
                 * (max(cell.target_area(), cell.area()) as f32 / PI)
                 .sqrt()
         ) as usize;
-        self.space.cell_lattice().search_outline(
+        self.cell_lattice.search_outline(
             &cell.spin,
             cell.center().to_usize(),
             search_diam,
-            self.space.lattice_boundary(),
+            &self.boundaries.lattice_boundary,
             &self.neighbourhood
         )
     }
 
     pub fn cell_neighbours(
         &self,
-        cell: &RelCell<impl Cellular>
+        cell: &RelCell<impl Cellular>,
+        search_scaler: f32
     ) -> HashSet<Spin> {
         let outline = self
-            .search_cell_outline(cell)
+            .search_cell_outline(cell, search_scaler)
             .into_iter()
-            .map(|pos| self.space.cell_lattice()[pos]);
+            .map(|pos| self.cell_lattice[pos]);
         HashSet::from_iter(outline)
     }
 
-    pub fn build_neighbours_graph(&self) -> UnGraph<Spin, ()> {
+    pub fn build_neighbours_graph(&self, search_scaler: f32) -> UnGraph<Spin, ()> {
         let mut graph = UnGraph::new_undirected();
         let mut node_map = HashMap::new();
 
         for cell in self.cells.iter() {
-            if !cell.is_alive() {
+            if !cell.is_valid() {
                 continue;
             }
 
@@ -272,7 +215,7 @@ impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
             let cell_idx = *node_map.entry(cell.spin)
                 .or_insert_with(|| graph.add_node(cell.spin));
 
-            let neighs = self.cell_neighbours(cell);
+            let neighs = self.cell_neighbours(cell, search_scaler);
 
             for neigh_spin in neighs {
                 if neigh_spin < LatticeEntity::first_cell_spin() {
@@ -286,116 +229,31 @@ impl<C: Cellular, N: Neighbourhood, S: Spatial> Environment<C, N, S> {
             }
         }
         graph
-    }pub fn spawn_cell_random(
-        &mut self,
-        cell_area: u32,
-        empty_cell: C,
-        rng: &mut impl Rng,
-    ) -> Option<&RelCell<C>> {
-        let cell_side = (cell_area as f32).sqrt() as usize;
-        let pos = self.cell_lattice().random_pos(rng);
-        self.spawn_rect_cell(
-            Rect::new(
-                pos,
-                (pos.x + cell_side, pos.y + cell_side).into()
-            ),
-            empty_cell.clone()
-        )
-    }
-
-    pub fn spawn_rect_cell(&mut self, rect: Rect<usize>, mut empty_cell: C) -> Option<&RelCell<C>> {
-        if !self.can_add_cell() {
-            return None;
-        }
-
-        let spin = self.cells.next_spin();
-        for pos in rect.iter_positions() {
-            if let Some(valid_pos) = self.space.lattice_boundary().valid_pos(pos.to_isize()) {
-                let lat_pos = valid_pos.to_usize();
-                if self.cell_lattice_mut()[lat_pos] != Medium.discriminant() {
-                    continue
-                }
-                self.cell_lattice_mut()[lat_pos] = spin;
-                self.update_edges(lat_pos);
-                empty_cell.shift_position(
-                    lat_pos,
-                    true,
-                    self.space.boundary()
-                );
-            }
-        }
-        if empty_cell.area() == 0 {
-            return None;
-        }
-        Some(self.cells.push(empty_cell, None))
-    }
-
-    pub fn kill_cell(&mut self, cell: &mut RelCell<C>) {
-        for pos in self.search_cell_box(cell) {
-            // TODO!: Parameterize chance of medium
-            if self.rng.random::<f32>() < 0.1 {
-                self.cell_lattice_mut()[pos] = Medium.discriminant();
-            }
-        }
-        cell.apoptosis();
-    }
-
-    pub fn wipe_out(&mut self) {
-        self.cells.wipe_out();
-        self.cell_lattice_mut().iter_values_mut().for_each(|value| {
-            if *value >= LatticeEntity::first_cell_spin() {
-                *value = Medium.discriminant();
-            }
-        });
-    }
-
-    pub fn divide_cell(&mut self, mother: &RelCell<C>, empty_cell: C) -> Result<&RelCell<C>, DivisionError> {
-        let mut mom_clone = mother.clone();
-
-        let new_positions: Vec<_> = self
-            .search_cell_box(&mom_clone)
-            .into_iter()
-            .filter(|pos| {
-                // TODO!: use principal component to determine division axis
-                //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                self.space.boundary().displacement(Pos::new(pos.x as f32, pos.y as f32), mom_clone.center()).0 > 0.
-            })
-            .collect();
-        if new_positions.is_empty() {
-            return  Err(DivisionError::NewCellTooSmall);
-        }
-        if new_positions.len() >= mother.area() as usize {
-            return Err(DivisionError::NewCellTooBig);
-        }
-
-        let mut new_cell = self.cells.push(empty_cell, Some(mother.spin));
-        for pos in new_positions {
-            if mom_clone.area() == 1 {
-                return Err(DivisionError::NewCellTooBig);
-            }
-            self.grant_position(
-                pos,
-                &mut new_cell,
-            );
-        }
-        Ok(new_cell)
     }
 }
 
-impl<C, N, S: Spatial> Spatial for Environment<C, N, S> {
-    type Boundary = S::Boundary;
+impl<C, N, B: ToLatticeBoundary<Coord = f32>> PosValidator for Environment<C, N, B> {
+    type Boundary = B;
 
     fn boundary(&self) -> &Self::Boundary {
-        self.space.boundary()
+        &self.boundaries.boundary
     }
 
     fn lattice_boundary(&self) -> &<Self::Boundary as ToLatticeBoundary>::LatticeBoundary {
-        self.space.lattice_boundary()
+        &self.boundaries.lattice_boundary
     }
 }
 
-impl <C, N, S: Spatial> Habitable for Environment<C, N, S> {
+impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environment<C, N, B> {
     type Cell = C;
+
+    fn cells(&self) -> &CellContainer<Self::Cell> {
+        &self.cells
+    }
+
+    fn cells_mut(&mut self) -> &mut CellContainer<Self::Cell> {
+        &mut self.cells
+    }
 
     fn cell_lattice(&self) -> &Lattice<Spin> {
         &self.cell_lattice
@@ -406,6 +264,58 @@ impl <C, N, S: Spatial> Habitable for Environment<C, N, S> {
     }
 
     fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
+        let mut removed = 0;
+        let mut added = 0;
+        let spin = self.cell_lattice[pos];
+        let valid_neighs = self
+            .boundaries
+            .lattice_boundary
+            .valid_positions(self.neighbourhood.neighbours(pos.to_isize()))
+            .map(|neigh| neigh.to_usize());
+        for neigh in valid_neighs {
+            let edge = Edge::new(pos, neigh);
+            let spin_neigh = self.cell_lattice[neigh];
+            // The order of these if statements matter A LOT, dont mess with it
+            if spin == spin_neigh {
+                if self.edge_book.remove(&edge) {
+                    removed += 1;
+                }
+                continue;
+            }
+            if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
+                continue;
+            }
+            if self.edge_book.insert(edge) {
+                added += 1;
+            }
+        }
+        EdgesUpdate { added, removed }
+    }
+}
+
+pub trait Habitable {
+    type Cell: Cellular;
+    fn cells(&self) -> &CellContainer<Self::Cell>;
+    fn cells_mut(&mut self) -> &mut CellContainer<Self::Cell>;
+    fn cell_lattice(&self) -> &Lattice<Spin>;
+    fn cell_lattice_mut(&mut self) -> &mut Lattice<Spin>;
+    fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate;
+
+    fn grant_position(
+        &mut self,
+        pos: Pos<usize>,
+        to: Spin,
+        boundary: &impl Boundary<Coord = f32>
+    ) -> EdgesUpdate {
+        if let SomeCell(to_cell) = self.cells_mut().get_entity_mut(to) {
+            to_cell.shift_position(pos, true, boundary);
+        }
+        let from = self.cell_lattice()[pos];
+        if let SomeCell(from_cell) = self.cells_mut().get_entity_mut(from) {
+            from_cell.shift_position(pos, false, boundary);
+        }
+        // Executes the copy
+        self.cell_lattice_mut()[pos] = to;
         self.update_edges(pos)
     }
 }
@@ -423,34 +333,34 @@ pub enum DivisionError {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::cellular::BasicCell;
+    use super::*;
+    use crate::basic_cell::BasicCell;
+    use crate::boundaries::boundaries;
     use crate::positional::boundary::UnsafePeriodicBoundary;
     use crate::positional::neighbourhood::MooreNeighbourhood;
-    use super::*;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
-    use crate::space::Space;
 
-    fn make_test_env() -> Environment<BasicCell, MooreNeighbourhood, Space<UnsafePeriodicBoundary<f32>>> {
-        let env = Environment::new(
+    fn make_test_env() -> Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
+        let rect = Rect::new(
+            (0., 0.,).into(),
+            (10., 10.).into()
+        );
+        Environment::new(
             CellContainer::default(),
             MooreNeighbourhood::new(1),
-            Space::new(UnsafePeriodicBoundary::new(Rect::new(
-                (0., 0.,).into(),
-                (10., 10.).into()
-            ))).expect("failed to make test `Space`")
-        );
-        env
+            boundaries::new(UnsafePeriodicBoundary::new(rect.clone())).expect("failed to make boundaries"),
+        ).expect("failed to make test environment")
     }
 
     fn add_cell(
         positions: &[Pos<usize>],
-        env: &mut Environment<BasicCell, MooreNeighbourhood, Space<UnsafePeriodicBoundary<f32>>>
+        env: &mut Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>
     ) -> RelCell<BasicCell> {
         let mut cell = RelCell::mock(BasicCell::new_empty(2));
         for &pos in positions {
-            cell.shift_position(pos, true, env.space.boundary());
-            env.space.cell_lattice_mut()[pos] = cell.spin;
+            cell.shift_position(pos, true, &env.boundaries.boundary);
+            env.cell_lattice[pos] = cell.spin;
         }
         cell
     }
@@ -471,7 +381,7 @@ pub mod tests {
             Pos::new(2, 2),
             Pos::new(3, 3),
         ] {
-            assert_eq!(env.space.cell_lattice()[*pos], Solid.discriminant());
+            assert_eq!(env.cell_lattice[*pos], Solid.discriminant());
         }
     }
 
@@ -479,17 +389,17 @@ pub mod tests {
     fn test_update_edges_adds_and_removes() {
         let mut env = make_test_env();
         let spin = LatticeEntity::first_cell_spin();
-        env.space.cell_lattice_mut()[Pos::new(5, 5)] = spin;
+        env.cell_lattice[Pos::new(5, 5)] = spin;
         let mut edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 0);
         assert_eq!(edges_update.added, 8);
 
-        env.space.cell_lattice_mut()[Pos::new(6, 5)] = spin;
+        env.cell_lattice[Pos::new(6, 5)] = spin;
         edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 1);
         assert_eq!(edges_update.added, 0);
 
-        env.space.cell_lattice_mut()[Pos::new(6, 5)] = spin + 1;
+        env.cell_lattice[Pos::new(6, 5)] = spin + 1;
         edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 0);
         assert_eq!(edges_update.added, 1);
@@ -505,7 +415,7 @@ pub mod tests {
         ];
         let mut env = make_test_env();
         let cell = add_cell(&positions, &mut env);
-        let boxed_positions = env.search_cell_box(&cell, 2.0);
+        let boxed_positions = env.search_cell_box(&cell, 2.);
         assert_eq!(boxed_positions.len(), positions.len());
         for pos in &positions {
             assert!(boxed_positions.contains(pos));
@@ -554,10 +464,10 @@ pub mod tests {
         let cell = add_cell(&positions, &mut env);
 
         let neighbour_spins = [cell.spin + 1, cell.spin + 2];
-        env.space.cell_lattice_mut()[Pos::new(1, 2)] = neighbour_spins[0];
-        env.space.cell_lattice_mut()[Pos::new(2, 0)] = neighbour_spins[1];
+        env.cell_lattice[Pos::new(1, 2)] = neighbour_spins[0];
+        env.cell_lattice[Pos::new(2, 0)] = neighbour_spins[1];
 
-        let neighs = env.cell_neighbours(&cell, 1.0);
+        let neighs = env.cell_neighbours(&cell, 2.);
 
         assert!(neighs.contains(&neighbour_spins[0]));
         assert!(neighs.contains(&neighbour_spins[1]));

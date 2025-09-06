@@ -6,9 +6,9 @@ use crate::io::parameters::{Parameters, PlotParameters, PlotType};
 use crate::io::plot::*;
 use crate::pond::Pond;
 use cellulars_lib::cell_container::CellContainer;
-use cellulars_lib::cellular::Cellular;
+use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::Spin;
-use cellulars_lib::space::{Habitable, Spatial};
+use cellulars_lib::boundaries::{Habitable, boundaries};
 use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
 use polars::df;
@@ -317,7 +317,7 @@ trait ToDataFrame {
 
 impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let valid = self.iter().filter(|cell| cell.is_alive()).collect::<Vec<_>>();
+        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
             "spin" => valid.iter().map(|cell| cell.spin).collect::<Vec<_>>(),
             "mom" => valid.iter().map(|cell| cell.mom).collect::<Vec<_>>(),

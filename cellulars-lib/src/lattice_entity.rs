@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use crate::cellular::RelCell;
+use crate::basic_cell::RelCell;
 use crate::constants::Spin;
 use crate::lattice_entity::LatticeEntity::*;
 

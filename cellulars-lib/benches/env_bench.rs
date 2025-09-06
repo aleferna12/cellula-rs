@@ -6,7 +6,7 @@ use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
 use cellulars_lib::cell_container::CellContainer;
-use cellulars_lib::cellular::BasicCell;
+use cellulars_lib::basic_cell::BasicCell;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::lattice_entity::LatticeEntity::*;
 use cellulars_lib::positional::boundary::{Boundary, UnsafePeriodicBoundary};
@@ -14,14 +14,14 @@ use cellulars_lib::positional::edge::Edge;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::space::Space;
-use cellulars_lib::space::Spatial;
+use cellulars_lib::boundaries::boundaries;
+use cellulars_lib::boundaries::boundaries;
 
-fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourhood, Space<UnsafePeriodicBoundary<f32>>> {
+fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourhood, boundaries<UnsafePeriodicBoundary<f32>>> {
     Environment::new(
         CellContainer::default(),
         MooreNeighbourhood::new(1),
-        Space::new(UnsafePeriodicBoundary::new(Rect::new(
+        boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
             (0., 0.).into(),
             (width, height).into()
         ))).unwrap()
@@ -29,7 +29,7 @@ fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourho
 }
 
 fn random_neighbour<C, N>(
-    env: &Environment<C, N, impl Spatial>,
+    env: &Environment<C, N, impl boundaries>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl Rng
@@ -48,15 +48,15 @@ fn random_neighbour<C, N>(
     Pos::new(newp.0 as usize, newp.1 as usize)
 }
 
-fn add_random_edge<C, N>(env: &mut Environment<C, N, impl Spatial>, rng: &mut impl Rng) -> bool {
+fn add_random_edge<C, N>(env: &mut Environment<C, N, impl boundaries>, rng: &mut impl Rng) -> bool {
     let p1 = env.space.cell_lattice().random_pos(rng);
     let e = Edge::new(p1, random_neighbour(env, p1, 1, rng));
     env.edge_book.insert(e)
 }
 
 fn replace_random_edges<C, N>(
-    n_edges: usize, 
-    env: &mut Environment<C, N, impl Spatial>,
+    n_edges: usize,
+    env: &mut Environment<C, N, impl boundaries>,
     rng: &mut impl Rng
 ) {
     for _ in 0..n_edges {

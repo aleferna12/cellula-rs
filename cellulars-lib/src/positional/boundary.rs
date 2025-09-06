@@ -1,3 +1,4 @@
+// TODO! remove inlines in this mod and benchmark
 use crate::positional::pos::Pos;
 use crate::positional::rect::{Rect, RectConversionError};
 use num::traits::Euclid;
@@ -56,6 +57,12 @@ pub trait ToLatticeBoundary: Boundary {
     type LatticeBoundary: Boundary<Coord = isize>;
     type Error;
     fn to_lattice_boundary(&self) -> Result<Self::LatticeBoundary, Self::Error>;
+}
+
+pub trait PosValidator {
+    type Boundary: ToLatticeBoundary<Coord = f32>;
+    fn boundary(&self) -> &Self::Boundary;
+    fn lattice_boundary(&self) -> &<Self::Boundary as ToLatticeBoundary>::LatticeBoundary;
 }
 
 #[derive(Clone)]

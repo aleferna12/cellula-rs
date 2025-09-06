@@ -1,17 +1,14 @@
-use rand::Rng;
-use std::f32::consts::E;
+use crate::cell::Cell;
+use crate::chem_space::ChemEnvironment;
 use cellulars_lib::adhesion::AdhesionSystem;
-use cellulars_lib::cellular::{Cellular, RelCell};
-use cellulars_lib::constants::Spin;
-use cellulars_lib::environment::EdgesUpdate;
+use cellulars_lib::basic_cell::{Cellular, RelCell};
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::*;
 use cellulars_lib::positional::boundary::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::space::{Habitable, Spatial};
-use crate::cell::Cell;
-use crate::chem_space::ChemEnvironment;
+use rand::Rng;
+use std::f32::consts::E;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
