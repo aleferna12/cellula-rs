@@ -302,6 +302,7 @@ pub trait Habitable {
     fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate;
 
     // TODO!: I think the only way to do this is to make a higher struct that contains Env and Boundaries
+    //  Or the higher struct contains all positional information ('Habitat'?) and the CellContainer (which we pass to grant_position)
     fn grant_position(
         &mut self,
         pos: Pos<usize>,
