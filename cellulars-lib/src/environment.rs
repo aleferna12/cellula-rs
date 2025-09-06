@@ -301,6 +301,7 @@ pub trait Habitable {
     fn cell_lattice_mut(&mut self) -> &mut Lattice<Spin>;
     fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate;
 
+    // TODO!: I think the only way to do this is to make a higher struct that contains Env and Boundaries
     fn grant_position(
         &mut self,
         pos: Pos<usize>,
