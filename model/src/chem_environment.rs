@@ -18,9 +18,19 @@ pub struct ChemEnvironment {
 
 impl ChemEnvironment {
     pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>) -> Self {
-        Self {
+        let mut env_ = Self {
             chem_lattice: env.cell_lattice.clone(),
             env
+        };
+        env_.make_chem_gradient();
+        env_
+    }
+
+    pub fn make_chem_gradient(&mut self) {
+        for row in 0..self.height() {
+            for col in 0..self.width() {
+                self.chem_lattice[(col, row).into()] = row.try_into().expect("lattice is too big");
+            }
         }
     }
 }
