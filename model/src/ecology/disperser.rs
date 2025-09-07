@@ -1,7 +1,7 @@
 use crate::pond::Pond;
 use cellulars_lib::constants::Spin;
-use rustworkx_core::connectivity::connected_components;
 use cellulars_lib::evolution::selector::PreservesOrder;
+use rustworkx_core::connectivity::connected_components;
 
 pub trait Disperser {
     fn disperse(&mut self, dispersable: &[Pond]) -> Vec<DispersionEvent>;

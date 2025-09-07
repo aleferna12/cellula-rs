@@ -1,5 +1,5 @@
-use cellulars_lib::basic_cell::Alive;
 use crate::pond::Pond;
+use cellulars_lib::basic_cell::Alive;
 use cellulars_lib::constants::Spin;
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::lattice_entity::LatticeEntity;

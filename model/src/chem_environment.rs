@@ -1,15 +1,15 @@
-use std::ops::{Deref, DerefMut};
+use crate::cell::Cell;
+use crate::constants::BoundaryType;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::constants::Spin;
-use crate::cell::Cell;
-use crate::constants::BoundaryType;
 use cellulars_lib::environment::{EdgesUpdate, Environment, Habitable};
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity::SomeCell;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;
+use std::ops::{Deref, DerefMut};
 
 pub struct ChemEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,

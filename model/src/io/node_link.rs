@@ -1,7 +1,7 @@
+use crate::genetics::grn::{EdgeWeight, Grn, GrnGeneType};
 use rustworkx_core::petgraph::prelude::EdgeRef;
 use rustworkx_core::petgraph::visit::IntoNodeReferences;
 use serde::Serialize;
-use crate::genetics::grn::{EdgeWeight, Grn, GrnGeneType};
 
 #[derive(Serialize)]
 pub struct Node<N> {

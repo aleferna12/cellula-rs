@@ -9,12 +9,11 @@ use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
+use crate::positional::rect::RectConversionError;
 use rustworkx_core::petgraph::prelude::UnGraph;
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::f32::consts::PI;
-use rand::Rng;
-use crate::positional::rect::{Rect, RectConversionError};
 
 pub struct Environment<C, N, B: ToLatticeBoundary> {
     pub bounds: Boundaries<B>,

@@ -134,9 +134,9 @@ impl Neighbourhood for VonNeumannNeighbourhood {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
     use super::*;
     use crate::positional::edge::Edge;
+    use std::collections::HashSet;
 
     #[test]
     fn test_neighbours_are_edges() {

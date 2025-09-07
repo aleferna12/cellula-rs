@@ -59,7 +59,7 @@ impl<T> From<(T, T)> for Pos<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_row_major() {
         let pos = Pos::new(10, 10);

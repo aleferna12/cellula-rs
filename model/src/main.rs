@@ -11,10 +11,10 @@ TODO!:
         - At the end, CA should be responsible for executing the steps (only),
             while Pond calls the steps and manages creation/killing of cells
  */
-use std::error::Error;
 use clap::Parser;
 use model::io::parameters::{Cli, Parameters};
 use model::model::Model;
+use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();

@@ -1,9 +1,9 @@
-use std::error::Error;
 // TODO! remove inlines in this mod and benchmark
 use crate::positional::pos::Pos;
 use crate::positional::rect::{Rect, RectConversionError};
 use num::traits::Euclid;
-use num::{Num};
+use num::Num;
+use std::error::Error;
 use std::ops::Sub;
 
 pub struct Boundaries<B: ToLatticeBoundary> {

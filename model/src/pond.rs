@@ -11,9 +11,9 @@ use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::Medium;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
+use cellulars_lib::positional::rect::Rect;
 use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
-use cellulars_lib::positional::rect::Rect;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 pub struct Pond {

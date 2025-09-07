@@ -50,7 +50,7 @@ mod tests {
     use super::*;
     use crate::positional::edge::Edge;
     use crate::positional::pos::Pos;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{rngs::StdRng, SeedableRng};
     use std::collections::HashSet;
 
     fn make_edge(a: (usize, usize), b: (usize, usize)) -> Edge {
