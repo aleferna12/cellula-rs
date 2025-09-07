@@ -161,7 +161,7 @@ mod tests {
         let pos = Pos::new(0, 0);
         let neighs: HashSet<_> = nh.neighbours(pos).collect();
         for p in &neighs {
-            assert!(neighs.contains(&Pos::new(-p.x, -p.y)), "Asymmetric Moore offset: {:?}", p);
+            assert!(neighs.contains(&Pos::new(-p.x, -p.y)), "Asymmetric Moore offset: {p:?}");
         }
     }
 
@@ -171,7 +171,7 @@ mod tests {
         let pos = Pos::new(0, 0);
         let neighs: HashSet<_> = nh.neighbours(pos).collect();
         for p in &neighs {
-            assert!(neighs.contains(&Pos::new(-p.x, -p.y)), "Asymmetric Von Neumann offset: {:?}", p);
+            assert!(neighs.contains(&Pos::new(-p.x, -p.y)), "Asymmetric Von Neumann offset: {p:?}");
         }
     }
     

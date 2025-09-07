@@ -219,13 +219,12 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
                 border_positions.push((x, self.height() - 1).into());
             }
         }
-        if left {
-            if self.width() > 1 {
+        if left
+            && self.width() > 1 {
                 for y in (1..self.height() - 1).rev() {
                     border_positions.push((0, y).into());
                 }
             }
-        }
         if right {
             for y in 1..self.height() {
                 border_positions.push((self.width() - 1, y).into());

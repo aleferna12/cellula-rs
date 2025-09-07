@@ -104,7 +104,7 @@ mod tests {
     
     #[test]
     fn test_weighted_selection() {
-        let fits: [FitTest; 100] = core::array::from_fn(|i| FitTest(i));
+        let fits: [FitTest; 100] = core::array::from_fn(FitTest);
         let fit_sum = fits.iter().map(|f| f.fitness()).sum::<f32>();
         assert_eq!(fit_sum, 4950.);
 
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_weighted_ordered_selection() {
-        let fits: [FitTest; 100] = core::array::from_fn(|i| FitTest(i));
+        let fits: [FitTest; 100] = core::array::from_fn(FitTest);
         let fit_sum = fits.iter().map(|f| f.fitness()).sum::<f32>();
         assert_eq!(fit_sum, 4950.);
 
