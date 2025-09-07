@@ -1,12 +1,12 @@
+use crate::chem_environment::ChemEnvironment;
 use crate::io::plot::HexError::ParseU8Error;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::Spin;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity;
-use cellulars_lib::positional::boundaries::{ToLatticeBoundary, Boundary};
+use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::boundaries::{Habitable, boundaries};
 use cellulars_lib::symmetric_table::SymmetricTable;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
@@ -14,8 +14,6 @@ use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-use cellulars_lib::boundaries::boundaries;
-use crate::chem_space::ChemEnvironment;
 
 // TODO: This should most definitely take a pond as an arg, which let us use dynamic dispatch to write better code
 pub trait Plot {
@@ -49,13 +47,13 @@ pub enum LerpError {
     NegativeRange
 }
 
-pub struct SpinPlot<'s, B: ToLatticeBoundary> {
-    pub space: &'s boundaries<B>,
+pub struct SpinPlot<'e> {
+    pub env: &'e ChemEnvironment,
     pub solid_color: Srgb<u8>,
     pub medium_color: Option<Srgb<u8>>
 }
 
-impl<'s, B: ToLatticeBoundary> SpinPlot<'s, B> {
+impl<'e> SpinPlot<'e> {
     fn spin_to_rgb(spin: Spin) -> Srgb<u8> {
         let mut hasher = DefaultHasher::new();
         spin.hash(&mut hasher);
@@ -68,10 +66,10 @@ impl<'s, B: ToLatticeBoundary> SpinPlot<'s, B> {
     }
 }
 
-impl<B: ToLatticeBoundary> Plot for SpinPlot<'_, B> {
+impl Plot for SpinPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.space.cell_lattice().iter_positions() {
-            let spin = self.space.cell_lattice()[pos];
+        for pos in self.env.cell_lattice.iter_positions() {
+            let spin = self.env.cell_lattice[pos];
             let rgb = if spin >= LatticeEntity::first_cell_spin() {
                 Some(Self::spin_to_rgb(spin))
             } else if spin == LatticeEntity::Solid.discriminant() {
@@ -97,7 +95,7 @@ impl Plot for CenterPlot<'_> {
             if !cell.is_valid() {
                 continue;
             }
-            let center = self.env.space.lattice_boundary().valid_pos(Pos::new(
+            let center = self.env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.center().x as isize,
                 cell.center().y as isize,
             ));
@@ -119,7 +117,7 @@ impl Plot for ChemCenterPlot<'_> {
             if !cell.is_valid() {
                 continue;
             }
-            let center = self.env.space.lattice_boundary().valid_pos(Pos::new(
+            let center = self.env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.chem_center().x as isize,
                 cell.chem_center().y as isize,
             ));
@@ -179,17 +177,17 @@ pub struct BorderPlot<'e> {
 
 impl Plot for BorderPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.space.cell_lattice().iter_positions() {
-            let spin = self.env.space.cell_lattice()[pos];
+        for pos in self.env.cell_lattice.iter_positions() {
+            let spin = self.env.cell_lattice[pos];
             if spin < LatticeEntity::first_cell_spin() {
                 continue
             }
             let is_border = self.env
-                .space
-                .lattice_boundary()
+                .bounds
+                .lattice_boundary
                 .valid_positions(self.env.neighbourhood.neighbours(pos.to_isize()))
                 .any(|neigh| {
-                    let neigh_spin = self.env.space.cell_lattice()[neigh.to_usize()];
+                    let neigh_spin = self.env.cell_lattice[neigh.to_usize()];
                     neigh_spin != spin
                 });
             if is_border {
@@ -207,8 +205,8 @@ pub struct CellTypePlot<'e> {
 
 impl Plot for CellTypePlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.space.cell_lattice().iter_positions() {
-            let spin = self.env.space.cell_lattice()[pos];
+        for pos in self.env.cell_lattice.iter_positions() {
+            let spin = self.env.cell_lattice[pos];
             let entity = self.env.cells.get_entity(spin);
             if let LatticeEntity::SomeCell(cell) = entity {
                 let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
@@ -244,8 +242,8 @@ impl Plot for AreaPlot<'_> {
             }
         }
 
-        for pos in self.env.space.cell_lattice().iter_positions() {
-            let entity = self.env.cells.get_entity(self.env.space.cell_lattice()[pos]);
+        for pos in self.env.cell_lattice.iter_positions() {
+            let entity = self.env.cells.get_entity(self.env.cell_lattice[pos]);
             if let LatticeEntity::SomeCell(cell) = entity {
                 let color = self.lerp(
                     cell.area() as f32,
@@ -345,14 +343,13 @@ pub enum HexError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
     use std::collections::HashSet;
 
     #[test]
     fn test_spin_to_rgb() {
         let mut tested = HashSet::<[u8; 3]>::default();
         for i in 0..5232 as Spin {
-            let rgb: [u8; 3] = SpinPlot::<UnsafePeriodicBoundary<f32>>::spin_to_rgb(i).into();
+            let rgb: [u8; 3] = SpinPlot::spin_to_rgb(i).into();
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);
         }

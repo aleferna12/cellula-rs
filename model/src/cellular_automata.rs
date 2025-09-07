@@ -1,5 +1,4 @@
 use crate::cell::Cell;
-use crate::chem_space::ChemEnvironment;
 use cellulars_lib::adhesion::AdhesionSystem;
 use cellulars_lib::basic_cell::{Cellular, RelCell};
 use cellulars_lib::lattice_entity::LatticeEntity;
@@ -9,6 +8,8 @@ use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use rand::Rng;
 use std::f32::consts::E;
+use cellulars_lib::environment::Habitable;
+use crate::chem_environment::ChemEnvironment;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -119,37 +120,36 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         pos_source: Pos<usize>,
         pos_target: Pos<usize>
     ) -> f32 {
-        let spin_target = env.space.cell_lattice()[pos_target];
+        let spin_target = env.cell_lattice[pos_target];
         if spin_target == Solid.discriminant() {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_source = {
-            let spin = env.space.cell_lattice()[pos_source];
+            let spin = env.cell_lattice[pos_source];
             if spin == Solid.discriminant() { Medium.discriminant() } else { spin }
         };
 
         let entity_source = env.cells.get_entity(spin_source);
         let entity_target = env.cells.get_entity(spin_target);
-        let neigh_entities = env.space.lattice_boundary().valid_positions(
+        let neigh_entities = env.bounds.lattice_boundary.valid_positions(
             env.neighbourhood.neighbours(pos_target.to_isize())
         ).map(|neigh| {
-            env.cells.get_entity(env.space.cell_lattice()[neigh.to_usize()])
+            env.cells.get_entity(env.cell_lattice[neigh.to_usize()])
         });
 
         let mut delta_h = self.delta_hamiltonian(entity_source, entity_target, neigh_entities);
         if let SomeCell(cell) = entity_source {
             if self.enable_migration && cell.is_migrating() {
-                delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, env.space.boundary());
+                delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, &env.bounds.boundary);
             }
         }
         if !self.accept_site_copy(rng, delta_h) {
             return 0.;
         }
-        let edges_update = self.grant_position(
+        let edges_update = env.grant_position(
             pos_target,
-            spin_source,
-            env,
+            spin_source
         );
         // Times 2 to represent the symmetric edge
         2. * (edges_update.added as f32 - edges_update.removed as f32) / env.neighbourhood.n_neighs() as f32

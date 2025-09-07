@@ -1,5 +1,7 @@
+use cellulars_lib::basic_cell::Alive;
 use crate::pond::Pond;
 use cellulars_lib::constants::Spin;
+use cellulars_lib::environment::Habitable;
 use cellulars_lib::lattice_entity::LatticeEntity;
 
 pub trait Transporter {
@@ -17,16 +19,14 @@ impl Transporter for WipeOut {
                 .get_entity(spin)
                 .expect_cell("tried to transport non-cell");
             let spin_to = to.env.cells.push(cell.birth(), None).spin;
-            for pos in from.env.search_cell_box(cell, from.cell_search_radius) {
-                from.ca.grant_position(
+            for pos in from.env.search_cell_box(cell, from.cell_search_scaler) {
+                from.env.grant_position(
                     pos,
                     LatticeEntity::Medium.discriminant(),
-                    &mut from.env
                 );
-                to.ca.grant_position(
+                to.env.grant_position(
                     pos,
-                    spin_to,
-                    &mut to.env
+                    spin_to
                 );
             }
         }

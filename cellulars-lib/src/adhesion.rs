@@ -1,7 +1,6 @@
 use crate::basic_cell::RelCell;
 use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::*;
-use std::fmt::Debug;
 
 pub trait AdhesionSystem {
     fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32;

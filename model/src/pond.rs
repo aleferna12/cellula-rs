@@ -1,19 +1,18 @@
 use crate::cell::Cell;
 use crate::cellular_automata::CellularAutomata;
 use crate::chem_environment::ChemEnvironment;
+use crate::clonal_adhesion::ClonalAdhesion;
 use crate::genetics::genome::Genome;
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::constants::Spin;
+use cellulars_lib::environment::Habitable;
 use cellulars_lib::evolution::selector::Fit;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::Medium;
-use cellulars_lib::positional::boundaries::{Boundary, PosValidator};
+use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::positional::rect::Rect;
 use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
-use cellulars_lib::environment::Habitable;
-use crate::clonal_adhesion::ClonalAdhesion;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 pub struct Pond {
@@ -57,12 +56,12 @@ impl Pond {
     pub fn step(&mut self) {
         self.ca.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
-            self.env.cells().iter_mut().for_each(|cell| cell.update());
+            self.env.cells.iter_mut().for_each(|cell| cell.update());
             let new_spins = self.reproduce();
             for spin in new_spins {
                 self.ca.adhesion.update_clones(spin, &self.env);
                 // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
-                if let LatticeEntity::SomeCell(cell) = self.env.cells().get_entity_mut(spin) {
+                if let LatticeEntity::SomeCell(cell) = self.env.cells.get_entity_mut(spin) {
                     cell.genome.attempt_mutate(&mut self.rng);
                 } else { 
                     panic!("newborn is not a cell")
@@ -72,95 +71,39 @@ impl Pond {
         self.time_step += 1;
     }
 
-    pub fn spawn_cell_random(
-        &mut self,
-        cell_area: u32,
-        empty_cell: Cell
-    ) -> Option<&RelCell<Cell>> {
-        let cell_side = (cell_area as f32).sqrt() as usize;
-        let pos = self.env.cell_lattice().random_pos(&mut self.rng);
-        self.spawn_cell_rect(
-            &Rect::new(
-                pos,
-                (pos.x + cell_side, pos.y + cell_side).into()
-            ),
-            empty_cell
-        )
-    }
-
-    pub fn spawn_cell_rect(
-        &mut self,
-        rect: &Rect<usize>,
-        empty_cell: Cell
-    ) -> Option<&RelCell<Cell>> {
-        let valid_pos = rect
-            .iter_positions()
-            .filter_map(|pos| {
-                match self.env.lattice_boundary().valid_pos(pos.to_isize()) { 
-                    Some(pos) => Some(pos.to_usize()),
-                    None => None
-                }
-            });
-        self.env.spawn_cell(empty_cell, valid_pos, self.env.boundaries.boundary())
-    }
-
-    fn spawn_cell(
-        &mut self,
-        empty_cell: Cell,
-        positions: impl IntoIterator<Item = Pos<usize>>
-    ) -> Option<&RelCell<Cell>> {
-        let valid_positions = positions
-            .into_iter()
-            .filter(|&pos| {
-                self.env.cell_lattice()[pos] == Medium.discriminant()
-            })
-            .collect::<Vec<_>>();
-
-        if valid_positions.is_empty() {
-            return None;
-        }
-
-        let new_spin = self.env.cells_mut().push(empty_cell, None).spin;
-        for pos in valid_positions {
-            self.env.grant_position(pos, new_spin, self.env.boundary());
-        }
-        Some(self.env.cells().get_entity(new_spin).expect_cell("retrieved non-cell while spawning cell"))
-    }
-
-    pub fn divide_cell(&mut self, mother: &RelCell<C>) -> Result<&RelCell<C>, cellulars_lib::environment::DivisionError> {
+    fn divide_cell(&mut self, mom_spin: Spin) -> &RelCell<Cell> {
+        let mom = self
+            .env
+            .cells
+            .get_entity(mom_spin)
+            .expect_cell("retrieved non-cell during cell division");
         let new_positions: Vec<_> = self
-            .search_cell_box(mother)
+            .env
+            .search_cell_box(mom, self.cell_search_scaler)
             .into_iter()
             .filter(|pos| {
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                self.boundaries.boundary.displacement(Pos::new(pos.x as f32, pos.y as f32), mother.center()).0 > 0.
+                self.env.bounds.boundary.displacement(Pos::new(pos.x as f32, pos.y as f32), mom.center()).0 > 0.
             })
             .collect();
-        if new_positions.is_empty() {
-            return Err(cellulars_lib::environment::DivisionError::NewCellTooSmall);
-        }
-        if new_positions.len() >= mother.area() as usize {
-            return Err(cellulars_lib::environment::DivisionError::NewCellTooBig);
-        }
 
-        let new_spin = self.cells.push(mother.birth(), Some(mother.spin)).spin;
+        let newborn = mom.birth();
+        let new_spin = self.env.cells.push(newborn, Some(mom_spin)).spin;
         for pos in new_positions {
-            self.grant_position(
+            self.env.grant_position(
                 pos,
                 new_spin,
             );
         }
-        Ok(self.cells.get_entity(new_spin).expect_cell("retrieved non-cell during cell division"))
+        self.env.cells.get_entity(new_spin).expect_cell("retrieved non-cell during cell division")
     }
 
-    pub fn kill_cell(&mut self, cell: &mut RelCell<C>)
-    where C: Alive
-    {
-        for pos in self.search_cell_box(cell) {
+    pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
+        for pos in self.env.search_cell_box(cell, self.cell_search_scaler) {
             // TODO!: Parameterize chance of medium
             if self.rng.random::<f32>() < 0.1 {
-                self.cell_lattice[pos] = Medium.discriminant();
+                self.env.cell_lattice[pos] = Medium.discriminant();
             }
         }
         cell.apoptosis();
@@ -190,17 +133,31 @@ impl Pond {
                 return None;
             }
             let mom = self.env
-                .cells()
+                .cells
                 .get_entity(spin)
                 .expect_cell("retrieved non-cell during reproduction");
-            match self.env.divide_cell(mom) {
-                Err(e) => {
-                    log::warn!("Failed to divide cell with spin {spin} with error `{e:?}`");
-                    None
-                },
-                Ok(cell) => Some(cell.spin)
-            }
+            Some(self.divide_cell(mom.spin).spin)
         }).collect()
+    }
+
+    pub fn wipe_out(&mut self) {
+        self.env.wipe_out();
+        self.ca.adhesion.clone_pairs.clear();
+    }
+
+    pub fn can_add_cell(&mut self) -> bool {
+        if self.env.cells.n_valid() < self.max_cells {
+            return true;
+        }
+        if !self.population_exploded {
+            log::warn!(
+                        "Population exceeded maximum threshold `max-cells={}` during cell division",
+                        {self.max_cells}
+                    );
+            log::warn!("This warning will be suppressed from now on");
+            self.population_exploded = true;
+        }
+        false
     }
 }
 
@@ -215,10 +172,4 @@ impl Fit for Pond {
             .sum();
         tot_fit / self.env.cells().n_valid() as f32
     }
-}
-
-#[derive(Debug)]
-pub enum DivisionError {
-    NewCellTooSmall,
-    NewCellTooBig
 }

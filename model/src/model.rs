@@ -12,12 +12,15 @@ use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::error::Error;
-use cellulars_lib::adhesion::{ClonalAdhesion, StaticAdhesion};
+use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::cell_container::CellContainer;
+use cellulars_lib::environment::Environment;
 use cellulars_lib::evolution::selector::WeightedOrderedSelection;
 use cellulars_lib::lattice_entity::LatticeEntity;
+use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
-use crate::chem_space::{ChemEnvironment, ChemSpace};
+use crate::chem_environment::ChemEnvironment;
+use crate::clonal_adhesion::ClonalAdhesion;
 
 pub struct Model {
     pub ponds: Vec<Pond>,
@@ -73,12 +76,14 @@ impl Model {
         for pond_i in 0..parameters.general.n_ponds {
             log::info!("Making pond #{pond_i}");
             let mut env = ChemEnvironment::new(
-                CellContainer::default(),
-                NeighbourhoodType::new(parameters.pond.neigh_r),
-                ChemSpace::new(BoundaryType::new(Rect::new(
-                    (0., 0.).into(),
-                    (parameters.pond.width as f32, parameters.pond.height as f32).into(),
-                )))?
+                Environment::new(
+                    CellContainer::default(),
+                    NeighbourhoodType::new(parameters.pond.neigh_r),
+                    Boundaries::new(BoundaryType::new(Rect::new(
+                        (0., 0.).into(),
+                        (parameters.pond.width as f32, parameters.pond.height as f32).into(),
+                    ))).expect("failed to create boundaries during initialisation, lattice size is too big")
+                ).expect("failed to create environment during initialisation, lattice size is too big")
             );
 
             if parameters.pond.enclose {
@@ -105,13 +110,12 @@ impl Model {
                 ca,
                 rng.clone(),
                 parameters.cell.update_period,
-                parameters.pond.cell_search_radius,
                 parameters.cell.target_area,
+                parameters.pond.cell_search_radius,
                 parameters.cell.divide,
                 parameters.pond.max_cells
             );
 
-            let mut pop_n = 0;
             for _ in 0..parameters.pond.starting_cells {
                 let cell = Cell::new_empty(
                     parameters.cell.target_area,
@@ -124,16 +128,17 @@ impl Model {
                         || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
                     )
                 );
-                let spawned = pond.spawn_cell_random(
-                    parameters.cell.starting_area,
+                pond.env.spawn_cell_random(
                     cell,
+                    parameters.cell.starting_area,
                     &mut rng
                 );
-                if spawned.is_some() {
-                    pop_n += 1;
-                }
             }
-            log::info!("Created {pop_n} out of the {} cells requested", parameters.pond.starting_cells);
+            log::info!(
+                "Created {} out of the {} cells requested",
+                pond.env.cells.n_valid(),
+                parameters.pond.starting_cells
+            );
             ponds.push(pond);
         }
 

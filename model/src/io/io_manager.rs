@@ -8,10 +8,8 @@ use crate::pond::Pond;
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::Spin;
-use cellulars_lib::boundaries::{Habitable, boundaries};
 use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
-use polars::df;
 use polars::prelude::*;
 use serde::Serialize;
 use std::error::Error;
@@ -162,7 +160,7 @@ impl IoManager {
         for (i, pond) in ponds.iter().enumerate() {
             res.push(PondCellLatttice {
                 pond: i as u32,
-                lattice: pond.env.space.cell_lattice().as_array()
+                lattice: pond.env.cell_lattice.as_array()
             })
         }
         res
@@ -221,7 +219,7 @@ impl IoManager {
                 match plot {
                     PlotType::Spin => {
                         SpinPlot {
-                            space: &env.space,
+                            env,
                             solid_color: hex_to_srgb(&self.plots.solid_color)?,
                             medium_color: match &self.plots.medium_color {
                                 None => None,
@@ -264,7 +262,7 @@ impl IoManager {
                     },
                     PlotType::Chem => {
                         ChemPlot {
-                            lat: &env.space.chem_lattice,
+                            lat: &env.chem_lattice,
                             min_color: srgb_to_luv(hex_to_srgb(&self.plots.chem_min_color)?),
                             max_color: srgb_to_luv(hex_to_srgb(&self.plots.chem_max_color)?)
                         }.plot(image)

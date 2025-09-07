@@ -30,11 +30,12 @@ impl ClonalAdhesion {
     ) -> Option<Vec<Spin>> {
         let entity = env.cells().get_entity(cell_spin);
         let cell = entity.unwrap_cell();
-        let cell_neighs = env.cell_neighbours(cell);
+        let cell_neighs = env.cell_neighbours(cell, 2.0);
 
         let mom_cell = env.cells().get_entity(cell.mom).expect_cell("cell's mom is not a cell");
         let mom_neighs = env.cell_neighbours(
             mom_cell,
+            2.0
         );
 
         let mom_clones = HashSet::from_iter(

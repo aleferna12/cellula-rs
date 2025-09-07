@@ -13,13 +13,13 @@ use cellulars_lib::positional::pos::Pos;
 
 pub struct ChemEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
-    chem_lattice: Lattice<u32>
+    pub(crate) chem_lattice: Lattice<u32>
 }
 
 impl ChemEnvironment {
     pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>) -> Self {
         Self {
-            chem_lattice: env.cell_lattice().clone(),
+            chem_lattice: env.cell_lattice.clone(),
             env
         }
     }
@@ -49,37 +49,28 @@ impl Habitable for ChemEnvironment {
         self.env.cells_mut()
     }
 
-    fn cell_lattice(&self) -> &Lattice<Spin> {
-        self.env.cell_lattice()
-    }
-
-    fn cell_lattice_mut(&mut self) -> &mut Lattice<Spin> {
-        self.env.cell_lattice_mut()
-    }
-
-    fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
-        self.env.update_edges(pos)
-    }
-
     fn grant_position(
         &mut self,
         pos: Pos<usize>,
-        to: Spin,
-        boundary: &impl Boundary<Coord = f32>
+        to: Spin
     ) -> EdgesUpdate {
-        // TODO: make chem a u32
-        let chem_at = self.chem_lattice[pos] as f32;
-        if let SomeCell(to_cell) = self.cells_mut().get_entity_mut(to) {
-            to_cell.shift_position(pos, true, boundary);
-            to_cell.shift_chem(pos, chem_at, true, boundary);
+        let valid_pos = match self.bounds.lattice_boundary.valid_pos(pos.to_isize()) {
+            None => return EdgesUpdate { added: 0, removed: 0 },
+            Some(pos_isize) => { pos_isize.to_usize() }
+        };
+        // TODO! chem should always be u32
+        let chem_at_pos = self.chem_lattice[valid_pos] as f32;
+        if let SomeCell(to_cell) = self.env.cells.get_entity_mut(to) {
+            to_cell.shift_position(valid_pos, true, &self.env.bounds.boundary);
+            to_cell.shift_chem(valid_pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
-        let from = self.cell_lattice()[pos];
-        if let SomeCell(from_cell) = self.cells_mut().get_entity_mut(from) {
-            from_cell.shift_position(pos, false, boundary);
-            from_cell.shift_chem(pos, chem_at, false, boundary);
+        let from = self.cell_lattice[valid_pos];
+        if let SomeCell(from_cell) = self.env.cells.get_entity_mut(from) {
+            from_cell.shift_position(valid_pos, false, &self.env.bounds.boundary);
+            from_cell.shift_chem(valid_pos, chem_at_pos, false, &self.env.bounds.boundary);
         }
         // Executes the copy
-        self.cell_lattice_mut()[pos] = to;
-        self.update_edges(pos)
+        self.cell_lattice[valid_pos] = to;
+        self.update_edges(valid_pos)
     }
 }
