@@ -13,6 +13,7 @@ use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
+use cellulars_lib::positional::rect::Rect;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 pub struct Pond {
@@ -71,7 +72,30 @@ impl Pond {
         self.time_step += 1;
     }
 
-    fn divide_cell(&mut self, mom_spin: Spin) -> &RelCell<Cell> {
+    // TODO: make spawn as a circle with center at pos
+    pub fn spawn_cell_random(
+        &mut self,
+        empty_cell: Cell,
+        cell_area: u32,
+    ) -> &RelCell<Cell> {
+        let pos_isize = self.env.cell_lattice.random_pos(&mut self.rng).to_isize();
+        let cell_side = ((cell_area as f32).sqrt() / 2.) as isize;
+        let rect = Rect::new(
+            Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
+            Pos::new(pos_isize.x + cell_side, pos_isize.y + cell_side)
+        );
+        let positions = rect
+            .iter_positions()
+            .filter_map(|pos| self.env.bounds.lattice_boundary.valid_pos(pos))
+            .map(|pos| pos.to_usize())
+            .collect::<Vec<_>>();
+        self.env.spawn_cell(
+            empty_cell,
+            positions
+        )
+    }
+
+    pub fn divide_cell(&mut self, mom_spin: Spin) -> &RelCell<Cell> {
         let mom = self
             .env
             .cells

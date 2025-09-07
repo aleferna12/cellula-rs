@@ -183,24 +183,6 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
         graph
     }
 
-    // TODO: make spawn as a circle with center at pos
-    pub fn spawn_cell_random(
-        &mut self,
-        empty_cell: C,
-        cell_area: u32,
-        rng: &mut impl Rng,
-    ) -> &RelCell<C> {
-        let cell_side = (cell_area as f32).sqrt() as usize;
-        let pos = self.cell_lattice.random_pos(rng);
-        self.spawn_cell(
-            empty_cell,
-            Rect::new(
-                pos,
-                (pos.x + cell_side, pos.y + cell_side).into()
-            ).iter_positions()
-        )
-    }
-
     pub fn make_border(
         &mut self,
         bottom: bool,
@@ -214,13 +196,12 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
                 border_positions.push((x, 0).into());
             }
         }
-        if top && self.height() > 1{
+        if top {
             for x in (0..self.width() - 1).rev() {
                 border_positions.push((x, self.height() - 1).into());
             }
         }
-        if left
-            && self.width() > 1 {
+        if left {
                 for y in (1..self.height() - 1).rev() {
                     border_positions.push((0, y).into());
                 }

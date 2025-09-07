@@ -1,5 +1,7 @@
 use crate::cell::Cell;
 use crate::cellular_automata::CellularAutomata;
+use crate::chem_environment::ChemEnvironment;
+use crate::clonal_adhesion::ClonalAdhesion;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::ecology::disperser::{Disperser, SelectiveDispersion};
 use crate::ecology::transporter::{Transporter, WipeOut};
@@ -8,10 +10,6 @@ use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::pond::Pond;
-use rand::distr::{Distribution, Uniform};
-use rand::{RngCore, SeedableRng};
-use rand_xoshiro::Xoshiro256StarStar;
-use std::error::Error;
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::environment::Environment;
@@ -19,8 +17,10 @@ use cellulars_lib::evolution::selector::WeightedOrderedSelection;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
-use crate::chem_environment::ChemEnvironment;
-use crate::clonal_adhesion::ClonalAdhesion;
+use rand::distr::{Distribution, Uniform};
+use rand::{RngCore, SeedableRng};
+use rand_xoshiro::Xoshiro256StarStar;
+use std::error::Error;
 
 pub struct Model {
     pub ponds: Vec<Pond>,
@@ -128,10 +128,9 @@ impl Model {
                         || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
                     )
                 );
-                pond.env.spawn_cell_random(
+                pond.spawn_cell_random(
                     cell,
-                    parameters.cell.starting_area,
-                    &mut rng
+                    parameters.cell.starting_area
                 );
             }
             log::info!(
