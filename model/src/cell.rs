@@ -122,6 +122,7 @@ impl Alive for Cell {
     fn birth(&self) -> Self {
         Self { 
             basic_cell: self.basic_cell.birth(),
+            chem_mass: 0.,
             ..self.clone()
         }
     }

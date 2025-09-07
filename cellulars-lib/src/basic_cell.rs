@@ -79,7 +79,8 @@ impl Alive for BasicCell {
 
     fn birth(&self) -> Self {
         let mut newborn = self.clone();
-        newborn.set_target_area(self.newborn_target_area);
+        newborn.area = 0;
+        newborn.target_area = self.newborn_target_area;
         newborn
     }
 }
