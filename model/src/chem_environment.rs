@@ -6,7 +6,6 @@ use cellulars_lib::constants::Spin;
 use cellulars_lib::environment::{EdgesUpdate, Environment, Habitable};
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity::SomeCell;
-use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
@@ -64,23 +63,19 @@ impl Habitable for ChemEnvironment {
         pos: Pos<usize>,
         to: Spin
     ) -> EdgesUpdate {
-        let valid_pos = match self.bounds.lattice_boundary.valid_pos(pos.to_isize()) {
-            None => return EdgesUpdate { added: 0, removed: 0 },
-            Some(pos_isize) => { pos_isize.to_usize() }
-        };
         // TODO! chem should always be u32
-        let chem_at_pos = self.chem_lattice[valid_pos] as f32;
+        let chem_at_pos = self.chem_lattice[pos] as f32;
         if let SomeCell(to_cell) = self.env.cells.get_entity_mut(to) {
-            to_cell.shift_position(valid_pos, true, &self.env.bounds.boundary);
-            to_cell.shift_chem(valid_pos, chem_at_pos, true, &self.env.bounds.boundary);
+            to_cell.shift_position(pos, true, &self.env.bounds.boundary);
+            to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
-        let from = self.cell_lattice[valid_pos];
+        let from = self.cell_lattice[pos];
         if let SomeCell(from_cell) = self.env.cells.get_entity_mut(from) {
-            from_cell.shift_position(valid_pos, false, &self.env.bounds.boundary);
-            from_cell.shift_chem(valid_pos, chem_at_pos, false, &self.env.bounds.boundary);
+            from_cell.shift_position(pos, false, &self.env.bounds.boundary);
+            from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
         }
         // Executes the copy
-        self.cell_lattice[valid_pos] = to;
-        self.update_edges(valid_pos)
+        self.cell_lattice[pos] = to;
+        self.update_edges(pos)
     }
 }

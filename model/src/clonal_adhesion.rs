@@ -72,3 +72,63 @@ impl AdhesionSystem for ClonalAdhesion {
         self.static_adhesion.adhesion_energy(entity1, entity2)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::clonal_adhesion::ClonalAdhesion;
+    use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
+    use cellulars_lib::basic_cell::{BasicCell, RelCell};
+    use cellulars_lib::constants::Spin;
+    use cellulars_lib::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
+
+    // Helper to create a RelCell with given spin and mom by mocking and overriding
+    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<BasicCell> {
+        RelCell {
+            spin,
+            mom,
+            cell: BasicCell::new_empty(10)
+        }
+    }
+
+    fn make_static_adhesion() -> StaticAdhesion {
+        StaticAdhesion {
+            cell_energy: 3.,
+            medium_energy: 1.5,
+            solid_energy: 2.,
+        }
+    }
+
+    #[test]
+    fn test_clonal_adhesion() {
+        let max_spin = 5;
+        let mut clonal_adhesion = ClonalAdhesion::new(max_spin, make_static_adhesion());
+
+        let cell1 = make_rel_with_spin(1, 1);
+        let cell2 = make_rel_with_spin(2, 1);
+        // Initially clone_pairs empty
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell1)),
+            0.
+        );
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
+            2. * clonal_adhesion.static_adhesion.medium_energy
+        );
+
+        // Manually set clone pair between spin 1 and 2
+        clonal_adhesion.clone_pairs[(1, 2)] = true;
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
+            2. * clonal_adhesion.static_adhesion.cell_energy
+        );
+        // ClonalAdhesion falls back to StaticAdhesion for Medium and Solid
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(SomeCell(&cell1), Medium),
+            clonal_adhesion.static_adhesion.medium_energy
+        );
+        assert_eq!(
+            clonal_adhesion.adhesion_energy(Solid, SomeCell(&cell1)),
+            clonal_adhesion.static_adhesion.solid_energy
+        );
+    }
+}

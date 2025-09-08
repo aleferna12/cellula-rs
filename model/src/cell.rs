@@ -134,62 +134,60 @@ impl Fit for Cell {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::genetics::mock_genome::MockGenome;
-//     use crate::positional::boundary::UnsafePeriodicBoundary;
-//     use crate::positional::pos::Pos;
-//     use crate::positional::rect::Rect;
-// 
-//     fn make_unsafe_boundary() -> UnsafePeriodicBoundary<f32> {
-//         UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
-//     }
-//     
-//     fn make_test_cell() -> Cell<MockGenome> {
-//         Cell::new_empty(
-//             100,
-//             200,
-//             MockGenome::new(0)
-//         )
-//     }
-// 
-//     #[test]
-//     fn test_shift_position_area_and_center() {
-//         let mut cell = make_test_cell();
-//         let bound = make_unsafe_boundary();
-// 
-//         cell.shift_position(Pos::new(10, 10), true, &bound);
-//         assert_eq!(cell.area, 1);
-//         assert_eq!(cell.center, Pos::new(10.0, 10.0));
-// 
-//         cell.shift_position(Pos::new(20, 20), true, &bound);
-//         assert_eq!(cell.area, 2);
-//         assert_eq!(cell.center, Pos::new(15.0, 15.0));
-// 
-//         cell.shift_position(Pos::new(10, 10), false, &bound);
-//         assert_eq!(cell.area, 1);
-//         assert_eq!(cell.center, Pos::new(20.0, 20.0));
-//     }
-// 
-//     #[test]
-//     fn test_shift_position_chem_center_and_mass() {
-//         let bound = make_unsafe_boundary();
-//         let mut cell = make_test_cell();
-// 
-//         // Add chem at (2, 3) with value 10
-//         cell.shift_chem(Pos::new(2, 3), 10., true, &bound);
-//         assert_eq!(cell.chem_mass, 10.);
-//         assert_eq!(cell.chem_center, Pos::new(2., 3.));
-// 
-//         // Add chem at (4, 5) with value 10
-//         cell.shift_chem(Pos::new(4, 5), 10., true, &bound);
-//         assert_eq!(cell.chem_mass, 20.);
-//         assert_eq!(cell.chem_center, Pos::new(3., 4.));
-// 
-//         // Remove chem from (2, 3)
-//         cell.shift_chem(Pos::new(2, 3), 10., false, &bound);
-//         assert_eq!(cell.chem_mass, 10.);
-//         assert_eq!(cell.chem_center, Pos::new(4., 5.));
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
+    use cellulars_lib::positional::rect::Rect;
+
+    fn make_unsafe_boundary() -> UnsafePeriodicBoundary<f32> {
+        UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
+    }
+    
+    fn make_test_cell() -> Cell {
+        Cell::new_empty(
+            100,
+            200,
+            Grn::empty(),
+        )
+    }
+
+    #[test]
+    fn test_shift_position_area_and_center() {
+        let mut cell = make_test_cell();
+        let bound = make_unsafe_boundary();
+
+        cell.shift_position(Pos::new(10, 10), true, &bound);
+        assert_eq!(cell.area(), 1);
+        assert_eq!(cell.center(), Pos::new(10.0, 10.0));
+
+        cell.shift_position(Pos::new(20, 20), true, &bound);
+        assert_eq!(cell.area(), 2);
+        assert_eq!(cell.center(), Pos::new(15.0, 15.0));
+
+        cell.shift_position(Pos::new(10, 10), false, &bound);
+        assert_eq!(cell.area(), 1);
+        assert_eq!(cell.center(), Pos::new(20.0, 20.0));
+    }
+
+    #[test]
+    fn test_shift_position_chem_center_and_mass() {
+        let bound = make_unsafe_boundary();
+        let mut cell = make_test_cell();
+
+        // Add chem at (2, 3) with value 10
+        cell.shift_chem(Pos::new(2, 3), 10., true, &bound);
+        assert_eq!(cell.chem_mass, 10.);
+        assert_eq!(cell.chem_center, Pos::new(2., 3.));
+
+        // Add chem at (4, 5) with value 10
+        cell.shift_chem(Pos::new(4, 5), 10., true, &bound);
+        assert_eq!(cell.chem_mass, 20.);
+        assert_eq!(cell.chem_center, Pos::new(3., 4.));
+
+        // Remove chem from (2, 3)
+        cell.shift_chem(Pos::new(2, 3), 10., false, &bound);
+        assert_eq!(cell.chem_mass, 10.);
+        assert_eq!(cell.chem_center, Pos::new(4., 5.));
+    }
+}

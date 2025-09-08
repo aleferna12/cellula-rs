@@ -269,20 +269,16 @@ impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitabl
         pos: Pos<usize>,
         to: Spin
     ) -> EdgesUpdate {
-        let valid_pos = match self.bounds.lattice_boundary.valid_pos(pos.to_isize()) {
-            None => return EdgesUpdate {added: 0, removed: 0},
-            Some(pos_isize) => {pos_isize.to_usize()}
-        };
         if let SomeCell(to_cell) = self.cells.get_entity_mut(to) {
-            to_cell.shift_position(valid_pos, true, &self.bounds.boundary);
+            to_cell.shift_position(pos, true, &self.bounds.boundary);
         }
-        let from = self.cell_lattice[valid_pos];
+        let from = self.cell_lattice[pos];
         if let SomeCell(from_cell) = self.cells.get_entity_mut(from) {
-            from_cell.shift_position(valid_pos, false, &self.bounds.boundary);
+            from_cell.shift_position(pos, false, &self.bounds.boundary);
         }
         // Executes the copy
-        self.cell_lattice[valid_pos] = to;
-        self.update_edges(valid_pos)
+        self.cell_lattice[pos] = to;
+        self.update_edges(pos)
     }
 }
 
@@ -305,27 +301,16 @@ pub trait Habitable {
         self.cells().get_entity(new_spin).expect_cell("retrieved non-cell while spawning cell")
     }
 
-    fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) -> usize {
-        let mut area = 0;
+    fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {
         for pos in positions {
-            let edge_updates = self.grant_position(pos, Solid.discriminant());
-            if edge_updates.succeeded() {
-                area += 1;
-            }
+            self.grant_position(pos, Solid.discriminant());
         }
-        area
     }
 }
 
 pub struct EdgesUpdate {
     pub added: u16,
     pub removed: u16
-}
-
-impl EdgesUpdate {
-    pub fn succeeded(&self) -> bool {
-        self.added > 0 || self.removed > 0
-    }
 }
 
 #[cfg(test)]
@@ -370,8 +355,13 @@ pub mod tests {
             Pos::new(3, 3),
             Pos::new(1, 1), // duplicate to test deduplication
         ];
-        let area = env.spawn_solid(positions.into_iter());
-        assert_eq!(area, 3); // One was a duplicate
+        env.spawn_solid(positions.into_iter());
+        let solid_count = env
+            .cell_lattice
+            .iter_values()
+            .filter(|&&val| val == Solid.discriminant())
+            .count();
+        assert_eq!(solid_count, 3); // One was a duplicate
         for pos in &[
             Pos::new(1, 1),
             Pos::new(2, 2),

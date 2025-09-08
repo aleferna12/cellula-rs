@@ -98,12 +98,12 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
             let edge = env.edge_book.at(edge_i);
             // This is WAY faster than keeping the symmetric edge in EdgeBook (like 2x as fast!)
             // or at least, this is the case when using IndexSet, I would assume its somewhat implementation-dependent
-            let (pos_from, pos_to) = if rng.random::<f32>() < 0.5 {
+            let (pos_source, pos_target) = if rng.random::<f32>() < 0.5 {
                 (edge.p1, edge.p2)
             } else {
                 (edge.p2, edge.p1)
             };
-            to_visit += self.attempt_site_copy(env, rng, pos_from, pos_to);
+            to_visit += self.attempt_site_copy(env, rng, pos_source, pos_target);
             to_visit -= 1.;
         }
     }
@@ -183,33 +183,34 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use cellulars_lib::adhesion::{ClonalAdhesion, StaticAdhesion};
-//     use super::*;
-//     use crate::cell::Cell;
-//     use crate::genetics::mock_genome::MockGenome;
-// 
-//     #[test]
-//     fn test_delta_hamiltonian_size() {
-//         let adh = StaticAdhesion {
-//             cell_energy: 10.,
-//             medium_energy: 20.,
-//             solid_energy: 20.
-//         };
-//         let ca = CellularAutomata::new(
-//             16., 
-//             1.,
-//             1.,
-//             true,
-//             ClonalAdhesion::new(10, adh)
-//         );
-//         let cell = RelCell::mock(Cell::new_empty(
-//             100, 
-//             200, 
-//             MockGenome::new(0)
-//         ));
-//         let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
-//         assert_eq!(dh, 2.);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cell::Cell;
+    use crate::clonal_adhesion::ClonalAdhesion;
+    use crate::genetics::grn::Grn;
+    use cellulars_lib::adhesion::StaticAdhesion;
+
+    #[test]
+    fn test_delta_hamiltonian_size() {
+        let adh = StaticAdhesion {
+            cell_energy: 10.,
+            medium_energy: 20.,
+            solid_energy: 20.
+        };
+        let ca = CellularAutomata::new(
+            16.,
+            1.,
+            1.,
+            true,
+            ClonalAdhesion::new(10, adh)
+        );
+        let cell = RelCell::mock(Cell::new_empty(
+            100,
+            200,
+            Grn::empty()
+        ));
+        let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
+        assert_eq!(dh, 2.);
+    }
+}
