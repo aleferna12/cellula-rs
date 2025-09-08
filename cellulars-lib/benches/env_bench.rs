@@ -1,3 +1,13 @@
+use cellulars_lib::basic_cell::{BasicCell, Cellular};
+use cellulars_lib::cell_container::CellContainer;
+use cellulars_lib::environment::{Environment, Habitable};
+use cellulars_lib::lattice_entity::LatticeEntity;
+use cellulars_lib::lattice_entity::LatticeEntity::*;
+use cellulars_lib::positional::boundaries::{Boundaries, Boundary, UnsafePeriodicBoundary};
+use cellulars_lib::positional::edge::Edge;
+use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
+use cellulars_lib::positional::pos::Pos;
+use cellulars_lib::positional::rect::Rect;
 use criterion::BatchSize;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand::{Rng, SeedableRng};
@@ -5,31 +15,20 @@ use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
-use cellulars_lib::cell_container::CellContainer;
-use cellulars_lib::basic_cell::BasicCell;
-use cellulars_lib::environment::Environment;
-use cellulars_lib::lattice_entity::LatticeEntity::*;
-use cellulars_lib::positional::boundaries::{Boundary, UnsafePeriodicBoundary};
-use cellulars_lib::positional::edge::Edge;
-use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
-use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::boundaries::boundaries;
-use cellulars_lib::boundaries::boundaries;
 
-fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourhood, boundaries<UnsafePeriodicBoundary<f32>>> {
+fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
     Environment::new(
         CellContainer::default(),
         MooreNeighbourhood::new(1),
-        boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
+        Boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
             (0., 0.).into(),
             (width, height).into()
         ))).unwrap()
-    )
+    ).unwrap()
 }
 
-fn random_neighbour<C, N>(
-    env: &Environment<C, N, impl boundaries>,
+fn random_neighbour(
+    env: &Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl Rng
@@ -39,24 +38,27 @@ fn random_neighbour<C, N>(
     let dist = neigh_r as i32;
     while oldp == newp {
         newp.0 = oldp.0 + rng.random_range(
-            -min(dist, oldp.0)..min(dist + 1, env.space.cell_lattice().width() as i32 - oldp.0)
+            -min(dist, oldp.0)..min(dist + 1, env.cell_lattice.width() as i32 - oldp.0)
         );
         newp.1 = oldp.1 + rng.random_range(
-            -min(dist, oldp.1)..min(dist + 1, env.space.cell_lattice().height() as i32 - oldp.1)
+            -min(dist, oldp.1)..min(dist + 1, env.cell_lattice.height() as i32 - oldp.1)
         );
     }
     Pos::new(newp.0 as usize, newp.1 as usize)
 }
 
-fn add_random_edge<C, N>(env: &mut Environment<C, N, impl boundaries>, rng: &mut impl Rng) -> bool {
-    let p1 = env.space.cell_lattice().random_pos(rng);
+fn add_random_edge(
+    env: &mut Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
+    rng: &mut impl Rng
+) -> bool {
+    let p1 = env.cell_lattice.random_pos(rng);
     let e = Edge::new(p1, random_neighbour(env, p1, 1, rng));
     env.edge_book.insert(e)
 }
 
-fn replace_random_edges<C, N>(
+fn replace_random_edges(
     n_edges: usize,
-    env: &mut Environment<C, N, impl boundaries>,
+    env: &mut Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
     rng: &mut impl Rng
 ) {
     for _ in 0..n_edges {
@@ -79,7 +81,7 @@ fn bench_env(c: &mut Criterion) {
             || {
                 let mut env = empty_env(100., 100.);
                 let mut rng = Xoshiro256StarStar::seed_from_u64(1241254152);
-                for _ in 0..env.space.cell_lattice.width() * env.space.cell_lattice.height() / 2 {
+                for _ in 0..env.cell_lattice.width() * env.cell_lattice.height() / 2 {
                     add_random_edge(&mut env, &mut rng);
                 }
                 (env, rng)
@@ -114,9 +116,9 @@ fn bench_env(c: &mut Criterion) {
     });
 
     let mut env = empty_env(100., 100.);
-    env.spawn_rect_cell(
-        Rect::new((10, 10).into(), (20, 20).into()),
-        Cell::new_empty(100, 200, MockGenome::new(0))
+    env.spawn_cell(
+        BasicCell::new_empty(100),
+        Rect::new((10, 10).into(), (20, 20).into()).iter_positions(),
     );
 
     let mut group = c.benchmark_group("cell_positions");
@@ -124,8 +126,8 @@ fn bench_env(c: &mut Criterion) {
         b.iter(|| {
             let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
             assert_eq!(
-                env.space.search_cell_contiguous(cell, &env.neighbourhood).len(),
-                cell.area as usize
+                env.search_cell_contiguous(cell).len(),
+                cell.area() as usize
             );
         })
     });
@@ -133,8 +135,8 @@ fn bench_env(c: &mut Criterion) {
         b.iter(|| {
             let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
             assert_eq!(
-                env.space.search_cell_box(cell, 2.).len(),
-                cell.area as usize
+                env.search_cell_box(cell, 2.).len(),
+                cell.area() as usize
             );
         })
     });
