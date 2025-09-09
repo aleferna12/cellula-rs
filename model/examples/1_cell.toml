@@ -64,7 +64,7 @@ chemotaxis-mu = 4
 
 [cellular-automata.adhesion]
 # Adhesion energy at cell-cell interfaces.
-cell-energy = 24
+cell-energy = 16
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16
 # Adhesion energy at cell-solid interfaces.
