@@ -38,7 +38,7 @@ medium-energy = 16
 solid-energy = 16
 
 [io]
-outdir = "benches/model_outputs/full_lattice"
+outdir = "model/benches/model_outputs/full_lattice"
 replace-outdir = true
 image-period = 1000
 cell-period = 1000

@@ -76,7 +76,7 @@ solid-energy = 16.0
 
 [io]
 # Output directory for files.
-outdir = "examples/1_cell"
+outdir = "model/examples/1_cell"
 # Flag used to delete contents of `outdir` if it exists.
 # [default = false]
 replace-outdir = true
