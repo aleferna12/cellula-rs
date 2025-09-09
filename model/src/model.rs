@@ -73,7 +73,7 @@ impl Model {
         let mut ponds = vec![];
         // TODO: if we make everything clonable then that helps here and also in model_bench
         //  (takes less time to reinitialise everything which means more samples)
-        for pond_i in 0..parameters.general.n_ponds {
+        for pond_i in 0..parameters.pond.n_ponds {
             log::info!("Making pond #{pond_i}");
             let mut env = ChemEnvironment::new(
                 Environment::new(
@@ -91,16 +91,17 @@ impl Model {
             }
 
             let ca= CellularAutomata::new(
-                parameters.cellular_automata.boltz_t,
-                parameters.cellular_automata.size_lambda,
-                parameters.cellular_automata.chemotaxis_mu,
+                parameters.ca.boltz_t,
+                parameters.ca.size_lambda,
+                parameters.ca.chemotaxis_mu,
                 parameters.cell.migrate,
                 ClonalAdhesion::new(
-                    parameters.pond.max_cells + LatticeEntity::first_cell_spin(),
+                    parameters.cell.max_cells + LatticeEntity::first_cell_spin(),
+                    parameters.ca.adhesion.clone_energy,
                     StaticAdhesion {
-                        cell_energy: parameters.cellular_automata.adhesion.cell_energy,
-                        medium_energy: parameters.cellular_automata.adhesion.medium_energy,
-                        solid_energy: parameters.cellular_automata.adhesion.solid_energy,
+                        cell_energy: parameters.ca.adhesion.cell_energy,
+                        medium_energy: parameters.ca.adhesion.medium_energy,
+                        solid_energy: parameters.ca.adhesion.solid_energy,
                     }
                 )
             );
@@ -111,20 +112,20 @@ impl Model {
                 rng.clone(),
                 parameters.cell.update_period,
                 parameters.cell.target_area,
-                parameters.pond.cell_search_radius,
+                parameters.cell.search_radius,
                 parameters.cell.divide,
-                parameters.pond.max_cells
+                parameters.cell.max_cells
             );
 
-            for _ in 0..parameters.pond.starting_cells {
+            for _ in 0..parameters.cell.starting_cells {
                 let cell = Cell::new_empty(
                     parameters.cell.target_area,
                     parameters.cell.div_area,
                     Grn::new(
                         [1. / pond.env.height() as f32],
-                        parameters.cell.n_regulatory_genes,
-                        parameters.cell.mutation_rate,
-                        parameters.cell.mutation_std,
+                        parameters.cell.genome.n_regulatory,
+                        parameters.cell.genome.mutation_rate,
+                        parameters.cell.genome.mutation_std,
                         || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
                     )
                 );
@@ -136,7 +137,7 @@ impl Model {
             log::info!(
                 "Created {} out of the {} cells requested",
                 pond.env.cells.n_valid(),
-                parameters.pond.starting_cells
+                parameters.cell.starting_cells
             );
             ponds.push(pond);
         }

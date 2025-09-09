@@ -203,7 +203,7 @@ mod tests {
             1.,
             1.,
             true,
-            ClonalAdhesion::new(10, adh)
+            ClonalAdhesion::new(10, 10., adh)
         );
         let cell = RelCell::mock(Cell::new_empty(
             100,

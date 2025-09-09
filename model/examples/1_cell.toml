@@ -3,13 +3,13 @@
 time-steps = 16384
 # Seed for the RNG.
 # Omit to pick a random seed.
-seed = 1241254152345
-# Number of ponds to create.
-n-ponds = 4
+seed = 124125412345
 # Period (in MCS) with which to check and execute dispersion events.
 dispersion-period = 1000
 
 [pond]
+# Number of ponds to create.
+n-ponds = 4
 # Width of the lattice.
 width = 128
 # Height of the lattice.
@@ -20,6 +20,8 @@ height = 128
 enclose = false
 # Radius of the neighbourhood.
 neigh-r = 1
+
+[cell]
 # Number of starting cells in the environment.
 starting-cells = 1
 # Maximum number of cells allowed in the environment.
@@ -28,9 +30,7 @@ max-cells = 1024
 # How many times to enlarge the cells' putative radii when searching for them in the environment.
 # Decreasing this parameter improves performance but may lead to critical warnings reporting that not
 # all cell postitions could be found.
-cell-search-radius = 3
-
-[cell]
+search-radius = 3.0
 # Starting cell area.
 starting-area = 64
 # Target cell area.
@@ -43,32 +43,36 @@ divide = true
 # Set to `false` to disable migration.
 # [default = true]
 migrate = true
+# Period (in MCS) with which the cell is updated.
+# This includes cell growth, genome updates and reproduction.
+update-period = 32
+
+[cell.genome]
 # Number of regulatory genes in the cell's GRN.
-n-regulatory-genes = 2
+n-regulatory = 2
 # Mutation rate for each GRN parameter.
 mutation-rate = 0.01
 # Standard deviation of the GRN parameter mutations.
 mutation-std = 0.01
-# Period (in MCS) with which the cell is updated.
-# This includes cell growth and genome
-update-period = 32
 
-[cellular-automata]
+[ca]
 # Boltzmann temperature.
 # Increases likelihood of unfavourable copy attempts being accepted.
-boltz-t = 16
+boltz-t = 16.0
 # Scaler constant for area deviation penalties.
-size-lambda = 1
+size-lambda = 1.0
 # Scaler constant for chemotaxis bias.
-chemotaxis-mu = 4
+chemotaxis-mu = 4.0
 
-[cellular-automata.adhesion]
-# Adhesion energy at cell-cell interfaces.
-cell-energy = 16
+[ca.adhesion]
+# Adhesion energy at cell-cell interfaces of clonal cells.
+clone-energy = 8.0
+# Adhesion energy at cell-cell interfaces of non-clonal cells.
+cell-energy = 16.0
 # Adhesion energy at cell-medium interfaces.
-medium-energy = 16
+medium-energy = 16.0
 # Adhesion energy at cell-solid interfaces.
-solid-energy = 16
+solid-energy = 16.0
 
 [io]
 # Output directory for files.

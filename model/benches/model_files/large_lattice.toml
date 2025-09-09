@@ -1,38 +1,41 @@
 [general]
 time-steps = 2048
 seed = 1241254152
-n-ponds = 1
 dispersion-period = 1000
 
 [pond]
+n-ponds = 1
 width = 2000
 height = 2000
 enclose = false
 neigh-r = 1
-starting-cells = 300
-max-cells = 1024
-cell-search-radius = 2.5
 
 [cell]
+starting-cells = 300
+max-cells = 1024
+search-radius = 3
 starting-area = 64
 target-area = 64
 div-area = 128
 divide = true
 migrate = true
-n-regulatory-genes = 2
-mutation-rate = 0.01
-mutation-std = 0.01
 update-period = 32
 
-[cellular-automata]
+[cell.genome]
+n-regulatory = 2
+mutation-rate = 0.01
+mutation-std = 0.01
+
+[ca]
 boltz-t = 16.0
 size-lambda = 1.0
 chemotaxis-mu = 4.0
 
-[cellular-automata.adhesion]
-cell-energy = 16.0
-medium-energy = 16.0
-solid-energy = 16.0
+[ca.adhesion]
+clone-energy = 8
+cell-energy = 16
+medium-energy = 16
+solid-energy = 16
 
 [io]
 outdir = "benches/model_outputs/large_lattice"

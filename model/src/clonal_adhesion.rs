@@ -9,14 +9,15 @@ use cellulars_lib::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
 
 pub struct ClonalAdhesion {
+    pub clone_energy: f32,
     pub static_adhesion: StaticAdhesion,
-    // TODO!: try red-black trees in each cell
     pub clone_pairs: SymmetricTable<bool>
 }
 
 impl ClonalAdhesion {
-    pub fn new(max_spin: Spin, static_adhesion: StaticAdhesion) -> Self {
+    pub fn new(max_spin: Spin, clone_energy: f32, static_adhesion: StaticAdhesion) -> Self {
         Self {
+            clone_energy,
             static_adhesion,
             clone_pairs: SymmetricTable::new(max_spin as usize)
         }
@@ -63,11 +64,9 @@ impl AdhesionSystem for ClonalAdhesion {
                 return 0.
             }
             if self.clone_pairs[(c1.spin as usize, c2.spin as usize)] {
-                return 2. * self.static_adhesion.cell_energy;
+                return 2. * self.clone_energy;
             }
-            return 2. * self.static_adhesion.medium_energy;
         }
-        // TODO: Its potentially more efficient to handle all cases here since we skip checking cell-cell again
         // Handle all other cases
         self.static_adhesion.adhesion_energy(entity1, entity2)
     }
@@ -101,7 +100,7 @@ mod tests {
     #[test]
     fn test_clonal_adhesion() {
         let max_spin = 5;
-        let mut clonal_adhesion = ClonalAdhesion::new(max_spin, make_static_adhesion());
+        let mut clonal_adhesion = ClonalAdhesion::new(max_spin, 3., make_static_adhesion());
 
         let cell1 = make_rel_with_spin(1, 1);
         let cell2 = make_rel_with_spin(2, 1);

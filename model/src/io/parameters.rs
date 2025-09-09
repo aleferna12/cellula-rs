@@ -30,7 +30,7 @@ pub struct Parameters {
     pub general: GeneralParameters,
     pub pond: PondParameters,
     pub cell: CellParameters,
-    pub cellular_automata: CellularAutomataParameters,
+    pub ca: CellularAutomataParameters,
     pub io: IoParameters
 }
 
@@ -68,27 +68,26 @@ impl Parameters {
 pub struct GeneralParameters {
     pub time_steps: u32,
     pub seed: Option<u64>,
-    // TODO: maybe this type of parameter should be in EnvironmentPar (and starting_cells in CellPar etc)
-    pub n_ponds: u32,
     pub dispersion_period: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PondParameters {
+    pub n_ponds: u32,
     pub width: usize,
     pub height: usize,
     #[serde(default = "param_defaults::false_flag")]
     pub enclose: bool,
     pub neigh_r: u8,
-    pub starting_cells: Spin,
-    pub max_cells: Spin,
-    pub cell_search_radius: f32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct CellParameters {
+    pub starting_cells: Spin,
+    pub max_cells: Spin,
+    pub search_radius: f32,
     pub starting_area: u32,
     pub target_area: u32,
     pub div_area: u32,
@@ -96,10 +95,16 @@ pub struct CellParameters {
     pub divide: bool,
     #[serde(default = "param_defaults::true_flag")]
     pub migrate: bool,
-    pub n_regulatory_genes: usize,
+    pub update_period: u32,
+    pub genome: GenomeParameters,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct GenomeParameters {
+    pub n_regulatory: usize,
     pub mutation_rate: f32,
     pub mutation_std: f32,
-    pub update_period: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -108,12 +113,13 @@ pub struct CellularAutomataParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
-    pub adhesion: StaticAdhesionParameters
+    pub adhesion: ClonalAdhesionParameters
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
-pub struct StaticAdhesionParameters {
+pub struct ClonalAdhesionParameters {
+    pub clone_energy: f32,
     pub cell_energy: f32,
     pub medium_energy: f32,
     pub solid_energy: f32,
