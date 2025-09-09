@@ -12,8 +12,8 @@ pub struct Grn<const I: usize, const O: usize> {
     input_ids: [NodeIndex; I],
     output_ids: [NodeIndex; O],
     regulatory_ids: Box<[NodeIndex]>,
-    mut_rate: f32,
-    mut_distr: Normal<f32>,
+    pub mut_rate: f32,
+    pub mut_distr: Normal<f32>,
     pub input_signals: [f32; I]
 }
 
