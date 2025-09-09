@@ -282,6 +282,25 @@ impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitabl
     }
 }
 
+impl<C, N, B: ToLatticeBoundary> Clone for Environment<C, N, B>
+where
+    B: Clone,
+    B::LatticeBoundary: Clone,
+    CellContainer<C>: Clone,
+    N: Clone,
+{
+    fn clone(&self) -> Self {
+        Environment {
+            bounds: self.bounds.clone(),
+            cells: self.cells.clone(),
+            cell_lattice: self.cell_lattice.clone(),
+            edge_book: self.edge_book.clone(),
+            neighbourhood: self.neighbourhood.clone(),
+        }
+    }
+}
+
+
 pub trait Habitable {
     type Cell: Cellular;
     fn cells(&self) -> &CellContainer<Self::Cell>;

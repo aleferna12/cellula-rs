@@ -1,5 +1,6 @@
 use std::ops::{Index, IndexMut};
 
+#[derive(Clone)]
 pub struct SymmetricTable<T> {
     array: Box<[T]>,
     length: usize,

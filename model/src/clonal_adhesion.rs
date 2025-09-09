@@ -8,6 +8,7 @@ use cellulars_lib::lattice_entity::LatticeEntity::SomeCell;
 use cellulars_lib::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
 
+#[derive(Clone)]
 pub struct ClonalAdhesion {
     pub clone_energy: f32,
     pub static_adhesion: StaticAdhesion,
@@ -91,16 +92,16 @@ mod tests {
 
     fn make_static_adhesion() -> StaticAdhesion {
         StaticAdhesion {
-            cell_energy: 3.,
-            medium_energy: 1.5,
-            solid_energy: 2.,
+            cell_energy: 2.,
+            medium_energy: 3.,
+            solid_energy: 4.,
         }
     }
 
     #[test]
     fn test_clonal_adhesion() {
         let max_spin = 5;
-        let mut clonal_adhesion = ClonalAdhesion::new(max_spin, 3., make_static_adhesion());
+        let mut clonal_adhesion = ClonalAdhesion::new(max_spin, 1., make_static_adhesion());
 
         let cell1 = make_rel_with_spin(1, 1);
         let cell2 = make_rel_with_spin(2, 1);
@@ -111,14 +112,14 @@ mod tests {
         );
         assert_eq!(
             clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
-            2. * clonal_adhesion.static_adhesion.medium_energy
+            2. * clonal_adhesion.static_adhesion.cell_energy
         );
 
         // Manually set clone pair between spin 1 and 2
         clonal_adhesion.clone_pairs[(1, 2)] = true;
         assert_eq!(
             clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
-            2. * clonal_adhesion.static_adhesion.cell_energy
+            2. * clonal_adhesion.clone_energy
         );
         // ClonalAdhesion falls back to StaticAdhesion for Medium and Solid
         assert_eq!(

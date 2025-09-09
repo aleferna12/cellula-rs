@@ -80,6 +80,7 @@ pub trait Neighbourhood {
     fn neighbours(&self, pos: Pos<isize>) -> impl Iterator<Item = Pos<isize>>;
 }
 
+#[derive(Clone)]
 pub struct MooreNeighbourhood {
     radius: u8
 }
@@ -106,6 +107,7 @@ impl Neighbourhood for MooreNeighbourhood {
     }
 }
 
+#[derive(Clone)]
 pub struct VonNeumannNeighbourhood {
     radius: u8,
 }

@@ -4,6 +4,7 @@ use rand::Rng;
 use std::ops::Index;
 
 /// This struct exists to book-keep the edges in a lattice.
+#[derive(Clone)]
 pub struct EdgeBook {
     // TODO: profile using this crate, I have no clue of whether it's fast enough
     edge_set: IndexSet<Edge>,

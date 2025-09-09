@@ -2,7 +2,7 @@
 name = "model"
 version = "0.0.1"
 edition = "2024"
-description = "A really fast, extensible CPM implementation."
+description = "A very fast, extensible CPM implementation."
 
 [[bench]]
 name = "main"
@@ -17,6 +17,7 @@ name = "io_bench"
 harness = false
 
 [dependencies]
+bon = "3.7.2"
 cellulars-lib = { path = "../cellulars-lib" }
 clap = { version = "4.5.39", features = ["derive"] }
 config = "0.15.11"

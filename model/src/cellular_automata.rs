@@ -10,10 +10,12 @@ use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use rand::Rng;
 use std::f32::consts::E;
+use bon::Builder;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
+#[derive(Clone, Builder)]
 pub struct CellularAutomata<A> {
     pub boltz_t: f32,
     pub size_lambda: f32,
@@ -23,16 +25,6 @@ pub struct CellularAutomata<A> {
 }
 
 impl<A> CellularAutomata<A> {
-    pub fn new(boltz_t: f32, size_lambda: f32, chemotaxis_mu: f32, enable_migration: bool, adhesion: A) -> Self {
-        Self {
-            boltz_t,
-            size_lambda,
-            chemotaxis_mu,
-            enable_migration,
-            adhesion
-        }
-    }
-
     pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
         &self,
         cell: &Cell,
@@ -198,13 +190,13 @@ mod tests {
             medium_energy: 20.,
             solid_energy: 20.
         };
-        let ca = CellularAutomata::new(
-            16.,
-            1.,
-            1.,
-            true,
-            ClonalAdhesion::new(10, 10., adh)
-        );
+        let ca = CellularAutomata::builder()
+            .boltz_t(16.)
+            .size_lambda(1.)
+            .chemotaxis_mu(1.)
+            .enable_migration(true)
+            .adhesion(ClonalAdhesion::new(10, 10., adh))
+            .build();
         let cell = RelCell::mock(Cell::new_empty(
             100,
             200,

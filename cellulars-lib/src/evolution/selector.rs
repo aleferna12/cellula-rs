@@ -8,6 +8,7 @@ pub trait Selector {
 /// and that all organisms that didn't die will be represented in the same place.
 pub trait PreservesOrder: Selector {}
 
+#[derive(Clone)]
 pub struct WeightedSelection<R> {
     select_n: u32,
     rng: R
@@ -40,6 +41,7 @@ impl<R: Rng> Selector for WeightedSelection<R> {
     }
 }
 
+#[derive(Clone)]
 pub struct WeightedOrderedSelection<R> {
     pub rng: R
 }

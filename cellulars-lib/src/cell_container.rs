@@ -3,6 +3,7 @@ use crate::constants::Spin;
 use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
 
+#[derive(Clone)]
 pub struct CellContainer<C> {
     vec: Vec<RelCell<C>>
 }

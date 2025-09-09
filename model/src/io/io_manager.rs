@@ -5,6 +5,7 @@ use crate::io::node_link::{NodeLinkData, ToNodeLink};
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
 use crate::io::plot::*;
 use crate::pond::Pond;
+use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::constants::Spin;
@@ -13,7 +14,7 @@ use image::{GenericImage, RgbaImage};
 use polars::prelude::*;
 use serde::Serialize;
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -21,6 +22,7 @@ static GENOMES_PATH: &str = "genomes";
 static LATTICES_PATH: &str = "lattices";
 static CONFIG_COPY_PATH: &str = "config.toml";
 
+#[derive(Builder)]
 pub struct IoManager {
     pub outdir: PathBuf,
     pub image_format: String,
@@ -34,28 +36,6 @@ pub struct IoManager {
 }
 
 impl IoManager {
-    pub fn new(
-        outdir: impl AsRef<Path>,
-        image_format: String,
-        image_period: u32,
-        cell_period: u32,
-        genome_period: u32,
-        lattice_period: u32,
-        plots: PlotParameters,
-        movie_maker: Option<MovieMaker>,
-    ) -> Self {
-        Self {
-            outdir: outdir.as_ref().to_path_buf(),
-            image_format,
-            plots,
-            movie_maker,
-            image_period,
-            cell_period,
-            genome_period,
-            lattice_period,
-        }
-    }
-
     pub fn create_directories(&self, replace_outdir: bool) -> std::io::Result<()> {
         let outdir_exists = self.outdir.try_exists()?;
         if outdir_exists {

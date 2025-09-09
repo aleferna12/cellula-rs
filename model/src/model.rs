@@ -38,63 +38,57 @@ impl Model {
         parameters.general.seed = seed.into();
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
 
-        let io = IoManager::new(
-            &parameters.io.outdir,
-            parameters.io.image_format.clone(),
-            parameters.io.image_period,
-            parameters.io.cell_period,
-            parameters.io.genome_period,
-            parameters.io.lattice_period,
-            parameters.io.plot.clone(),
-            if parameters.io.movie.show {
-                match MovieMaker::new(
-                    parameters.io.movie.width,
-                    parameters.io.movie.height,
-                    parameters.io.movie.frame_period
-                ) {
-                    Ok(mm) => {
-                        log::info!("Creating window for real-time movie display");
-                        Some(mm)
-                    },
-                    Err(e) => {
-                        log::warn!("Failed to initialise movie maker with error `{e}`");
-                        None
-                    }
+        let movie_maker = if parameters.io.movie.show {
+            match MovieMaker::new(
+                parameters.io.movie.width,
+                parameters.io.movie.height,
+                parameters.io.movie.frame_period
+            ) {
+                Ok(mm) => {
+                    log::info!("Creating window for real-time movie display");
+                    Some(mm)
+                },
+                Err(e) => {
+                    log::warn!("Failed to initialise movie maker with error `{e}`");
+                    None
                 }
-            } else {
-                None
             }
-        );
+        } else { None };
+        let io = IoManager::builder()
+            .outdir(parameters.io.outdir.clone().into())
+            .image_format(parameters.io.image_format.clone())
+            .image_period(parameters.io.image_period)
+            .cell_period(parameters.io.cell_period)
+            .genome_period(parameters.io.genome_period)
+            .lattice_period(parameters.io.lattice_period)
+            .plots(parameters.io.plot.clone())
+            .maybe_movie_maker(movie_maker)
+            .build();
 
         log::info!("Creating output directories and copy of parameter file");
         io.create_directories(parameters.io.replace_outdir)?;
         io.create_parameters_file(&parameters)?;
 
-        let mut ponds = vec![];
-        // TODO: if we make everything clonable then that helps here and also in model_bench
-        //  (takes less time to reinitialise everything which means more samples)
-        for pond_i in 0..parameters.pond.n_ponds {
-            log::info!("Making pond #{pond_i}");
-            let mut env = ChemEnvironment::new(
-                Environment::new(
-                    CellContainer::default(),
-                    NeighbourhoodType::new(parameters.pond.neigh_r),
-                    Boundaries::new(BoundaryType::new(Rect::new(
-                        (0., 0.).into(),
-                        (parameters.pond.width as f32, parameters.pond.height as f32).into(),
-                    ))).expect("failed to create boundaries during initialisation, lattice size is too big")
-                ).expect("failed to create environment during initialisation, lattice size is too big")
-            );
+        let mut env = ChemEnvironment::new(
+            Environment::new(
+                CellContainer::default(),
+                NeighbourhoodType::new(parameters.pond.neigh_r),
+                Boundaries::new(BoundaryType::new(Rect::new(
+                    (0., 0.).into(),
+                    (parameters.pond.width as f32, parameters.pond.height as f32).into(),
+                ))).expect("failed to create boundaries during initialisation, lattice size is too big")
+            ).expect("failed to create environment during initialisation, lattice size is too big")
+        );
+        if parameters.pond.enclose {
+            env.make_border(true, true, true, true);
+        }
 
-            if parameters.pond.enclose {
-                env.make_border(true, true, true, true);
-            }
-
-            let ca= CellularAutomata::new(
-                parameters.ca.boltz_t,
-                parameters.ca.size_lambda,
-                parameters.ca.chemotaxis_mu,
-                parameters.cell.migrate,
+        let ca = CellularAutomata::builder()
+            .boltz_t(parameters.ca.boltz_t)
+            .size_lambda(parameters.ca.size_lambda)
+            .chemotaxis_mu(parameters.ca.chemotaxis_mu)
+            .enable_migration(parameters.cell.migrate)
+            .adhesion(
                 ClonalAdhesion::new(
                     parameters.cell.max_cells + LatticeEntity::first_cell_spin(),
                     parameters.ca.adhesion.clone_energy,
@@ -104,19 +98,25 @@ impl Model {
                         solid_energy: parameters.ca.adhesion.solid_energy,
                     }
                 )
-            );
-            
-            let mut pond = Pond::new(
-                env,
-                ca,
-                rng.clone(),
-                parameters.cell.update_period,
-                parameters.cell.target_area,
-                parameters.cell.search_radius,
-                parameters.cell.divide,
-                parameters.cell.max_cells
-            );
+            )
+            .build();
 
+        let empty_pond = Pond::builder()
+            .env(env)
+            .ca(ca)
+            .rng(rng.clone())
+            .update_period(parameters.cell.update_period)
+            .cell_target_area(parameters.cell.target_area)
+            .cell_search_scaler(parameters.cell.search_radius)
+            .division_enabled(parameters.cell.divide)
+            .max_cells(parameters.cell.max_cells)
+            .build();
+
+        let mut ponds = vec![];
+        for pond_i in 0..parameters.pond.n_ponds {
+            log::info!("Making pond #{pond_i}");
+
+            let mut pond = empty_pond.clone();
             for _ in 0..parameters.cell.starting_cells {
                 let cell = Cell::new_empty(
                     parameters.cell.target_area,

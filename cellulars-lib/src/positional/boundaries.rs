@@ -6,6 +6,7 @@ use num::Num;
 use std::error::Error;
 use std::ops::Sub;
 
+#[derive(Clone)]
 pub struct Boundaries<B: ToLatticeBoundary> {
     pub boundary: B,
     pub lattice_boundary: B::LatticeBoundary,

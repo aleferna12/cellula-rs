@@ -6,6 +6,7 @@ pub trait AdhesionSystem {
     fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32;
 }
 
+#[derive(Clone)]
 pub struct StaticAdhesion {
     pub cell_energy: f32,
     pub medium_energy: f32,

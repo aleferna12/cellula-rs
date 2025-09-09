@@ -1,3 +1,4 @@
+use bon::Builder;
 use crate::cell::Cell;
 use crate::cellular_automata::CellularAutomata;
 use crate::chem_environment::ChemEnvironment;
@@ -16,6 +17,7 @@ use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
 
 // TODO: this struct can be made general if CellularAutomata is also general
+#[derive(Clone, Builder)]
 pub struct Pond {
     pub env: ChemEnvironment,
     pub ca: CellularAutomata<ClonalAdhesion>,
@@ -25,35 +27,13 @@ pub struct Pond {
     pub division_enabled: bool,
     pub max_cells: u32,
     pub cell_search_scaler: f32,
+    #[builder(default = false)]
     population_exploded: bool,
+    #[builder(default = 0)]
     time_step: u32,
 }
 
 impl Pond {
-    pub fn new(
-        env: ChemEnvironment,
-        ca: CellularAutomata<ClonalAdhesion>,
-        rng: Xoshiro256StarStar,
-        update_period: u32,
-        cell_target_area: u32,
-        cell_search_scaler: f32,
-        division_enabled: bool,
-        max_cells: u32
-    ) -> Self {
-        Self {
-            env,
-            ca,
-            rng,
-            update_period,
-            cell_target_area,
-            cell_search_scaler,
-            division_enabled,
-            max_cells,
-            population_exploded: false,
-            time_step: 0
-        }
-    }
-    
     pub fn step(&mut self) {
         self.ca.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
