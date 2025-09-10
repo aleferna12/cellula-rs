@@ -51,8 +51,8 @@ impl<const I: usize, const O: usize> From<Grn<I, O>> for NodeLinkData<GrnGeneTyp
             directed: true,
             multigraph: false,
             graph: GrnMutParams {
-                rate: value.mut_rate,
-                std: value.mut_distr.std_dev()
+                mut_rate: value.mut_rate,
+                mut_std: value.mut_distr.std_dev()
             },
             nodes,
             links,
@@ -89,8 +89,8 @@ impl<const I: usize, const O: usize> TryFrom<NodeLinkData<GrnGeneType, EdgeWeigh
         if value.multigraph {
             bail!("graph can not be a multigraph");
         }
-        let mut_rate = value.graph.rate;
-        let mut_std = value.graph.std;
+        let mut_rate = value.graph.mut_rate;
+        let mut_std = value.graph.mut_std;
         Ok(Self::from_graph(
             DiGraph::try_from(value)?,
             mut_rate,
@@ -101,6 +101,6 @@ impl<const I: usize, const O: usize> TryFrom<NodeLinkData<GrnGeneType, EdgeWeigh
 
 #[derive(Serialize, Deserialize)]
 pub struct GrnMutParams {
-    rate: f32,
-    std: f32
+    mut_rate: f32,
+    mut_std: f32
 }
