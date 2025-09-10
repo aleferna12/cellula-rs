@@ -1,7 +1,7 @@
 use crate::cell::Cell;
 use crate::genetics::grn::{EdgeWeight, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
-use crate::io::node_link::NodeLinkData;
+use crate::io::node_link::{GrnMutParams, NodeLinkData};
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
 use crate::io::plot::*;
 use crate::pond::Pond;
@@ -122,31 +122,25 @@ impl IoManager {
     fn make_cell_node_links(
         &self,
         ponds: &[Pond]
-    ) -> Vec<NodeLinkData<GrnGeneType, EdgeWeight, serde_json::Value>> {
+    ) -> Vec<PondNodeLink> {
         let mut res = vec![];
         for (i, pond) in ponds.iter().enumerate() {
             for cell in pond.env.cells.iter() {
-                let gen_node_link = NodeLinkData::from(cell.genome.clone());
-                let node_link = NodeLinkData {
-                    directed: gen_node_link.directed,
-                    multigraph: gen_node_link.multigraph,
-                    graph: serde_json::json!({
-                        "pond": i,
-                        "spin": cell.spin,
-                    }),
-                    nodes: gen_node_link.nodes,
-                    links: gen_node_link.links,
-                };
-                res.push(node_link);
+                let node_link = NodeLinkData::from(cell.genome.clone());
+                res.push(PondNodeLink {
+                    pond: i as u32,
+                    spin: cell.spin,
+                    node_link
+                });
             }
         }
         res
     }
 
-    fn make_cell_lattices<'a>(&self, ponds: &'a [Pond]) -> Vec<PondCellLatttice<'a>> {
+    fn make_cell_lattices<'a>(&self, ponds: &'a [Pond]) -> Vec<PondCellLattice<'a>> {
         let mut res = vec![];
         for (i, pond) in ponds.iter().enumerate() {
-            res.push(PondCellLatttice {
+            res.push(PondCellLattice {
                 pond: i as u32,
                 lattice: pond.env.cell_lattice.as_array()
             })
@@ -321,7 +315,14 @@ impl ToDataFrame for CellContainer<Cell> {
 }
 
 #[derive(Serialize)]
-struct PondCellLatttice<'a> {
+struct PondCellLattice<'a> {
     pond: u32,
     lattice: &'a[Spin]
+}
+
+#[derive(Serialize)]
+struct PondNodeLink {
+    pond: u32,
+    spin: Spin,
+    node_link: NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>
 }
