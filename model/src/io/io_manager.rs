@@ -1,7 +1,7 @@
 use crate::cell::Cell;
 use crate::genetics::grn::{EdgeWeight, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
-use crate::io::node_link::{NodeLinkData, ToNodeLink};
+use crate::io::node_link::NodeLinkData;
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
 use crate::io::plot::*;
 use crate::pond::Pond;
@@ -122,13 +122,21 @@ impl IoManager {
     fn make_cell_node_links(
         &self,
         ponds: &[Pond]
-    ) -> Vec<NodeLinkData<GrnGeneType, EdgeWeight>> {
+    ) -> Vec<NodeLinkData<GrnGeneType, EdgeWeight, serde_json::Value>> {
         let mut res = vec![];
         for (i, pond) in ponds.iter().enumerate() {
             for cell in pond.env.cells.iter() {
-                let mut node_link = cell.genome.to_node_link();
-                node_link.graph.insert("pond".to_string(), serde_json::json!(i));
-                node_link.graph.insert("spin".to_string(), serde_json::json!(cell.spin));
+                let gen_node_link = NodeLinkData::from(cell.genome.clone());
+                let node_link = NodeLinkData {
+                    directed: gen_node_link.directed,
+                    multigraph: gen_node_link.multigraph,
+                    graph: serde_json::json!({
+                        "pond": i,
+                        "spin": cell.spin,
+                    }),
+                    nodes: gen_node_link.nodes,
+                    links: gen_node_link.links,
+                };
                 res.push(node_link);
             }
         }

@@ -1,8 +1,8 @@
 use crate::genetics::grn::{EdgeWeight, Grn, GrnGeneType};
-use rustworkx_core::petgraph::prelude::EdgeRef;
+use anyhow::bail;
+use rustworkx_core::petgraph::prelude::{DiGraph, EdgeRef, NodeIndex};
 use rustworkx_core::petgraph::visit::IntoNodeReferences;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 #[derive(Serialize, Deserialize)]
 pub struct Node<N> {
@@ -28,17 +28,9 @@ pub struct NodeLinkData<N, E, G> {
     pub links: Vec<Link<E>>,
 }
 
-pub trait ToNodeLink<N, E, G> {
-    fn to_node_link(&self) -> NodeLinkData<N, E, G>;
-}
-
-pub trait FromNodeLink<N, E, G>: Sized {
-    fn from_node_link(node_link: NodeLinkData<N, E, G>) -> Result<Self, NodeLinkError>;
-}
-
-impl<const I: usize, const O: usize> ToNodeLink<GrnGeneType, EdgeWeight, GrnMutParams> for Grn<I, O> {
-    fn to_node_link(&self) -> NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams> {
-        let nodes: Vec<Node<GrnGeneType>> = self.graph()
+impl<const I: usize, const O: usize> From<Grn<I, O>> for NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams> {
+    fn from(value: Grn<I, O>) -> Self {
+        let nodes: Vec<Node<GrnGeneType>> = value.graph()
             .node_references()
             .map(|(i, node)| Node {
                 id: i.index(),
@@ -46,7 +38,7 @@ impl<const I: usize, const O: usize> ToNodeLink<GrnGeneType, EdgeWeight, GrnMutP
             })
             .collect();
 
-        let links: Vec<Link<EdgeWeight>> = self.graph()
+        let links: Vec<Link<EdgeWeight>> = value.graph()
             .edge_references()
             .map(|e| Link {
                 source: e.source().index(),
@@ -59,8 +51,8 @@ impl<const I: usize, const O: usize> ToNodeLink<GrnGeneType, EdgeWeight, GrnMutP
             directed: true,
             multigraph: false,
             graph: GrnMutParams {
-                rate: self.mut_rate,
-                std: self.mut_distr.std_dev()
+                rate: value.mut_rate,
+                std: value.mut_distr.std_dev()
             },
             nodes,
             links,
@@ -68,30 +60,47 @@ impl<const I: usize, const O: usize> ToNodeLink<GrnGeneType, EdgeWeight, GrnMutP
     }
 }
 
-impl<const I: usize, const O: usize> FromNodeLink<GrnGeneType, EdgeWeight, GrnMutParams> for Grn<I, O> {
-    fn from_node_link(node_link: NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>) -> Result<Self, NodeLinkError> {
-        if !node_link.multigraph {
-            return Err(NodeLinkError::NotMultigraph)
-        }
-        if !node_link.directed {
-            return Err(NodeLinkError::NotDirected)
-        }
-        Ok(Self::new(
+impl TryFrom<NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>> for DiGraph<GrnGeneType, f32> {
+    type Error = anyhow::Error;
 
-        ))
+    fn try_from(node_link: NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>) -> Result<Self, Self::Error> {
+        if !node_link.directed {
+            bail!("graph must be directed");
+        }
+        let mut graph = DiGraph::new();
+        for node in node_link.nodes {
+            graph.add_node(node.data);
+        }
+        for edge in node_link.links {
+            graph.add_edge(
+                NodeIndex::new(edge.source),
+                NodeIndex::new(edge.target),
+                edge.data.weight
+            );
+        }
+        Ok(graph)
+    }
+}
+
+impl<const I: usize, const O: usize> TryFrom<NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>> for Grn<I, O> {
+    type Error = anyhow::Error;
+
+    fn try_from(value: NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>) -> Result<Self, Self::Error> {
+        if value.multigraph {
+            bail!("graph can not be a multigraph");
+        }
+        let mut_rate = value.graph.rate;
+        let mut_std = value.graph.std;
+        Ok(Self::from_graph(
+            DiGraph::try_from(value)?,
+            mut_rate,
+            mut_std,
+        )?)
     }
 }
 
 #[derive(Serialize, Deserialize)]
-struct GrnMutParams {
+pub struct GrnMutParams {
     rate: f32,
     std: f32
-}
-
-#[derive(Error, Debug)]
-pub enum NodeLinkError {
-    #[error("graph must be directed")]
-    NotDirected,
-    #[error("graph must not be a multigraph")]
-    NotMultigraph,
 }

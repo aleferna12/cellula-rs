@@ -1,11 +1,15 @@
+use std::collections::HashSet;
 use crate::genetics::genome::Genome;
 use crate::genetics::grn::GrnGeneType::{Input, Output, Regulatory};
 use rand::Rng;
 use rand_distr::Distribution;
 use rand_distr::Normal;
 use rustworkx_core::petgraph::prelude::*;
+use rustworkx_core::petgraph::visit::IntoNodeReferences;
 use serde::Serialize;
+use thiserror::Error;
 
+// TODO: make it so Grn can take any Distribution
 #[derive(Clone, Debug)]
 pub struct Grn<const I: usize, const O: usize> {
     graph: DiGraph<GrnGeneType, f32>,
@@ -18,7 +22,80 @@ pub struct Grn<const I: usize, const O: usize> {
 }
 
 impl<const I: usize, const O: usize> Grn<I, O> {
-    pub fn new(
+    pub fn from_graph(
+        graph: DiGraph<GrnGeneType, f32>,
+        mut_rate: f32,
+        mut_std: f32
+    ) -> Result<Self, GrnError> {
+        let mut maybe_inputs = [None; I];
+        let mut input_signals = [0.0; I];
+        let mut input_counter = 0;
+
+        let mut maybe_outputs = [None; O];
+        let mut output_counter = 0;
+
+        let mut regulatory_ids = vec![];
+        for (nx, node) in graph.node_references() {
+            match node {
+                Input(gene) => {
+                    if input_counter >= I {
+                        return Err(GrnError::TooManyInputs);
+                    }
+                    maybe_inputs[input_counter] = Some(nx);
+                    input_signals[input_counter] = gene.signal;
+                    input_counter += 1;
+                }
+                Regulatory(_) => {
+                    regulatory_ids.push(nx);
+                }
+                Output(_) => {
+                    if output_counter >= O {
+                        return Err(GrnError::TooManyOutputs);
+                    }
+                    maybe_outputs[output_counter] = Some(nx);
+                    output_counter += 1;
+                }
+            }
+        }
+
+        if input_counter < I {
+            return Err(GrnError::TooFewInputs);
+        }
+        if output_counter < O {
+            return Err(GrnError::TooFewOutputs);
+        }
+
+        fn transform_ids<const S: usize>(
+            maybe: [Option<NodeIndex>; S],
+            id_set: &mut HashSet<NodeIndex>
+        ) -> Result<[NodeIndex; S], GrnError> {
+            let mut transformed = [NodeIndex::default(); S];
+            for (i, maybe_id) in maybe.iter().enumerate() {
+                let id = maybe_id.unwrap();
+                if !id_set.insert(id) {
+                    return Err(GrnError::RepeatedId(id.index()));
+                }
+                transformed[i] = id;
+            }
+            Ok(transformed)
+        }
+
+        let mut id_set = HashSet::new();
+        let input_ids = transform_ids(maybe_inputs, &mut id_set)?;
+        let output_ids = transform_ids(maybe_outputs, &mut id_set)?;
+
+        Ok(Self {
+            graph,
+            mut_rate,
+            input_ids,
+            output_ids,
+            input_signals,
+            regulatory_ids: regulatory_ids.into_boxed_slice(),
+            mut_distr: Normal::new(0., mut_std).expect("invalid `mut_std`")
+        })
+    }
+
+    pub fn from_sampler(
         input_scales: [f32; I],
         n_regulatory: usize,
         mut_rate: f32,
@@ -67,7 +144,7 @@ impl<const I: usize, const O: usize> Grn<I, O> {
     }
     
     pub fn empty() -> Self {
-        Self::new(
+        Self::from_sampler(
             [0.; I],
             0,
             0.,
@@ -276,6 +353,20 @@ pub struct EdgeWeight {
     pub weight: f32,
 }
 
+#[derive(Error, Debug, Clone)]
+pub enum GrnError {
+    #[error("too many input genes in the graph")]
+    TooManyInputs,
+    #[error("too few input genes in the graph")]
+    TooFewInputs,
+    #[error("too many output genes in the graph")]
+    TooManyOutputs,
+    #[error("too few output genes in the graph")]
+    TooFewOutputs,
+    #[error("gene with id `{0}` appeared multiple times")]
+    RepeatedId(usize)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -294,7 +385,7 @@ mod tests {
 
     #[test]
     fn graph_has_expected_nodes_and_edges() {
-        let grn: Grn<2, 1> = Grn::new([1.0, 2.0], 1, 0.1, 0.5, fixed_sampler());
+        let grn: Grn<2, 1> = Grn::from_sampler([1.0, 2.0], 1, 0.1, 0.5, fixed_sampler());
 
         // 2 input + 1 output + 1 regulatory
         assert_eq!(grn.graph.node_count(), 4);
@@ -309,7 +400,7 @@ mod tests {
 
     #[test]
     fn nth_gene_accessors() {
-        let grn: Grn<2, 1> = Grn::new([1.5, 2.5], 1, 0.1, 0.5, fixed_sampler());
+        let grn: Grn<2, 1> = Grn::from_sampler([1.5, 2.5], 1, 0.1, 0.5, fixed_sampler());
 
         assert_eq!(grn.nth_input_gene(0).scale, 1.5);
         assert_eq!(grn.nth_input_gene(1).scale, 2.5);
@@ -319,7 +410,7 @@ mod tests {
 
     #[test]
     fn update_expression_sets_signals_and_activation() {
-        let mut grn: Grn<1, 1> = Grn::new([1.0], 1, 0.1, 0.5, || 1.0);
+        let mut grn: Grn<1, 1> = Grn::from_sampler([1.0], 1, 0.1, 0.5, || 1.0);
 
         // Give input a signal so activation > threshold
         grn.input_signals[0] = 10.0;
@@ -331,7 +422,7 @@ mod tests {
 
     #[test]
     fn attempt_mutate_changes_thresholds_and_edges() {
-        let mut grn: Grn<1, 1> = Grn::new([1.0], 1, 1.0, 0.5, || 0.0);
+        let mut grn: Grn<1, 1> = Grn::from_sampler([1.0], 1, 1.0, 0.5, || 0.0);
         let mut rng = Xoshiro256StarStar::seed_from_u64(42);
 
         // Snapshot values before

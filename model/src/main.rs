@@ -1,15 +1,7 @@
 /*
 TODO!:
     - finish IO
-        - cell info
-        - backup
-    - add builder structs for the long constructors (Env, IoManager, CellCont...)
-    - generalise remaining modules:
-        - Space
-        - CA
-        - Pond (at that point also move functions that modify environment out of environment)
-        - At the end, CA should be responsible for executing the steps (only),
-            while Pond calls the steps and manages creation/killing of cells
+        - backup (TEST)
  */
 use clap::Parser;
 use model::io::parameters::{Cli, Parameters};

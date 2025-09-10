@@ -121,7 +121,7 @@ impl Model {
                 let cell = Cell::new_empty(
                     parameters.cell.target_area,
                     parameters.cell.div_area,
-                    Grn::new(
+                    Grn::from_sampler(
                         [1. / pond.env.height() as f32],
                         parameters.cell.genome.n_regulatory,
                         parameters.cell.genome.mutation_rate,
