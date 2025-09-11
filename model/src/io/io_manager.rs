@@ -19,7 +19,6 @@ use image::{GenericImage, RgbaImage};
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt::Display;
 use std::io;
 use std::io::{BufWriter, Read, Write};
