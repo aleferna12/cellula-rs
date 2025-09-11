@@ -20,7 +20,6 @@ use cellulars_lib::positional::rect::Rect;
 use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
-use std::error::Error;
 
 pub struct Model {
     pub ponds: Vec<Pond>,
@@ -31,7 +30,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn initialise_from_parameters(mut parameters: Parameters) -> Result<Model, Box<dyn Error>> {
+    pub fn initialise_from_parameters(mut parameters: Parameters) -> anyhow::Result<Self> {
         log::info!("Initialising model");
         // TOML doesnt support large u64s so we use a u32 seed
         let seed = parameters.general.seed.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64);

@@ -71,7 +71,7 @@ impl IoManager {
         Ok(())
     }
 
-    pub fn create_parameters_file(&self, parameters: &Parameters) -> Result<(), Box<dyn Error>> {
+    pub fn create_parameters_file(&self, parameters: &Parameters) -> anyhow::Result<()> {
         let params_copy = self.outdir.join(CONFIG_COPY_PATH);
         std::fs::write(
             params_copy,
@@ -197,7 +197,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         ponds: &[Pond]
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> anyhow::Result<()> {
         self.write_data_if_time(time_step, ponds)?;
         self.write_image_if_time(time_step, ponds)
     }
@@ -206,7 +206,7 @@ impl IoManager {
         &self,
         time_step: u32,
         ponds: &[Pond]
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> anyhow::Result<()> {
         let time_str = time_step.to_string();
         if time_step % self.cell_period == 0 {
             for (i, pond) in ponds.iter().enumerate() {
@@ -273,7 +273,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         ponds: &[Pond],
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> anyhow::Result<()> {
         // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
         let movie_update = if let Some(mm) = &self.movie_maker {

@@ -6,9 +6,8 @@ TODO!:
 use clap::Parser;
 use model::io::parameters::{Cli, Parameters};
 use model::model::Model;
-use std::error::Error;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> anyhow::Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let cli = Cli::parse();
