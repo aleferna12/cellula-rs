@@ -101,6 +101,6 @@ impl<const I: usize, const O: usize> TryFrom<NodeLinkData<GrnGeneType, EdgeWeigh
 
 #[derive(Serialize, Deserialize)]
 pub struct GrnMutParams {
-    mut_rate: f32,
-    mut_std: f32
+    pub(crate) mut_rate: f32,
+    pub(crate) mut_std: f32
 }

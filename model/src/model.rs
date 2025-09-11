@@ -66,7 +66,7 @@ impl Model {
             .build();
 
         log::info!("Creating output directories and copy of parameter file");
-        io.create_directories(parameters.io.replace_outdir)?;
+        io.create_directories(parameters.io.replace_outdir, parameters.pond.n_ponds)?;
         io.create_parameters_file(&parameters)?;
 
         let mut env = ChemEnvironment::new(
@@ -153,7 +153,7 @@ impl Model {
 
     pub fn run_for(&mut self, time_steps: u32) {
         for time_step in 0..=time_steps {
-            let saved = self.io.try_io(
+            let saved = self.io.try_write(
                 time_step,
                 &self.ponds
             );

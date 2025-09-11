@@ -8,7 +8,7 @@ use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug)]
 pub struct Cell {
-    basic_cell: BasicCell,
+    pub(crate) basic_cell: BasicCell,
     pub divide_area: u32,
     pub chem_center: Pos<f32>,
     pub chem_mass: f32,

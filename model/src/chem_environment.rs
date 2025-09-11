@@ -13,7 +13,7 @@ use std::ops::{Deref, DerefMut};
 #[derive(Clone)]
 pub struct ChemEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
-    pub(crate) chem_lattice: Lattice<u32>
+    pub chem_lattice: Lattice<u32>
 }
 
 impl ChemEnvironment {

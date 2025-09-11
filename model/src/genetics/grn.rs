@@ -6,7 +6,7 @@ use rand_distr::Distribution;
 use rand_distr::Normal;
 use rustworkx_core::petgraph::prelude::*;
 use rustworkx_core::petgraph::visit::IntoNodeReferences;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 // TODO: make it so Grn can take any Distribution
@@ -321,26 +321,26 @@ impl<const I: usize, const O: usize> Genome for Grn<I, O> {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct InputGene {
     pub signal: f32,
     pub scale: f32
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RegulatoryGene {
     pub threshold: f32,
     pub active: bool,
     activating: bool
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OutputGene {
     pub threshold: f32,
     pub active: bool
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum GrnGeneType {
     Input(InputGene),
@@ -348,7 +348,7 @@ pub enum GrnGeneType {
     Output(OutputGene)
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct EdgeWeight {
     pub weight: f32,
 }

@@ -1,20 +1,28 @@
+use std::collections::HashMap;
 use crate::cell::Cell;
-use crate::genetics::grn::{EdgeWeight, GrnGeneType};
+use crate::genetics::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
 use crate::io::plot::*;
 use crate::pond::Pond;
 use bon::Builder;
-use cellulars_lib::basic_cell::Cellular;
+use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::constants::Spin;
 use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
 use polars::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
-use std::path::PathBuf;
+use std::fmt::Display;
+use std::io;
+use std::io::{BufWriter, Write};
+use std::path::{Path, PathBuf};
+use anyhow::{anyhow, bail};
+use cellulars_lib::environment::Habitable;
+use cellulars_lib::lattice::Lattice;
+use cellulars_lib::positional::pos::Pos;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -36,24 +44,30 @@ pub struct IoManager {
 }
 
 impl IoManager {
-    pub fn create_directories(&self, replace_outdir: bool) -> std::io::Result<()> {
+    pub fn create_directories(&self, replace_outdir: bool, n_ponds: u32) -> std::io::Result<()> {
         let outdir_exists = self.outdir.try_exists()?;
         if outdir_exists {
             if replace_outdir {
                 log::info!("Cleaning contents of '{}'", self.outdir.display());
                 std::fs::remove_dir_all(&self.outdir)?;
             } else {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::AlreadyExists,
+                return Err(io::Error::new(
+                    io::ErrorKind::AlreadyExists,
                     "`outdir` already exists and `replace_outdir` is `false`"
                 ));
             }
         }
         std::fs::create_dir_all(&self.outdir)?;
         std::fs::create_dir(self.outdir.join(IMAGES_PATH))?;
-        std::fs::create_dir(self.outdir.join(CELLS_PATH))?;
-        std::fs::create_dir(self.outdir.join(GENOMES_PATH))?;
-        std::fs::create_dir(self.outdir.join(LATTICES_PATH))
+
+        for i in 0..n_ponds {
+            let pond_path = self.outdir.join(format!("pond_{}", i));
+            std::fs::create_dir(&pond_path)?;
+            std::fs::create_dir(pond_path.join(CELLS_PATH))?;
+            std::fs::create_dir(pond_path.join(GENOMES_PATH))?;
+            std::fs::create_dir(pond_path.join(LATTICES_PATH))?
+        }
+        Ok(())
     }
 
     pub fn create_parameters_file(&self, parameters: &Parameters) -> Result<(), Box<dyn Error>> {
@@ -69,86 +83,152 @@ impl IoManager {
         Ok(())
     }
 
-    pub fn try_io(
+    pub fn try_write(
         &mut self,
         time_step: u32,
         ponds: &[Pond]
     ) -> Result<(), Box<dyn Error>> {
-        self.try_data_io(time_step, ponds)?;
-        self.try_image_io(time_step, ponds)
+        self.write_data(time_step, ponds)?;
+        self.write_image(time_step, ponds)
     }
 
-    fn try_data_io(
+    fn write_data(
         &self,
         time_step: u32,
         ponds: &[Pond]
     ) -> Result<(), Box<dyn Error>> {
         let time_str = time_step.to_string();
         if time_step % self.cell_period == 0 {
-            let mut celldf = self.make_cell_dataframe(ponds)?.collect()?;
-            let file_name = format!("{time_str}.parquet");
-            let file = std::fs::File::create(self.outdir.join(CELLS_PATH).join(file_name))?;
-            ParquetWriter::new(file).finish(&mut celldf)?;
+            for (i, pond) in ponds.iter().enumerate() {
+                let mut celldf = pond.env.cells.to_dataframe()?;
+                let file_path = self.outdir
+                    .join(format!("pond_{i}"))
+                    .join(CELLS_PATH)
+                    .join(format!("{time_str}.parquet"));
+                let file = std::fs::File::create(file_path)?;
+                ParquetWriter::new(file).finish(&mut celldf)?;
+            }
         }
 
         if time_step % self.genome_period == 0 {
-            let genomes = self.make_cell_node_links(ponds);
-            let json = serde_json::to_string(&genomes)?;
-            let file_name = format!("{time_str}.json");
-            std::fs::write(self.outdir.join(GENOMES_PATH).join(file_name), json)?;
+            for (i, pond) in ponds.iter().enumerate() {
+                let genomes = Self::make_genome_node_links(pond.env.cells());
+                let file_path = self.outdir
+                    .join(format!("pond_{i}"))
+                    .join(GENOMES_PATH)
+                    .join(format!("{time_str}.json"));
+                let file = std::fs::File::create(file_path)?;
+                serde_json::to_writer(file, &genomes)?;
+            }
         }
 
         if time_step % self.lattice_period == 0 {
-            let lattices = self.make_cell_lattices(ponds);
-            let json = serde_json::to_string(&lattices)?;
-            let file_name = format!("{time_str}.json");
-            std::fs::write(self.outdir.join(LATTICES_PATH).join(file_name), json)?;
+            for (i, pond) in ponds.iter().enumerate() {
+                let file_path = self.outdir
+                    .join(format!("pond_{i}"))
+                    .join(LATTICES_PATH)
+                    .join(format!("{time_str}.txt"));
+                Self::write_lattice(&pond.env.cell_lattice, file_path.as_path())?;
+            }
         }
         Ok(())
     }
 
-    fn make_cell_dataframe(
-        &self,
-        ponds: &[Pond],
-    ) -> PolarsResult<LazyFrame> {
-        let mut dfs = vec![];
-        for (i, pond) in ponds.iter().enumerate() {
-            let cell_df = pond.env.cells.to_dataframe()?.lazy();
-            dfs.push(cell_df.with_column(lit(i as u32).alias("pond")));
+    fn write_lattice<T: Display>(lattice: &Lattice<T>, file_path: &Path) -> io::Result<()>{
+        let file = std::fs::File::create(file_path)?;
+        let mut writer = BufWriter::new(file);
+        let mut lat_it = lattice.iter_values();
+        if let Some(val) = lat_it.next() {
+            write!(writer, "{val}")?;
         }
-        concat(dfs, UnionArgs::default())
+        for val in lat_it {
+            writer.write_all(b",")?;
+            write!(writer, "{val}")?;
+        }
+        writer.flush()
     }
 
-    fn make_cell_node_links(
-        &self,
-        ponds: &[Pond]
-    ) -> Vec<PondNodeLink> {
-        let mut res = vec![];
-        for (i, pond) in ponds.iter().enumerate() {
-            for cell in pond.env.cells.iter() {
-                let node_link = NodeLinkData::from(cell.genome.clone());
-                res.push(PondNodeLink {
-                    pond: i as u32,
-                    spin: cell.spin,
-                    node_link
-                });
-            }
-        }
-        res
-    }
-
-    fn make_cell_lattices<'a>(&self, ponds: &'a [Pond]) -> Vec<PondCellLattice<'a>> {
-        let mut res = vec![];
-        for (i, pond) in ponds.iter().enumerate() {
-            res.push(PondCellLattice {
-                pond: i as u32,
-                lattice: pond.env.cell_lattice.as_array()
+    fn make_genome_node_links(
+        cells: &CellContainer<Cell>
+    ) -> Vec<SpinNodeLink> {
+        cells.iter()
+            .map(|cell| SpinNodeLink {
+                spin: cell.spin,
+                node_link: NodeLinkData::from(cell.genome.clone())
             })
-        }
-        res
+            .collect()
     }
 
-    fn try_image_io(
+    fn cell_from_data(
+        celldf: &DataFrame,
+        genomes: Vec<SpinNodeLink>,
+    ) -> anyhow::Result<CellContainer<Cell>> {
+        if celldf.height() > genomes.len() {
+            bail!("`celldf` contains more entries than `genomes`");
+        }
+        if celldf.height() < genomes.len() {
+            bail!("`genomes` contains more entries than `celldf`");
+        }
+
+        let mut cells = CellContainer::new();
+        // We need this to call replace on cells later
+        for _ in 0..celldf.height() {
+            cells.push(Cell::new_empty(0, 0, Grn::empty()), None);
+        }
+
+        let spin_map: HashMap<_, _> = HashMap::from_iter(
+            celldf.column("spin")?
+                .u32()?
+                .into_no_null_iter()
+                .enumerate()
+                .map(|(i, val)| {
+                    (val, i)
+                })
+        );
+
+        let cols: HashMap<_, _> = HashMap::from_iter(
+            celldf.get_column_names()
+                .into_iter()
+                .enumerate()
+                .map(|(i, name)| (name.as_str(), i))
+        );
+
+        for genome in genomes {
+            let spin = genome.spin;
+            let grn = Grn::<1, 1>::try_from(genome.node_link)?;
+            let row_ix = spin_map
+                .get(&spin)
+                .ok_or(anyhow!("spin `{spin}` was found in `genomes` but is missing from `celldf`"))?;
+            let row = celldf.get_row(*row_ix)?.0;
+            
+            cells.replace(RelCell {
+                spin,
+                mom: row[cols["mom"]].try_extract::<Spin>()?,
+                cell: Cell {
+                    basic_cell: BasicCell {
+                        target_area: row[cols["target_area"]].try_extract::<u32>()?,
+                        newborn_target_area: row[cols["newborn_target_area"]].try_extract::<u32>()?,
+                        area: row[cols["area"]].try_extract::<u32>()?,
+                        center: Pos::new(
+                            row[cols["center_x"]].try_extract::<f32>()?,
+                            row[cols["center_y"]].try_extract::<f32>()?,
+                        )
+                    },
+                    divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
+                    chem_center: Pos::new(
+                        row[cols["chem_center_x"]].try_extract::<f32>()?,
+                        row[cols["chem_center_y"]].try_extract::<f32>()?,
+                    ),
+                    chem_mass: row[cols["chem_mass"]].try_extract::<f32>()?,
+                    genome: grn,
+                }
+            });
+        }
+
+        Ok(cells)
+    }
+
+    fn write_image(
         &mut self,
         time_step: u32,
         ponds: &[Pond],
@@ -314,15 +394,8 @@ impl ToDataFrame for CellContainer<Cell> {
     }
 }
 
-#[derive(Serialize)]
-struct PondCellLattice<'a> {
-    pond: u32,
-    lattice: &'a[Spin]
-}
-
-#[derive(Serialize)]
-struct PondNodeLink {
-    pond: u32,
+#[derive(Serialize, Deserialize)]
+struct SpinNodeLink {
     spin: Spin,
     node_link: NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>
 }

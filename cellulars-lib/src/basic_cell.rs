@@ -6,10 +6,10 @@ use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug)]
 pub struct BasicCell {
-    target_area: u32,
-    newborn_target_area: u32,
-    area: u32,
-    center: Pos<f32>,
+    pub target_area: u32,
+    pub newborn_target_area: u32,
+    pub area: u32,
+    pub center: Pos<f32>,
 }
 
 impl BasicCell {
@@ -98,6 +98,7 @@ pub trait Cellular {
     );
 }
 
+// TODO!: mom should not be here and should instead be a symmetric table on ChemEnvironment or Environment
 /// Represents a cell that is bound to an `Environment`.
 ///
 /// Functions that do not need information about a cell's relational operators 
