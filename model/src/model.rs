@@ -153,7 +153,7 @@ impl Model {
 
     pub fn run_for(&mut self, time_steps: u32) {
         for time_step in 0..=time_steps {
-            let saved = self.io.try_write(
+            let saved = self.io.write_if_time(
                 time_step,
                 &self.ponds
             );

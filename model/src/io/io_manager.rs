@@ -17,12 +17,13 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt::Display;
 use std::io;
-use std::io::{BufWriter, Write};
+use std::io::{BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail};
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
+use cellulars_lib::positional::rect::Rect;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -44,7 +45,7 @@ pub struct IoManager {
 }
 
 impl IoManager {
-    pub fn create_directories(&self, replace_outdir: bool, n_ponds: u32) -> std::io::Result<()> {
+    pub fn create_directories(&self, replace_outdir: bool, n_ponds: u32) -> io::Result<()> {
         let outdir_exists = self.outdir.try_exists()?;
         if outdir_exists {
             if replace_outdir {
@@ -83,83 +84,7 @@ impl IoManager {
         Ok(())
     }
 
-    pub fn try_write(
-        &mut self,
-        time_step: u32,
-        ponds: &[Pond]
-    ) -> Result<(), Box<dyn Error>> {
-        self.write_data(time_step, ponds)?;
-        self.write_image(time_step, ponds)
-    }
-
-    fn write_data(
-        &self,
-        time_step: u32,
-        ponds: &[Pond]
-    ) -> Result<(), Box<dyn Error>> {
-        let time_str = time_step.to_string();
-        if time_step % self.cell_period == 0 {
-            for (i, pond) in ponds.iter().enumerate() {
-                let mut celldf = pond.env.cells.to_dataframe()?;
-                let file_path = self.outdir
-                    .join(format!("pond_{i}"))
-                    .join(CELLS_PATH)
-                    .join(format!("{time_str}.parquet"));
-                let file = std::fs::File::create(file_path)?;
-                ParquetWriter::new(file).finish(&mut celldf)?;
-            }
-        }
-
-        if time_step % self.genome_period == 0 {
-            for (i, pond) in ponds.iter().enumerate() {
-                let genomes = Self::make_genome_node_links(pond.env.cells());
-                let file_path = self.outdir
-                    .join(format!("pond_{i}"))
-                    .join(GENOMES_PATH)
-                    .join(format!("{time_str}.json"));
-                let file = std::fs::File::create(file_path)?;
-                serde_json::to_writer(file, &genomes)?;
-            }
-        }
-
-        if time_step % self.lattice_period == 0 {
-            for (i, pond) in ponds.iter().enumerate() {
-                let file_path = self.outdir
-                    .join(format!("pond_{i}"))
-                    .join(LATTICES_PATH)
-                    .join(format!("{time_str}.txt"));
-                Self::write_lattice(&pond.env.cell_lattice, file_path.as_path())?;
-            }
-        }
-        Ok(())
-    }
-
-    fn write_lattice<T: Display>(lattice: &Lattice<T>, file_path: &Path) -> io::Result<()>{
-        let file = std::fs::File::create(file_path)?;
-        let mut writer = BufWriter::new(file);
-        let mut lat_it = lattice.iter_values();
-        if let Some(val) = lat_it.next() {
-            write!(writer, "{val}")?;
-        }
-        for val in lat_it {
-            writer.write_all(b",")?;
-            write!(writer, "{val}")?;
-        }
-        writer.flush()
-    }
-
-    fn make_genome_node_links(
-        cells: &CellContainer<Cell>
-    ) -> Vec<SpinNodeLink> {
-        cells.iter()
-            .map(|cell| SpinNodeLink {
-                spin: cell.spin,
-                node_link: NodeLinkData::from(cell.genome.clone())
-            })
-            .collect()
-    }
-
-    fn cell_from_data(
+    fn make_cells_from_data(
         celldf: &DataFrame,
         genomes: Vec<SpinNodeLink>,
     ) -> anyhow::Result<CellContainer<Cell>> {
@@ -198,9 +123,9 @@ impl IoManager {
             let grn = Grn::<1, 1>::try_from(genome.node_link)?;
             let row_ix = spin_map
                 .get(&spin)
-                .ok_or(anyhow!("spin `{spin}` was found in `genomes` but is missing from `celldf`"))?;
+                .ok_or(anyhow!("spin {spin} was found in `genomes` but is missing from `celldf`"))?;
             let row = celldf.get_row(*row_ix)?.0;
-            
+
             cells.replace(RelCell {
                 spin,
                 mom: row[cols["mom"]].try_extract::<Spin>()?,
@@ -228,7 +153,123 @@ impl IoManager {
         Ok(cells)
     }
 
-    fn write_image(
+    fn read_lattice(file_path: &Path, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
+        let file = std::fs::File::open(file_path)?;
+        let buffer = io::BufReader::new(file);
+        let mut numbers = Vec::new();
+        let mut current = Vec::new();
+
+        for byte_result in buffer.bytes() {
+            let b = byte_result?;
+            if b == b' ' {
+                if !current.is_empty() {
+                    let num = std::str::from_utf8(&current)?
+                        .parse::<Spin>()?;
+                    numbers.push(num);
+                    current.clear();
+                }
+            } else {
+                current.push(b);
+            }
+        }
+
+        // Handle the last number if no trailing space
+        if !current.is_empty() {
+            let num = std::str::from_utf8(&current)?
+                .parse::<Spin>()?;
+            numbers.push(num);
+        }
+
+        if rect.area() != numbers.len() {
+            bail!(
+                "mismatch between `rect` area ({}) and size of the lattice stored in `file_path` ({})",
+                rect.area(),
+                numbers.len(),
+            );
+        }
+        Ok(Lattice::from_box(
+            numbers.into_boxed_slice(),
+            rect
+        ).unwrap())
+    }
+
+    pub fn write_if_time(
+        &mut self,
+        time_step: u32,
+        ponds: &[Pond]
+    ) -> Result<(), Box<dyn Error>> {
+        self.write_data_if_time(time_step, ponds)?;
+        self.write_image_if_time(time_step, ponds)
+    }
+
+    fn write_data_if_time(
+        &self,
+        time_step: u32,
+        ponds: &[Pond]
+    ) -> Result<(), Box<dyn Error>> {
+        let time_str = time_step.to_string();
+        if time_step % self.cell_period == 0 {
+            for (i, pond) in ponds.iter().enumerate() {
+                let mut celldf = pond.env.cells.to_dataframe()?;
+                let file_path = self.outdir
+                    .join(format!("pond_{i}"))
+                    .join(CELLS_PATH)
+                    .join(format!("{time_str}.parquet"));
+                let file = std::fs::File::create(file_path)?;
+                ParquetWriter::new(file).finish(&mut celldf)?;
+            }
+        }
+
+        if time_step % self.genome_period == 0 {
+            for (i, pond) in ponds.iter().enumerate() {
+                let genomes = Self::make_genome_node_links(pond.env.cells());
+                let file_path = self.outdir
+                    .join(format!("pond_{i}"))
+                    .join(GENOMES_PATH)
+                    .join(format!("{time_str}.json"));
+                let file = std::fs::File::create(file_path)?;
+                serde_json::to_writer(file, &genomes)?;
+            }
+        }
+
+        if time_step % self.lattice_period == 0 {
+            for (i, pond) in ponds.iter().enumerate() {
+                let file_path = self.outdir
+                    .join(format!("pond_{i}"))
+                    .join(LATTICES_PATH)
+                    .join(format!("{time_str}.txt"));
+                Self::write_lattice(file_path.as_path(), &pond.env.cell_lattice)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn make_genome_node_links(
+        cells: &CellContainer<Cell>
+    ) -> Vec<SpinNodeLink> {
+        cells.iter()
+            .map(|cell| SpinNodeLink {
+                spin: cell.spin,
+                node_link: NodeLinkData::from(cell.genome.clone())
+            })
+            .collect()
+    }
+
+    fn write_lattice<T: Display>(file_path: &Path, lattice: &Lattice<T>) -> io::Result<()>{
+        let file = std::fs::File::create(file_path)?;
+        let mut writer = BufWriter::new(file);
+        let mut lat_it = lattice.iter_values();
+        if let Some(val) = lat_it.next() {
+            write!(writer, "{val}")?;
+        }
+        for val in lat_it {
+            writer.write_all(b" ")?;
+            write!(writer, "{val}")?;
+        }
+        writer.flush()
+    }
+
+    fn write_image_if_time(
         &mut self,
         time_step: u32,
         ponds: &[Pond],

@@ -15,6 +15,26 @@ pub struct Lattice<T> {
 // Since the lattice size is naturally usize, boundary coord should be isize to avoid overflow errors
 // Although technically it only has to be slightly larger than its defined size
 impl<T> Lattice<T> {
+    pub fn from_array<const N: usize>(buf: [T; N], rect: Rect<usize>) -> Option<Self> {
+        if rect.area() != N {
+            return None;
+        }
+        Some(Self {
+            array: Box::new(buf),
+            rect
+        })
+    }
+
+    pub fn from_box(buf: Box<[T]>, rect: Rect<usize>) -> Option<Self> {
+        if rect.area() != buf.len() {
+            return None;
+        }
+        Some(Self {
+            array: buf,
+            rect
+        })
+    }
+
     pub fn width(&self) -> usize {
         self.rect.width()
     }
