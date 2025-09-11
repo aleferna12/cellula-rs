@@ -389,7 +389,7 @@ impl ToDataFrame for CellContainer<Cell> {
             "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
             "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
-            "cell_type" => valid.iter().map(|cell| cell.is_dividing()).collect::<Vec<_>>()
+            "is_dividing" => valid.iter().map(|cell| cell.is_dividing()).collect::<Vec<_>>()
         )
     }
 }
