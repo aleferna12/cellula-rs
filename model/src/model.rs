@@ -53,6 +53,7 @@ impl Model {
                 }
             }
         } else { None };
+
         let io = IoManager::builder()
             .outdir(parameters.io.outdir.clone().into())
             .image_format(parameters.io.image_format.clone())
@@ -67,20 +68,6 @@ impl Model {
         log::info!("Creating output directories and copy of parameter file");
         io.create_directories(parameters.io.replace_outdir, parameters.pond.n_ponds)?;
         io.create_parameters_file(&parameters)?;
-
-        let mut env = ChemEnvironment::new(
-            Environment::new(
-                CellContainer::default(),
-                NeighbourhoodType::new(parameters.pond.neigh_r),
-                Boundaries::new(BoundaryType::new(Rect::new(
-                    (0., 0.).into(),
-                    (parameters.pond.width as f32, parameters.pond.height as f32).into(),
-                ))).expect("failed to create boundaries during initialisation, lattice size is too big")
-            ).expect("failed to create environment during initialisation, lattice size is too big")
-        );
-        if parameters.pond.enclose {
-            env.make_border(true, true, true, true);
-        }
 
         let ca = CellularAutomata::builder()
             .boltz_t(parameters.ca.boltz_t)
@@ -100,22 +87,35 @@ impl Model {
             )
             .build();
 
-        let empty_pond = Pond::builder()
-            .env(env)
-            .ca(ca)
-            .rng(rng.clone())
-            .update_period(parameters.cell.update_period)
-            .cell_target_area(parameters.cell.target_area)
-            .cell_search_scaler(parameters.cell.search_radius)
-            .division_enabled(parameters.cell.divide)
-            .max_cells(parameters.cell.max_cells)
-            .build();
-
         let mut ponds = vec![];
         for pond_i in 0..parameters.pond.n_ponds {
             log::info!("Making pond #{pond_i}");
 
-            let mut pond = empty_pond.clone();
+            let mut env = ChemEnvironment::new(
+                Environment::new(
+                    CellContainer::default(),
+                    NeighbourhoodType::new(parameters.pond.neigh_r),
+                    Boundaries::new(BoundaryType::new(Rect::new(
+                        (0., 0.).into(),
+                        (parameters.pond.width as f32, parameters.pond.height as f32).into(),
+                    ))).expect("failed to create boundaries during initialisation, lattice size is too big")
+                ).expect("failed to create environment during initialisation, lattice size is too big")
+            );
+            if parameters.pond.enclose {
+                env.make_border(true, true, true, true);
+            }
+
+            let mut pond = Pond::builder()
+                .env(env)
+                .ca(ca.clone())
+                .rng(rng.clone())
+                .update_period(parameters.cell.update_period)
+                .cell_target_area(parameters.cell.target_area)
+                .cell_search_scaler(parameters.cell.search_radius)
+                .division_enabled(parameters.cell.divide)
+                .max_cells(parameters.cell.max_cells)
+                .build();
+
             for _ in 0..parameters.cell.starting_cells {
                 let cell = Cell::new_empty(
                     parameters.cell.target_area,
