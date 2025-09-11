@@ -1,5 +1,6 @@
 use crate::cell::Cell;
 use crate::chem_environment::ChemEnvironment;
+use bon::Builder;
 use cellulars_lib::adhesion::AdhesionSystem;
 use cellulars_lib::basic_cell::{Cellular, RelCell};
 use cellulars_lib::environment::Habitable;
@@ -10,7 +11,6 @@ use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use rand::Rng;
 use std::f32::consts::E;
-use bon::Builder;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 

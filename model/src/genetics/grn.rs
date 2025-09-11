@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use crate::genetics::genome::Genome;
 use crate::genetics::grn::GrnGeneType::{Input, Output, Regulatory};
 use rand::Rng;
@@ -7,6 +6,7 @@ use rand_distr::Normal;
 use rustworkx_core::petgraph::prelude::*;
 use rustworkx_core::petgraph::visit::IntoNodeReferences;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use thiserror::Error;
 
 // TODO: make it so Grn can take any Distribution

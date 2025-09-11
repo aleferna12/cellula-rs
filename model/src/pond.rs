@@ -1,9 +1,9 @@
-use bon::Builder;
 use crate::cell::Cell;
 use crate::cellular_automata::CellularAutomata;
 use crate::chem_environment::ChemEnvironment;
 use crate::clonal_adhesion::ClonalAdhesion;
 use crate::genetics::genome::Genome;
+use bon::Builder;
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::constants::Spin;
 use cellulars_lib::environment::Habitable;
