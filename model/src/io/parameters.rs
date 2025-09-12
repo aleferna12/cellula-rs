@@ -1,10 +1,10 @@
 use cellulars_lib::constants::Spin;
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use strum_macros::EnumIter;
 
-static CLI_NOTES: &str = "\
+static RUN_NOTES: &str = "\
     Model parameters are loaded from a TOML file specified by CONFIG.\n\
     You can also override any parameter from the CONFIG file with environmental variables \
     (use `__` for the parameter section, e.g. `GENERAL__TIME_STEPS`).\n\
@@ -13,11 +13,37 @@ static CLI_NOTES: &str = "\
     Documentation for parameters can be found in `examples/64_cells.toml`.\n\
 ";
 
+static RESUME_NOTES: &str = "\
+    Model parameters can be specified via CONFIG, or by setting environmental variables \
+    (see help of the `run` subcommand).\n\
+    If CONFIG is not specified and no environmental variables are set, \
+    the simulation runs with its original parameters.
+";
+
 #[derive(Parser)]
-#[command(version, about, after_long_help = CLI_NOTES)]
+#[command(version, about)]
 pub struct Cli {
-    #[arg(help = "Path to TOML file storing the model parameters")]
-    pub config: String
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    /// Start a new run
+    #[command(after_long_help = RUN_NOTES)]
+    Run {
+        /// Path to a TOML file with parameters
+        config: String
+    },
+    /// Resume a previous run
+    #[command(after_help = RESUME_NOTES)]
+    Resume {
+        /// Path to the directory of the simulation to be resumed
+        directory: String,
+        /// Path to a TOML file with parameters
+        #[arg(default_value = "resume")]
+        config: Option<String>
+    }
 }
 
 // When you add parameters, dont forget to document them (and their defaults)
@@ -49,8 +75,7 @@ impl Parameters {
                     .list_separator(",")
                     .with_list_parse_key("io.plot.order")
                     .try_parsing(true)
-            ).build()?
-                .try_deserialize()?;
+            ).build()?.try_deserialize()?;
         Ok(params)
     }
     
@@ -132,13 +157,19 @@ pub struct IoParameters {
     #[serde(default = "param_defaults::false_flag")]
     pub replace_outdir: bool,
     pub image_period: u32,
+    #[serde(default = "param_defaults::webp")]
+    pub image_format: String,
+    pub data: DataParameters,
+    pub movie: MovieParameters,
+    pub plot: PlotParameters
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct DataParameters {
     pub cell_period: u32,
     pub genome_period: u32,
     pub lattice_period: u32,
-    #[serde(default = "param_defaults::webp")]
-    pub image_format: String,
-    pub movie: MovieParameters,
-    pub plot: PlotParameters
 }
 
 #[derive(Serialize, Deserialize, Clone)]

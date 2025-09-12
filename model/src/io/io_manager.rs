@@ -28,7 +28,7 @@ static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
 static GENOMES_PATH: &str = "genomes";
 static LATTICES_PATH: &str = "lattices";
-static CONFIG_COPY_PATH: &str = "config.toml";
+pub static CONFIG_COPY_PATH: &str = "config.toml";
 
 #[derive(Builder)]
 pub struct IoManager {

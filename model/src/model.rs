@@ -10,6 +10,7 @@ use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::pond::Pond;
+use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::environment::Environment;
@@ -20,6 +21,7 @@ use cellulars_lib::positional::rect::Rect;
 use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
+use std::path::{Path, PathBuf};
 
 pub struct Model {
     pub ponds: Vec<Pond>,
@@ -30,7 +32,10 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn initialise_from_parameters(mut parameters: Parameters) -> anyhow::Result<Self> {
+    pub fn initialise_from_parameters(
+        mut parameters: Parameters,
+        resume_from: Option<PathBuf>,
+    ) -> anyhow::Result<Self> {
         log::info!("Initialising model");
         // TOML doesnt support large u64s so we use a u32 seed
         let seed = parameters.general.seed.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64);
@@ -58,9 +63,9 @@ impl Model {
             .outdir(parameters.io.outdir.clone().into())
             .image_format(parameters.io.image_format.clone())
             .image_period(parameters.io.image_period)
-            .cell_period(parameters.io.cell_period)
-            .genome_period(parameters.io.genome_period)
-            .lattice_period(parameters.io.lattice_period)
+            .cell_period(parameters.io.data.cell_period)
+            .genome_period(parameters.io.data.genome_period)
+            .lattice_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone())
             .maybe_movie_maker(movie_maker)
             .build();
@@ -87,28 +92,51 @@ impl Model {
             )
             .build();
 
+        let ponds = match resume_from {
+            None => Self::with_new_ponds(
+                &parameters,
+                ca,
+                &mut rng
+            ),
+            Some(path) => todo!()
+        }?;
+
+        Ok(Self {
+            ponds,
+            io,
+            rng,
+            dispersion_period: parameters.general.dispersion_period,
+            time_steps: parameters.general.time_steps
+        })
+    }
+
+    fn with_new_ponds(
+        parameters: &Parameters,
+        ca: CellularAutomata<ClonalAdhesion>,
+        rng: &mut Xoshiro256StarStar
+    ) -> anyhow::Result<Vec<Pond>> {
+        let mut env = ChemEnvironment::new(
+            Environment::new(
+                CellContainer::default(),
+                NeighbourhoodType::new(parameters.pond.neigh_r),
+                Boundaries::new(BoundaryType::new(Rect::new(
+                    (0., 0.).into(),
+                    (parameters.pond.width as f32, parameters.pond.height as f32).into(),
+                ))).context("lattice size is too big")?
+            ).context("lattice size is too big")?
+        );
+        if parameters.pond.enclose {
+            env.make_border(true, true, true, true);
+        }
+
         let mut ponds = vec![];
         for pond_i in 0..parameters.pond.n_ponds {
             log::info!("Making pond #{pond_i}");
 
-            let mut env = ChemEnvironment::new(
-                Environment::new(
-                    CellContainer::default(),
-                    NeighbourhoodType::new(parameters.pond.neigh_r),
-                    Boundaries::new(BoundaryType::new(Rect::new(
-                        (0., 0.).into(),
-                        (parameters.pond.width as f32, parameters.pond.height as f32).into(),
-                    ))).expect("failed to create boundaries during initialisation, lattice size is too big")
-                ).expect("failed to create environment during initialisation, lattice size is too big")
-            );
-            if parameters.pond.enclose {
-                env.make_border(true, true, true, true);
-            }
-
             let mut pond = Pond::builder()
-                .env(env)
+                .env(env.clone())
                 .ca(ca.clone())
-                .rng(rng.clone())
+                .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
                 .update_period(parameters.cell.update_period)
                 .cell_target_area(parameters.cell.target_area)
                 .cell_search_scaler(parameters.cell.search_radius)
@@ -125,7 +153,7 @@ impl Model {
                         parameters.cell.genome.n_regulatory,
                         parameters.cell.genome.mutation_rate,
                         parameters.cell.genome.mutation_std,
-                        || Uniform::new(-1., 1.).unwrap().sample(&mut rng)
+                        || Uniform::new(-1., 1.).unwrap().sample(rng)
                     )
                 );
                 pond.spawn_cell_random(
@@ -141,13 +169,16 @@ impl Model {
             ponds.push(pond);
         }
 
-        Ok(Self {
-            ponds,
-            io,
-            rng,
-            dispersion_period: parameters.general.dispersion_period,
-            time_steps: parameters.general.time_steps
-        })
+        Ok(ponds)
+    }
+
+    fn with_backup_ponds(
+        parameters: &Parameters,
+        ca: CellularAutomata<ClonalAdhesion>,
+        path: impl AsRef<Path>,
+    ) -> anyhow::Result<Self> {
+        let path = path.as_ref();
+        todo!()
     }
 
     pub fn run_for(&mut self, time_steps: u32) {
