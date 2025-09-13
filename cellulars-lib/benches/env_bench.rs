@@ -17,8 +17,7 @@ use std::default::Default;
 use std::hint::black_box;
 
 fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
-    Environment::new(
-        CellContainer::default(),
+    Environment::new_empty(
         MooreNeighbourhood::new(1),
         Boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
             (0., 0.).into(),

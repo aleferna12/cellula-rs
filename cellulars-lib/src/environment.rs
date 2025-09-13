@@ -24,18 +24,32 @@ pub struct Environment<C, N, B: ToLatticeBoundary> {
 }
 
 impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
-    pub fn new(
-        cells: CellContainer<C>,
+    pub fn new_empty(
         neighbourhood: N,
         bounds: Boundaries<B>,
     ) -> Result<Self, RectConversionError> {
         Ok(Self {
             cell_lattice: Lattice::new(bounds.boundary.rect().clone().try_into()?),
             edge_book: EdgeBook::new(),
+            cells: CellContainer::new(),
             bounds,
-            cells,
             neighbourhood
         })
+    }
+
+    pub fn new(
+        cells: CellContainer<C>,
+        cell_lattice: Lattice<Spin>,
+        neighbourhood: N,
+        bounds: Boundaries<B>,
+    ) -> Self {
+        Self {
+            cell_lattice,
+            bounds,
+            cells,
+            neighbourhood,
+            edge_book: EdgeBook::new()
+        }
     }
 
     pub fn width(&self) -> usize {
@@ -346,8 +360,7 @@ pub mod tests {
             (0., 0.,).into(),
             (10., 10.).into()
         );
-        Environment::new(
-            CellContainer::default(),
+        Environment::new_empty(
             MooreNeighbourhood::new(1),
             Boundaries::new(UnsafePeriodicBoundary::new(rect.clone())).expect("failed to make boundaries"),
         ).expect("failed to make test environment")

@@ -40,6 +40,9 @@ pub enum Commands {
     Resume {
         /// Path to the directory of the simulation to be resumed
         directory: String,
+        // TODO!: make optional and find last time_step
+        /// Time step from which to restore the data from
+        time_step: u32,
         /// Path to a TOML file with parameters
         #[arg(default_value = "resume")]
         config: Option<String>

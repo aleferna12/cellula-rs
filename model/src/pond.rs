@@ -51,7 +51,8 @@ impl Pond {
         }
         self.time_step += 1;
     }
-
+    
+    // TODO!: most of the fns below should go into ChemEnvironment instead (since they dont rely on CA)
     // TODO: make spawn as a circle with center at pos
     pub fn spawn_cell_random(
         &mut self,

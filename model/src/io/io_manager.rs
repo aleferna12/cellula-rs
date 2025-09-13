@@ -21,14 +21,15 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::io;
-use std::io::{BufWriter, Read, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
 static GENOMES_PATH: &str = "genomes";
 static LATTICES_PATH: &str = "lattices";
-pub static CONFIG_COPY_PATH: &str = "config.toml";
+static CONFIG_COPY_PATH: &str = "config.toml";
+static POND_PREFIX: &str = "pond_";
 
 #[derive(Builder)]
 pub struct IoManager {
@@ -61,7 +62,7 @@ impl IoManager {
         std::fs::create_dir(self.outdir.join(IMAGES_PATH))?;
 
         for i in 0..n_ponds {
-            let pond_path = self.outdir.join(format!("pond_{}", i));
+            let pond_path = self.outdir.join(format!("{POND_PREFIX}{i}"));
             std::fs::create_dir(&pond_path)?;
             std::fs::create_dir(pond_path.join(CELLS_PATH))?;
             std::fs::create_dir(pond_path.join(GENOMES_PATH))?;
@@ -84,7 +85,7 @@ impl IoManager {
     }
 
     fn make_cells_from_data(
-        celldf: &DataFrame,
+        celldf: DataFrame,
         genomes: Vec<SpinNodeLink>,
     ) -> anyhow::Result<CellContainer<Cell>> {
         if celldf.height() > genomes.len() {
@@ -148,13 +149,67 @@ impl IoManager {
                 }
             });
         }
-
         Ok(cells)
     }
 
-    fn read_lattice(file_path: &Path, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
+    pub fn read_cells(
+        cells_path: impl AsRef<Path>,
+        genomes_path: impl AsRef<Path>,
+    ) -> anyhow::Result<CellContainer<Cell>> {
+        let celldf = ParquetReader::new(std::fs::File::create(cells_path)?).finish()?;
+        let genomes = Self::read_genomes(genomes_path)?;
+        Self::make_cells_from_data(
+            celldf,
+            genomes
+        )
+    }
+
+    pub fn resolve_parameters_path(sim_path: impl AsRef<Path>) -> PathBuf {
+        sim_path.as_ref().join(CONFIG_COPY_PATH)
+    }
+
+    pub fn resolve_cells_path(
+        sim_path: impl AsRef<Path>,
+        time_step: u32,
+        pond_i: u32
+    ) -> PathBuf {
+        sim_path.as_ref()
+            .join(format!("{POND_PREFIX}{pond_i}"))
+            .join(CELLS_PATH)
+            .join(format!("{time_step}.parquet"))
+    }
+
+    pub fn resolve_genomes_path(
+        sim_path: impl AsRef<Path>,
+        time_step: u32,
+        pond_i: u32
+    ) -> PathBuf {
+        sim_path.as_ref()
+            .join(format!("{POND_PREFIX}{pond_i}"))
+            .join(GENOMES_PATH)
+            .join(format!("{time_step}.json"))
+    }
+
+    pub fn resolve_lattice_path(
+        sim_path: impl AsRef<Path>,
+        time_step: u32,
+        pond_i: u32
+    ) -> PathBuf {
+        sim_path.as_ref()
+            .join(format!("{POND_PREFIX}{pond_i}"))
+            .join(LATTICES_PATH)
+            .join(format!("{time_step}.txt"))
+    }
+
+    fn read_genomes(file_path: impl AsRef<Path>) -> io::Result<Vec<SpinNodeLink>> {
         let file = std::fs::File::open(file_path)?;
-        let buffer = io::BufReader::new(file);
+        let reader = BufReader::new(file);
+        Ok(serde_json::from_reader(reader)?)
+    }
+
+    pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
+        let file = std::fs::File::open(file_path)?;
+        let buffer = BufReader::new(file);
         let mut numbers = Vec::new();
         let mut current = Vec::new();
 

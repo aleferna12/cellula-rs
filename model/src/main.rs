@@ -3,11 +3,10 @@ TODO!:
     - finish IO
         - backup (TEST)
  */
-use std::path::PathBuf;
 use clap::Parser;
-use model::io::io_manager::CONFIG_COPY_PATH;
-use model::io::parameters::{Cli, Parameters};
+use model::io::io_manager::IoManager;
 use model::io::parameters::Commands::{Resume, Run};
+use model::io::parameters::{Cli, Parameters};
 use model::model::Model;
 
 fn main() -> anyhow::Result<()> {
@@ -15,16 +14,19 @@ fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
     
-    let parameters = match cli.command {
-        Run { config } => Parameters::parse(config),
-        Resume { directory, config } => match config {
-            Some(config_) => Parameters::parse(config_),
-            None => Parameters::parse(PathBuf::from(directory).join(CONFIG_COPY_PATH))
+    let mut model = match cli.command {
+        Run { config } => { 
+            let params = Parameters::parse(config)?;
+            Model::initialise_from_parameters(params)?
+        },
+        Resume { directory, config, time_step } => {
+            let params = match config {
+                Some(config_) => Parameters::parse(config_),
+                None => Parameters::parse(IoManager::resolve_parameters_path(&directory))
+            }?;
+            Model::initialise_from_backup(params, directory, time_step)?
         }
-    }?;
-    parameters.check_conflicts();
-    
-    let mut model = Model::initialise_from_parameters(parameters, None)?;
+    };
     model.run();
     Ok(())
 }
