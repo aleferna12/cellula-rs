@@ -44,7 +44,6 @@ pub enum Commands {
         /// Time step from which to restore the data from
         time_step: u32,
         /// Path to a TOML file with parameters
-        #[arg(default_value = "resume")]
         config: Option<String>
     }
 }

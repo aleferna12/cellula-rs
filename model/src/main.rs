@@ -15,7 +15,7 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     
     let mut model = match cli.command {
-        Run { config } => { 
+        Run { config } => {
             let params = Parameters::parse(config)?;
             Model::initialise_from_parameters(params)?
         },

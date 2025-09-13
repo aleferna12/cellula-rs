@@ -45,12 +45,13 @@ impl Model {
             time_steps: parameters.general.time_steps
         })
     }
-    
+
     pub fn initialise_from_backup(
         parameters: Parameters,
         sim_path: impl AsRef<Path>,
         time_step: u32
     ) -> anyhow::Result<Self> {
+        /// TODO! make_io is destroying the data that we need to read with read_backup_ponds
         let (ca, io, mut rng) = Self::make_ca_io_rng(&parameters)?;
         Ok(Self {
             ponds: Self::read_backup_ponds(
