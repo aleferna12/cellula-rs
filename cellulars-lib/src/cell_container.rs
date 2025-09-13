@@ -3,7 +3,7 @@ use crate::constants::Spin;
 use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CellContainer<C> {
     vec: Vec<RelCell<C>>
 }
@@ -74,7 +74,7 @@ impl<C: Cellular> CellContainer<C> {
             .unwrap_or(self.n_cells() + LatticeEntity::first_cell_spin())
     }
 
-    pub fn push(&mut self, cell: C, mom_spin: Option<Spin>) -> &mut RelCell<C> {
+    pub fn add(&mut self, cell: C, mom_spin: Option<Spin>) -> &mut RelCell<C> {
         let new_spin = self.next_spin();
         let index = new_spin - LatticeEntity::first_cell_spin();
         let rel_cell = RelCell {
@@ -88,6 +88,18 @@ impl<C: Cellular> CellContainer<C> {
         } else {
             self.replace(rel_cell);
         }
+        &mut self.vec[index as usize]
+    }
+
+    pub fn push(&mut self, cell: C, mom_spin: Option<Spin>) -> &mut RelCell<C> {
+        let index = self.n_cells();
+        let new_spin = index + LatticeEntity::first_cell_spin();
+        let rel_cell = RelCell {
+            spin: new_spin,
+            mom: mom_spin.unwrap_or(new_spin),
+            cell
+        };
+        self.vec.push(rel_cell);
         &mut self.vec[index as usize]
     }
 }

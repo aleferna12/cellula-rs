@@ -65,7 +65,7 @@ pub struct Parameters {
 impl Parameters {
     pub fn parse(path: impl AsRef<Path>) -> Result<Parameters, config::ConfigError> {
         let path = path.as_ref();
-        log::info!("Reading parameters from `{}` and environment", path.display());
+        log::info!("Reading parameters from {} and environmental variables", path.display());
         let params = config::Config::builder()
             .add_source(
                 config::File::from(path)

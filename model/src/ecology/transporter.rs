@@ -18,7 +18,7 @@ impl Transporter for WipeOut {
                 .cells
                 .get_entity(spin)
                 .expect_cell("tried to transport non-cell");
-            let spin_to = to.env.cells.push(cell.birth(), None).spin;
+            let spin_to = to.env.cells.add(cell.birth(), None).spin;
             for pos in from.env.search_cell_box(cell, from.cell_search_scaler) {
                 from.env.grant_position(
                     pos,

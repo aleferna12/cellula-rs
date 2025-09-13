@@ -327,7 +327,7 @@ pub trait Habitable {
         empty_cell: Self::Cell,
         positions: impl IntoIterator<Item = Pos<usize>>
     ) -> &RelCell<Self::Cell> {
-        let new_spin = self.cells_mut().push(empty_cell, None).spin;
+        let new_spin = self.cells_mut().add(empty_cell, None).spin;
         for pos in positions {
             self.grant_position(pos, new_spin);
         }

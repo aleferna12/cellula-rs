@@ -5,7 +5,7 @@ use crate::io::node_link::{GrnMutParams, NodeLinkData};
 use crate::io::parameters::{Parameters, PlotParameters, PlotType};
 use crate::io::plot::*;
 use crate::pond::Pond;
-use anyhow::{anyhow, bail};
+use anyhow::{anyhow, bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
@@ -97,7 +97,7 @@ impl IoManager {
 
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
-        for _ in 0..celldf.height() {
+        for _ in 0..=celldf.height() {
             cells.push(Cell::new_empty(0, 0, Grn::empty()), None);
         }
 
@@ -156,7 +156,9 @@ impl IoManager {
         cells_path: impl AsRef<Path>,
         genomes_path: impl AsRef<Path>,
     ) -> anyhow::Result<CellContainer<Cell>> {
-        let celldf = ParquetReader::new(std::fs::File::create(cells_path)?).finish()?;
+        let cells_path = cells_path.as_ref();
+        let file = std::fs::File::open(cells_path).context(format!("while opening {}", cells_path.display()))?;
+        let celldf = ParquetReader::new(file).finish()?;
         let genomes = Self::read_genomes(genomes_path)?;
         Self::make_cells_from_data(
             celldf,
@@ -201,14 +203,16 @@ impl IoManager {
             .join(format!("{time_step}.txt"))
     }
 
-    fn read_genomes(file_path: impl AsRef<Path>) -> io::Result<Vec<SpinNodeLink>> {
-        let file = std::fs::File::open(file_path)?;
+    fn read_genomes(file_path: impl AsRef<Path>) -> anyhow::Result<Vec<SpinNodeLink>> {
+        let file_path = file_path.as_ref();
+        let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
         let reader = BufReader::new(file);
         Ok(serde_json::from_reader(reader)?)
     }
 
     pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
-        let file = std::fs::File::open(file_path)?;
+        let file_path = file_path.as_ref();
+        let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
         let buffer = BufReader::new(file);
         let mut numbers = Vec::new();
         let mut current = Vec::new();
@@ -478,6 +482,7 @@ impl ToDataFrame for CellContainer<Cell> {
             "mom" => valid.iter().map(|cell| cell.mom).collect::<Vec<_>>(),
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
+            "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Vec<_>>(),
             "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
             "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Vec<_>>(),
             "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Vec<_>>(),

@@ -35,11 +35,16 @@ impl Model {
         parameters: Parameters
     ) -> anyhow::Result<Self> {
         log::info!("Initialising model");
-        let (ca, io, mut rng) = Self::make_ca_io_rng(&parameters)?;
 
+        let seed = Self::determine_seed(parameters.general.seed);
+        let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         Ok(Self {
-            ponds: Self::make_new_ponds(&parameters, ca, &mut rng)?,
-            io,
+            ponds: Self::make_new_ponds(
+                &parameters,
+                Self::make_ca(&parameters),
+                &mut rng
+            )?,
+            io: Self::setup_io(&parameters, seed)?,
             rng,
             dispersion_period: parameters.general.dispersion_period,
             time_steps: parameters.general.time_steps
@@ -51,32 +56,28 @@ impl Model {
         sim_path: impl AsRef<Path>,
         time_step: u32
     ) -> anyhow::Result<Self> {
-        /// TODO! make_io is destroying the data that we need to read with read_backup_ponds
-        let (ca, io, mut rng) = Self::make_ca_io_rng(&parameters)?;
+        let sim_path = sim_path.as_ref();
+        log::info!("Resuming simulation at {}", sim_path.display());
+        log::info!("Starting from time step {}", time_step);
+
+        let seed = Self::determine_seed(parameters.general.seed);
+        let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         Ok(Self {
             ponds: Self::read_backup_ponds(
                 &parameters,
-                ca,
+                Self::make_ca(&parameters),
                 &mut rng,
                 sim_path,
                 time_step
             )?,
-            io,
+            io: Self::setup_io(&parameters, seed)?,
             rng,
             dispersion_period: parameters.general.dispersion_period,
             time_steps: parameters.general.time_steps
         })
     }
 
-    fn make_ca_io_rng(parameters: &Parameters) -> anyhow::Result<(
-        CellularAutomata<ClonalAdhesion>,
-        IoManager,
-        Xoshiro256StarStar
-    )> {
-        // TOML doesnt support large u64s so we use a u32 seed
-        let seed = parameters.general.seed.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64);
-        let rng = Xoshiro256StarStar::seed_from_u64(seed);
-
+    fn setup_io(parameters: &Parameters, new_seed: u64) -> anyhow::Result<IoManager> {
         let movie_maker = if parameters.io.movie.show {
             match MovieMaker::new(
                 parameters.io.movie.width,
@@ -108,10 +109,13 @@ impl Model {
         log::info!("Creating output directories and copy of parameter file");
         io.create_directories(parameters.io.replace_outdir, parameters.pond.n_ponds)?;
         let mut params_new_seed = parameters.clone();
-        params_new_seed.general.seed = seed.into();
+        params_new_seed.general.seed = new_seed.into();
         io.create_parameters_file(&params_new_seed)?;
+        Ok(io)
+    }
 
-        let ca = CellularAutomata::builder()
+    fn make_ca(parameters: &Parameters) -> CellularAutomata<ClonalAdhesion> {
+        CellularAutomata::builder()
             .boltz_t(parameters.ca.boltz_t)
             .size_lambda(parameters.ca.size_lambda)
             .chemotaxis_mu(parameters.ca.chemotaxis_mu)
@@ -127,8 +131,12 @@ impl Model {
                     }
                 )
             )
-            .build();
-        Ok((ca, io, rng))
+            .build()
+    }
+
+    fn determine_seed(seed_param: Option<u64>) -> u64 {
+        // TOML doesnt support large u64s so we use a u32 seed
+        seed_param.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64)
     }
 
     fn make_empty_pond(
@@ -237,13 +245,15 @@ impl Model {
                 unsafe { (*env_ptr).update_edges(pos); };
             }
 
-            ponds.push(Self::make_empty_pond(parameters, env, ca.clone(), rng))
+            let mut pond = Self::make_empty_pond(parameters, env, ca.clone(), rng);
+            pond.time_step = time_step;
+            ponds.push(pond);
         }
         Ok(ponds)
     }
 
     pub fn run_for(&mut self, time_steps: u32) {
-        for time_step in 0..=time_steps {
+        for time_step in self.ponds[0].time_step..=time_steps {
             let saved = self.io.write_if_time(
                 time_step,
                 &self.ponds

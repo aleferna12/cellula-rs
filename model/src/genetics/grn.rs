@@ -363,7 +363,7 @@ pub enum GrnError {
     TooManyOutputs,
     #[error("too few output genes in the graph")]
     TooFewOutputs,
-    #[error("gene with id `{0}` appeared multiple times")]
+    #[error("gene with id {0} appeared multiple times")]
     RepeatedId(usize)
 }
 

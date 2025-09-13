@@ -30,7 +30,7 @@ pub struct Pond {
     #[builder(default = false)]
     population_exploded: bool,
     #[builder(default = 0)]
-    time_step: u32,
+    pub(crate) time_step: u32,
 }
 
 impl Pond {
@@ -94,7 +94,7 @@ impl Pond {
             .collect();
 
         let newborn = mom.birth();
-        let new_spin = self.env.cells.push(newborn, Some(mom_spin)).spin;
+        let new_spin = self.env.cells.add(newborn, Some(mom_spin)).spin;
         for pos in new_positions {
             self.env.grant_position(
                 pos,
