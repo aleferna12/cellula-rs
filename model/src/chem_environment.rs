@@ -82,6 +82,7 @@ impl ChemEnvironment {
 
     pub fn divide_cell(&mut self, mom_spin: Spin, search_scaler: f32) -> &RelCell<Cell> {
         let mom = self
+            .env
             .cells
             .get_entity(mom_spin)
             .expect_cell("retrieved non-cell during cell division");
@@ -96,13 +97,15 @@ impl ChemEnvironment {
             .collect();
 
         let newborn = mom.birth();
-        let new_spin = self.cells.add(newborn, Some(mom_spin)).spin;
+        let newborn_ta = mom.newborn_target_area;
+        let new_spin = self.env.cells.add(newborn, Some(mom_spin)).spin;
         for pos in new_positions {
             self.grant_position(
                 pos,
                 new_spin,
             );
         }
+        self.env.cells.get_entity_mut(mom_spin).unwrap_cell().set_target_area(newborn_ta);
         self.cells.get_entity(new_spin).expect_cell("retrieved non-cell during cell division")
     }
 
