@@ -12,15 +12,15 @@ use std::collections::HashSet;
 pub struct ClonalAdhesion {
     pub clone_energy: f32,
     pub static_adhesion: StaticAdhesion,
-    pub clone_pairs: SymmetricTable<bool>
+    pub clone_table: SymmetricTable<bool>
 }
 
 impl ClonalAdhesion {
-    pub fn new(max_spin: Spin, clone_energy: f32, static_adhesion: StaticAdhesion) -> Self {
+    pub fn new(clone_energy: f32, static_adhesion: StaticAdhesion, clone_table: SymmetricTable<bool>) -> Self {
         Self {
             clone_energy,
             static_adhesion,
-            clone_pairs: SymmetricTable::new(max_spin as usize)
+            clone_table
         }
     }
 
@@ -43,17 +43,17 @@ impl ClonalAdhesion {
         let mom_clones = HashSet::from_iter(
             (LatticeEntity::first_cell_spin()..(env.cells().n_cells() + LatticeEntity::first_cell_spin()))
                 .filter(|spin| {
-                    self.clone_pairs[(mom_cell.spin as usize, *spin as usize)]
+                    self.clone_table[(mom_cell.spin as usize, *spin as usize)]
                 })
         );
         for spin in mom_clones.difference(&mom_neighs) {
-            self.clone_pairs[(mom_cell.spin as usize, *spin as usize)] = false;
+            self.clone_table[(mom_cell.spin as usize, *spin as usize)] = false;
         }
         let clones: Vec<_> = cell_neighs.intersection(&mom_clones).copied().collect();
         for spin in &clones {
-            self.clone_pairs[(cell.spin as usize, *spin as usize)] = true;
+            self.clone_table[(cell.spin as usize, *spin as usize)] = true;
         }
-        self.clone_pairs[(cell.spin as usize, mom_cell.spin as usize)] = true;
+        self.clone_table[(cell.spin as usize, mom_cell.spin as usize)] = true;
         Some(clones)
     }
 }
@@ -64,7 +64,7 @@ impl AdhesionSystem for ClonalAdhesion {
             if c1.spin == c2.spin {
                 return 0.
             }
-            if self.clone_pairs[(c1.spin as usize, c2.spin as usize)] {
+            if self.clone_table[(c1.spin as usize, c2.spin as usize)] {
                 return 2. * self.clone_energy;
             }
         }
@@ -80,6 +80,7 @@ mod tests {
     use cellulars_lib::basic_cell::{BasicCell, RelCell};
     use cellulars_lib::constants::Spin;
     use cellulars_lib::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
+    use cellulars_lib::symmetric_table::SymmetricTable;
 
     // Helper to create a RelCell with given spin and mom by mocking and overriding
     fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<BasicCell> {
@@ -101,7 +102,11 @@ mod tests {
     #[test]
     fn test_clonal_adhesion() {
         let max_spin = 5;
-        let mut clonal_adhesion = ClonalAdhesion::new(max_spin, 1., make_static_adhesion());
+        let mut clonal_adhesion = ClonalAdhesion::new(
+            1.,
+            make_static_adhesion(),
+            SymmetricTable::new(max_spin)
+        );
 
         let cell1 = make_rel_with_spin(1, 1);
         let cell2 = make_rel_with_spin(2, 1);
@@ -116,7 +121,7 @@ mod tests {
         );
 
         // Manually set clone pair between spin 1 and 2
-        clonal_adhesion.clone_pairs[(1, 2)] = true;
+        clonal_adhesion.clone_table[(1, 2)] = true;
         assert_eq!(
             clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
             2. * clonal_adhesion.clone_energy

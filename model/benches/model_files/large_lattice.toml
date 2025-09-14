@@ -41,10 +41,12 @@ solid-energy = 16
 outdir = "model/benches/model_outputs/large_lattice"
 replace-outdir = true
 image-period = 1000
-cell-period = 1000
-genome-period = 1000
-lattice-period = 1000
 image-format = "webp"
+
+[io.data]
+cell-period = 1000
+heavy-period = 1000
+lattice-period = 1000
 
 [io.movie]
 show = false

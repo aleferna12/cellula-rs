@@ -23,11 +23,13 @@ use std::fmt::Display;
 use std::io;
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
+use cellulars_lib::symmetric_table::SymmetricTable;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
 static GENOMES_PATH: &str = "genomes";
 static LATTICES_PATH: &str = "lattices";
+static CLONES_PATH: &str = "clones";
 static CONFIG_COPY_PATH: &str = "config.toml";
 static POND_PREFIX: &str = "pond_";
 
@@ -40,7 +42,7 @@ pub struct IoManager {
     pub plots: PlotParameters,
     image_period: u32,
     cell_period: u32,
-    genome_period: u32,
+    heavy_period: u32,
     lattice_period: u32,
 }
 
@@ -66,6 +68,7 @@ impl IoManager {
             std::fs::create_dir(&pond_path)?;
             std::fs::create_dir(pond_path.join(CELLS_PATH))?;
             std::fs::create_dir(pond_path.join(GENOMES_PATH))?;
+            std::fs::create_dir(pond_path.join(CLONES_PATH))?;
             std::fs::create_dir(pond_path.join(LATTICES_PATH))?
         }
         Ok(())
@@ -203,6 +206,17 @@ impl IoManager {
             .join(format!("{time_step}.txt"))
     }
 
+    pub fn resolve_clones_path(
+        sim_path: impl AsRef<Path>,
+        time_step: u32,
+        pond_i: u32
+    ) -> PathBuf {
+        sim_path.as_ref()
+            .join(format!("{POND_PREFIX}{pond_i}"))
+            .join(CLONES_PATH)
+            .join(format!("{time_step}.parquet"))
+    }
+
     fn read_genomes(file_path: impl AsRef<Path>) -> anyhow::Result<Vec<SpinNodeLink>> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
@@ -251,6 +265,32 @@ impl IoManager {
         ).unwrap())
     }
 
+    pub fn read_clones(file_path: impl AsRef<Path>) -> anyhow::Result<SymmetricTable<bool>> {
+        let file_path = file_path.as_ref();
+        let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
+        let reader = BufReader::new(file);
+        let clonedf = ParquetReader::new(reader).finish()?;
+        let mut table = SymmetricTable::new(clonedf.height());
+        for (i, column) in clonedf.get_columns().iter().enumerate() {
+            for (j, maybe_val) in column.i8()?.into_iter().enumerate() {
+                match maybe_val {
+                    Some(val) => {
+                        let val_bool = if val == 0 {
+                            false
+                        } else if val == 1 {
+                            true
+                        } else {
+                            bail!("file {} contains invalid value {}", file_path.display(), val);
+                        };
+                        table[(i, j)] = val_bool;
+                    },
+                    None => bail!("file {} contains null values", file_path.display()),
+                }
+            }
+        }
+        Ok(table)
+    }
+
     pub fn write_if_time(
         &mut self,
         time_step: u32,
@@ -278,7 +318,7 @@ impl IoManager {
             }
         }
 
-        if time_step % self.genome_period == 0 {
+        if time_step % self.heavy_period == 0 {
             for (i, pond) in ponds.iter().enumerate() {
                 let genomes = Self::make_genome_node_links(pond.env.cells());
                 let file_path = self.outdir
@@ -287,6 +327,14 @@ impl IoManager {
                     .join(format!("{time_str}.json"));
                 let file = std::fs::File::create(file_path)?;
                 serde_json::to_writer(file, &genomes)?;
+
+                let mut clonedf = pond.ca.adhesion.clone_table.to_dataframe()?;
+                let file_path = self.outdir
+                    .join(format!("pond_{i}"))
+                    .join(CLONES_PATH)
+                    .join(format!("{time_str}.parquet"));
+                let file = std::fs::File::create(file_path)?;
+                ParquetWriter::new(file).finish(&mut clonedf)?;
             }
         }
 
@@ -306,6 +354,7 @@ impl IoManager {
         cells: &CellContainer<Cell>
     ) -> Vec<SpinNodeLink> {
         cells.iter()
+            .filter(|cell| cell.is_valid())
             .map(|cell| SpinNodeLink {
                 spin: cell.spin,
                 node_link: NodeLinkData::from(cell.genome.clone())
@@ -403,7 +452,7 @@ impl IoManager {
                     PlotType::Clones => {
                         ClonesPlot {
                             env,
-                            clone_pairs: &pond.ca.adhesion.clone_pairs,
+                            clone_pairs: &pond.ca.adhesion.clone_table,
                             color: hex_to_srgb(&self.plots.clones_color)?,
                             all_clones: self.plots.all_clones
                         }.plot(image)
@@ -491,6 +540,19 @@ impl ToDataFrame for CellContainer<Cell> {
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
             "is_dividing" => valid.iter().map(|cell| cell.is_dividing()).collect::<Vec<_>>()
         )
+    }
+}
+
+impl ToDataFrame for SymmetricTable<bool> {
+    fn to_dataframe(&self) -> PolarsResult<DataFrame> {
+        let mut cols = Vec::with_capacity(self.length());
+        for i in 0..self.length() {
+            let series = (0..self.length())
+                .map(move |j| { self[(i, j)] as i8 })
+                .collect::<Series>();
+            cols.push(series.with_name(format!("col_{i}").into()).into());
+        };
+        DataFrame::new(cols)
     }
 }
 

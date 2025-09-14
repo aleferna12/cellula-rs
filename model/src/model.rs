@@ -21,6 +21,7 @@ use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
+use cellulars_lib::symmetric_table::SymmetricTable;
 
 pub struct Model {
     pub ponds: Vec<Pond>,
@@ -41,7 +42,7 @@ impl Model {
         Ok(Self {
             ponds: Self::make_new_ponds(
                 &parameters,
-                Self::make_ca(&parameters),
+                Self::make_ca(&parameters, None),
                 &mut rng
             )?,
             io: Self::setup_io(&parameters, seed)?,
@@ -65,7 +66,6 @@ impl Model {
         Ok(Self {
             ponds: Self::read_backup_ponds(
                 &parameters,
-                Self::make_ca(&parameters),
                 &mut rng,
                 sim_path,
                 time_step
@@ -100,7 +100,7 @@ impl Model {
             .image_format(parameters.io.image_format.clone())
             .image_period(parameters.io.image_period)
             .cell_period(parameters.io.data.cell_period)
-            .genome_period(parameters.io.data.genome_period)
+            .heavy_period(parameters.io.data.heavy_period)
             .lattice_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone())
             .maybe_movie_maker(movie_maker)
@@ -114,7 +114,7 @@ impl Model {
         Ok(io)
     }
 
-    fn make_ca(parameters: &Parameters) -> CellularAutomata<ClonalAdhesion> {
+    fn make_ca(parameters: &Parameters, clones: Option<SymmetricTable<bool>>) -> CellularAutomata<ClonalAdhesion> {
         CellularAutomata::builder()
             .boltz_t(parameters.ca.boltz_t)
             .size_lambda(parameters.ca.size_lambda)
@@ -122,13 +122,15 @@ impl Model {
             .enable_migration(parameters.cell.migrate)
             .adhesion(
                 ClonalAdhesion::new(
-                    parameters.cell.max_cells + LatticeEntity::first_cell_spin(),
                     parameters.ca.adhesion.clone_energy,
                     StaticAdhesion {
                         cell_energy: parameters.ca.adhesion.cell_energy,
                         medium_energy: parameters.ca.adhesion.medium_energy,
                         solid_energy: parameters.ca.adhesion.solid_energy,
-                    }
+                    },
+                    clones.unwrap_or(SymmetricTable::new(
+                        (parameters.cell.max_cells + LatticeEntity::first_cell_spin()) as usize)
+                    )
                 )
             )
             .build()
@@ -210,7 +212,6 @@ impl Model {
 
     fn read_backup_ponds(
         parameters: &Parameters,
-        ca: CellularAutomata<ClonalAdhesion>,
         rng: &mut Xoshiro256StarStar,
         sim_path: impl AsRef<Path>,
         time_step: u32
@@ -245,7 +246,19 @@ impl Model {
                 unsafe { (*env_ptr).update_edges(pos); };
             }
 
-            let mut pond = Self::make_empty_pond(parameters, env, ca.clone(), rng);
+            let mut pond = Self::make_empty_pond(
+                parameters, 
+                env,
+                Self::make_ca(
+                    &parameters,
+                    Some(IoManager::read_clones(IoManager::resolve_clones_path(
+                        sim_path,
+                        time_step,
+                        pond_i
+                    ))?)
+                ), 
+                rng
+            );
             pond.time_step = time_step;
             ponds.push(pond);
         }
@@ -259,7 +272,7 @@ impl Model {
                 &self.ponds
             );
             if let Err(e) = saved {
-                log::warn!("Failed to save image at time step {time_step} with error `{e}`")
+                log::warn!("Failed to save data at time step {time_step} with error `{e}`")
             }
             for pond in &mut self.ponds {
                 pond.step();

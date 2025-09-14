@@ -147,7 +147,7 @@ impl Pond {
 
     pub fn wipe_out(&mut self) {
         self.env.wipe_out();
-        self.ca.adhesion.clone_pairs.clear();
+        self.ca.adhesion.clone_table.clear();
     }
 
     pub fn can_add_cell(&mut self) -> bool {

@@ -11,7 +11,9 @@ impl<T> SymmetricTable<T> {
         self.length
     }
     
-    pub fn iter_pairs(&self, start: usize, end: usize) -> impl Iterator<Item = (usize, usize)> {
+    pub fn iter_index_pairs(&self, start: Option<usize>, end: Option<usize>) -> impl Iterator<Item = (usize, usize)> {
+        let start = start.unwrap_or(0);
+        let end = end.unwrap_or(self.length);
         (start..end).flat_map(move |i| (i..end).map(move |j| (i, j)))
     }
 
@@ -35,7 +37,7 @@ impl<T: Default + Clone> SymmetricTable<T> {
     }
 }
 
-impl<T: Default + Clone> Index<(usize, usize)> for SymmetricTable<T> {
+impl<T> Index<(usize, usize)> for SymmetricTable<T> {
     type Output = T;
 
     fn index(&self, index: (usize, usize)) -> &Self::Output {
@@ -43,7 +45,7 @@ impl<T: Default + Clone> Index<(usize, usize)> for SymmetricTable<T> {
     }
 }
 
-impl<T: Default + Clone> IndexMut<(usize, usize)> for SymmetricTable<T> {
+impl<T> IndexMut<(usize, usize)> for SymmetricTable<T> {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
         &mut self.array[self.flat_index(index.0, index.1)]
     }
@@ -70,7 +72,7 @@ mod tests {
     #[test]
     fn test_iter_pairs_produces_correct_pairs() {
         let table: SymmetricTable<u8> = SymmetricTable::new(4);
-        let pairs: Vec<(usize, usize)> = table.iter_pairs(1, 4).collect();
+        let pairs: Vec<(usize, usize)> = table.iter_index_pairs(Some(1), Some(4)).collect();
         let expected = vec![
             (1, 1), (1, 2), (1, 3),
             (2, 2), (2, 3),

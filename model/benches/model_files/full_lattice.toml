@@ -46,6 +46,11 @@ genome-period = 1000
 lattice-period = 1000
 image-format = "webp"
 
+[io.data]
+cell-period = 1000
+heavy-period = 1000
+lattice-period = 1000
+
 [io.movie]
 show = false
 width = 320

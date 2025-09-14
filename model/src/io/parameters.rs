@@ -170,7 +170,7 @@ pub struct IoParameters {
 #[serde(rename_all = "kebab-case")]
 pub struct DataParameters {
     pub cell_period: u32,
-    pub genome_period: u32,
+    pub heavy_period: u32,
     pub lattice_period: u32,
 }
 

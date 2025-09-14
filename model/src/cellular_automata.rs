@@ -182,6 +182,7 @@ mod tests {
     use crate::clonal_adhesion::ClonalAdhesion;
     use crate::genetics::grn::Grn;
     use cellulars_lib::adhesion::StaticAdhesion;
+    use cellulars_lib::symmetric_table::SymmetricTable;
 
     #[test]
     fn test_delta_hamiltonian_size() {
@@ -195,7 +196,7 @@ mod tests {
             .size_lambda(1.)
             .chemotaxis_mu(1.)
             .enable_migration(true)
-            .adhesion(ClonalAdhesion::new(10, 10., adh))
+            .adhesion(ClonalAdhesion::new(10., adh, SymmetricTable::new(10)))
             .build();
         let cell = RelCell::mock(Cell::new_empty(
             100,

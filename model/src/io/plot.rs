@@ -137,9 +137,9 @@ pub struct ClonesPlot<'a> {
 
 impl Plot for ClonesPlot<'_> {
     fn plot(&self, image: &mut RgbaImage) {
-        let spins = self.clone_pairs.iter_pairs(
-            LatticeEntity::first_cell_spin() as usize,
-            (self.env.cells.n_cells() + LatticeEntity::first_cell_spin()) as usize
+        let spins = self.clone_pairs.iter_index_pairs(
+            Some(LatticeEntity::first_cell_spin() as usize),
+            Some((self.env.cells.n_cells() + LatticeEntity::first_cell_spin()) as usize)
         );
         for spin_pair in spins {
             if !self.clone_pairs[spin_pair] {
