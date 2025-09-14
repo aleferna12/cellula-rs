@@ -1,5 +1,6 @@
 /*
 TODO!:
+    - reset mom target area in divide_cell
     - finish IO
         - backup (TEST)
     - strip down of non essential features

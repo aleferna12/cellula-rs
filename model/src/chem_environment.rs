@@ -85,13 +85,13 @@ impl ChemEnvironment {
             .cells
             .get_entity(mom_spin)
             .expect_cell("retrieved non-cell during cell division");
+        let div_axis = self.find_division_axis(mom, search_scaler);
         let new_positions: Vec<_> = self
             .search_cell_box(mom, search_scaler)
             .into_iter()
             .filter(|pos| {
-                // TODO!: use principal component to determine division axis
-                //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                self.bounds.boundary.displacement(Pos::new(pos.x as f32, pos.y as f32), mom.center()).0 > 0.
+                let y = div_axis.slope * pos.x as f32 + div_axis.intercept;
+                (pos.y as f32) < y
             })
             .collect();
 
@@ -138,19 +138,16 @@ impl ChemEnvironment {
         }).collect()
     }
 
+    // TODO!: add plot to make sure this is right
     /// Find the minor axis along which to split the cell.
     pub fn find_division_axis(&self, cell: &RelCell<Cell>, search_scaler: f32) -> SplitLine {
-        let center_x = cell.center().x;
-        let center_y = cell.center().y;
-
         // Compute covariance elements relative to centroid
         let mut sum_xx = 0.0;
         let mut sum_yy = 0.0;
         let mut sum_xy = 0.0;
 
         for p in &self.search_cell_box(cell, search_scaler) {
-            let dx = p.x as f32 - center_x;
-            let dy = p.y as f32 - center_y;
+            let (dx, dy) = self.bounds.boundary.displacement(p.to_f32(), cell.center);
             sum_xx += dx * dx;
             sum_yy += dy * dy;
             sum_xy += dx * dy;
@@ -192,7 +189,7 @@ impl ChemEnvironment {
         } else {
             f32::INFINITY // vertical line
         };
-        let intercept = center_y - slope * center_x;
+        let intercept = cell.center.y - slope * cell.center.x;
 
         SplitLine { slope, intercept }
     }
