@@ -38,7 +38,7 @@ medium-energy = 16
 solid-energy = 16
 
 [io]
-outdir = "model/benches/model_outputs/large_lattice"
+outdir = "benches/model_outputs/large_lattice"
 replace-outdir = true
 image-period = 1000
 image-format = "webp"
