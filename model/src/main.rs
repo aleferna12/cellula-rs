@@ -2,6 +2,7 @@
 TODO!:
     - finish IO
         - backup (TEST)
+    - strip down of non essential features
  */
 use clap::Parser;
 use model::io::io_manager::IoManager;
