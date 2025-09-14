@@ -42,7 +42,7 @@ impl ChemEnvironment {
     }
 
     pub fn can_add_cell(&mut self) -> bool {
-        if self.env.cells.n_valid() < self.max_cells {
+        if self.cells.n_valid() < self.max_cells {
             return true;
         }
         if !self.population_exploded {
@@ -63,7 +63,7 @@ impl ChemEnvironment {
         cell_area: u32,
         rng: &mut impl Rng,
     ) -> &RelCell<Cell> {
-        let pos_isize = self.env.cell_lattice.random_pos(rng).to_isize();
+        let pos_isize = self.cell_lattice.random_pos(rng).to_isize();
         let cell_side = ((cell_area as f32).sqrt() / 2.) as isize;
         let rect = Rect::new(
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
@@ -71,10 +71,10 @@ impl ChemEnvironment {
         );
         let positions = rect
             .iter_positions()
-            .filter_map(|pos| self.env.bounds.lattice_boundary.valid_pos(pos))
+            .filter_map(|pos| self.bounds.lattice_boundary.valid_pos(pos))
             .map(|pos| pos.to_usize())
             .collect::<Vec<_>>();
-        self.env.spawn_cell(
+        self.spawn_cell(
             empty_cell,
             positions
         )
@@ -82,30 +82,28 @@ impl ChemEnvironment {
 
     pub fn divide_cell(&mut self, mom_spin: Spin, search_scaler: f32) -> &RelCell<Cell> {
         let mom = self
-            .env
             .cells
             .get_entity(mom_spin)
             .expect_cell("retrieved non-cell during cell division");
         let new_positions: Vec<_> = self
-            .env
             .search_cell_box(mom, search_scaler)
             .into_iter()
             .filter(|pos| {
                 // TODO!: use principal component to determine division axis
                 //  current algorithm hands out all x positions to the right of the cell centre to the new cell
-                self.env.bounds.boundary.displacement(Pos::new(pos.x as f32, pos.y as f32), mom.center()).0 > 0.
+                self.bounds.boundary.displacement(Pos::new(pos.x as f32, pos.y as f32), mom.center()).0 > 0.
             })
             .collect();
 
         let newborn = mom.birth();
-        let new_spin = self.env.cells.add(newborn, Some(mom_spin)).spin;
+        let new_spin = self.cells.add(newborn, Some(mom_spin)).spin;
         for pos in new_positions {
-            self.env.grant_position(
+            self.grant_position(
                 pos,
                 new_spin,
             );
         }
-        self.env.cells.get_entity(new_spin).expect_cell("retrieved non-cell during cell division")
+        self.cells.get_entity(new_spin).expect_cell("retrieved non-cell during cell division")
     }
 
     // Should this also replace some of the cell's positions with Medium?
@@ -119,7 +117,7 @@ impl ChemEnvironment {
     // gain is minimal (although the ergonomic gains are significant)
     pub fn reproduce(&mut self, search_scaler: f32) -> Vec<Spin> {
         let mut divide = vec![];
-        for cell in self.env.cells().iter() {
+        for cell in self.cells().iter() {
             if !cell.is_alive() {
                 continue;
             }
@@ -132,7 +130,7 @@ impl ChemEnvironment {
             if !self.can_add_cell() {
                 return None;
             }
-            let mom = self.env
+            let mom = self
                 .cells
                 .get_entity(spin)
                 .expect_cell("retrieved non-cell during reproduction");
