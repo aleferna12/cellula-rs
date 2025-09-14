@@ -155,7 +155,6 @@ impl Model {
             .cell_target_area(parameters.cell.target_area)
             .cell_search_scaler(parameters.cell.search_radius)
             .division_enabled(parameters.cell.divide)
-            .max_cells(parameters.cell.max_cells)
             .build()
     }
 
@@ -171,7 +170,8 @@ impl Model {
                     (0., 0.).into(),
                     (parameters.pond.width as f32, parameters.pond.height as f32).into(),
                 ))).context("lattice size is too big")?
-            ).context("lattice size is too big")?
+            ).context("lattice size is too big")?,
+            parameters.cell.max_cells
         );
         if parameters.pond.enclose {
             env.make_border(true, true, true, true);
@@ -194,9 +194,10 @@ impl Model {
                         || Uniform::new(-1., 1.).unwrap().sample(rng)
                     )
                 );
-                pond.spawn_cell_random(
+                pond.env.spawn_cell_random(
                     cell,
-                    parameters.cell.starting_area
+                    parameters.cell.starting_area,
+                    &mut pond.rng
                 );
             }
             log::info!(
@@ -234,12 +235,15 @@ impl Model {
                 rect.clone().try_into()?,
             )?;
 
-            let mut env = ChemEnvironment::new(Environment::new(
-                cells,
-                lattice,
-                NeighbourhoodType::new(parameters.pond.neigh_r),
-                Boundaries::new(BoundaryType::new(rect))?
-            ));
+            let mut env = ChemEnvironment::new(
+                Environment::new(
+                    cells,
+                    lattice,
+                    NeighbourhoodType::new(parameters.pond.neigh_r),
+                    Boundaries::new(BoundaryType::new(rect))?,
+                ),
+                parameters.cell.max_cells
+            );
             let env_ptr: *mut _ = &mut env;
             for pos in env.cell_lattice.iter_positions() {
                 // We do this to avoid two lattices in memory
