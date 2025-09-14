@@ -12,19 +12,18 @@ use std::collections::HashSet;
 pub struct ClonalAdhesion {
     pub clone_energy: f32,
     pub static_adhesion: StaticAdhesion,
-    pub clone_table: SymmetricTable<bool>
+    pub clones_table: SymmetricTable<bool>
 }
 
 impl ClonalAdhesion {
-    pub fn new(clone_energy: f32, static_adhesion: StaticAdhesion, clone_table: SymmetricTable<bool>) -> Self {
+    pub fn new(clone_energy: f32, static_adhesion: StaticAdhesion, clones_table: SymmetricTable<bool>) -> Self {
         Self {
             clone_energy,
             static_adhesion,
-            clone_table
+            clones_table
         }
     }
 
-    // TODO!: remove and implement neighbour tracking
     pub fn update_clones(
         &mut self,
         cell_spin: Spin,
@@ -43,17 +42,17 @@ impl ClonalAdhesion {
         let mom_clones = HashSet::from_iter(
             (LatticeEntity::first_cell_spin()..(env.cells().n_cells() + LatticeEntity::first_cell_spin()))
                 .filter(|spin| {
-                    self.clone_table[(mom_cell.spin as usize, *spin as usize)]
+                    self.clones_table[(mom_cell.spin as usize, *spin as usize)]
                 })
         );
         for spin in mom_clones.difference(&mom_neighs) {
-            self.clone_table[(mom_cell.spin as usize, *spin as usize)] = false;
+            self.clones_table[(mom_cell.spin as usize, *spin as usize)] = false;
         }
         let clones: Vec<_> = cell_neighs.intersection(&mom_clones).copied().collect();
         for spin in &clones {
-            self.clone_table[(cell.spin as usize, *spin as usize)] = true;
+            self.clones_table[(cell.spin as usize, *spin as usize)] = true;
         }
-        self.clone_table[(cell.spin as usize, mom_cell.spin as usize)] = true;
+        self.clones_table[(cell.spin as usize, mom_cell.spin as usize)] = true;
         Some(clones)
     }
 }
@@ -64,7 +63,7 @@ impl AdhesionSystem for ClonalAdhesion {
             if c1.spin == c2.spin {
                 return 0.
             }
-            if self.clone_table[(c1.spin as usize, c2.spin as usize)] {
+            if self.clones_table[(c1.spin as usize, c2.spin as usize)] {
                 return 2. * self.clone_energy;
             }
         }
@@ -121,7 +120,7 @@ mod tests {
         );
 
         // Manually set clone pair between spin 1 and 2
-        clonal_adhesion.clone_table[(1, 2)] = true;
+        clonal_adhesion.clones_table[(1, 2)] = true;
         assert_eq!(
             clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
             2. * clonal_adhesion.clone_energy

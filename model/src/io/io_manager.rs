@@ -328,7 +328,7 @@ impl IoManager {
                 let file = std::fs::File::create(file_path)?;
                 serde_json::to_writer(file, &genomes)?;
 
-                let mut clonedf = pond.ca.adhesion.clone_table.to_dataframe()?;
+                let mut clonedf = pond.ca.adhesion.clones_table.to_dataframe()?;
                 let file_path = self.outdir
                     .join(format!("pond_{i}"))
                     .join(CLONES_PATH)
@@ -452,7 +452,7 @@ impl IoManager {
                     PlotType::Clones => {
                         ClonesPlot {
                             env,
-                            clone_pairs: &pond.ca.adhesion.clone_table,
+                            clone_pairs: &pond.ca.adhesion.clones_table,
                             color: hex_to_srgb(&self.plots.clones_color)?,
                             all_clones: self.plots.all_clones
                         }.plot(image)
