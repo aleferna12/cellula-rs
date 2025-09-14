@@ -3,12 +3,10 @@ use crate::chem_environment::ChemEnvironment;
 use crate::clonal_adhesion::ClonalAdhesion;
 use crate::genetics::genome::Genome;
 use bon::Builder;
-use cellulars_lib::basic_cell::{Alive, Cellular};
+use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::evolution::selector::Fit;
 use cellulars_lib::lattice_entity::LatticeEntity;
-use cellulars_lib::positional::boundaries::Boundary;
-use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
 
 // TODO: this struct can be made general if CellularAutomata is also general
@@ -22,7 +20,7 @@ pub struct Pond {
     pub division_enabled: bool,
     pub cell_search_scaler: f32,
     #[builder(default = 0)]
-    pub(crate) time_step: u32,
+    pub time_step: u32,
 }
 
 impl Pond {
@@ -36,7 +34,7 @@ impl Pond {
         }
         self.time_step += 1;
     }
-    
+
     pub fn reproduce(&mut self) {
         let new_spins = self.env.reproduce(self.cell_search_scaler);
         for spin in new_spins {

@@ -56,7 +56,6 @@ impl ChemEnvironment {
         false
     }
 
-    // TODO!: most of the fns below should go into ChemEnvironment instead (since they dont rely on CA)
     // TODO: make spawn as a circle with center at pos
     pub fn spawn_cell_random(
         &mut self,
@@ -109,8 +108,8 @@ impl ChemEnvironment {
         self.env.cells.get_entity(new_spin).expect_cell("retrieved non-cell during cell division")
     }
 
+    // Should this also replace some of the cell's positions with Medium?
     pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
-        // Should this also replace some of the cell's positions with Medium?
         cell.apoptosis();
     }
 
