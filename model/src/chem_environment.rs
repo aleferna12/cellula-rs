@@ -227,8 +227,7 @@ impl Habitable for ChemEnvironment {
         pos: Pos<usize>,
         to: Spin
     ) -> EdgesUpdate {
-        // TODO! chem should always be u32
-        let chem_at_pos = self.chem_lattice[pos] as f32;
+        let chem_at_pos = self.chem_lattice[pos];
         if let SomeCell(to_cell) = self.env.cells.get_entity_mut(to) {
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);

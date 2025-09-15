@@ -11,7 +11,7 @@ pub struct Cell {
     pub basic_cell: BasicCell,
     pub divide_area: u32,
     pub chem_center: Pos<f32>,
-    pub chem_mass: f32,
+    pub chem_mass: u32,
     pub genome: Grn<1, 1>
 }
 
@@ -21,7 +21,7 @@ impl Cell {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
-            chem_mass: 0.,
+            chem_mass: 0,
             divide_area,
             genome
         }
@@ -47,13 +47,13 @@ impl Cell {
         !self.is_migrating()
     }
 
-    pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: f32, add: bool, bound: &B) {
+    pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, add: bool, bound: &B) {
         let shift = if add { 1 } else { -1 };
         if let Some(new_chem) = shifted_com(
             self.chem_center,
             pos,
-            self.chem_mass,
-            chem_at,
+            self.chem_mass as f32,
+            chem_at as f32,
             shift,
             bound
         ) {
@@ -61,8 +61,10 @@ impl Cell {
         } else {
             self.chem_center = self.center();
         }
-        self.chem_mass += shift as f32 * chem_at;
-        self.genome.input_signals[0] = self.chem_mass;
+        self.chem_mass = self.chem_mass
+            .checked_add_signed(shift * chem_at as i32)
+            .expect("overflow in shift_chem");
+        self.genome.input_signals[0] = self.chem_mass as f32 / self.area as f32;
     }
 
     pub fn update(&mut self) {
@@ -122,7 +124,7 @@ impl Alive for Cell {
     fn birth(&self) -> Self {
         Self { 
             basic_cell: self.basic_cell.birth(),
-            chem_mass: 0.,
+            chem_mass: 0,
             ..self.clone()
         }
     }
@@ -130,7 +132,7 @@ impl Alive for Cell {
 
 impl Fit for Cell {
     fn fitness(&self) -> f32 {
-        self.chem_mass
+        self.chem_mass as f32
     }
 }
 
@@ -176,18 +178,18 @@ mod tests {
         let mut cell = make_test_cell();
 
         // Add chem at (2, 3) with value 10
-        cell.shift_chem(Pos::new(2, 3), 10., true, &bound);
-        assert_eq!(cell.chem_mass, 10.);
+        cell.shift_chem(Pos::new(2, 3), 10, true, &bound);
+        assert_eq!(cell.chem_mass, 10);
         assert_eq!(cell.chem_center, Pos::new(2., 3.));
 
         // Add chem at (4, 5) with value 10
-        cell.shift_chem(Pos::new(4, 5), 10., true, &bound);
-        assert_eq!(cell.chem_mass, 20.);
+        cell.shift_chem(Pos::new(4, 5), 10, true, &bound);
+        assert_eq!(cell.chem_mass, 20);
         assert_eq!(cell.chem_center, Pos::new(3., 4.));
 
         // Remove chem from (2, 3)
-        cell.shift_chem(Pos::new(2, 3), 10., false, &bound);
-        assert_eq!(cell.chem_mass, 10.);
+        cell.shift_chem(Pos::new(2, 3), 10, false, &bound);
+        assert_eq!(cell.chem_mass, 10);
         assert_eq!(cell.chem_center, Pos::new(4., 5.));
     }
 }

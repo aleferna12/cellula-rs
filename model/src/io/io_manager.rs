@@ -146,7 +146,7 @@ impl IoManager {
                         row[cols["chem_center_x"]].try_extract::<f32>()?,
                         row[cols["chem_center_y"]].try_extract::<f32>()?,
                     ),
-                    chem_mass: row[cols["chem_mass"]].try_extract::<f32>()?,
+                    chem_mass: row[cols["chem_mass"]].try_extract::<u32>()?,
                     genome: grn,
                 }
             });
