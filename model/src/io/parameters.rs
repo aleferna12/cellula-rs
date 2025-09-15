@@ -169,9 +169,10 @@ pub struct IoParameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct DataParameters {
-    pub cell_period: u32,
-    pub heavy_period: u32,
-    pub lattice_period: u32,
+    pub cells_period: u32,
+    pub genomes_period: u32,
+    pub clones_period: u32,
+    pub lattices_period: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]

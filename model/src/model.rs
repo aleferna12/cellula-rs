@@ -99,9 +99,10 @@ impl Model {
             .outdir(parameters.io.outdir.clone().into())
             .image_format(parameters.io.image_format.clone())
             .image_period(parameters.io.image_period)
-            .cell_period(parameters.io.data.cell_period)
-            .heavy_period(parameters.io.data.heavy_period)
-            .lattice_period(parameters.io.data.lattice_period)
+            .cells_period(parameters.io.data.cells_period)
+            .genomes_period(parameters.io.data.genomes_period)
+            .clones_period(parameters.io.data.clones_period)
+            .lattices_period(parameters.io.data.lattices_period)
             .plots(parameters.io.plot.clone())
             .maybe_movie_maker(movie_maker)
             .build();

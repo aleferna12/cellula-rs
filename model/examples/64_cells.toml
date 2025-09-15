@@ -88,15 +88,14 @@ image-period = 2048
 image-format = "webp"
 
 [io.data]
-# Period (in MCS) with which to save a parquet file containing the light cell attributes.
-cell-period = 2048
-# Period (in MCS) with which to save the heavy cell attributes.
-# Includes:
-#   - JSON file in the node-link format containing the cell's genomes.
-#   - Parquet file containing the cells' clones.
-heavy-period = 4096
-# Period (in MCS) with which to save a JSON file containing the cell lattices for each pond.
-lattice-period = 4096
+# Period (in MCS) with which to save the cell attributes as a parquet file.
+cells-period = 2048
+# Period (in MCS) with which to save the cells' genomes as a JSON file.
+genomes-period = 4096
+# Period (in MCS) with which to save the cells' clones as a parquet file.
+clones-period = 4096
+# Period (in MCS) with which to save a parquet file containing the cell lattices.
+lattices-period = 4096
 
 [io.plot]
 # Defines which plots to make and in what order.

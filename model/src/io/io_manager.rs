@@ -19,9 +19,8 @@ use image::{GenericImage, RgbaImage};
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::io;
-use std::io::{BufReader, BufWriter, Read, Write};
+use std::io::{BufReader};
 use std::path::{Path, PathBuf};
 use cellulars_lib::symmetric_table::SymmetricTable;
 
@@ -41,9 +40,10 @@ pub struct IoManager {
     // TODO: Can we do something smarter about this? Maybe using dynamic dispatch
     pub plots: PlotParameters,
     image_period: u32,
-    cell_period: u32,
-    heavy_period: u32,
-    lattice_period: u32,
+    cells_period: u32,
+    genomes_period: u32,
+    clones_period: u32,
+    lattices_period: u32,
 }
 
 impl IoManager {
@@ -203,7 +203,7 @@ impl IoManager {
         sim_path.as_ref()
             .join(format!("{POND_PREFIX}{pond_i}"))
             .join(LATTICES_PATH)
-            .join(format!("{time_step}.txt"))
+            .join(format!("{time_step}.parquet"))
     }
 
     pub fn resolve_clones_path(
@@ -227,42 +227,24 @@ impl IoManager {
     pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
-        let buffer = BufReader::new(file);
-        let mut numbers = Vec::new();
-        let mut current = Vec::new();
+        let latdf = ParquetReader::new(file).finish()?;
+        if latdf.width() != rect.width()
+            || latdf.height() != rect.height() {
+            bail!("expected lattice dimensions do not match those in file");
+        }
 
-        for byte_result in buffer.bytes() {
-            let b = byte_result?;
-            if b == b' ' {
-                if !current.is_empty() {
-                    let num = std::str::from_utf8(&current)?
-                        .parse::<Spin>()?;
-                    numbers.push(num);
-                    current.clear();
+        let mut lattice = Lattice::new(rect);
+        for (i, column) in latdf.get_columns().iter().enumerate() {
+            for (j, maybe_val) in column.u32()?.into_iter().enumerate() {
+                match maybe_val {
+                    Some(val) => {
+                        lattice[(i, j).into()] = val;
+                    },
+                    None => bail!("file {} contains null values", file_path.display()),
                 }
-            } else {
-                current.push(b);
             }
         }
-
-        // Handle the last number if no trailing space
-        if !current.is_empty() {
-            let num = std::str::from_utf8(&current)?
-                .parse::<Spin>()?;
-            numbers.push(num);
-        }
-
-        if rect.area() != numbers.len() {
-            bail!(
-                "mismatch between `rect` area ({}) and size of the lattice stored in `file_path` ({})",
-                rect.area(),
-                numbers.len(),
-            );
-        }
-        Ok(Lattice::from_box(
-            numbers.into_boxed_slice(),
-            rect
-        ).unwrap())
+        Ok(lattice)
     }
 
     pub fn read_clones(file_path: impl AsRef<Path>) -> anyhow::Result<SymmetricTable<bool>> {
@@ -301,12 +283,14 @@ impl IoManager {
     }
 
     fn write_data_if_time(
-        &self,
+        &mut self,
         time_step: u32,
         ponds: &[Pond]
     ) -> anyhow::Result<()> {
         let time_str = time_step.to_string();
-        if time_step % self.cell_period == 0 {
+        // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
+        // and write it less frequently if the volume of files become a problem
+        if time_step % self.cells_period == 0 {
             for (i, pond) in ponds.iter().enumerate() {
                 let mut celldf = pond.env.cells.to_dataframe()?;
                 let file_path = self.outdir
@@ -318,7 +302,7 @@ impl IoManager {
             }
         }
 
-        if time_step % self.heavy_period == 0 {
+        if time_step % self.genomes_period == 0 {
             for (i, pond) in ponds.iter().enumerate() {
                 let genomes = Self::make_genome_node_links(pond.env.cells());
                 let file_path = self.outdir
@@ -327,7 +311,11 @@ impl IoManager {
                     .join(format!("{time_str}.json"));
                 let file = std::fs::File::create(file_path)?;
                 serde_json::to_writer(file, &genomes)?;
+            }
+        }
 
+        if time_step % self.clones_period == 0 {
+            for (i, pond) in ponds.iter().enumerate() {
                 let mut clonedf = pond.ca.adhesion.clones_table.to_dataframe()?;
                 let file_path = self.outdir
                     .join(format!("pond_{i}"))
@@ -338,12 +326,12 @@ impl IoManager {
             }
         }
 
-        if time_step % self.lattice_period == 0 {
+        if time_step % self.lattices_period == 0 {
             for (i, pond) in ponds.iter().enumerate() {
                 let file_path = self.outdir
                     .join(format!("pond_{i}"))
                     .join(LATTICES_PATH)
-                    .join(format!("{time_str}.txt"));
+                    .join(format!("{time_str}.parquet"));
                 Self::write_lattice(file_path.as_path(), &pond.env.cell_lattice)?;
             }
         }
@@ -362,18 +350,17 @@ impl IoManager {
             .collect()
     }
 
-    fn write_lattice<T: Display>(file_path: &Path, lattice: &Lattice<T>) -> io::Result<()>{
+    fn write_lattice(file_path: &Path, lattice: &Lattice<Spin>) -> PolarsResult<u64>{
+        let mut cols = vec![];
+        for (i, col) in lattice.as_array().chunks_exact(lattice.height()).enumerate() {
+            cols.push(Series::new(
+                format!("col_{i}").into(),
+                col
+            ).into())
+        }
+        let mut latdf = DataFrame::new(cols)?;
         let file = std::fs::File::create(file_path)?;
-        let mut writer = BufWriter::new(file);
-        let mut lat_it = lattice.iter_values();
-        if let Some(val) = lat_it.next() {
-            write!(writer, "{val}")?;
-        }
-        for val in lat_it {
-            writer.write_all(b" ")?;
-            write!(writer, "{val}")?;
-        }
-        writer.flush()
+        ParquetWriter::new(file).finish(&mut latdf)
     }
 
     fn write_image_if_time(
