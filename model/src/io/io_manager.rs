@@ -14,15 +14,15 @@ use cellulars_lib::environment::Habitable;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::symmetric_table::SymmetricTable;
 use image::imageops::flip_vertical_in_place;
 use image::{GenericImage, RgbaImage};
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io;
-use std::io::{BufReader};
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
-use cellulars_lib::symmetric_table::SymmetricTable;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -43,7 +43,7 @@ pub struct IoManager {
     cells_period: u32,
     genomes_period: u32,
     clones_period: u32,
-    lattices_period: u32,
+    lattices_period: u32
 }
 
 impl IoManager {
@@ -51,7 +51,6 @@ impl IoManager {
         let outdir_exists = self.outdir.try_exists()?;
         if outdir_exists {
             if replace_outdir {
-                log::info!("Cleaning contents of '{}'", self.outdir.display());
                 std::fs::remove_dir_all(&self.outdir)?;
             } else {
                 return Err(io::Error::new(
@@ -283,7 +282,7 @@ impl IoManager {
     }
 
     fn write_data_if_time(
-        &mut self,
+        &self,
         time_step: u32,
         ponds: &[Pond]
     ) -> anyhow::Result<()> {

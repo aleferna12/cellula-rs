@@ -17,17 +17,18 @@ use cellulars_lib::evolution::selector::WeightedOrderedSelection;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::symmetric_table::SymmetricTable;
 use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
-use cellulars_lib::symmetric_table::SymmetricTable;
 
 pub struct Model {
     pub ponds: Vec<Pond>,
     pub io: IoManager,
     pub rng: Xoshiro256StarStar,
     pub dispersion_period: u32,
+    pub info_period: u32,
     time_steps: u32
 }
 
@@ -48,6 +49,7 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             rng,
             dispersion_period: parameters.general.dispersion_period,
+            info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps
         })
     }
@@ -59,7 +61,7 @@ impl Model {
     ) -> anyhow::Result<Self> {
         let sim_path = sim_path.as_ref();
         log::info!("Resuming simulation at {}", sim_path.display());
-        log::info!("Starting from time step {}", time_step);
+        log::info!("Starting from time step {time_step}");
 
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
@@ -73,6 +75,7 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             rng,
             dispersion_period: parameters.general.dispersion_period,
+            info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps
         })
     }
@@ -108,6 +111,9 @@ impl Model {
             .build();
 
         log::info!("Creating output directories and copy of parameter file");
+        if parameters.io.replace_outdir {
+            log::info!("Cleaning contents of '{}'", io.outdir.display());
+        }
         io.create_directories(parameters.io.replace_outdir, parameters.pond.n_ponds)?;
         let mut params_new_seed = parameters.clone();
         params_new_seed.general.seed = new_seed.into();
@@ -255,7 +261,7 @@ impl Model {
                 parameters, 
                 env,
                 Self::make_ca(
-                    &parameters,
+                    parameters,
                     Some(IoManager::read_clones(IoManager::resolve_clones_path(
                         sim_path,
                         time_step,
@@ -272,6 +278,10 @@ impl Model {
 
     pub fn run_for(&mut self, time_steps: u32) {
         for time_step in self.ponds[0].time_step..=time_steps {
+            if self.ponds[0].time_step % self.info_period == 0 {
+                self.log_info();
+            }
+            
             let saved = self.io.write_if_time(
                 time_step,
                 &self.ponds
@@ -305,6 +315,18 @@ impl Model {
 
     pub fn run(&mut self) {
         self.run_for(self.time_steps);
+    }
+    
+    pub fn goodbye(&self) {
+        log::info!("Finished after {} time steps", self.time_steps);
+    }
+
+    fn log_info(&self) {
+        log::info!("Time step {}:", self.ponds[0].time_step);
+        for (i, pond) in self.ponds.iter().enumerate() {
+            let valid = pond.env.cells.n_valid();
+            log::info!("\tPond #{i} - {valid} cells");
+        }
     }
 }
 

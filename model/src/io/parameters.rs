@@ -161,6 +161,7 @@ pub struct IoParameters {
     pub image_period: u32,
     #[serde(default = "param_defaults::webp")]
     pub image_format: String,
+    pub info_period: u32,
     pub data: DataParameters,
     pub movie: MovieParameters,
     pub plot: PlotParameters

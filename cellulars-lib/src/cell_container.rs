@@ -1,4 +1,4 @@
-use crate::basic_cell::{Cellular, RelCell};
+use crate::basic_cell::{Alive, Cellular, RelCell};
 use crate::constants::Spin;
 use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
@@ -63,6 +63,14 @@ impl<C: Cellular> CellContainer<C> {
         self.vec
             .iter()
             .filter(|cell| cell.is_valid())
+            .count() as Spin
+    }
+    
+    pub fn n_alive(&self) -> Spin
+    where C: Alive {
+        self.vec
+            .iter()
+            .filter(|cell| cell.is_alive())
             .count() as Spin
     }
 

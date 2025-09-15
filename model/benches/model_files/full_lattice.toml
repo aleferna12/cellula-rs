@@ -19,7 +19,7 @@ target-area = 64
 div-area = 128
 divide = true
 migrate = true
-update-period = 32
+update-period = 16
 
 [cell.genome]
 n-regulatory = 2
@@ -40,17 +40,15 @@ solid-energy = 16
 [io]
 outdir = "benches/model_outputs/full_lattice"
 replace-outdir = true
+info-period = 1000
 image-period = 1000
-cell-period = 1000
-genome-period = 1000
-lattice-period = 1000
 image-format = "webp"
 
 [io.data]
 cells-period = 1000
-genomes-period = 1000
-clones-period = 1000
-lattices-period = 1000
+genomes-period = 5000
+clones-period = 5000
+lattices-period = 5000
 
 [io.movie]
 show = false

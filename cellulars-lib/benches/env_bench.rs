@@ -1,5 +1,4 @@
 use cellulars_lib::basic_cell::{BasicCell, Cellular};
-use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::environment::{Environment, Habitable};
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::*;
