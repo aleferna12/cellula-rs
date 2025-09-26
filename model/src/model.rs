@@ -106,7 +106,7 @@ impl Model {
             .genomes_period(parameters.io.data.genomes_period)
             .clones_period(parameters.io.data.clones_period)
             .lattices_period(parameters.io.data.lattices_period)
-            .plots(parameters.io.plot.clone())
+            .plots(parameters.io.plot.clone().try_into()?)
             .maybe_movie_maker(movie_maker)
             .build();
 

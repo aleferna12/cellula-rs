@@ -3,28 +3,27 @@ use model::io::parameters::{Parameters, PlotType};
 use model::model::Model;
 use strum::IntoEnumIterator;
 
-fn make_model() -> Model {
-    let mut params = Parameters::parse("examples/64_cells.toml").unwrap();
-    params.io.image_period = 1000000;
-    params.io.movie.show = false;
+fn make_model(params: Parameters) -> Model {
     let mut model = Model::initialise_from_parameters(params).unwrap();
     model.run_for(100);
     model
 }
 
 fn bench_io(c: &mut Criterion) {
+    let mut params = Parameters::parse("examples/64_cells.toml").unwrap();
+    params.io.image_period = 1000000;
+    params.io.movie.show = false;
     for plot in PlotType::iter() {
         c.bench_with_input(
             BenchmarkId::new("plot", format!("{plot:?}")),
             &plot,
             |b, i| {b.iter_batched_ref(
                 || {
-                    let mut model = make_model();
-                    model.io.plots.order = vec![i.clone()];
-                    model
+                    params.io.plot.order = vec![i.clone()];
+                    make_model(params.clone())
                 },
                 |model| {
-                    model.io.make_simulation_image(&model.ponds).unwrap();
+                    model.io.make_simulation_image(&model.ponds);
                 },
                 BatchSize::LargeInput
             )}

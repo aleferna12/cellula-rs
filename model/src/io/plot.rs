@@ -1,23 +1,22 @@
-use crate::chem_environment::ChemEnvironment;
 use crate::io::plot::HexError::ParseU8Error;
+use crate::pond::Pond;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::Spin;
-use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::symmetric_table::SymmetricTable;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
+use crate::io::parameters::{PlotParameters, PlotType};
 
 // TODO: This should most definitely take a pond as an arg, which let us use dynamic dispatch to write better code
 pub trait Plot {
-    fn plot(&self, image: &mut RgbaImage);
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage);
 }
 
 pub trait ContinuousPlot: Plot {
@@ -47,13 +46,12 @@ pub enum LerpError {
     NegativeRange
 }
 
-pub struct SpinPlot<'e> {
-    pub env: &'e ChemEnvironment,
+pub struct SpinPlot {
     pub solid_color: Srgb<u8>,
     pub medium_color: Option<Srgb<u8>>
 }
 
-impl<'e> SpinPlot<'e> {
+impl SpinPlot {
     fn spin_to_rgb(spin: Spin) -> Srgb<u8> {
         let mut hasher = DefaultHasher::new();
         spin.hash(&mut hasher);
@@ -66,10 +64,10 @@ impl<'e> SpinPlot<'e> {
     }
 }
 
-impl Plot for SpinPlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.cell_lattice.iter_positions() {
-            let spin = self.env.cell_lattice[pos];
+impl Plot for SpinPlot {
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
+        for pos in pond.env.cell_lattice.iter_positions() {
+            let spin = pond.env.cell_lattice[pos];
             let rgb = if spin >= LatticeEntity::first_cell_spin() {
                 Some(Self::spin_to_rgb(spin))
             } else if spin == LatticeEntity::Solid.discriminant() {
@@ -84,18 +82,17 @@ impl Plot for SpinPlot<'_> {
     }
 }
 
-pub struct CenterPlot<'e> {
-    pub env: &'e ChemEnvironment,
+pub struct CenterPlot {
     pub color: Srgb<u8>
 }
 
-impl Plot for CenterPlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
-        for cell in self.env.cells.iter() {
+impl Plot for CenterPlot {
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
+        for cell in pond.env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
-            let center = self.env.bounds.lattice_boundary.valid_pos(Pos::new(
+            let center = pond.env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.center().x as isize,
                 cell.center().y as isize,
             ));
@@ -106,18 +103,17 @@ impl Plot for CenterPlot<'_> {
     }
 }
 
-pub struct ChemCenterPlot<'e> {
-    pub env: &'e ChemEnvironment,
+pub struct ChemCenterPlot {
     pub color: Srgb<u8>
 }
 
-impl Plot for ChemCenterPlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
-        for cell in self.env.cells.iter() {
+impl Plot for ChemCenterPlot {
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
+        for cell in pond.env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
-            let center = self.env.bounds.lattice_boundary.valid_pos(Pos::new(
+            let center = pond.env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.chem_center().x as isize,
                 cell.chem_center().y as isize,
             ));
@@ -128,26 +124,25 @@ impl Plot for ChemCenterPlot<'_> {
     }
 }
 
-pub struct ClonesPlot<'a> {
-    pub env: &'a ChemEnvironment,
-    pub clone_pairs: &'a SymmetricTable<bool>,
+pub struct ClonesPlot {
     pub color: Srgb<u8>,
     pub all_clones: bool
 }
 
-impl Plot for ClonesPlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
-        let spins = self.clone_pairs.iter_index_pairs(
+impl Plot for ClonesPlot {
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
+        let clones = &pond.ca.adhesion.clones_table;
+        let spins = clones.iter_index_pairs(
             Some(LatticeEntity::first_cell_spin() as usize),
-            Some((self.env.cells.n_cells() + LatticeEntity::first_cell_spin()) as usize)
+            Some((pond.env.cells.n_cells() + LatticeEntity::first_cell_spin()) as usize)
         );
         for spin_pair in spins {
-            if !self.clone_pairs[spin_pair] {
+            if !clones[spin_pair] {
                 continue;
             }
             let message = "Non-cell stored as clone";
-            let cell1 = self.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
-            let cell2 = self.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
+            let cell1 = pond.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
+            let cell2 = pond.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
             if !cell1.is_valid() || !cell2.is_valid() {
                 continue;
             }
@@ -155,7 +150,7 @@ impl Plot for ClonesPlot<'_> {
             let center2 = cell2.center();
             if !self.all_clones {
                 let dist2 = (center1.x - center2.x).powf(2.) + (center1.y - center2.y).powf(2.);
-                let diag = self.env.width() * self.env.width() + self.env.height() * self.env.height();
+                let diag = pond.env.width() * pond.env.width() + pond.env.height() * pond.env.height();
                 if dist2 > diag as f32 / 4. {
                     continue;
                 }
@@ -170,24 +165,23 @@ impl Plot for ClonesPlot<'_> {
     }
 }
 
-pub struct BorderPlot<'e> {
-    pub env: &'e ChemEnvironment,
+pub struct BorderPlot {
     pub color: Srgb<u8>
 }
 
-impl Plot for BorderPlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.cell_lattice.iter_positions() {
-            let spin = self.env.cell_lattice[pos];
+impl Plot for BorderPlot {
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
+        for pos in pond.env.cell_lattice.iter_positions() {
+            let spin = pond.env.cell_lattice[pos];
             if spin < LatticeEntity::first_cell_spin() {
                 continue
             }
-            let is_border = self.env
+            let is_border = pond.env
                 .bounds
                 .lattice_boundary
-                .valid_positions(self.env.neighbourhood.neighbours(pos.to_isize()))
+                .valid_positions(pond.env.neighbourhood.neighbours(pos.to_isize()))
                 .any(|neigh| {
-                    let neigh_spin = self.env.cell_lattice[neigh.to_usize()];
+                    let neigh_spin = pond.env.cell_lattice[neigh.to_usize()];
                     neigh_spin != spin
                 });
             if is_border {
@@ -197,17 +191,16 @@ impl Plot for BorderPlot<'_> {
     }
 }
 
-pub struct CellTypePlot<'e> {
-    pub env: &'e ChemEnvironment,
+pub struct CellTypePlot {
     pub mig_color: Srgb<u8>,
     pub div_color: Srgb<u8>
 }
 
-impl Plot for CellTypePlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.env.cell_lattice.iter_positions() {
-            let spin = self.env.cell_lattice[pos];
-            let entity = self.env.cells.get_entity(spin);
+impl Plot for CellTypePlot {
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
+        for pos in pond.env.cell_lattice.iter_positions() {
+            let spin = pond.env.cell_lattice[pos];
+            let entity = pond.env.cells.get_entity(spin);
             if let LatticeEntity::SomeCell(cell) = entity {
                 let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
                 image.put_pixel(
@@ -220,17 +213,16 @@ impl Plot for CellTypePlot<'_> {
     }
 }
 
-pub struct AreaPlot<'e> {
-    pub env: &'e ChemEnvironment,
+pub struct AreaPlot {
     pub min_color: Luv,
     pub max_color: Luv
 }
 
-impl Plot for AreaPlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
+impl Plot for AreaPlot {
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
-        for cell in self.env.cells.iter() {
+        for cell in pond.env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
@@ -242,8 +234,8 @@ impl Plot for AreaPlot<'_> {
             }
         }
 
-        for pos in self.env.cell_lattice.iter_positions() {
-            let entity = self.env.cells.get_entity(self.env.cell_lattice[pos]);
+        for pos in pond.env.cell_lattice.iter_positions() {
+            let entity = pond.env.cells.get_entity(pond.env.cell_lattice[pos]);
             if let LatticeEntity::SomeCell(cell) = entity {
                 let color = self.lerp(
                     cell.area() as f32,
@@ -263,7 +255,7 @@ impl Plot for AreaPlot<'_> {
     }
 }
 
-impl ContinuousPlot for AreaPlot<'_> {
+impl ContinuousPlot for AreaPlot {
     fn min_color(&self) -> Luv {
         self.min_color
     }
@@ -272,20 +264,20 @@ impl ContinuousPlot for AreaPlot<'_> {
     }
 }
 
-pub struct ChemPlot<'l> {
-    pub lat: &'l Lattice<u32>,
+pub struct ChemPlot {
     pub min_color: Luv,
     pub max_color: Luv
 }
 
-impl Plot for ChemPlot<'_> {
-    fn plot(&self, image: &mut RgbaImage) {
-        for pos in self.lat.iter_positions() {
-            let chem = self.lat[pos];
+impl Plot for ChemPlot {
+    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
+        let lat = &pond.env.chem_lattice;
+        for pos in lat.iter_positions() {
+            let chem = lat[pos];
             let color = self.lerp(
                 chem as f32,
                 0.,
-                self.lat.height() as f32
+                lat.height() as f32
             );
             match color { 
                 Ok(c) => image.put_pixel(
@@ -299,7 +291,7 @@ impl Plot for ChemPlot<'_> {
     }
 }
 
-impl ContinuousPlot for ChemPlot<'_> {
+impl ContinuousPlot for ChemPlot {
     fn min_color(&self) -> Luv {
         self.min_color
     }
@@ -312,6 +304,52 @@ impl ContinuousPlot for ChemPlot<'_> {
 pub fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
     let arr: [u8; 4] = color.with_alpha(255).into();
     Rgba::from(arr)
+}
+
+impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
+    type Error = HexError;
+
+    fn try_from(params: PlotParameters) -> Result<Self, HexError> {
+        let mut plots = Vec::with_capacity(params.order.len());
+        for plot_type in params.order {
+            let plot: Box<dyn Plot> = match plot_type {
+                PlotType::Spin => Box::new(SpinPlot {
+                    solid_color: hex_to_srgb(&params.solid_color)?,
+                    medium_color: match &params.medium_color {
+                        None => None,
+                        Some(c) => Some(hex_to_srgb(c)?)
+                    }
+                }),
+                PlotType::Center => Box::new(CenterPlot {
+                    color: hex_to_srgb(&params.center_color)?
+                }),
+                PlotType::ChemCenter => Box::new(ChemCenterPlot {
+                    color: hex_to_srgb(&params.chem_center_color)?
+                }),
+                PlotType::Clones => Box::new(ClonesPlot {
+                    color: hex_to_srgb(&params.clones_color)?,
+                    all_clones: params.all_clones
+                }),
+                PlotType::Area => Box::new(AreaPlot{
+                    min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
+                    max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
+                }),
+                PlotType::Border => Box::new(BorderPlot {
+                    color: hex_to_srgb(&params.border_color)?
+                }),
+                PlotType::Chem => Box::new(ChemPlot {
+                    min_color: srgb_to_luv(hex_to_srgb(&params.chem_min_color)?),
+                    max_color: srgb_to_luv(hex_to_srgb(&params.chem_max_color)?)
+                }),
+                PlotType::CellType => Box::new(CellTypePlot {
+                    mig_color: hex_to_srgb(&params.migrating_color)?,
+                    div_color: hex_to_srgb(&params.dividing_color)?,
+                })
+            };
+            plots.push(plot);
+        }
+        Ok(plots)
+    }
 }
 
 pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {

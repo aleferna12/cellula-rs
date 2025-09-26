@@ -2,7 +2,7 @@ use crate::cell::Cell;
 use crate::genetics::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
-use crate::io::parameters::{Parameters, PlotParameters, PlotType};
+use crate::io::parameters::Parameters;
 use crate::io::plot::*;
 use crate::pond::Pond;
 use anyhow::{anyhow, bail, Context};
@@ -37,8 +37,7 @@ pub struct IoManager {
     pub outdir: PathBuf,
     pub image_format: String,
     pub movie_maker: Option<MovieMaker>,
-    // TODO: Can we do something smarter about this? Maybe using dynamic dispatch
-    pub plots: PlotParameters,
+    plots: Vec<Box<dyn Plot>>,
     image_period: u32,
     cells_period: u32,
     genomes_period: u32,
@@ -375,7 +374,7 @@ impl IoManager {
             false
         };
         if movie_update {
-            frame = Some(self.make_simulation_image(ponds)?);
+            frame = Some(self.make_simulation_image(ponds));
             let mm = self.movie_maker.as_mut().unwrap();
             let resized = image::imageops::resize(
                 frame.as_ref().unwrap(),
@@ -388,7 +387,7 @@ impl IoManager {
 
         if time_step % self.image_period == 0 {
             if frame.is_none() {
-                frame = Some(self.make_simulation_image(ponds)?);
+                frame = Some(self.make_simulation_image(ponds));
             }
             frame.unwrap().save(
                 &self.outdir
@@ -402,7 +401,7 @@ impl IoManager {
     pub fn make_simulation_image(
         &self,
         ponds: &[Pond]
-    ) -> Result<RgbaImage, HexError> {
+    ) -> RgbaImage {
         let mut images = vec![];
         for pond in ponds {
             let env = &pond.env;
@@ -411,71 +410,13 @@ impl IoManager {
                 env.height() as u32
             ));
             let image = images.last_mut().unwrap();
-            for plot in self.plots.order.clone() {
-                match plot {
-                    PlotType::Spin => {
-                        SpinPlot {
-                            env,
-                            solid_color: hex_to_srgb(&self.plots.solid_color)?,
-                            medium_color: match &self.plots.medium_color {
-                                None => None,
-                                Some(c) => Some(hex_to_srgb(c)?)
-                            }
-                        }.plot(image)
-                    },
-                    PlotType::Center => {
-                        CenterPlot {
-                            env,
-                            color: hex_to_srgb(&self.plots.center_color)?
-                        }.plot(image)
-                    },
-                    PlotType::ChemCenter => {
-                        ChemCenterPlot {
-                            env,
-                            color: hex_to_srgb(&self.plots.chem_center_color)?
-                        }.plot(image)
-                    },
-                    PlotType::Clones => {
-                        ClonesPlot {
-                            env,
-                            clone_pairs: &pond.ca.adhesion.clones_table,
-                            color: hex_to_srgb(&self.plots.clones_color)?,
-                            all_clones: self.plots.all_clones
-                        }.plot(image)
-                    },
-                    PlotType::Area => {
-                        AreaPlot{
-                            env,
-                            min_color: srgb_to_luv(hex_to_srgb(&self.plots.area_min_color)?),
-                            max_color: srgb_to_luv(hex_to_srgb(&self.plots.area_max_color)?),
-                        }.plot(image)
-                    },
-                    PlotType::Border => {
-                        BorderPlot {
-                            env,
-                            color: hex_to_srgb(&self.plots.border_color)?
-                        }.plot(image)
-                    },
-                    PlotType::Chem => {
-                        ChemPlot {
-                            lat: &env.chem_lattice,
-                            min_color: srgb_to_luv(hex_to_srgb(&self.plots.chem_min_color)?),
-                            max_color: srgb_to_luv(hex_to_srgb(&self.plots.chem_max_color)?)
-                        }.plot(image)
-                    },
-                    PlotType::CellType => {
-                        CellTypePlot {
-                            env,
-                            mig_color: hex_to_srgb(&self.plots.migrating_color)?,
-                            div_color: hex_to_srgb(&self.plots.dividing_color)?,
-                        }.plot(image)
-                    }
-                }
+            for plot in &self.plots {
+                plot.plot(pond, image);
             }
         }
         let mut grid = Self::grid_layout(&images).expect("must have at least one pond");
         flip_vertical_in_place(&mut grid);
-        Ok(grid)
+        grid
     }
 
     fn grid_layout(images: &[RgbaImage]) -> Option<RgbaImage> {
