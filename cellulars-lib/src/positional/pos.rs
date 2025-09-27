@@ -18,7 +18,7 @@ impl Pos<usize> {
     }
 
     pub fn row_major(self, width: usize) -> usize {
-        self.x * width + self.y
+        self.y * width + self.x
     }
 
     pub fn to_isize(self) -> Pos<isize> {

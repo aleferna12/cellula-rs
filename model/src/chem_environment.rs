@@ -34,9 +34,9 @@ impl ChemEnvironment {
     }
 
     pub fn make_chem_gradient(&mut self) {
-        for row in 0..self.height() {
-            for col in 0..self.width() {
-                self.chem_lattice[(col, row).into()] = row.try_into().expect("lattice is too big");
+        for i in 0..self.width() {
+            for j in 0..self.height() {
+                self.chem_lattice[(i, j).into()] = j.try_into().expect("lattice is too big");
             }
         }
     }
