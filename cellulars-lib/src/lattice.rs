@@ -204,14 +204,15 @@ impl<T: PartialEq> Lattice<T> {
 impl<T> Index<Pos<usize>> for Lattice<T> {
     type Output = T;
 
+    // Tested tiled-row-major and z order and normal row-major was faster
     fn index(&self, pos: Pos<usize>) -> &Self::Output {
-        &self.array[pos.row_major(self.height())]
+        &self.array[pos.row_major(self.width())]
     }
 }
 
 impl<T> IndexMut<Pos<usize>> for Lattice<T> {
     fn index_mut(&mut self, pos: Pos<usize>) -> &mut Self::Output {
-        &mut self.array[pos.row_major(self.height())]
+        &mut self.array[pos.row_major(self.width())]
     }
 }
 
