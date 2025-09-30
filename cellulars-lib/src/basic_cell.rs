@@ -1,5 +1,4 @@
-use crate::constants::Spin;
-use crate::lattice_entity::LatticeEntity;
+use crate::constants::CellIndex;
 use crate::positional::boundaries::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
@@ -107,8 +106,8 @@ pub trait Cellular {
 /// Implements `Deref<Cell>`.
 #[derive(Debug, Clone)]
 pub struct RelCell<C> {
-    pub spin: Spin,
-    pub mom: Spin,
+    pub index: CellIndex,
+    pub mom: CellIndex,
     pub cell: C
 }
 
@@ -116,8 +115,8 @@ impl<C> RelCell<C> {
     /// Creates a mock cell with spin and mom = `LatticeEntity<()>::first_cell_spin()` for testing.
     pub fn mock(cell: C) -> Self {
         RelCell {
-            spin: LatticeEntity::first_cell_spin(),
-            mom: LatticeEntity::first_cell_spin(),
+            index: 0,
+            mom: 0,
             cell
         }
     }

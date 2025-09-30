@@ -9,7 +9,7 @@ use anyhow::{anyhow, bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
-use cellulars_lib::constants::Spin;
+use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
@@ -128,8 +128,8 @@ impl IoManager {
             let row = celldf.get_row(*row_ix)?.0;
 
             cells.replace(RelCell {
-                spin,
-                mom: row[cols["mom"]].try_extract::<Spin>()?,
+                index: spin,
+                mom: row[cols["mom"]].try_extract::<CellIndex>()?,
                 cell: Cell {
                     basic_cell: BasicCell {
                         target_area: row[cols["target_area"]].try_extract::<u32>()?,
@@ -222,7 +222,7 @@ impl IoManager {
         Ok(serde_json::from_reader(reader)?)
     }
 
-    pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
+    pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<CellIndex>> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
         let latdf = ParquetReader::new(file).finish()?;
@@ -342,13 +342,13 @@ impl IoManager {
         cells.iter()
             .filter(|cell| cell.is_valid())
             .map(|cell| SpinNodeLink {
-                spin: cell.spin,
+                spin: cell.index,
                 node_link: NodeLinkData::from(cell.genome.clone())
             })
             .collect()
     }
 
-    fn write_lattice(file_path: &Path, lattice: &Lattice<Spin>) -> PolarsResult<u64>{
+    fn write_lattice(file_path: &Path, lattice: &Lattice<CellIndex>) -> PolarsResult<u64>{
         let mut cols = vec![];
         for (i, col) in lattice.as_array().chunks_exact(lattice.height()).enumerate() {
             cols.push(Series::new(
@@ -454,7 +454,7 @@ impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
         let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
-            "spin" => valid.iter().map(|cell| cell.spin).collect::<Vec<_>>(),
+            "spin" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
             "mom" => valid.iter().map(|cell| cell.mom).collect::<Vec<_>>(),
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
@@ -485,6 +485,6 @@ impl ToDataFrame for SymmetricTable<bool> {
 
 #[derive(Serialize, Deserialize)]
 struct SpinNodeLink {
-    spin: Spin,
+    spin: CellIndex,
     node_link: NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>
 }

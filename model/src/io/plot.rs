@@ -1,7 +1,7 @@
 use crate::io::plot::HexError::ParseU8Error;
 use crate::pond::Pond;
 use cellulars_lib::basic_cell::Cellular;
-use cellulars_lib::constants::Spin;
+use cellulars_lib::constants::CellIndex;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
@@ -52,7 +52,7 @@ pub struct SpinPlot {
 }
 
 impl SpinPlot {
-    fn spin_to_rgb(spin: Spin) -> Srgb<u8> {
+    fn spin_to_rgb(spin: CellIndex) -> Srgb<u8> {
         let mut hasher = DefaultHasher::new();
         spin.hash(&mut hasher);
         let hashed = hasher.finish();
@@ -141,8 +141,8 @@ impl Plot for ClonesPlot {
                 continue;
             }
             let message = "Non-cell stored as clone";
-            let cell1 = pond.env.cells.get_entity(spin_pair.0 as Spin).expect_cell(message);
-            let cell2 = pond.env.cells.get_entity(spin_pair.1 as Spin).expect_cell(message);
+            let cell1 = pond.env.cells.get_entity(spin_pair.0 as CellIndex).expect_cell(message);
+            let cell2 = pond.env.cells.get_entity(spin_pair.1 as CellIndex).expect_cell(message);
             if !cell1.is_valid() || !cell2.is_valid() {
                 continue;
             }
@@ -386,7 +386,7 @@ mod tests {
     #[test]
     fn test_spin_to_rgb() {
         let mut tested = HashSet::<[u8; 3]>::default();
-        for i in 0..5232 as Spin {
+        for i in 0..5232 as CellIndex {
             let rgb: [u8; 3] = SpinPlot::spin_to_rgb(i).into();
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);

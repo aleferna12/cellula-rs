@@ -1,5 +1,5 @@
 use crate::pond::Pond;
-use cellulars_lib::constants::Spin;
+use cellulars_lib::constants::CellIndex;
 use cellulars_lib::evolution::selector::PreservesOrder;
 use rustworkx_core::connectivity::connected_components;
 
@@ -11,7 +11,7 @@ pub trait Disperser {
 pub struct DispersionEvent {
     pub from: usize,
     pub to: usize,
-    pub spins: Vec<Spin>,
+    pub spins: Vec<CellIndex>,
 }
 
 pub struct SelectiveDispersion<S> {
@@ -20,7 +20,7 @@ pub struct SelectiveDispersion<S> {
 
 impl<S> SelectiveDispersion<S> {
     /// Returns at most `n_props` 
-    pub fn get_prop_spins(&self, pond: &Pond, n_props: usize) -> Vec<Vec<Spin>> {
+    pub fn get_prop_spins(&self, pond: &Pond, n_props: usize) -> Vec<Vec<CellIndex>> {
         if n_props < 1 {
             return vec![];
         }

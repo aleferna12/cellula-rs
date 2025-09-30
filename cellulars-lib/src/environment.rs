@@ -1,9 +1,9 @@
 use crate::basic_cell::{Cellular, RelCell};
 use crate::cell_container::CellContainer;
-use crate::constants::Spin;
+use crate::constants::CellIndex;
 use crate::lattice::Lattice;
-use crate::lattice_entity::LatticeEntity;
 use crate::lattice_entity::LatticeEntity::*;
+use crate::lattice_entity::Spin;
 use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
@@ -62,47 +62,32 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
 }
 
 impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
-    /// This is the fastest cell search function possible, but it is NOT SAFE.
+    // This function returns a Vec so that we can check that the site number matches
+    /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
-    /// <div class="warning">
-    ///
-    /// This function should only be used when not all positions are required to be found.
-    ///
-    /// Prefer `search_cell_box()`, which warns about missing values.
-    ///
-    /// </div>
-    pub fn search_cell_box_iter(
-        &self,
-        cell: &RelCell<impl Cellular>,
-        search_scaler: f32
-    ) -> impl Iterator<Item = Pos<usize>> {
+    /// May fail if `radius_scaler` is too small, in which case logs a warning.
+    pub fn search_cell_box(&self, cell: &RelCell<impl Cellular>, search_scaler: f32) -> Vec<Pos<usize>> {
         let search_diam = (
             search_scaler
                 * 2.
                 * (max(cell.target_area(), cell.area()) as f32 / PI)
                 .sqrt()
         ) as usize;
-        self.cell_lattice.search_box(
-            &cell.spin,
+
+        let found: Vec<_> = self.cell_lattice.search_box(
+            &SomeCell(cell.index),
             cell.center().to_usize(),
             search_diam,
             &self.bounds.lattice_boundary,
-        )
-    }
+        ).collect();
 
-    // This function returns a Vec so that we can check that the site number matches
-    /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
-    ///
-    /// May fail if `radius_scaler` is too small, in which case logs a warning.
-    pub fn search_cell_box(&self, cell: &RelCell<impl Cellular>, search_scaler: f32) -> Vec<Pos<usize>> {
-        let found: Vec<_> = self.search_cell_box_iter(cell, search_scaler).collect();
         if found.len() != cell.area() as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with spin {} \
                 (try to increase `search-radius`)",
                 found.len(),
                 cell.area(),
-                cell.spin
+                cell.index
             )
         }
         found
@@ -117,7 +102,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
         cell: &RelCell<impl Cellular>,
     ) -> Vec<Pos<usize>> {
         let found = self.cell_lattice.search_contiguous(
-            &cell.spin,
+            &SomeCell(cell.index),
             cell.center().to_usize(),
             &self.bounds.lattice_boundary,
             &self.neighbourhood
@@ -129,7 +114,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
                 (cell might be discontiguous)",
                 found.len(),
                 cell.area(),
-                cell.spin
+                cell.index
             )
         }
         found
@@ -146,8 +131,9 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
                 * (max(cell.target_area(), cell.area()) as f32 / PI)
                 .sqrt()
         ) as usize;
+
         self.cell_lattice.search_outline(
-            &cell.spin,
+            &SomeCell(cell.index),
             cell.center().to_usize(),
             search_diam,
             &self.bounds.lattice_boundary,
@@ -167,7 +153,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
         HashSet::from_iter(outline)
     }
 
-    pub fn build_neighbours_graph(&self, search_scaler: f32) -> UnGraph<Spin, ()> {
+    pub fn build_neighbours_graph(&self, search_scaler: f32) -> UnGraph<CellIndex, ()> {
         let mut graph = UnGraph::new_undirected();
         let mut node_map = HashMap::new();
 
@@ -177,15 +163,16 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
             }
 
             // Add or retrieve the node for this cell's spin
-            let cell_idx = *node_map.entry(cell.spin)
-                .or_insert_with(|| graph.add_node(cell.spin));
+            let cell_idx = *node_map.entry(cell.index)
+                .or_insert_with(|| graph.add_node(cell.index));
 
             let neighs = self.cell_neighbours(cell, search_scaler);
 
-            for neigh_spin in neighs {
-                if neigh_spin < LatticeEntity::first_cell_spin() {
-                    continue;
-                }
+            for neigh_entity in neighs {
+                let neigh_spin = match neigh_entity {
+                    SomeCell(spin) => spin,
+                    _ => continue,
+                };
                 // Add or retrieve the node for the neighbor spin
                 let neigh_idx = *node_map.entry(neigh_spin)
                     .or_insert_with(|| graph.add_node(neigh_spin));
@@ -231,8 +218,8 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
     pub fn wipe_out(&mut self) {
         self.cells.wipe_out();
         self.cell_lattice.iter_values_mut().for_each(|value| {
-            if *value >= LatticeEntity::first_cell_spin() {
-                *value = Medium.discriminant();
+            if let SomeCell(_) = value {
+                *value = Medium;
             }
         });
     }
@@ -256,10 +243,9 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
                 }
                 continue;
             }
-            if spin < LatticeEntity::first_cell_spin() && spin_neigh < LatticeEntity::first_cell_spin() {
-                continue;
-            }
-            if self.edge_book.insert(edge) {
+            if (matches!(spin, SomeCell(_))
+                || matches!(spin_neigh, SomeCell(_)))
+                && self.edge_book.insert(edge) {
                 added += 1;
             }
         }
@@ -283,12 +269,11 @@ impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitabl
         pos: Pos<usize>,
         to: Spin
     ) -> EdgesUpdate {
-        if let SomeCell(to_cell) = self.cells.get_entity_mut(to) {
-            to_cell.shift_position(pos, true, &self.bounds.boundary);
+        if let SomeCell(index) = to {
+            self.cells.get_cell_mut(index).shift_position(pos, true, &self.bounds.boundary);
         }
-        let from = self.cell_lattice[pos];
-        if let SomeCell(from_cell) = self.cells.get_entity_mut(from) {
-            from_cell.shift_position(pos, false, &self.bounds.boundary);
+        if let SomeCell(index) = self.cell_lattice[pos] {
+            self.cells.get_cell_mut(index).shift_position(pos, false, &self.bounds.boundary);
         }
         // Executes the copy
         self.cell_lattice[pos] = to;
@@ -327,16 +312,17 @@ pub trait Habitable {
         empty_cell: Self::Cell,
         positions: impl IntoIterator<Item = Pos<usize>>
     ) -> &RelCell<Self::Cell> {
-        let new_spin = self.cells_mut().add(empty_cell, None).spin;
+        let index = self.cells_mut().add(empty_cell, None).index;
+        let new_spin = SomeCell(index);
         for pos in positions {
             self.grant_position(pos, new_spin);
         }
-        self.cells().get_entity(new_spin).expect_cell("retrieved non-cell while spawning cell")
+        self.cells().get_cell(index)
     }
 
     fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {
         for pos in positions {
-            self.grant_position(pos, Solid.discriminant());
+            self.grant_position(pos, Solid);
         }
     }
 }
@@ -373,7 +359,7 @@ pub mod tests {
         let mut cell = RelCell::mock(BasicCell::new_empty(2));
         for &pos in positions {
             cell.shift_position(pos, true, &env.bounds.boundary);
-            env.cell_lattice[pos] = cell.spin;
+            env.cell_lattice[pos] = SomeCell(cell.index);
         }
         cell
     }
@@ -391,7 +377,7 @@ pub mod tests {
         let solid_count = env
             .cell_lattice
             .iter_values()
-            .filter(|&&val| val == Solid.discriminant())
+            .filter(|&&val| matches!(val, Solid))
             .count();
         assert_eq!(solid_count, 3); // One was a duplicate
         for pos in &[
@@ -399,14 +385,14 @@ pub mod tests {
             Pos::new(2, 2),
             Pos::new(3, 3),
         ] {
-            assert_eq!(env.cell_lattice[*pos], Solid.discriminant());
+            assert_eq!(env.cell_lattice[*pos], Solid);
         }
     }
 
     #[test]
     fn test_update_edges_adds_and_removes() {
         let mut env = make_test_env();
-        let spin = LatticeEntity::first_cell_spin();
+        let spin = SomeCell(0);
         env.cell_lattice[Pos::new(5, 5)] = spin;
         let mut edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 0);
@@ -417,7 +403,7 @@ pub mod tests {
         assert_eq!(edges_update.removed, 1);
         assert_eq!(edges_update.added, 0);
 
-        env.cell_lattice[Pos::new(6, 5)] = spin + 1;
+        env.cell_lattice[Pos::new(6, 5)] = SomeCell(1);
         edges_update = env.update_edges(Pos::new(5, 5));
         assert_eq!(edges_update.removed, 0);
         assert_eq!(edges_update.added, 1);
@@ -481,7 +467,7 @@ pub mod tests {
         let mut env = make_test_env();
         let cell = add_cell(&positions, &mut env);
 
-        let neighbour_spins = [cell.spin + 1, cell.spin + 2];
+        let neighbour_spins = [SomeCell(cell.index + 1), SomeCell(cell.index + 2)];
         env.cell_lattice[Pos::new(1, 2)] = neighbour_spins[0];
         env.cell_lattice[Pos::new(2, 0)] = neighbour_spins[1];
 
@@ -489,7 +475,7 @@ pub mod tests {
 
         assert!(neighs.contains(&neighbour_spins[0]));
         assert!(neighs.contains(&neighbour_spins[1]));
-        assert!(!neighs.contains(&cell.spin));
+        assert!(!neighs.contains(&SomeCell(cell.index)));
     }
 }
 

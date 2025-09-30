@@ -1,4 +1,4 @@
-use cellulars_lib::constants::Spin;
+use cellulars_lib::constants::CellIndex;
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -112,8 +112,8 @@ pub struct PondParameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct CellParameters {
-    pub starting_cells: Spin,
-    pub max_cells: Spin,
+    pub starting_cells: CellIndex,
+    pub max_cells: CellIndex,
     pub search_radius: f32,
     pub starting_area: u32,
     pub target_area: u32,

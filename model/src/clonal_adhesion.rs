@@ -1,7 +1,7 @@
 use crate::chem_environment::ChemEnvironment;
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
 use cellulars_lib::basic_cell::RelCell;
-use cellulars_lib::constants::Spin;
+use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::lattice_entity::LatticeEntity::SomeCell;
@@ -26,44 +26,50 @@ impl ClonalAdhesion {
 
     pub fn update_clones(
         &mut self,
-        cell_spin: Spin,
+        cell_index: CellIndex,
         env: &ChemEnvironment
-    ) -> Option<Vec<Spin>> {
-        let entity = env.cells().get_entity(cell_spin);
-        let cell = entity.unwrap_cell();
+    ) {
+        let cell = env.cells().get_cell(cell_index);
         let cell_neighs = env.cell_neighbours(cell, 2.0);
 
-        let mom_cell = env.cells().get_entity(cell.mom).expect_cell("cell's mom is not a cell");
+        let mom_cell = env.cells().get_cell(cell.mom);
         let mom_neighs = env.cell_neighbours(
             mom_cell,
             2.0
         );
 
         let mom_clones = HashSet::from_iter(
-            (LatticeEntity::first_cell_spin()..(env.cells().n_cells() + LatticeEntity::first_cell_spin()))
-                .filter(|spin| {
-                    self.clones_table[(mom_cell.spin as usize, *spin as usize)]
+            (0..env.cells().n_cells())
+                .filter_map(|index| {
+                    if self.clones_table[(mom_cell.index as usize, index as usize)] {
+                        Some(SomeCell(index))
+                    } else {
+                        None
+                    }
                 })
         );
         for spin in mom_clones.difference(&mom_neighs) {
-            self.clones_table[(mom_cell.spin as usize, *spin as usize)] = false;
+            if let SomeCell(index) = spin {
+                self.clones_table[(mom_cell.index as usize, *index as usize)] = false;
+            }
         }
-        let clones: Vec<_> = cell_neighs.intersection(&mom_clones).copied().collect();
+        let clones: Vec<_> = cell_neighs.intersection(&mom_clones).collect();
         for spin in &clones {
-            self.clones_table[(cell.spin as usize, *spin as usize)] = true;
+            if let SomeCell(index) = spin {
+                self.clones_table[(cell.index as usize, *index as usize)] = true;
+            }
         }
-        self.clones_table[(cell.spin as usize, mom_cell.spin as usize)] = true;
-        Some(clones)
+        self.clones_table[(cell.index as usize, mom_cell.index as usize)] = true;
     }
 }
 
 impl AdhesionSystem for ClonalAdhesion {
     fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32 {
         if let (SomeCell(c1), SomeCell(c2)) = (entity1, entity2) {
-            if c1.spin == c2.spin {
+            if c1.index == c2.index {
                 return 0.
             }
-            if self.clones_table[(c1.spin as usize, c2.spin as usize)] {
+            if self.clones_table[(c1.index as usize, c2.index as usize)] {
                 return 2. * self.clone_energy;
             }
         }
@@ -77,14 +83,14 @@ mod tests {
     use crate::clonal_adhesion::ClonalAdhesion;
     use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
     use cellulars_lib::basic_cell::{BasicCell, RelCell};
-    use cellulars_lib::constants::Spin;
+    use cellulars_lib::constants::CellIndex;
     use cellulars_lib::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
     use cellulars_lib::symmetric_table::SymmetricTable;
 
     // Helper to create a RelCell with given spin and mom by mocking and overriding
-    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<BasicCell> {
+    fn make_rel_with_spin(spin: CellIndex, mom: CellIndex) -> RelCell<BasicCell> {
         RelCell {
-            spin,
+            index: spin,
             mom,
             cell: BasicCell::new_empty(10)
         }

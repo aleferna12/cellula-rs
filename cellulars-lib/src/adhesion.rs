@@ -21,7 +21,7 @@ impl AdhesionSystem for StaticAdhesion {
     ) -> f32 {
         match (entity1, entity2) {
             (SomeCell(c1), SomeCell(c2)) => {
-                if c1.spin == c2.spin {
+                if c1.index == c2.index {
                     0.
                 } else {
                     2. * self.cell_energy
@@ -38,12 +38,12 @@ impl AdhesionSystem for StaticAdhesion {
 mod tests {
     use super::*;
     use crate::basic_cell::BasicCell;
-    use crate::constants::Spin;
+    use crate::constants::CellIndex;
 
     // Helper to create a RelCell with given spin and mom by mocking and overriding
-    fn make_rel_with_spin(spin: Spin, mom: Spin) -> RelCell<BasicCell> {
+    fn make_rel_with_spin(spin: CellIndex, mom: CellIndex) -> RelCell<BasicCell> {
         RelCell {
-            spin,
+            index: spin,
             mom,
             cell: BasicCell::new_empty(10)
         }

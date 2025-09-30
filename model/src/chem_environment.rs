@@ -2,7 +2,7 @@ use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
-use cellulars_lib::constants::Spin;
+use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment, Habitable};
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::lattice_entity::LatticeEntity::SomeCell;
@@ -12,19 +12,20 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use rand::Rng;
 use std::ops::{Deref, DerefMut};
+use cellulars_lib::lattice_entity::Spin;
 
 #[derive(Clone)]
 pub struct ChemEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
     pub chem_lattice: Lattice<u32>,
-    pub max_cells: Spin,
+    pub max_cells: CellIndex,
     population_exploded: bool
 }
 
 impl ChemEnvironment {
-    pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: Spin) -> Self {
+    pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: CellIndex) -> Self {
         let mut env_ = Self {
-            chem_lattice: env.cell_lattice.clone(),
+            chem_lattice: Lattice::new(env.cell_lattice.rect.clone()),
             env,
             max_cells,
             population_exploded: false
@@ -80,12 +81,11 @@ impl ChemEnvironment {
         )
     }
 
-    pub fn divide_cell(&mut self, mom_spin: Spin, search_scaler: f32) -> &RelCell<Cell> {
+    pub fn divide_cell(&mut self, mom_index: CellIndex, search_scaler: f32) -> &RelCell<Cell> {
         let mom = self
             .env
             .cells
-            .get_entity(mom_spin)
-            .expect_cell("retrieved non-cell during cell division");
+            .get_cell(mom_index);
         let div_axis = self.find_division_axis(mom, search_scaler);
         let new_positions: Vec<_> = self
             .search_cell_box(mom, search_scaler)
@@ -98,15 +98,15 @@ impl ChemEnvironment {
 
         let newborn = mom.birth();
         let newborn_ta = mom.newborn_target_area;
-        let new_spin = self.env.cells.add(newborn, Some(mom_spin)).spin;
+        let new_spin = self.env.cells.add(newborn, Some(mom_index)).index;
         for pos in new_positions {
             self.grant_position(
                 pos,
-                new_spin,
+                SomeCell(new_spin),
             );
         }
-        self.env.cells.get_entity_mut(mom_spin).unwrap_cell().set_target_area(newborn_ta);
-        self.cells.get_entity(new_spin).expect_cell("retrieved non-cell during cell division")
+        self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
+        self.cells.get_cell(new_spin)
     }
 
     // Should this also replace some of the cell's positions with Medium?
@@ -118,7 +118,7 @@ impl ChemEnvironment {
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
     // gain is minimal (although the ergonomic gains are significant)
-    pub fn reproduce(&mut self, search_scaler: f32) -> Vec<Spin> {
+    pub fn reproduce(&mut self, search_scaler: f32) -> Vec<CellIndex> {
         let mut divide = vec![];
         for cell in self.cells().iter() {
             if !cell.is_alive() {
@@ -126,7 +126,7 @@ impl ChemEnvironment {
             }
             // Currently cells don't need to express the dividing type to divide, they just need to be big enough
             if cell.area() >= cell.divide_area() {
-                divide.push(cell.spin);
+                divide.push(cell.index);
             }
         }
         divide.into_iter().filter_map(|spin| {
@@ -135,9 +135,8 @@ impl ChemEnvironment {
             }
             let mom = self
                 .cells
-                .get_entity(spin)
-                .expect_cell("retrieved non-cell during reproduction");
-            Some(self.divide_cell(mom.spin, search_scaler).spin)
+                .get_cell(spin);
+            Some(self.divide_cell(mom.index, search_scaler).index)
         }).collect()
     }
 
@@ -228,12 +227,13 @@ impl Habitable for ChemEnvironment {
         to: Spin
     ) -> EdgesUpdate {
         let chem_at_pos = self.chem_lattice[pos];
-        if let SomeCell(to_cell) = self.env.cells.get_entity_mut(to) {
+        if let SomeCell(index) = to {
+            let to_cell = self.env.cells.get_cell_mut(index);
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
-        let from = self.cell_lattice[pos];
-        if let SomeCell(from_cell) = self.env.cells.get_entity_mut(from) {
+        if let SomeCell(index) = self.cell_lattice[pos] {
+            let from_cell = self.env.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);
             from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
         }
