@@ -4,10 +4,11 @@ use std::fmt::Debug;
 pub type Spin = Entity<CellIndex>;
 
 /// This enum represents anything that can be on the cell lattice.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub enum Entity<C> {
-    Solid,
+    #[default]
     Medium,
+    Solid,
     Some(C),
 }
 
@@ -18,11 +19,5 @@ impl<C> Entity<C> {
             Entity::Medium => Entity::Medium,
             Entity::Solid => Entity::Solid,
         }
-    }
-}
-
-impl<C> Default for Entity<C> {
-    fn default() -> Self {
-        Entity::Medium
     }
 }
