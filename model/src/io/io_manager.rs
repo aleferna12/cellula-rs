@@ -10,6 +10,7 @@ use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::constants::CellIndex;
+use cellulars_lib::entity::{Entity, Spin};
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
@@ -87,7 +88,7 @@ impl IoManager {
 
     fn make_cells_from_data(
         celldf: DataFrame,
-        genomes: Vec<SpinNodeLink>,
+        genomes: Vec<CellIndexNodeLink>,
     ) -> anyhow::Result<CellContainer<Cell>> {
         if celldf.height() > genomes.len() {
             bail!("`celldf` contains more entries than `genomes`");
@@ -102,8 +103,8 @@ impl IoManager {
             cells.push(Cell::new_empty(0, 0, Grn::empty()), None);
         }
 
-        let spin_map: HashMap<_, _> = HashMap::from_iter(
-            celldf.column("spin")?
+        let index_map: HashMap<_, _> = HashMap::from_iter(
+            celldf.column("index")?
                 .u32()?
                 .into_no_null_iter()
                 .enumerate()
@@ -120,15 +121,15 @@ impl IoManager {
         );
 
         for genome in genomes {
-            let spin = genome.spin;
+            let cell_index = genome.index;
             let grn = Grn::<1, 1>::try_from(genome.node_link)?;
-            let row_ix = spin_map
-                .get(&spin)
-                .ok_or(anyhow!("spin {spin} was found in `genomes` but is missing from `celldf`"))?;
+            let row_ix = index_map
+                .get(&cell_index)
+                .ok_or(anyhow!("cell index {cell_index} was found in `genomes` but is missing from `celldf`"))?;
             let row = celldf.get_row(*row_ix)?.0;
 
             cells.replace(RelCell {
-                index: spin,
+                index: cell_index,
                 mom: row[cols["mom"]].try_extract::<CellIndex>()?,
                 cell: Cell {
                     basic_cell: BasicCell {
@@ -215,14 +216,14 @@ impl IoManager {
             .join(format!("{time_step}.parquet"))
     }
 
-    fn read_genomes(file_path: impl AsRef<Path>) -> anyhow::Result<Vec<SpinNodeLink>> {
+    fn read_genomes(file_path: impl AsRef<Path>) -> anyhow::Result<Vec<CellIndexNodeLink>> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
         let reader = BufReader::new(file);
         Ok(serde_json::from_reader(reader)?)
     }
 
-    pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<CellIndex>> {
+    pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
         let latdf = ParquetReader::new(file).finish()?;
@@ -233,10 +234,21 @@ impl IoManager {
 
         let mut lattice = Lattice::new(rect);
         for (i, column) in latdf.get_columns().iter().enumerate() {
-            for (j, maybe_val) in column.u32()?.into_iter().enumerate() {
+            for (j, maybe_val) in column.str()?.into_iter().enumerate() {
                 match maybe_val {
                     Some(val) => {
-                        lattice[(i, j).into()] = val;
+                        let val: &str = val;
+                        let entity = match val {
+                            "s" => Entity::Solid,
+                            "m" => Entity::Medium,
+                            _ => {
+                                let cell_index = val.parse::<CellIndex>().with_context(|| {
+                                    format!("lattice contains invalid value {val}")
+                                })?;
+                                Entity::Some(cell_index)
+                            },
+                        };
+                        lattice[(i, j).into()] = entity;
                     },
                     None => bail!("file {} contains null values", file_path.display()),
                 }
@@ -338,22 +350,30 @@ impl IoManager {
 
     fn make_genome_node_links(
         cells: &CellContainer<Cell>
-    ) -> Vec<SpinNodeLink> {
+    ) -> Vec<CellIndexNodeLink> {
         cells.iter()
             .filter(|cell| cell.is_valid())
-            .map(|cell| SpinNodeLink {
-                spin: cell.index,
+            .map(|cell| CellIndexNodeLink {
+                index: cell.index,
                 node_link: NodeLinkData::from(cell.genome.clone())
             })
             .collect()
     }
 
-    fn write_lattice(file_path: &Path, lattice: &Lattice<CellIndex>) -> PolarsResult<u64>{
+    fn write_lattice(file_path: &Path, lattice: &Lattice<Spin>) -> PolarsResult<u64>{
         let mut cols = vec![];
         for (i, col) in lattice.as_array().chunks_exact(lattice.height()).enumerate() {
             cols.push(Series::new(
                 format!("col_{i}").into(),
-                col
+                col.iter()
+                    .map(|val| {
+                        match val {
+                            Spin::Solid => "s".into(),
+                            Spin::Medium => "m".into(),
+                            Spin::Some(cell_index) => cell_index.to_string()
+                        }
+                    })
+                    .collect::<Vec<_>>(),
             ).into())
         }
         let mut latdf = DataFrame::new(cols)?;
@@ -454,7 +474,7 @@ impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
         let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
-            "spin" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
+            "index" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
             "mom" => valid.iter().map(|cell| cell.mom).collect::<Vec<_>>(),
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
@@ -484,7 +504,7 @@ impl ToDataFrame for SymmetricTable<bool> {
 }
 
 #[derive(Serialize, Deserialize)]
-struct SpinNodeLink {
-    spin: CellIndex,
+struct CellIndexNodeLink {
+    index: CellIndex,
     node_link: NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>
 }

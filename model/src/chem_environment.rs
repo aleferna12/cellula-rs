@@ -3,16 +3,15 @@ use crate::constants::{BoundaryType, EPSILON};
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::constants::CellIndex;
+use cellulars_lib::entity::{Entity, Spin};
 use cellulars_lib::environment::{EdgesUpdate, Environment, Habitable};
 use cellulars_lib::lattice::Lattice;
-use cellulars_lib::lattice_entity::LatticeEntity::SomeCell;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use rand::Rng;
 use std::ops::{Deref, DerefMut};
-use cellulars_lib::lattice_entity::Spin;
 
 #[derive(Clone)]
 pub struct ChemEnvironment {
@@ -98,15 +97,15 @@ impl ChemEnvironment {
 
         let newborn = mom.birth();
         let newborn_ta = mom.newborn_target_area;
-        let new_spin = self.env.cells.add(newborn, Some(mom_index)).index;
+        let new_index = self.env.cells.add(newborn, Some(mom_index)).index;
         for pos in new_positions {
             self.grant_position(
                 pos,
-                SomeCell(new_spin),
+                Entity::Some(new_index),
             );
         }
         self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
-        self.cells.get_cell(new_spin)
+        self.cells.get_cell(new_index)
     }
 
     // Should this also replace some of the cell's positions with Medium?
@@ -129,13 +128,13 @@ impl ChemEnvironment {
                 divide.push(cell.index);
             }
         }
-        divide.into_iter().filter_map(|spin| {
+        divide.into_iter().filter_map(|cell_index| {
             if !self.can_add_cell() {
                 return None;
             }
             let mom = self
                 .cells
-                .get_cell(spin);
+                .get_cell(cell_index);
             Some(self.divide_cell(mom.index, search_scaler).index)
         }).collect()
     }
@@ -227,12 +226,12 @@ impl Habitable for ChemEnvironment {
         to: Spin
     ) -> EdgesUpdate {
         let chem_at_pos = self.chem_lattice[pos];
-        if let SomeCell(index) = to {
+        if let Entity::Some(index) = to {
             let to_cell = self.env.cells.get_cell_mut(index);
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
-        if let SomeCell(index) = self.cell_lattice[pos] {
+        if let Entity::Some(index) = self.cell_lattice[pos] {
             let from_cell = self.env.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);
             from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);

@@ -2,9 +2,8 @@ use crate::chem_environment::ChemEnvironment;
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
 use cellulars_lib::basic_cell::RelCell;
 use cellulars_lib::constants::CellIndex;
+use cellulars_lib::entity::Entity;
 use cellulars_lib::environment::Habitable;
-use cellulars_lib::lattice_entity::LatticeEntity;
-use cellulars_lib::lattice_entity::LatticeEntity::SomeCell;
 use cellulars_lib::symmetric_table::SymmetricTable;
 use std::collections::HashSet;
 
@@ -42,20 +41,20 @@ impl ClonalAdhesion {
             (0..env.cells().n_cells())
                 .filter_map(|index| {
                     if self.clones_table[(mom_cell.index as usize, index as usize)] {
-                        Some(SomeCell(index))
+                        Some(Entity::Some(index))
                     } else {
                         None
                     }
                 })
         );
         for spin in mom_clones.difference(&mom_neighs) {
-            if let SomeCell(index) = spin {
+            if let Entity::Some(index) = spin {
                 self.clones_table[(mom_cell.index as usize, *index as usize)] = false;
             }
         }
         let clones: Vec<_> = cell_neighs.intersection(&mom_clones).collect();
         for spin in &clones {
-            if let SomeCell(index) = spin {
+            if let Entity::Some(index) = spin {
                 self.clones_table[(cell.index as usize, *index as usize)] = true;
             }
         }
@@ -64,8 +63,8 @@ impl ClonalAdhesion {
 }
 
 impl AdhesionSystem for ClonalAdhesion {
-    fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32 {
-        if let (SomeCell(c1), SomeCell(c2)) = (entity1, entity2) {
+    fn adhesion_energy<C>(&self, entity1: Entity<&RelCell<C>>, entity2: Entity<&RelCell<C>>) -> f32 {
+        if let (Entity::Some(c1), Entity::Some(c2)) = (entity1, entity2) {
             if c1.index == c2.index {
                 return 0.
             }
@@ -84,13 +83,13 @@ mod tests {
     use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
     use cellulars_lib::basic_cell::{BasicCell, RelCell};
     use cellulars_lib::constants::CellIndex;
-    use cellulars_lib::lattice_entity::LatticeEntity::{Medium, Solid, SomeCell};
+    use cellulars_lib::entity::Entity;
     use cellulars_lib::symmetric_table::SymmetricTable;
 
-    // Helper to create a RelCell with given spin and mom by mocking and overriding
-    fn make_rel_with_spin(spin: CellIndex, mom: CellIndex) -> RelCell<BasicCell> {
+    // Helper to create a RelCell with given index and mom by mocking and overriding
+    fn make_rel_with_index(index: CellIndex, mom: CellIndex) -> RelCell<BasicCell> {
         RelCell {
-            index: spin,
+            index,
             mom,
             cell: BasicCell::new_empty(10)
         }
@@ -106,38 +105,38 @@ mod tests {
 
     #[test]
     fn test_clonal_adhesion() {
-        let max_spin = 5;
+        let max_index = 5;
         let mut clonal_adhesion = ClonalAdhesion::new(
             1.,
             make_static_adhesion(),
-            SymmetricTable::new(max_spin)
+            SymmetricTable::new(max_index)
         );
 
-        let cell1 = make_rel_with_spin(1, 1);
-        let cell2 = make_rel_with_spin(2, 1);
+        let cell1 = make_rel_with_index(1, 1);
+        let cell2 = make_rel_with_index(2, 1);
         // Initially clone_pairs empty
         assert_eq!(
-            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell1)),
+            clonal_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Some(&cell1)),
             0.
         );
         assert_eq!(
-            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
+            clonal_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Some(&cell2)),
             2. * clonal_adhesion.static_adhesion.cell_energy
         );
 
-        // Manually set clone pair between spin 1 and 2
+        // Manually set clone pair between indexes 1 and 2
         clonal_adhesion.clones_table[(1, 2)] = true;
         assert_eq!(
-            clonal_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
+            clonal_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Some(&cell2)),
             2. * clonal_adhesion.clone_energy
         );
         // ClonalAdhesion falls back to StaticAdhesion for Medium and Solid
         assert_eq!(
-            clonal_adhesion.adhesion_energy(SomeCell(&cell1), Medium),
+            clonal_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Medium),
             clonal_adhesion.static_adhesion.medium_energy
         );
         assert_eq!(
-            clonal_adhesion.adhesion_energy(Solid, SomeCell(&cell1)),
+            clonal_adhesion.adhesion_energy(Entity::Solid, Entity::Some(&cell1)),
             clonal_adhesion.static_adhesion.solid_energy
         );
     }

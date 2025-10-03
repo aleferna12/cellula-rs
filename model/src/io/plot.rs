@@ -1,8 +1,9 @@
+use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use crate::pond::Pond;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::CellIndex;
-use cellulars_lib::lattice_entity::LatticeEntity;
+use cellulars_lib::entity::Entity;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
@@ -12,7 +13,6 @@ use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-use crate::io::parameters::{PlotParameters, PlotType};
 
 // TODO: This should most definitely take a pond as an arg, which let us use dynamic dispatch to write better code
 pub trait Plot {
@@ -52,9 +52,9 @@ pub struct SpinPlot {
 }
 
 impl SpinPlot {
-    fn spin_to_rgb(spin: CellIndex) -> Srgb<u8> {
+    fn cell_index_to_rgb(index: CellIndex) -> Srgb<u8> {
         let mut hasher = DefaultHasher::new();
-        spin.hash(&mut hasher);
+        index.hash(&mut hasher);
         let hashed = hasher.finish();
         Srgb::new(
             (hashed & 0xFF) as u8,
@@ -68,12 +68,10 @@ impl Plot for SpinPlot {
     fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
         for pos in pond.env.cell_lattice.iter_positions() {
             let spin = pond.env.cell_lattice[pos];
-            let rgb = if spin >= LatticeEntity::first_cell_spin() {
-                Some(Self::spin_to_rgb(spin))
-            } else if spin == LatticeEntity::Solid.discriminant() {
-                Some(self.solid_color)
-            } else {
-                self.medium_color
+            let rgb = match spin {
+                Entity::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
+                Entity::Solid => Some(self.solid_color),
+                Entity::Medium => self.medium_color
             };
             if let Some(color) = rgb {
                 image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
@@ -132,17 +130,12 @@ pub struct ClonesPlot {
 impl Plot for ClonesPlot {
     fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
         let clones = &pond.ca.adhesion.clones_table;
-        let spins = clones.iter_index_pairs(
-            Some(LatticeEntity::first_cell_spin() as usize),
-            Some((pond.env.cells.n_cells() + LatticeEntity::first_cell_spin()) as usize)
-        );
-        for spin_pair in spins {
-            if !clones[spin_pair] {
+        for index_pair in clones.iter_index_pairs(None, None) {
+            if !clones[index_pair] {
                 continue;
             }
-            let message = "Non-cell stored as clone";
-            let cell1 = pond.env.cells.get_entity(spin_pair.0 as CellIndex).expect_cell(message);
-            let cell2 = pond.env.cells.get_entity(spin_pair.1 as CellIndex).expect_cell(message);
+            let cell1 = pond.env.cells.get_cell(index_pair.0 as CellIndex);
+            let cell2 = pond.env.cells.get_cell(index_pair.1 as CellIndex);
             if !cell1.is_valid() || !cell2.is_valid() {
                 continue;
             }
@@ -173,7 +166,7 @@ impl Plot for BorderPlot {
     fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
         for pos in pond.env.cell_lattice.iter_positions() {
             let spin = pond.env.cell_lattice[pos];
-            if spin < LatticeEntity::first_cell_spin() {
+            if !matches!(spin, Entity::Some(_)) {
                 continue
             }
             let is_border = pond.env
@@ -200,8 +193,8 @@ impl Plot for CellTypePlot {
     fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
         for pos in pond.env.cell_lattice.iter_positions() {
             let spin = pond.env.cell_lattice[pos];
-            let entity = pond.env.cells.get_entity(spin);
-            if let LatticeEntity::SomeCell(cell) = entity {
+            if let Entity::Some(cell_index) = spin {
+                let cell = pond.env.cells.get_cell(cell_index);
                 let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
                 image.put_pixel(
                     pos.x as u32,
@@ -235,8 +228,8 @@ impl Plot for AreaPlot {
         }
 
         for pos in pond.env.cell_lattice.iter_positions() {
-            let entity = pond.env.cells.get_entity(pond.env.cell_lattice[pos]);
-            if let LatticeEntity::SomeCell(cell) = entity {
+            if let Entity::Some(cell_index) = pond.env.cell_lattice[pos] {
+                let cell = pond.env.cells.get_cell(cell_index);
                 let color = self.lerp(
                     cell.area() as f32,
                     min as f32,
@@ -384,10 +377,10 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
-    fn test_spin_to_rgb() {
+    fn test_index_to_rgb() {
         let mut tested = HashSet::<[u8; 3]>::default();
         for i in 0..5232 as CellIndex {
-            let rgb: [u8; 3] = SpinPlot::spin_to_rgb(i).into();
+            let rgb: [u8; 3] = SpinPlot::cell_index_to_rgb(i).into();
             assert!(!tested.contains(&rgb));
             tested.insert(rgb);
         }

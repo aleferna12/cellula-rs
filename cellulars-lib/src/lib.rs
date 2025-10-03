@@ -8,5 +8,5 @@ pub mod cell_container;
 pub mod symmetric_table;
 pub mod basic_cell;
 pub mod constants;
-pub mod lattice_entity;
+pub mod entity;
 pub mod evolution;

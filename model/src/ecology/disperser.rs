@@ -11,7 +11,7 @@ pub trait Disperser {
 pub struct DispersionEvent {
     pub from: usize,
     pub to: usize,
-    pub spins: Vec<CellIndex>,
+    pub indexes: Vec<CellIndex>,
 }
 
 pub struct SelectiveDispersion<S> {
@@ -20,7 +20,7 @@ pub struct SelectiveDispersion<S> {
 
 impl<S> SelectiveDispersion<S> {
     /// Returns at most `n_props` 
-    pub fn get_prop_spins(&self, pond: &Pond, n_props: usize) -> Vec<Vec<CellIndex>> {
+    pub fn get_prop_indexes(&self, pond: &Pond, n_props: usize) -> Vec<Vec<CellIndex>> {
         if n_props < 1 {
             return vec![];
         }
@@ -54,7 +54,7 @@ impl<S: PreservesOrder> Disperser for SelectiveDispersion<S> {
         }
         let mut props: Vec<_> = prop_counts.into_iter()
             .enumerate()
-            .map(|(i, count)| self.get_prop_spins(&dispersable[i], count.saturating_sub(1)))
+            .map(|(i, count)| self.get_prop_indexes(&dispersable[i], count.saturating_sub(1)))
             .collect();
         
         selected.into_iter()
@@ -66,7 +66,7 @@ impl<S: PreservesOrder> Disperser for SelectiveDispersion<S> {
                     props[from].pop().map(|prop| DispersionEvent {
                         from,
                         to,
-                        spins: prop
+                        indexes: prop
                     })
                 }
             })

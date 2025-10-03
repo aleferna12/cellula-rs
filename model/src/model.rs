@@ -14,7 +14,6 @@ use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::evolution::selector::WeightedOrderedSelection;
-use cellulars_lib::lattice_entity::LatticeEntity;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::symmetric_table::SymmetricTable;
@@ -135,9 +134,7 @@ impl Model {
                         medium_energy: parameters.ca.adhesion.medium_energy,
                         solid_energy: parameters.ca.adhesion.solid_energy,
                     },
-                    clones.unwrap_or(SymmetricTable::new(
-                        (parameters.cell.max_cells + LatticeEntity::first_cell_spin()) as usize)
-                    )
+                    clones.unwrap_or(SymmetricTable::new(parameters.cell.max_cells as usize)),
                 )
             )
             .build()
@@ -306,7 +303,7 @@ impl Model {
                     WipeOut.transport(
                         from,
                         to,
-                        event.spins
+                        event.indexes
                     );
                 }
             }

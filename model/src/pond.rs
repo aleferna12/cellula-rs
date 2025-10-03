@@ -6,7 +6,6 @@ use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::evolution::selector::Fit;
-use cellulars_lib::lattice_entity::LatticeEntity;
 use rand_xoshiro::Xoshiro256StarStar;
 
 // TODO: this struct can be made general if CellularAutomata is also general
@@ -36,15 +35,11 @@ impl Pond {
     }
 
     pub fn reproduce(&mut self) {
-        let new_spins = self.env.reproduce(self.cell_search_scaler);
-        for spin in new_spins {
-            self.ca.adhesion.update_clones(spin, &self.env);
+        let new_indexes = self.env.reproduce(self.cell_search_scaler);
+        for cell_index in new_indexes {
+            self.ca.adhesion.update_clones(cell_index, &self.env);
             // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
-            if let LatticeEntity::SomeCell(cell) = self.env.cells.get_entity_mut(spin) {
-                cell.genome.attempt_mutate(&mut self.rng);
-            } else {
-                panic!("newborn is not a cell")
-            }
+            self.env.cells.get_cell_mut(cell_index).genome.attempt_mutate(&mut self.rng);
         }
     }
 

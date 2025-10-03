@@ -17,7 +17,7 @@ impl<C> CellContainer<C> {
         self.vec.len().try_into().expect("there are more cells than supported by the type `Spin`")
     }
     
-    /// Replaces the cell at `cell.spin`.
+    /// Replaces the cell at `cell.index`.
     pub fn replace(&mut self, cell: RelCell<C>) -> RelCell<C> {
         std::mem::replace(&mut self.vec[cell.index as usize], cell)
     }
@@ -67,11 +67,11 @@ impl<C: Cellular> CellContainer<C> {
             .unwrap_or(self.n_cells())
     }
 
-    pub fn add(&mut self, cell: C, mom_spin: Option<CellIndex>) -> &mut RelCell<C> {
+    pub fn add(&mut self, cell: C, mom_index: Option<CellIndex>) -> &mut RelCell<C> {
         let new_index = self.next_index();
         let rel_cell = RelCell {
             index: new_index,
-            mom: mom_spin.unwrap_or(new_index),
+            mom: mom_index.unwrap_or(new_index),
             cell
         };
 
@@ -83,11 +83,11 @@ impl<C: Cellular> CellContainer<C> {
         &mut self.vec[new_index as usize]
     }
 
-    pub fn push(&mut self, cell: C, mom_spin: Option<CellIndex>) -> &mut RelCell<C> {
+    pub fn push(&mut self, cell: C, mom_index: Option<CellIndex>) -> &mut RelCell<C> {
         let new_index = self.n_cells();
         let rel_cell = RelCell {
             index: new_index,
-            mom: mom_spin.unwrap_or(new_index),
+            mom: mom_index.unwrap_or(new_index),
             cell
         };
         self.vec.push(rel_cell);

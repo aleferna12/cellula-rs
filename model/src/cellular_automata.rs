@@ -3,9 +3,8 @@ use crate::chem_environment::ChemEnvironment;
 use bon::Builder;
 use cellulars_lib::adhesion::AdhesionSystem;
 use cellulars_lib::basic_cell::{Cellular, RelCell};
+use cellulars_lib::entity::Entity;
 use cellulars_lib::environment::Habitable;
-use cellulars_lib::lattice_entity::LatticeEntity;
-use cellulars_lib::lattice_entity::LatticeEntity::*;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
@@ -55,14 +54,14 @@ impl<A> CellularAutomata<A> {
 
     pub fn delta_hamiltonian_size<C: Cellular>(
         &self,
-        entity_source: LatticeEntity<&RelCell<C>>,
-        entity_target: LatticeEntity<&RelCell<C>>
+        entity_source: Entity<&RelCell<C>>,
+        entity_target: Entity<&RelCell<C>>
     ) -> f32 {
         let mut delta_h = 0.;
-        if let SomeCell(cell) = entity_source {
+        if let Entity::Some(cell) = entity_source {
             delta_h += self.size_energy_diff(true, cell.area(), cell.target_area());
         }
-        if let SomeCell(cell) = entity_target {
+        if let Entity::Some(cell) = entity_target {
             delta_h += self.size_energy_diff(false, cell.area(), cell.target_area());
         }
         delta_h
@@ -113,25 +112,25 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         pos_target: Pos<usize>
     ) -> f32 {
         let spin_target = env.cell_lattice[pos_target];
-        if spin_target == Solid.discriminant() {
+        if spin_target == Entity::Solid {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_source = {
             let spin = env.cell_lattice[pos_source];
-            if spin == Solid.discriminant() { Medium.discriminant() } else { spin }
+            if spin == Entity::Solid { Entity::Medium } else { spin }
         };
 
-        let entity_source = env.cells.get_entity(spin_source);
-        let entity_target = env.cells.get_entity(spin_target);
+        let entity_source = spin_source.map(|index| env.cells.get_cell(index));
+        let entity_target = spin_target.map(|index| env.cells.get_cell(index));
         let neigh_entities = env.bounds.lattice_boundary.valid_positions(
             env.neighbourhood.neighbours(pos_target.to_isize())
         ).map(|neigh| {
-            env.cells.get_entity(env.cell_lattice[neigh.to_usize()])
+            env.cell_lattice[neigh.to_usize()].map(|index| env.cells.get_cell(index))
         });
 
         let mut delta_h = self.delta_hamiltonian(entity_source, entity_target, neigh_entities);
-        if let SomeCell(cell) = entity_source {
+        if let Entity::Some(cell) = entity_source {
             if self.enable_migration && cell.is_migrating() {
                 delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, &env.bounds.boundary);
             }
@@ -149,9 +148,9 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
 
     pub fn delta_hamiltonian<'a, C: 'a + Cellular>(
         &self,
-        entity_source: LatticeEntity<&RelCell<C>>,
-        entity_target: LatticeEntity<&RelCell<C>>,
-        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<C>>>
+        entity_source: Entity<&RelCell<C>>,
+        entity_target: Entity<&RelCell<C>>,
+        neigh_entities: impl Iterator<Item = Entity<&'a RelCell<C>>>
     ) -> f32 {
         let mut delta_h = 0.;
         delta_h += self.delta_hamiltonian_size(entity_source, entity_target);
@@ -162,9 +161,9 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
     // TODO!: test
     pub fn delta_hamiltonian_adhesion<'a, C: 'a>(
         &self,
-        entity_source: LatticeEntity<&RelCell<C>>,
-        entity_target: LatticeEntity<&RelCell<C>>,
-        neigh_entities: impl Iterator<Item = LatticeEntity<&'a RelCell<C>>>
+        entity_source: Entity<&RelCell<C>>,
+        entity_target: Entity<&RelCell<C>>,
+        neigh_entities: impl Iterator<Item = Entity<&'a RelCell<C>>>
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_entities {
@@ -203,7 +202,7 @@ mod tests {
             200,
             Grn::empty()
         ));
-        let dh = ca.delta_hamiltonian_size(SomeCell(&cell), SomeCell(&cell.clone()));
+        let dh = ca.delta_hamiltonian_size(Entity::Some(&cell), Entity::Some(&cell.clone()));
         assert_eq!(dh, 2.);
     }
 }

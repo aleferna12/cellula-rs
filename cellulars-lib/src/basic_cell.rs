@@ -101,7 +101,7 @@ pub trait Cellular {
 /// Represents a cell that is bound to an `Environment`.
 ///
 /// Functions that do not need information about a cell's relational operators 
-/// (`spin` and `mom`) should take `&Cell` as an argument instead.
+/// (`index` and `mom`) should take `&C` directly.
 ///
 /// Implements `Deref<Cell>`.
 #[derive(Debug, Clone)]
@@ -112,7 +112,7 @@ pub struct RelCell<C> {
 }
 
 impl<C> RelCell<C> {
-    /// Creates a mock cell with spin and mom = `LatticeEntity<()>::first_cell_spin()` for testing.
+    /// Creates a mock cell with index and mom = 0 for testing.
     pub fn mock(cell: C) -> Self {
         RelCell {
             index: 0,

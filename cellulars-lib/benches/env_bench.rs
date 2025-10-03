@@ -1,7 +1,5 @@
 use cellulars_lib::basic_cell::{BasicCell, Cellular};
 use cellulars_lib::environment::{Environment, Habitable};
-use cellulars_lib::lattice_entity::LatticeEntity;
-use cellulars_lib::lattice_entity::LatticeEntity::*;
 use cellulars_lib::positional::boundaries::{Boundaries, Boundary, UnsafePeriodicBoundary};
 use cellulars_lib::positional::edge::Edge;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
@@ -69,11 +67,6 @@ fn replace_random_edges(
 }
 
 fn bench_env(c: &mut Criterion) {
-    c.bench_function("lattice_entity_discriminant", |b| b.iter(|| {
-        Medium.discriminant();
-        Solid.discriminant();
-    }));
-
     c.bench_function("replace_edges", |b| {
         b.iter_batched_ref(
             || {
@@ -122,7 +115,7 @@ fn bench_env(c: &mut Criterion) {
     let mut group = c.benchmark_group("cell_positions");
     group.bench_function("contiguous_cell_positions", |b| {
         b.iter(|| {
-            let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
+            let cell = env.cells.get_cell(0);
             assert_eq!(
                 env.search_cell_contiguous(cell).len(),
                 cell.area() as usize
@@ -131,7 +124,7 @@ fn bench_env(c: &mut Criterion) {
     });
     group.bench_function("box_cell_positions", |b| {
         b.iter(|| {
-            let cell = env.cells.get_entity(LatticeEntity::first_cell_spin()).unwrap_cell();
+            let cell = env.cells.get_cell(0);
             assert_eq!(
                 env.search_cell_box(cell, 2.).len(),
                 cell.area() as usize

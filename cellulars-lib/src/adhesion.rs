@@ -1,9 +1,8 @@
 use crate::basic_cell::RelCell;
-use crate::lattice_entity::LatticeEntity;
-use crate::lattice_entity::LatticeEntity::*;
+use crate::entity::Entity;
 
 pub trait AdhesionSystem {
-    fn adhesion_energy<C>(&self, entity1: LatticeEntity<&RelCell<C>>, entity2: LatticeEntity<&RelCell<C>>) -> f32;
+    fn adhesion_energy<C>(&self, entity1: Entity<&RelCell<C>>, entity2: Entity<&RelCell<C>>) -> f32;
 }
 
 #[derive(Clone)]
@@ -15,20 +14,20 @@ pub struct StaticAdhesion {
 
 impl AdhesionSystem for StaticAdhesion {
     fn adhesion_energy<C>(
-        &self, 
-        entity1: LatticeEntity<&RelCell<C>>,
-        entity2: LatticeEntity<&RelCell<C>>
+        &self,
+        entity1: Entity<&RelCell<C>>,
+        entity2: Entity<&RelCell<C>>
     ) -> f32 {
         match (entity1, entity2) {
-            (SomeCell(c1), SomeCell(c2)) => {
+            (Entity::Some(c1), Entity::Some(c2)) => {
                 if c1.index == c2.index {
                     0.
                 } else {
                     2. * self.cell_energy
                 }
             }
-            (SomeCell(_), Medium) | (Medium, SomeCell(_)) => self.medium_energy,
-            (SomeCell(_), Solid) | (Solid, SomeCell(_)) => self.solid_energy,
+            (Entity::Some(_), Entity::Medium) | (Entity::Medium, Entity::Some(_)) => self.medium_energy,
+            (Entity::Some(_), Entity::Solid) | (Entity::Solid, Entity::Some(_)) => self.solid_energy,
             _ => 0.
         }
     }
@@ -40,10 +39,10 @@ mod tests {
     use crate::basic_cell::BasicCell;
     use crate::constants::CellIndex;
 
-    // Helper to create a RelCell with given spin and mom by mocking and overriding
-    fn make_rel_with_spin(spin: CellIndex, mom: CellIndex) -> RelCell<BasicCell> {
+    // Helper to create a RelCell with given cell index and mom by mocking and overriding
+    fn make_rel_with_index(index: CellIndex, mom: CellIndex) -> RelCell<BasicCell> {
         RelCell {
-            index: spin,
+            index,
             mom,
             cell: BasicCell::new_empty(10)
         }
@@ -61,23 +60,23 @@ mod tests {
     fn test_static_adhesion() {
         let static_adhesion = make_static_adhesion();
 
-        let cell1 = make_rel_with_spin(1, 1);
-        let cell2 = make_rel_with_spin(2, 1);
+        let cell1 = make_rel_with_index(1, 1);
+        let cell2 = make_rel_with_index(2, 1);
 
         assert_eq!(
-            static_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell1)),
+            static_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Some(&cell1)),
             0.
         );
         assert_eq!(
-            static_adhesion.adhesion_energy(SomeCell(&cell1), SomeCell(&cell2)),
+            static_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Some(&cell2)),
             2. * static_adhesion.cell_energy
         );
         assert_eq!(
-            static_adhesion.adhesion_energy(SomeCell(&cell1), Medium),
+            static_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Medium),
             static_adhesion.medium_energy
         );
         assert_eq!(
-            static_adhesion.adhesion_energy(Solid, SomeCell(&cell1)),
+            static_adhesion.adhesion_energy(Entity::Solid, Entity::Some(&cell1)),
             static_adhesion.solid_energy
         );
     }
