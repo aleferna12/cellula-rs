@@ -17,6 +17,7 @@ use std::ops::{Deref, DerefMut};
 pub struct ChemEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
     pub chem_lattice: Lattice<u32>,
+    pub ancestors: Box<[Option<CellIndex>]>,
     pub max_cells: CellIndex,
     population_exploded: bool
 }
@@ -25,6 +26,7 @@ impl ChemEnvironment {
     pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: CellIndex) -> Self {
         let mut env_ = Self {
             chem_lattice: Lattice::new(env.cell_lattice.rect.clone()),
+            ancestors: vec![None; max_cells as usize].into_boxed_slice(),
             env,
             max_cells,
             population_exploded: false
@@ -97,7 +99,7 @@ impl ChemEnvironment {
 
         let newborn = mom.birth();
         let newborn_ta = mom.newborn_target_area;
-        let new_index = self.env.cells.add(newborn, Some(mom_index)).index;
+        let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
             self.grant_position(
                 pos,
@@ -105,6 +107,7 @@ impl ChemEnvironment {
             );
         }
         self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
+        self.ancestors[new_index as usize] = Some(mom_index);
         self.cells.get_cell(new_index)
     }
 
@@ -239,6 +242,20 @@ impl Habitable for ChemEnvironment {
         // Executes the copy
         self.cell_lattice[pos] = to;
         self.update_edges(pos)
+    }
+
+    fn spawn_cell(
+        &mut self,
+        empty_cell: Self::Cell,
+        positions: impl IntoIterator<Item = Pos<usize>>
+    ) -> &RelCell<Self::Cell> {
+        let cell_index = self.cells_mut().add(empty_cell).index;
+        let new_spin = Entity::Some(cell_index);
+        for pos in positions {
+            self.grant_position(pos, new_spin);
+        }
+        self.ancestors[cell_index as usize] =  Some(cell_index);
+        self.cells().get_cell(cell_index)
     }
 }
 

@@ -37,7 +37,10 @@ impl Pond {
     pub fn reproduce(&mut self) {
         let new_indexes = self.env.reproduce(self.cell_search_scaler);
         for cell_index in new_indexes {
-            self.ca.adhesion.update_clones(cell_index, &self.env);
+            let mom_index = self.env.ancestors[cell_index as usize].expect(
+                "cell's mom was not set correctly"
+            );
+            self.ca.adhesion.update_clones(cell_index, mom_index, &self.env);
             // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
             self.env.cells.get_cell_mut(cell_index).genome.attempt_mutate(&mut self.rng);
         }

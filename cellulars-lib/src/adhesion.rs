@@ -40,10 +40,9 @@ mod tests {
     use crate::constants::CellIndex;
 
     // Helper to create a RelCell with given cell index and mom by mocking and overriding
-    fn make_rel_with_index(index: CellIndex, mom: CellIndex) -> RelCell<BasicCell> {
+    fn make_rel_with_index(index: CellIndex) -> RelCell<BasicCell> {
         RelCell {
             index,
-            mom,
             cell: BasicCell::new_empty(10)
         }
     }
@@ -60,8 +59,8 @@ mod tests {
     fn test_static_adhesion() {
         let static_adhesion = make_static_adhesion();
 
-        let cell1 = make_rel_with_index(1, 1);
-        let cell2 = make_rel_with_index(2, 1);
+        let cell1 = make_rel_with_index(1);
+        let cell2 = make_rel_with_index(2);
 
         assert_eq!(
             static_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Some(&cell1)),

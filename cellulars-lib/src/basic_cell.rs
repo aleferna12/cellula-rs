@@ -107,7 +107,6 @@ pub trait Cellular {
 #[derive(Debug, Clone)]
 pub struct RelCell<C> {
     pub index: CellIndex,
-    pub mom: CellIndex,
     pub cell: C
 }
 
@@ -116,7 +115,6 @@ impl<C> RelCell<C> {
     pub fn mock(cell: C) -> Self {
         RelCell {
             index: 0,
-            mom: 0,
             cell
         }
     }

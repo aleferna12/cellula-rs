@@ -100,7 +100,7 @@ impl IoManager {
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=celldf.height() {
-            cells.push(Cell::new_empty(0, 0, Grn::empty()), None);
+            cells.push(Cell::new_empty(0, 0, Grn::empty()));
         }
 
         let index_map: HashMap<_, _> = HashMap::from_iter(
@@ -130,7 +130,6 @@ impl IoManager {
 
             cells.replace(RelCell {
                 index: cell_index,
-                mom: row[cols["mom"]].try_extract::<CellIndex>()?,
                 cell: Cell {
                     basic_cell: BasicCell {
                         target_area: row[cols["target_area"]].try_extract::<u32>()?,
@@ -233,8 +232,8 @@ impl IoManager {
         }
 
         let mut lattice = Lattice::new(rect);
-        for (i, column) in latdf.get_columns().iter().enumerate() {
-            for (j, maybe_val) in column.str()?.into_iter().enumerate() {
+        for (j, column) in latdf.get_columns().iter().enumerate() {
+            for (i, maybe_val) in column.str()?.into_iter().enumerate() {
                 match maybe_val {
                     Some(val) => {
                         let val: &str = val;
@@ -475,7 +474,6 @@ impl ToDataFrame for CellContainer<Cell> {
         let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
             "index" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
-            "mom" => valid.iter().map(|cell| cell.mom).collect::<Vec<_>>(),
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
             "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Vec<_>>(),

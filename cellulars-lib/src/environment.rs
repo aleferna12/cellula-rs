@@ -311,12 +311,12 @@ pub trait Habitable {
         empty_cell: Self::Cell,
         positions: impl IntoIterator<Item = Pos<usize>>
     ) -> &RelCell<Self::Cell> {
-        let index = self.cells_mut().add(empty_cell, None).index;
-        let new_spin = Entity::Some(index);
+        let cell_index = self.cells_mut().add(empty_cell).index;
+        let new_spin = Entity::Some(cell_index);
         for pos in positions {
             self.grant_position(pos, new_spin);
         }
-        self.cells().get_cell(index)
+        self.cells().get_cell(cell_index)
     }
 
     fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {

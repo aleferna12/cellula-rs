@@ -26,12 +26,13 @@ impl ClonalAdhesion {
     pub fn update_clones(
         &mut self,
         cell_index: CellIndex,
+        mom_idex: CellIndex,
         env: &ChemEnvironment
     ) {
         let cell = env.cells().get_cell(cell_index);
         let cell_neighs = env.cell_neighbours(cell, 2.0);
 
-        let mom_cell = env.cells().get_cell(cell.mom);
+        let mom_cell = env.cells().get_cell(mom_idex);
         let mom_neighs = env.cell_neighbours(
             mom_cell,
             2.0
@@ -87,10 +88,9 @@ mod tests {
     use cellulars_lib::symmetric_table::SymmetricTable;
 
     // Helper to create a RelCell with given index and mom by mocking and overriding
-    fn make_rel_with_index(index: CellIndex, mom: CellIndex) -> RelCell<BasicCell> {
+    fn make_rel_with_index(index: CellIndex) -> RelCell<BasicCell> {
         RelCell {
             index,
-            mom,
             cell: BasicCell::new_empty(10)
         }
     }
@@ -112,8 +112,8 @@ mod tests {
             SymmetricTable::new(max_index)
         );
 
-        let cell1 = make_rel_with_index(1, 1);
-        let cell2 = make_rel_with_index(2, 1);
+        let cell1 = make_rel_with_index(1);
+        let cell2 = make_rel_with_index(2);
         // Initially clone_pairs empty
         assert_eq!(
             clonal_adhesion.adhesion_energy(Entity::Some(&cell1), Entity::Some(&cell1)),

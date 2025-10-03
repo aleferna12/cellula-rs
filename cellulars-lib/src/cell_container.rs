@@ -67,11 +67,10 @@ impl<C: Cellular> CellContainer<C> {
             .unwrap_or(self.n_cells())
     }
 
-    pub fn add(&mut self, cell: C, mom_index: Option<CellIndex>) -> &mut RelCell<C> {
+    pub fn add(&mut self, cell: C) -> &mut RelCell<C> {
         let new_index = self.next_index();
         let rel_cell = RelCell {
             index: new_index,
-            mom: mom_index.unwrap_or(new_index),
             cell
         };
 
@@ -83,11 +82,10 @@ impl<C: Cellular> CellContainer<C> {
         &mut self.vec[new_index as usize]
     }
 
-    pub fn push(&mut self, cell: C, mom_index: Option<CellIndex>) -> &mut RelCell<C> {
+    pub fn push(&mut self, cell: C) -> &mut RelCell<C> {
         let new_index = self.n_cells();
         let rel_cell = RelCell {
             index: new_index,
-            mom: mom_index.unwrap_or(new_index),
             cell
         };
         self.vec.push(rel_cell);
