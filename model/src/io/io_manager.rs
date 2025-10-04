@@ -262,8 +262,8 @@ impl IoManager {
         let reader = BufReader::new(file);
         let clonedf = ParquetReader::new(reader).finish()?;
         let mut table = SymmetricTable::new(clonedf.height());
-        for (i, column) in clonedf.get_columns().iter().enumerate() {
-            for (j, maybe_val) in column.i8()?.into_iter().enumerate() {
+        for (j, column) in clonedf.get_columns().iter().enumerate() {
+            for (i, maybe_val) in column.i8()?.into_iter().enumerate() {
                 match maybe_val {
                     Some(val) => {
                         let val_bool = if val == 0 {
@@ -359,11 +359,15 @@ impl IoManager {
             .collect()
     }
 
+    // Experimented with:
+    //   - saving Medium and Solid as negative i32s 
+    //   - parallelisation with rayon
+    // and performance diff was minimal, keeping as is 
     fn write_lattice(file_path: &Path, lattice: &Lattice<Spin>) -> PolarsResult<u64>{
         let mut cols = vec![];
-        for (i, col) in lattice.as_array().chunks_exact(lattice.height()).enumerate() {
+        for (j, col) in lattice.as_array().chunks_exact(lattice.height()).enumerate() {
             cols.push(Series::new(
-                format!("col_{i}").into(),
+                format!("col_{j}").into(),
                 col.iter()
                     .map(|val| {
                         match val {
@@ -491,11 +495,11 @@ impl ToDataFrame for CellContainer<Cell> {
 impl ToDataFrame for SymmetricTable<bool> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
         let mut cols = Vec::with_capacity(self.length());
-        for i in 0..self.length() {
+        for j in 0..self.length() {
             let series = (0..self.length())
-                .map(move |j| { self[(i, j)] as i8 })
+                .map(move |i| { self[(i, j)] as i8 })
                 .collect::<Series>();
-            cols.push(series.with_name(format!("col_{i}").into()).into());
+            cols.push(series.with_name(format!("col_{j}").into()).into());
         };
         DataFrame::new(cols)
     }
