@@ -247,7 +247,7 @@ impl IoManager {
                                 Entity::Some(cell_index)
                             },
                         };
-                        lattice[(i, j).into()] = entity;
+                        lattice[(j, i).into()] = entity;
                     },
                     None => bail!("file {} contains null values", file_path.display()),
                 }
@@ -360,9 +360,9 @@ impl IoManager {
     }
 
     // Experimented with:
-    //   - saving Medium and Solid as negative i32s 
+    //   - saving Medium and Solid as negative i32s
     //   - parallelisation with rayon
-    // and performance diff was minimal, keeping as is 
+    // and performance diff was minimal and file size became larger, keeping as is
     fn write_lattice(file_path: &Path, lattice: &Lattice<Spin>) -> PolarsResult<u64>{
         let mut cols = vec![];
         for (j, col) in lattice.as_array().chunks_exact(lattice.height()).enumerate() {

@@ -17,8 +17,8 @@ impl Pos<usize> {
         ((self.x as u32) << 16) | self.y as u32
     }
 
-    pub fn row_major(self, width: usize) -> usize {
-        self.y * width + self.x
+    pub fn col_major(self, height: usize) -> usize {
+        self.x * height + self.y
     }
 
     pub fn to_isize(self) -> Pos<isize> {
@@ -61,8 +61,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_row_major() {
+    fn test_col_major() {
         let pos = Pos::new(10, 10);
-        assert_eq!(pos.row_major(10), 110);
+        assert_eq!(pos.col_major(10), 110);
     }
 }
