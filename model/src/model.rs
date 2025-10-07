@@ -3,8 +3,6 @@ use crate::cellular_automata::CellularAutomata;
 use crate::chem_environment::ChemEnvironment;
 use crate::clonal_adhesion::ClonalAdhesion;
 use crate::constants::{BoundaryType, NeighbourhoodType};
-use crate::ecology::disperser::{Disperser, SelectiveDispersion};
-use crate::ecology::transporter::{Transporter, WipeOut};
 use crate::genetics::grn::Grn;
 use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
@@ -13,7 +11,6 @@ use crate::pond::Pond;
 use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
-use cellulars_lib::evolution::selector::WeightedOrderedSelection;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::symmetric_table::SymmetricTable;
@@ -23,7 +20,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
 
 pub struct Model {
-    pub ponds: Vec<Pond>,
+    pub pond: Pond,
     pub io: IoManager,
     pub rng: Xoshiro256StarStar,
     pub dispersion_period: u32,
@@ -40,7 +37,7 @@ impl Model {
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         Ok(Self {
-            ponds: Self::make_new_ponds(
+            pond: Self::make_new_pond(
                 &parameters,
                 Self::make_ca(&parameters, None),
                 &mut rng
@@ -65,7 +62,7 @@ impl Model {
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         Ok(Self {
-            ponds: Self::read_backup_ponds(
+            pond: Self::read_backup_pond(
                 &parameters,
                 &mut rng,
                 sim_path,
@@ -113,7 +110,7 @@ impl Model {
         if parameters.io.replace_outdir {
             log::info!("Cleaning contents of '{}'", io.outdir.display());
         }
-        io.create_directories(parameters.io.replace_outdir, parameters.pond.n_ponds)?;
+        io.create_directories(parameters.io.replace_outdir)?;
         let mut params_new_seed = parameters.clone();
         params_new_seed.general.seed = new_seed.into();
         io.create_parameters_file(&params_new_seed)?;
@@ -162,11 +159,11 @@ impl Model {
             .build()
     }
 
-    fn make_new_ponds(
+    fn make_new_pond(
         parameters: &Parameters,
         ca: CellularAutomata<ClonalAdhesion>,
         rng: &mut Xoshiro256StarStar
-    ) -> anyhow::Result<Vec<Pond>> {
+    ) -> anyhow::Result<Pond> {
         let mut env = ChemEnvironment::new(
             Environment::new_empty(
                 NeighbourhoodType::new(parameters.pond.neigh_r),
@@ -181,132 +178,104 @@ impl Model {
             env.make_border(true, true, true, true);
         }
 
-        let mut ponds = vec![];
-        for pond_i in 0..parameters.pond.n_ponds {
-            log::info!("Making pond #{pond_i}");
 
-            let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
-            for _ in 0..parameters.cell.starting_cells {
-                let cell = Cell::new_empty(
-                    parameters.cell.target_area,
-                    parameters.cell.div_area,
-                    Grn::from_sampler(
-                        [1. / pond.env.height() as f32],
-                        parameters.cell.genome.n_regulatory,
-                        parameters.cell.genome.mutation_rate,
-                        parameters.cell.genome.mutation_std,
-                        || Uniform::new(-1., 1.).unwrap().sample(rng)
-                    )
-                );
-                pond.env.spawn_cell_random(
-                    cell,
-                    parameters.cell.starting_area,
-                    &mut pond.rng
-                );
-            }
-            log::info!(
+        log::info!("Making pond");
+
+        let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
+        for _ in 0..parameters.cell.starting_cells {
+            let cell = Cell::new_empty(
+                parameters.cell.target_area,
+                parameters.cell.div_area,
+                Grn::from_sampler(
+                    [1. / pond.env.height() as f32],
+                    parameters.cell.genome.n_regulatory,
+                    parameters.cell.genome.mutation_rate,
+                    parameters.cell.genome.mutation_std,
+                    || Uniform::new(-1., 1.).unwrap().sample(rng)
+                )
+            );
+            pond.env.spawn_cell_random(
+                cell,
+                parameters.cell.starting_area,
+                &mut pond.rng
+            );
+        }
+        log::info!(
                 "Created {} out of the {} cells requested",
                 pond.env.cells.n_valid(),
                 parameters.cell.starting_cells
             );
-            ponds.push(pond);
-        }
-
-        Ok(ponds)
+        Ok(pond)
     }
 
-    fn read_backup_ponds(
+    fn read_backup_pond(
         parameters: &Parameters,
         rng: &mut Xoshiro256StarStar,
         sim_path: impl AsRef<Path>,
         time_step: u32
-    ) -> anyhow::Result<Vec<Pond>> {
+    ) -> anyhow::Result<Pond> {
         let sim_path = sim_path.as_ref();
-        let mut ponds = vec![];
-        for pond_i in 0..parameters.pond.n_ponds {
-            log::info!("Reading pond #{pond_i}");
-            let cells = IoManager::read_cells(
-                IoManager::resolve_cells_path(sim_path, time_step, pond_i),
-                IoManager::resolve_genomes_path(sim_path, time_step, pond_i),
-            )?;
 
-            let rect = Rect::new(
-                (0., 0.).into(),
-                (parameters.pond.width as f32, parameters.pond.height as f32).into(),
-            );
-            let lattice = IoManager::read_lattice(
-                IoManager::resolve_lattice_path(sim_path, time_step, pond_i),
-                rect.clone().try_into()?,
-            )?;
+        log::info!("Reading pond");
+        let cells = IoManager::read_cells(
+            IoManager::resolve_cells_path(sim_path, time_step),
+            IoManager::resolve_genomes_path(sim_path, time_step),
+        )?;
 
-            let mut env = ChemEnvironment::new(
-                Environment::new(
-                    cells,
-                    lattice,
-                    NeighbourhoodType::new(parameters.pond.neigh_r),
-                    Boundaries::new(BoundaryType::new(rect))?,
-                ),
-                parameters.cell.max_cells
-            );
-            let env_ptr: *mut _ = &mut env;
-            for pos in env.cell_lattice.iter_positions() {
-                // We do this to avoid two lattices in memory
-                unsafe { (*env_ptr).update_edges(pos); };
-            }
+        let rect = Rect::new(
+            (0., 0.).into(),
+            (parameters.pond.width as f32, parameters.pond.height as f32).into(),
+        );
+        let lattice = IoManager::read_lattice(
+            IoManager::resolve_lattice_path(sim_path, time_step),
+            rect.clone().try_into()?,
+        )?;
 
-            let mut pond = Self::make_empty_pond(
-                parameters, 
-                env,
-                Self::make_ca(
-                    parameters,
-                    Some(IoManager::read_clones(IoManager::resolve_clones_path(
-                        sim_path,
-                        time_step,
-                        pond_i
-                    ))?)
-                ), 
-                rng
-            );
-            pond.time_step = time_step;
-            ponds.push(pond);
+        let mut env = ChemEnvironment::new(
+            Environment::new(
+                cells,
+                lattice,
+                NeighbourhoodType::new(parameters.pond.neigh_r),
+                Boundaries::new(BoundaryType::new(rect))?,
+            ),
+            parameters.cell.max_cells
+        );
+        let env_ptr: *mut _ = &mut env;
+        for pos in env.cell_lattice.iter_positions() {
+            // We do this to avoid two lattices in memory
+            unsafe { (*env_ptr).update_edges(pos); };
         }
-        Ok(ponds)
+
+        let mut pond = Self::make_empty_pond(
+            parameters,
+            env,
+            Self::make_ca(
+                parameters,
+                Some(IoManager::read_clones(IoManager::resolve_clones_path(
+                    sim_path,
+                    time_step
+                ))?)
+            ),
+            rng
+        );
+        pond.time_step = time_step;
+        Ok(pond)
     }
 
     pub fn run_for(&mut self, time_steps: u32) {
-        for time_step in self.ponds[0].time_step..=time_steps {
-            if self.ponds[0].time_step % self.info_period == 0 {
+        for time_step in self.pond.time_step..=time_steps {
+            if self.pond.time_step % self.info_period == 0 {
                 self.log_info();
             }
             
             let saved = self.io.write_if_time(
                 time_step,
-                &self.ponds
+                &self.pond
             );
             if let Err(e) = saved {
                 log::warn!("Failed to save data at time step {time_step} with error `{e}`")
             }
-            for pond in &mut self.ponds {
-                pond.step();
-            }
-
-            if time_step > 0 && time_step % self.dispersion_period == 0 {
-                let dispersed = SelectiveDispersion { 
-                    selector: WeightedOrderedSelection{
-                        rng: &mut self.rng 
-                    } 
-                }.disperse(&self.ponds);
-                for event in dispersed {
-                    let [from, to] = self.ponds
-                        .get_disjoint_mut([event.from, event.to])
-                        .expect("dispersion event `from` and `to` are the same");
-                    WipeOut.transport(
-                        from,
-                        to,
-                        event.indexes
-                    );
-                }
-            }
+            self.pond.step();
         }
     }
 
@@ -319,11 +288,9 @@ impl Model {
     }
 
     fn log_info(&self) {
-        log::info!("Time step {}:", self.ponds[0].time_step);
-        for (i, pond) in self.ponds.iter().enumerate() {
-            let valid = pond.env.cells.n_valid();
-            log::info!("\tPond #{i} - {valid} cells");
-        }
+        log::info!("Time step {}:", self.pond.time_step);
+        let valid = self.pond.env.cells.n_valid();
+        log::info!("\t{valid} cells");
     }
 }
 

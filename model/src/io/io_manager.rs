@@ -16,14 +16,14 @@ use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::symmetric_table::SymmetricTable;
-use image::imageops::flip_vertical_in_place;
-use image::{GenericImage, RgbaImage};
+use image::RgbaImage;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use image::imageops::flip_vertical_in_place;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -31,7 +31,6 @@ static GENOMES_PATH: &str = "genomes";
 static LATTICES_PATH: &str = "lattices";
 static CLONES_PATH: &str = "clones";
 static CONFIG_COPY_PATH: &str = "config.toml";
-static POND_PREFIX: &str = "pond_";
 
 #[derive(Builder)]
 pub struct IoManager {
@@ -47,7 +46,7 @@ pub struct IoManager {
 }
 
 impl IoManager {
-    pub fn create_directories(&self, replace_outdir: bool, n_ponds: u32) -> io::Result<()> {
+    pub fn create_directories(&self, replace_outdir: bool) -> io::Result<()> {
         let outdir_exists = self.outdir.try_exists()?;
         if outdir_exists {
             if replace_outdir {
@@ -61,16 +60,10 @@ impl IoManager {
         }
         std::fs::create_dir_all(&self.outdir)?;
         std::fs::create_dir(self.outdir.join(IMAGES_PATH))?;
-
-        for i in 0..n_ponds {
-            let pond_path = self.outdir.join(format!("{POND_PREFIX}{i}"));
-            std::fs::create_dir(&pond_path)?;
-            std::fs::create_dir(pond_path.join(CELLS_PATH))?;
-            std::fs::create_dir(pond_path.join(GENOMES_PATH))?;
-            std::fs::create_dir(pond_path.join(CLONES_PATH))?;
-            std::fs::create_dir(pond_path.join(LATTICES_PATH))?
-        }
-        Ok(())
+        std::fs::create_dir(self.outdir.join(CELLS_PATH))?;
+        std::fs::create_dir(self.outdir.join(GENOMES_PATH))?;
+        std::fs::create_dir(self.outdir.join(CLONES_PATH))?;
+        std::fs::create_dir(self.outdir.join(LATTICES_PATH))
     }
 
     pub fn create_parameters_file(&self, parameters: &Parameters) -> anyhow::Result<()> {
@@ -173,44 +166,36 @@ impl IoManager {
 
     pub fn resolve_cells_path(
         sim_path: impl AsRef<Path>,
-        time_step: u32,
-        pond_i: u32
+        time_step: u32
     ) -> PathBuf {
         sim_path.as_ref()
-            .join(format!("{POND_PREFIX}{pond_i}"))
             .join(CELLS_PATH)
             .join(format!("{time_step}.parquet"))
     }
 
     pub fn resolve_genomes_path(
         sim_path: impl AsRef<Path>,
-        time_step: u32,
-        pond_i: u32
+        time_step: u32
     ) -> PathBuf {
         sim_path.as_ref()
-            .join(format!("{POND_PREFIX}{pond_i}"))
             .join(GENOMES_PATH)
             .join(format!("{time_step}.json"))
     }
 
     pub fn resolve_lattice_path(
         sim_path: impl AsRef<Path>,
-        time_step: u32,
-        pond_i: u32
+        time_step: u32
     ) -> PathBuf {
         sim_path.as_ref()
-            .join(format!("{POND_PREFIX}{pond_i}"))
             .join(LATTICES_PATH)
             .join(format!("{time_step}.parquet"))
     }
 
     pub fn resolve_clones_path(
         sim_path: impl AsRef<Path>,
-        time_step: u32,
-        pond_i: u32
+        time_step: u32
     ) -> PathBuf {
         sim_path.as_ref()
-            .join(format!("{POND_PREFIX}{pond_i}"))
             .join(CLONES_PATH)
             .join(format!("{time_step}.parquet"))
     }
@@ -285,64 +270,52 @@ impl IoManager {
     pub fn write_if_time(
         &mut self,
         time_step: u32,
-        ponds: &[Pond]
+        pond: &Pond
     ) -> anyhow::Result<()> {
-        self.write_data_if_time(time_step, ponds)?;
-        self.write_image_if_time(time_step, ponds)
+        self.write_data_if_time(time_step, pond)?;
+        self.write_image_if_time(time_step, pond)
     }
 
     fn write_data_if_time(
         &self,
         time_step: u32,
-        ponds: &[Pond]
+        pond: &Pond
     ) -> anyhow::Result<()> {
         let time_str = time_step.to_string();
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step % self.cells_period == 0 {
-            for (i, pond) in ponds.iter().enumerate() {
-                let mut celldf = pond.env.cells.to_dataframe()?;
-                let file_path = self.outdir
-                    .join(format!("pond_{i}"))
-                    .join(CELLS_PATH)
-                    .join(format!("{time_str}.parquet"));
-                let file = std::fs::File::create(file_path)?;
-                ParquetWriter::new(file).finish(&mut celldf)?;
-            }
+            let mut celldf = pond.env.cells.to_dataframe()?;
+            let file_path = self.outdir
+                .join(CELLS_PATH)
+                .join(format!("{time_str}.parquet"));
+            let file = std::fs::File::create(file_path)?;
+            ParquetWriter::new(file).finish(&mut celldf)?;
         }
 
         if time_step % self.genomes_period == 0 {
-            for (i, pond) in ponds.iter().enumerate() {
-                let genomes = Self::make_genome_node_links(pond.env.cells());
-                let file_path = self.outdir
-                    .join(format!("pond_{i}"))
-                    .join(GENOMES_PATH)
-                    .join(format!("{time_str}.json"));
-                let file = std::fs::File::create(file_path)?;
-                serde_json::to_writer(file, &genomes)?;
-            }
+            let genomes = Self::make_genome_node_links(pond.env.cells());
+            let file_path = self.outdir
+                .join(GENOMES_PATH)
+                .join(format!("{time_str}.json"));
+            let file = std::fs::File::create(file_path)?;
+            serde_json::to_writer(file, &genomes)?;
         }
 
         if time_step % self.clones_period == 0 {
-            for (i, pond) in ponds.iter().enumerate() {
-                let mut clonedf = pond.ca.adhesion.clones_table.to_dataframe()?;
-                let file_path = self.outdir
-                    .join(format!("pond_{i}"))
-                    .join(CLONES_PATH)
-                    .join(format!("{time_str}.parquet"));
-                let file = std::fs::File::create(file_path)?;
-                ParquetWriter::new(file).finish(&mut clonedf)?;
-            }
+            let mut clonedf = pond.ca.adhesion.clones_table.to_dataframe()?;
+            let file_path = self.outdir
+                .join(CLONES_PATH)
+                .join(format!("{time_str}.parquet"));
+            let file = std::fs::File::create(file_path)?;
+            ParquetWriter::new(file).finish(&mut clonedf)?;
         }
 
         if time_step % self.lattices_period == 0 {
-            for (i, pond) in ponds.iter().enumerate() {
-                let file_path = self.outdir
-                    .join(format!("pond_{i}"))
-                    .join(LATTICES_PATH)
-                    .join(format!("{time_str}.parquet"));
-                Self::write_lattice(file_path.as_path(), &pond.env.cell_lattice)?;
-            }
+            let file_path = self.outdir
+                .join(LATTICES_PATH)
+                .join(format!("{time_str}.parquet"));
+            Self::write_lattice(file_path.as_path(), &pond.env.cell_lattice)?;
         }
         Ok(())
     }
@@ -387,7 +360,7 @@ impl IoManager {
     fn write_image_if_time(
         &mut self,
         time_step: u32,
-        ponds: &[Pond],
+        pond: &Pond,
     ) -> anyhow::Result<()> {
         // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
@@ -397,7 +370,7 @@ impl IoManager {
             false
         };
         if movie_update {
-            frame = Some(self.make_simulation_image(ponds));
+            frame = Some(self.make_simulation_image(pond));
             let mm = self.movie_maker.as_mut().unwrap();
             let resized = image::imageops::resize(
                 frame.as_ref().unwrap(),
@@ -410,7 +383,7 @@ impl IoManager {
 
         if time_step % self.image_period == 0 {
             if frame.is_none() {
-                frame = Some(self.make_simulation_image(ponds));
+                frame = Some(self.make_simulation_image(pond));
             }
             frame.unwrap().save(
                 &self.outdir
@@ -423,49 +396,18 @@ impl IoManager {
 
     pub fn make_simulation_image(
         &self,
-        ponds: &[Pond]
+        pond: &Pond
     ) -> RgbaImage {
-        let mut images = vec![];
-        for pond in ponds {
-            let env = &pond.env;
-            images.push(RgbaImage::new(
-                env.width() as u32,
-                env.height() as u32
-            ));
-            let image = images.last_mut().unwrap();
-            for plot in &self.plots {
-                plot.plot(pond, image);
-            }
-        }
-        let mut grid = Self::grid_layout(&images).expect("must have at least one pond");
-        flip_vertical_in_place(&mut grid);
-        grid
-    }
-
-    fn grid_layout(images: &[RgbaImage]) -> Option<RgbaImage> {
-        if images.is_empty() {
-            return None;
-        }
-        let img_width = images[0].width();
-        let img_height = images[0].height();
-        let n_images = images.len() as u32;
-        let cols = (n_images as f32).sqrt().ceil() as u32;
-        let rows = n_images.div_ceil(cols);
-
-        let mut result = RgbaImage::new(
-            img_width * cols,
-            img_height * rows
+        let env = &pond.env;
+        let mut image = RgbaImage::new(
+            env.width() as u32,
+            env.height() as u32
         );
-        for (i, img) in images.iter().enumerate() {
-            let i_u32 = i as u32;
-            let col = i_u32 % cols;
-            let row = i_u32 / cols;
-            let x = col * img_width;
-            let y = row * img_height;
-            result.copy_from(img, x, y).unwrap();
+        for plot in &self.plots {
+            plot.plot(pond, &mut image);
         }
-
-        Some(result)
+        flip_vertical_in_place(&mut image);
+        image
     }
 }
 

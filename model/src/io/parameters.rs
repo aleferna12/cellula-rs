@@ -101,7 +101,6 @@ pub struct GeneralParameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PondParameters {
-    pub n_ponds: u32,
     pub width: usize,
     pub height: usize,
     #[serde(default = "param_defaults::false_flag")]

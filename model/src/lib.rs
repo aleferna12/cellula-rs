@@ -4,7 +4,6 @@ mod pond;
 mod cellular_automata;
 mod constants;
 mod cell;
-mod ecology;
 mod genetics;
 mod clonal_adhesion;
 mod chem_environment;
