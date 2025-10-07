@@ -4,7 +4,6 @@ seed = 1241254152
 dispersion-period = 1000
 
 [pond]
-n-ponds = 1
 width = 128
 height = 128
 enclose = false

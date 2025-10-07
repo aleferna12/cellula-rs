@@ -8,8 +8,6 @@ seed = 124125412345
 dispersion-period = 1000
 
 [pond]
-# Number of ponds to create.
-n-ponds = 4
 # Width of the lattice.
 width = 128
 # Height of the lattice.
