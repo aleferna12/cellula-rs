@@ -178,9 +178,7 @@ impl Model {
             env.make_border(true, true, true, true);
         }
 
-
         log::info!("Making pond");
-
         let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
         for _ in 0..parameters.cell.starting_cells {
             let cell = Cell::new_empty(
