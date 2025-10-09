@@ -1,4 +1,4 @@
-use crate::basic_cell::{Cellular, RelCell};
+use crate::basic_cell::{Alive, BasicCell, Cellular, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::CellIndex;
 use crate::entity::{Entity, Spin};
@@ -182,38 +182,6 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
         graph
     }
 
-    pub fn make_border(
-        &mut self,
-        bottom: bool,
-        top: bool,
-        left: bool,
-        right: bool,
-    ) {
-        let mut border_positions = Vec::<Pos<usize>>::new();
-        if bottom {
-            for x in 0..self.width() {
-                border_positions.push((x, 0).into());
-            }
-        }
-        if top {
-            for x in (0..self.width() - 1).rev() {
-                border_positions.push((x, self.height() - 1).into());
-            }
-        }
-        if left {
-                for y in (1..self.height() - 1).rev() {
-                    border_positions.push((0, y).into());
-                }
-            }
-        if right {
-            for y in 1..self.height() {
-                border_positions.push((self.width() - 1, y).into());
-            }
-        }
-
-        self.spawn_solid(border_positions.into_iter());
-    }
-
     pub fn wipe_out(&mut self) {
         self.cells.wipe_out();
         self.cell_lattice.iter_values_mut().for_each(|value| {
@@ -252,8 +220,8 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environme
     }
 }
 
-impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environment<C, N, B> {
-    type Cell = C;
+impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environment<BasicCell, N, B> {
+    type Cell = BasicCell;
 
     fn cells(&self) -> &CellContainer<Self::Cell> {
         &self.cells
@@ -272,7 +240,11 @@ impl <C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitabl
             self.cells.get_cell_mut(index).shift_position(pos, true, &self.bounds.boundary);
         }
         if let Entity::Some(index) = self.cell_lattice[pos] {
-            self.cells.get_cell_mut(index).shift_position(pos, false, &self.bounds.boundary);
+            let from_cell = self.cells.get_cell_mut(index);
+            from_cell.shift_position(pos, false, &self.bounds.boundary);
+            if from_cell.area() <= 0 {
+                from_cell.apoptosis();
+            }
         }
         // Executes the copy
         self.cell_lattice[pos] = to;

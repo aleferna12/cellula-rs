@@ -99,7 +99,7 @@ impl ChemEnvironment {
                 (pos.y as f32) < y
             })
             .collect();
-
+        
         let mut newborn = mom.birth();
         newborn.ancestor = Some(mom_index);
         let newborn_ta = mom.newborn_target_area;
@@ -117,6 +117,12 @@ impl ChemEnvironment {
     // Should this also replace some of the cell's positions with Medium?
     pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
         cell.apoptosis();
+    }
+    
+    pub fn invalidate_cell(&mut self, cell_index: CellIndex) {
+        for index in 0..self.clones_table.length() {
+            self.clones_table[(index, cell_index as usize)] = false;
+        }
     }
 
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
@@ -142,10 +148,13 @@ impl ChemEnvironment {
             let mom = self
                 .cells
                 .get_cell(cell_index);
-            let new_index = self.divide_cell(mom.index, search_scaler).index;
-            self.update_clones(new_index, cell_index);
-            // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
-            self.env.cells.get_cell_mut(cell_index).genome.attempt_mutate(rng);
+            let new_cell = self.divide_cell(mom.index, search_scaler);
+            if new_cell.is_valid() {
+                let new_index = new_cell.index;
+                self.update_clones(new_index, cell_index);
+                // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
+                self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(rng);
+            }
         }
     }
 
@@ -247,6 +256,38 @@ impl ChemEnvironment {
         self.env.wipe_out();
         self.clones_table.clear();
     }
+
+    pub fn make_border(
+        &mut self,
+        bottom: bool,
+        top: bool,
+        left: bool,
+        right: bool,
+    ) {
+        let mut border_positions = Vec::<Pos<usize>>::new();
+        if bottom {
+            for x in 0..self.width() {
+                border_positions.push((x, 0).into());
+            }
+        }
+        if top {
+            for x in (0..self.width() - 1).rev() {
+                border_positions.push((x, self.height() - 1).into());
+            }
+        }
+        if left {
+            for y in (1..self.height() - 1).rev() {
+                border_positions.push((0, y).into());
+            }
+        }
+        if right {
+            for y in 1..self.height() {
+                border_positions.push((self.width() - 1, y).into());
+            }
+        }
+
+        self.spawn_solid(border_positions.into_iter());
+    }
 }
 
 impl Deref for ChemEnvironment {
@@ -266,11 +307,11 @@ impl Habitable for ChemEnvironment {
     type Cell = Cell;
 
     fn cells(&self) -> &CellContainer<Self::Cell> {
-        self.env.cells()
+        &self.env.cells
     }
 
     fn cells_mut(&mut self) -> &mut CellContainer<Self::Cell> {
-        self.env.cells_mut()
+        &mut self.env.cells
     }
 
     fn grant_position(
@@ -288,6 +329,11 @@ impl Habitable for ChemEnvironment {
             let from_cell = self.env.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);
             from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
+            // If the copy kills the cell
+            if from_cell.area() <= 0 {
+                from_cell.apoptosis();
+                self.invalidate_cell(index);
+            }
         }
         // Executes the copy
         self.cell_lattice[pos] = to;
