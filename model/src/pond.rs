@@ -1,7 +1,5 @@
 use crate::cellular_automata::CellularAutomata;
 use crate::chem_environment::ChemEnvironment;
-use crate::clonal_adhesion::ClonalAdhesion;
-use crate::genetics::genome::Genome;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::environment::Habitable;
@@ -12,7 +10,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 #[derive(Clone, Builder)]
 pub struct Pond {
     pub env: ChemEnvironment,
-    pub ca: CellularAutomata<ClonalAdhesion>,
+    pub ca: CellularAutomata,
     pub rng: Xoshiro256StarStar,
     pub update_period: u32,
     pub cell_target_area: u32,
@@ -28,27 +26,14 @@ impl Pond {
         if self.time_step % self.update_period == 0 {
             self.env.cells.iter_mut().for_each(|cell| cell.update());
             if self.division_enabled {
-                self.reproduce();
+                self.env.reproduce(self.cell_search_scaler, &mut self.rng);
             }
         }
         self.time_step += 1;
     }
 
-    pub fn reproduce(&mut self) {
-        let new_indexes = self.env.reproduce(self.cell_search_scaler);
-        for cell_index in new_indexes {
-            let mom_index = self.env.ancestors[cell_index as usize].expect(
-                "cell's mom was not set correctly"
-            );
-            self.ca.adhesion.update_clones(cell_index, mom_index, &self.env);
-            // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
-            self.env.cells.get_cell_mut(cell_index).genome.attempt_mutate(&mut self.rng);
-        }
-    }
-
     pub fn wipe_out(&mut self) {
         self.env.wipe_out();
-        self.ca.adhesion.clones_table.clear();
     }
 }
 

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
@@ -12,12 +13,14 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use rand::Rng;
 use std::ops::{Deref, DerefMut};
+use cellulars_lib::symmetric_table::SymmetricTable;
+use crate::genetics::genome::Genome;
 
 #[derive(Clone)]
 pub struct ChemEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
     pub chem_lattice: Lattice<u32>,
-    pub ancestors: Box<[Option<CellIndex>]>,
+    pub clones_table: SymmetricTable<bool>,
     pub max_cells: CellIndex,
     population_exploded: bool
 }
@@ -26,7 +29,7 @@ impl ChemEnvironment {
     pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: CellIndex) -> Self {
         let mut env_ = Self {
             chem_lattice: Lattice::new(env.cell_lattice.rect.clone()),
-            ancestors: vec![None; max_cells as usize].into_boxed_slice(),
+            clones_table: SymmetricTable::new(max_cells as usize),
             env,
             max_cells,
             population_exploded: false
@@ -97,7 +100,8 @@ impl ChemEnvironment {
             })
             .collect();
 
-        let newborn = mom.birth();
+        let mut newborn = mom.birth();
+        newborn.ancestor = Some(mom_index);
         let newborn_ta = mom.newborn_target_area;
         let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
@@ -107,7 +111,6 @@ impl ChemEnvironment {
             );
         }
         self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
-        self.ancestors[new_index as usize] = Some(mom_index);
         self.cells.get_cell(new_index)
     }
 
@@ -120,7 +123,7 @@ impl ChemEnvironment {
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
     // gain is minimal (although the ergonomic gains are significant)
-    pub fn reproduce(&mut self, search_scaler: f32) -> Vec<CellIndex> {
+    pub fn reproduce(&mut self, search_scaler: f32, rng: &mut impl Rng) {
         let mut divide = vec![];
         for cell in self.cells().iter() {
             if !cell.is_alive() {
@@ -131,15 +134,57 @@ impl ChemEnvironment {
                 divide.push(cell.index);
             }
         }
-        divide.into_iter().filter_map(|cell_index| {
+        for cell_index in divide {
             if !self.can_add_cell() {
-                return None;
+                return;
             }
+
             let mom = self
                 .cells
                 .get_cell(cell_index);
-            Some(self.divide_cell(mom.index, search_scaler).index)
-        }).collect()
+            let new_index = self.divide_cell(mom.index, search_scaler).index;
+            self.update_clones(new_index, cell_index);
+            // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
+            self.env.cells.get_cell_mut(cell_index).genome.attempt_mutate(rng);
+        }
+    }
+
+    pub fn update_clones(
+        &mut self,
+        cell_index: CellIndex,
+        mom_index: CellIndex
+    ) {
+        let cell = self.cells().get_cell(cell_index);
+        let cell_neighs = self.cell_neighbours(cell, 2.0);
+
+        let mom_cell = self.cells().get_cell(mom_index);
+        let mom_neighs = self.cell_neighbours(
+            mom_cell,
+            2.0
+        );
+
+        let mom_clones = HashSet::from_iter(
+            (0..self.cells().n_cells())
+                .filter_map(|index| {
+                    if self.clones_table[(mom_cell.index as usize, index as usize)] {
+                        Some(Entity::Some(index))
+                    } else {
+                        None
+                    }
+                })
+        );
+        for spin in mom_clones.difference(&mom_neighs) {
+            if let Entity::Some(index) = spin {
+                self.clones_table[(mom_index as usize, *index as usize)] = false;
+            }
+        }
+        let clones: Vec<_> = cell_neighs.intersection(&mom_clones).collect();
+        for spin in &clones {
+            if let Entity::Some(index) = spin {
+                self.clones_table[(cell_index as usize, *index as usize)] = true;
+            }
+        }
+        self.clones_table[(cell_index as usize, mom_index as usize)] = true;
     }
 
     // TODO!: add plot to make sure this is right
@@ -196,6 +241,11 @@ impl ChemEnvironment {
         let intercept = cell.center.y - slope * cell.center.x;
 
         SplitLine { slope, intercept }
+    }
+    
+    pub fn wipe_out(&mut self) {
+        self.env.wipe_out();
+        self.clones_table.clear();
     }
 }
 
@@ -254,7 +304,7 @@ impl Habitable for ChemEnvironment {
         for pos in positions {
             self.grant_position(pos, new_spin);
         }
-        self.ancestors[cell_index as usize] =  Some(cell_index);
+        self.cells.get_cell_mut(cell_index).ancestor =  Some(cell_index);
         self.cells().get_cell(cell_index)
     }
 }

@@ -1,6 +1,5 @@
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
-use crate::pond::Pond;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::entity::Entity;
@@ -13,10 +12,10 @@ use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
+use crate::chem_environment::ChemEnvironment;
 
-// TODO: This should most definitely take a pond as an arg, which let us use dynamic dispatch to write better code
 pub trait Plot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage);
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage);
 }
 
 pub trait ContinuousPlot: Plot {
@@ -65,9 +64,9 @@ impl SpinPlot {
 }
 
 impl Plot for SpinPlot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
-        for pos in pond.env.cell_lattice.iter_positions() {
-            let spin = pond.env.cell_lattice[pos];
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        for pos in env.cell_lattice.iter_positions() {
+            let spin = env.cell_lattice[pos];
             let rgb = match spin {
                 Entity::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
                 Entity::Solid => Some(self.solid_color),
@@ -85,12 +84,12 @@ pub struct CenterPlot {
 }
 
 impl Plot for CenterPlot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
-        for cell in pond.env.cells.iter() {
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        for cell in env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
-            let center = pond.env.bounds.lattice_boundary.valid_pos(Pos::new(
+            let center = env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.center().x as isize,
                 cell.center().y as isize,
             ));
@@ -106,12 +105,12 @@ pub struct ChemCenterPlot {
 }
 
 impl Plot for ChemCenterPlot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
-        for cell in pond.env.cells.iter() {
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        for cell in env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
-            let center = pond.env.bounds.lattice_boundary.valid_pos(Pos::new(
+            let center = env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.chem_center().x as isize,
                 cell.chem_center().y as isize,
             ));
@@ -128,14 +127,14 @@ pub struct ClonesPlot {
 }
 
 impl Plot for ClonesPlot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
-        let clones = &pond.ca.adhesion.clones_table;
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        let clones = &env.clones_table;
         for index_pair in clones.iter_index_pairs(None, None) {
             if !clones[index_pair] {
                 continue;
             }
-            let cell1 = pond.env.cells.get_cell(index_pair.0 as CellIndex);
-            let cell2 = pond.env.cells.get_cell(index_pair.1 as CellIndex);
+            let cell1 = env.cells.get_cell(index_pair.0 as CellIndex);
+            let cell2 = env.cells.get_cell(index_pair.1 as CellIndex);
             if !cell1.is_valid() || !cell2.is_valid() {
                 continue;
             }
@@ -143,7 +142,7 @@ impl Plot for ClonesPlot {
             let center2 = cell2.center();
             if !self.all_clones {
                 let dist2 = (center1.x - center2.x).powf(2.) + (center1.y - center2.y).powf(2.);
-                let diag = pond.env.width() * pond.env.width() + pond.env.height() * pond.env.height();
+                let diag = env.width() * env.width() + env.height() * env.height();
                 if dist2 > diag as f32 / 4. {
                     continue;
                 }
@@ -163,18 +162,18 @@ pub struct BorderPlot {
 }
 
 impl Plot for BorderPlot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
-        for pos in pond.env.cell_lattice.iter_positions() {
-            let spin = pond.env.cell_lattice[pos];
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        for pos in env.cell_lattice.iter_positions() {
+            let spin = env.cell_lattice[pos];
             if !matches!(spin, Entity::Some(_)) {
                 continue
             }
-            let is_border = pond.env
+            let is_border = env
                 .bounds
                 .lattice_boundary
-                .valid_positions(pond.env.neighbourhood.neighbours(pos.to_isize()))
+                .valid_positions(env.neighbourhood.neighbours(pos.to_isize()))
                 .any(|neigh| {
-                    let neigh_spin = pond.env.cell_lattice[neigh.to_usize()];
+                    let neigh_spin = env.cell_lattice[neigh.to_usize()];
                     neigh_spin != spin
                 });
             if is_border {
@@ -190,11 +189,11 @@ pub struct CellTypePlot {
 }
 
 impl Plot for CellTypePlot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
-        for pos in pond.env.cell_lattice.iter_positions() {
-            let spin = pond.env.cell_lattice[pos];
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        for pos in env.cell_lattice.iter_positions() {
+            let spin = env.cell_lattice[pos];
             if let Entity::Some(cell_index) = spin {
-                let cell = pond.env.cells.get_cell(cell_index);
+                let cell = env.cells.get_cell(cell_index);
                 let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
                 image.put_pixel(
                     pos.x as u32,
@@ -212,10 +211,10 @@ pub struct AreaPlot {
 }
 
 impl Plot for AreaPlot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
-        for cell in pond.env.cells.iter() {
+        for cell in env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
@@ -227,9 +226,9 @@ impl Plot for AreaPlot {
             }
         }
 
-        for pos in pond.env.cell_lattice.iter_positions() {
-            if let Entity::Some(cell_index) = pond.env.cell_lattice[pos] {
-                let cell = pond.env.cells.get_cell(cell_index);
+        for pos in env.cell_lattice.iter_positions() {
+            if let Entity::Some(cell_index) = env.cell_lattice[pos] {
+                let cell = env.cells.get_cell(cell_index);
                 let color = self.lerp(
                     cell.area() as f32,
                     min as f32,
@@ -263,8 +262,8 @@ pub struct ChemPlot {
 }
 
 impl Plot for ChemPlot {
-    fn plot(&self, pond: &Pond, image: &mut RgbaImage) {
-        let lat = &pond.env.chem_lattice;
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        let lat = &env.chem_lattice;
         for pos in lat.iter_positions() {
             let chem = lat[pos];
             let color = self.lerp(

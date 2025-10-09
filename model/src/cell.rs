@@ -5,6 +5,7 @@ use cellulars_lib::evolution::selector::Fit;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
+use cellulars_lib::constants::CellIndex;
 
 #[derive(Clone, Debug)]
 pub struct Cell {
@@ -12,7 +13,8 @@ pub struct Cell {
     pub divide_area: u32,
     pub chem_center: Pos<f32>,
     pub chem_mass: u32,
-    pub genome: Grn<1, 1>
+    pub genome: Grn<1, 1>,
+    pub ancestor: Option<CellIndex>
 }
 
 impl Cell {
@@ -22,6 +24,7 @@ impl Cell {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
+            ancestor: None,
             divide_area,
             genome
         }

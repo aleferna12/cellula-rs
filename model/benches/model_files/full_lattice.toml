@@ -47,7 +47,7 @@ image-format = "webp"
 cells-period = 1000
 genomes-period = 5000
 clones-period = 5000
-lattices-period = 5000
+lattice-period = 5000
 
 [io.movie]
 show = false

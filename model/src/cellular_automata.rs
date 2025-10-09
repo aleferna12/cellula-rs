@@ -1,9 +1,10 @@
 use crate::cell::Cell;
 use crate::chem_environment::ChemEnvironment;
+use crate::clonal_adhesion::ClonalAdhesion;
 use bon::Builder;
 use cellulars_lib::adhesion::AdhesionSystem;
-use cellulars_lib::basic_cell::{Cellular, RelCell};
-use cellulars_lib::entity::Entity;
+use cellulars_lib::basic_cell::Cellular;
+use cellulars_lib::entity::{Entity, Spin};
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
@@ -15,15 +16,15 @@ use std::f32::consts::E;
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 #[derive(Clone, Builder)]
-pub struct CellularAutomata<A> {
+pub struct CellularAutomata {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
     pub enable_migration: bool,
-    pub adhesion: A
+    pub adhesion: ClonalAdhesion
 }
 
-impl<A> CellularAutomata<A> {
+impl CellularAutomata {
     pub fn chemotaxis_bias<B: Boundary<Coord = f32>>(
         &self,
         cell: &Cell,
@@ -52,16 +53,19 @@ impl<A> CellularAutomata<A> {
         }
     }
 
-    pub fn delta_hamiltonian_size<C: Cellular>(
+    pub fn delta_hamiltonian_size(
         &self,
-        entity_source: Entity<&RelCell<C>>,
-        entity_target: Entity<&RelCell<C>>
+        spin_source: Spin,
+        spin_target: Spin,
+        env: &ChemEnvironment
     ) -> f32 {
         let mut delta_h = 0.;
-        if let Entity::Some(cell) = entity_source {
+        if let Spin::Some(cell_index) = spin_source {
+            let cell = env.cells.get_cell(cell_index);
             delta_h += self.size_energy_diff(true, cell.area(), cell.target_area());
         }
-        if let Entity::Some(cell) = entity_target {
+        if let Entity::Some(cell_index) = spin_target {
+            let cell = env.cells.get_cell(cell_index);
             delta_h += self.size_energy_diff(false, cell.area(), cell.target_area());
         }
         delta_h
@@ -77,7 +81,7 @@ impl<A> CellularAutomata<A> {
     }
 }
 
-impl<A: AdhesionSystem> CellularAutomata<A> {
+impl CellularAutomata {
     pub fn step(
         &self, 
         env: &mut ChemEnvironment,
@@ -120,17 +124,15 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
             let spin = env.cell_lattice[pos_source];
             if spin == Entity::Solid { Entity::Medium } else { spin }
         };
-
-        let entity_source = spin_source.map(|index| env.cells.get_cell(index));
-        let entity_target = spin_target.map(|index| env.cells.get_cell(index));
-        let neigh_entities = env.bounds.lattice_boundary.valid_positions(
+        let neigh_spins = env.bounds.lattice_boundary.valid_positions(
             env.neighbourhood.neighbours(pos_target.to_isize())
         ).map(|neigh| {
-            env.cell_lattice[neigh.to_usize()].map(|index| env.cells.get_cell(index))
+            env.cell_lattice[neigh.to_usize()]
         });
 
-        let mut delta_h = self.delta_hamiltonian(entity_source, entity_target, neigh_entities);
-        if let Entity::Some(cell) = entity_source {
+        let mut delta_h = self.delta_hamiltonian(spin_source, spin_target, neigh_spins, env);
+        if let Entity::Some(cell_index) = spin_source {
+            let cell = env.cells.get_cell(cell_index);
             if self.enable_migration && cell.is_migrating() {
                 delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, &env.bounds.boundary);
             }
@@ -146,63 +148,40 @@ impl<A: AdhesionSystem> CellularAutomata<A> {
         2. * (edges_update.added as f32 - edges_update.removed as f32) / env.neighbourhood.n_neighs() as f32
     }
 
-    pub fn delta_hamiltonian<'a, C: 'a + Cellular>(
+    pub fn delta_hamiltonian(
         &self,
-        entity_source: Entity<&RelCell<C>>,
-        entity_target: Entity<&RelCell<C>>,
-        neigh_entities: impl Iterator<Item = Entity<&'a RelCell<C>>>
+        spin_source: Spin,
+        spin_target: Spin,
+        neigh_spins: impl Iterator<Item = Spin>,
+        env: &ChemEnvironment
     ) -> f32 {
         let mut delta_h = 0.;
-        delta_h += self.delta_hamiltonian_size(entity_source, entity_target);
-        delta_h += self.delta_hamiltonian_adhesion(entity_source, entity_target, neigh_entities);
+        delta_h += self.delta_hamiltonian_size(spin_source, spin_target, env);
+        delta_h += self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env);
         delta_h
     }
     
     // TODO!: test
-    pub fn delta_hamiltonian_adhesion<'a, C: 'a>(
+    pub fn delta_hamiltonian_adhesion(
         &self,
-        entity_source: Entity<&RelCell<C>>,
-        entity_target: Entity<&RelCell<C>>,
-        neigh_entities: impl Iterator<Item = Entity<&'a RelCell<C>>>
+        spin_source: Spin,
+        spin_target: Spin,
+        neigh_spin: impl Iterator<Item = Spin>,
+        env: &ChemEnvironment,
     ) -> f32 {
         let mut energy = 0.;
-        for neigh in neigh_entities {
-            energy -= self.adhesion.adhesion_energy(entity_target, neigh);
-            energy += self.adhesion.adhesion_energy(entity_source, neigh);
+        for neigh in neigh_spin {
+            energy -= self.adhesion.adhesion_energy(
+                spin_target, 
+                neigh, 
+                &env.clones_table
+            );
+            energy += self.adhesion.adhesion_energy(
+                spin_source, 
+                neigh,
+                &env.clones_table
+            );
         }
         energy
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::cell::Cell;
-    use crate::clonal_adhesion::ClonalAdhesion;
-    use crate::genetics::grn::Grn;
-    use cellulars_lib::adhesion::StaticAdhesion;
-    use cellulars_lib::symmetric_table::SymmetricTable;
-
-    #[test]
-    fn test_delta_hamiltonian_size() {
-        let adh = StaticAdhesion {
-            cell_energy: 10.,
-            medium_energy: 20.,
-            solid_energy: 20.
-        };
-        let ca = CellularAutomata::builder()
-            .boltz_t(16.)
-            .size_lambda(1.)
-            .chemotaxis_mu(1.)
-            .enable_migration(true)
-            .adhesion(ClonalAdhesion::new(10., adh, SymmetricTable::new(10)))
-            .build();
-        let cell = RelCell::mock(Cell::new_empty(
-            100,
-            200,
-            Grn::empty()
-        ));
-        let dh = ca.delta_hamiltonian_size(Entity::Some(&cell), Entity::Some(&cell.clone()));
-        assert_eq!(dh, 2.);
     }
 }

@@ -13,7 +13,6 @@ use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::symmetric_table::SymmetricTable;
 use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
@@ -39,7 +38,7 @@ impl Model {
         Ok(Self {
             pond: Self::make_new_pond(
                 &parameters,
-                Self::make_ca(&parameters, None),
+                Self::make_ca(&parameters),
                 &mut rng
             )?,
             io: Self::setup_io(&parameters, seed)?,
@@ -101,7 +100,7 @@ impl Model {
             .cells_period(parameters.io.data.cells_period)
             .genomes_period(parameters.io.data.genomes_period)
             .clones_period(parameters.io.data.clones_period)
-            .lattices_period(parameters.io.data.lattices_period)
+            .lattices_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone().try_into()?)
             .maybe_movie_maker(movie_maker)
             .build();
@@ -117,7 +116,7 @@ impl Model {
         Ok(io)
     }
 
-    fn make_ca(parameters: &Parameters, clones: Option<SymmetricTable<bool>>) -> CellularAutomata<ClonalAdhesion> {
+    fn make_ca(parameters: &Parameters) -> CellularAutomata {
         CellularAutomata::builder()
             .boltz_t(parameters.ca.boltz_t)
             .size_lambda(parameters.ca.size_lambda)
@@ -130,8 +129,7 @@ impl Model {
                         cell_energy: parameters.ca.adhesion.cell_energy,
                         medium_energy: parameters.ca.adhesion.medium_energy,
                         solid_energy: parameters.ca.adhesion.solid_energy,
-                    },
-                    clones.unwrap_or(SymmetricTable::new(parameters.cell.max_cells as usize)),
+                    }
                 )
             )
             .build()
@@ -145,7 +143,7 @@ impl Model {
     fn make_empty_pond(
         parameters: &Parameters,
         env: ChemEnvironment,
-        ca: CellularAutomata<ClonalAdhesion>,
+        ca: CellularAutomata,
         rng: &mut Xoshiro256StarStar
     ) -> Pond {
         Pond::builder()
@@ -161,7 +159,7 @@ impl Model {
 
     fn make_new_pond(
         parameters: &Parameters,
-        ca: CellularAutomata<ClonalAdhesion>,
+        ca: CellularAutomata,
         rng: &mut Xoshiro256StarStar
     ) -> anyhow::Result<Pond> {
         let mut env = ChemEnvironment::new(
@@ -238,6 +236,10 @@ impl Model {
             ),
             parameters.cell.max_cells
         );
+        env.clones_table = IoManager::read_clones(IoManager::resolve_clones_path(
+            sim_path,
+            time_step
+        ))?;
         let env_ptr: *mut _ = &mut env;
         for pos in env.cell_lattice.iter_positions() {
             // We do this to avoid two lattices in memory
@@ -247,13 +249,7 @@ impl Model {
         let mut pond = Self::make_empty_pond(
             parameters,
             env,
-            Self::make_ca(
-                parameters,
-                Some(IoManager::read_clones(IoManager::resolve_clones_path(
-                    sim_path,
-                    time_step
-                ))?)
-            ),
+            Self::make_ca(parameters),
             rng
         );
         pond.time_step = time_step;
@@ -268,7 +264,7 @@ impl Model {
             
             let saved = self.io.write_if_time(
                 time_step,
-                &self.pond
+                &self.pond.env
             );
             if let Err(e) = saved {
                 log::warn!("Failed to save data at time step {time_step} with error `{e}`")

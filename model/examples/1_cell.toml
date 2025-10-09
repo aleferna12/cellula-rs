@@ -95,7 +95,7 @@ genomes-period = 4096
 # Period (in MCS) with which to save the cells' clones as a parquet file.
 clones-period = 4096
 # Period (in MCS) with which to save a parquet file containing the cell lattices.
-lattices-period = 4096
+lattice-period = 4096
 
 [io.plot]
 # Defines which plots to make and in what order.

@@ -4,7 +4,6 @@ use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
 use crate::io::parameters::Parameters;
 use crate::io::plot::*;
-use crate::pond::Pond;
 use anyhow::{anyhow, bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
@@ -24,6 +23,7 @@ use std::io;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use image::imageops::flip_vertical_in_place;
+use crate::chem_environment::ChemEnvironment;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -133,6 +133,7 @@ impl IoManager {
                             row[cols["center_y"]].try_extract::<f32>()?,
                         )
                     },
+                    ancestor: Some(row[cols["ancestor"]].try_extract::<CellIndex>()?),
                     divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
                     chem_center: Pos::new(
                         row[cols["chem_center_x"]].try_extract::<f32>()?,
@@ -270,22 +271,22 @@ impl IoManager {
     pub fn write_if_time(
         &mut self,
         time_step: u32,
-        pond: &Pond
+        env: &ChemEnvironment
     ) -> anyhow::Result<()> {
-        self.write_data_if_time(time_step, pond)?;
-        self.write_image_if_time(time_step, pond)
+        self.write_data_if_time(time_step, env)?;
+        self.write_image_if_time(time_step, env)
     }
 
     fn write_data_if_time(
         &self,
         time_step: u32,
-        pond: &Pond
+        env: &ChemEnvironment
     ) -> anyhow::Result<()> {
         let time_str = time_step.to_string();
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step % self.cells_period == 0 {
-            let mut celldf = pond.env.cells.to_dataframe()?;
+            let mut celldf = env.cells.to_dataframe()?;
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
@@ -294,7 +295,7 @@ impl IoManager {
         }
 
         if time_step % self.genomes_period == 0 {
-            let genomes = Self::make_genome_node_links(pond.env.cells());
+            let genomes = Self::make_genome_node_links(env.cells());
             let file_path = self.outdir
                 .join(GENOMES_PATH)
                 .join(format!("{time_str}.json"));
@@ -303,7 +304,7 @@ impl IoManager {
         }
 
         if time_step % self.clones_period == 0 {
-            let mut clonedf = pond.ca.adhesion.clones_table.to_dataframe()?;
+            let mut clonedf = env.clones_table.to_dataframe()?;
             let file_path = self.outdir
                 .join(CLONES_PATH)
                 .join(format!("{time_str}.parquet"));
@@ -315,7 +316,7 @@ impl IoManager {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            Self::write_lattice(file_path.as_path(), &pond.env.cell_lattice)?;
+            Self::write_lattice(file_path.as_path(), &env.cell_lattice)?;
         }
         Ok(())
     }
@@ -359,8 +360,8 @@ impl IoManager {
 
     fn write_image_if_time(
         &mut self,
-        time_step: u32,
-        pond: &Pond,
+        time_step: u32, 
+        env: &ChemEnvironment
     ) -> anyhow::Result<()> {
         // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
@@ -370,7 +371,7 @@ impl IoManager {
             false
         };
         if movie_update {
-            frame = Some(self.make_simulation_image(pond));
+            frame = Some(self.make_simulation_image(env));
             let mm = self.movie_maker.as_mut().unwrap();
             let resized = image::imageops::resize(
                 frame.as_ref().unwrap(),
@@ -383,7 +384,7 @@ impl IoManager {
 
         if time_step % self.image_period == 0 {
             if frame.is_none() {
-                frame = Some(self.make_simulation_image(pond));
+                frame = Some(self.make_simulation_image(env));
             }
             frame.unwrap().save(
                 &self.outdir
@@ -395,16 +396,15 @@ impl IoManager {
     }
 
     pub fn make_simulation_image(
-        &self,
-        pond: &Pond
+        &self, 
+        env: &ChemEnvironment
     ) -> RgbaImage {
-        let env = &pond.env;
         let mut image = RgbaImage::new(
             env.width() as u32,
-            env.height() as u32
+            env.height() as u32 
         );
         for plot in &self.plots {
-            plot.plot(pond, &mut image);
+            plot.plot(env, &mut image);
         }
         flip_vertical_in_place(&mut image);
         image
@@ -420,6 +420,7 @@ impl ToDataFrame for CellContainer<Cell> {
         let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
             "index" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
+            "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Vec<_>>(),
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
             "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Vec<_>>(),

@@ -23,7 +23,7 @@ fn bench_io(c: &mut Criterion) {
                     make_model(params.clone())
                 },
                 |model| {
-                    model.io.make_simulation_image(&model.pond);
+                    model.io.make_simulation_image(&model.pond.env);
                 },
                 BatchSize::LargeInput
             )}
