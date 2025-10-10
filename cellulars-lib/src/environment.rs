@@ -242,7 +242,7 @@ impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environm
         if let Spin::Some(index) = self.cell_lattice[pos] {
             let from_cell = self.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.bounds.boundary);
-            if from_cell.area() <= 0 {
+            if from_cell.area() == 0 {
                 from_cell.apoptosis();
             }
         }

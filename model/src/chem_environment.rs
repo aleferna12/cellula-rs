@@ -329,7 +329,7 @@ impl Habitable for ChemEnvironment {
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);
             from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
             // If the copy kills the cell
-            if from_cell.area() <= 0 {
+            if from_cell.area() == 0 {
                 from_cell.apoptosis();
                 self.invalidate_cell(index);
             }
