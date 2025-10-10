@@ -1,20 +1,19 @@
-use std::collections::HashSet;
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
+use crate::genetics::genome::Genome;
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
-use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::constants::CellIndex;
-use cellulars_lib::entity::{Entity, Spin};
+use cellulars_lib::spin::Spin;
 use cellulars_lib::environment::{EdgesUpdate, Environment, Habitable};
 use cellulars_lib::lattice::Lattice;
-use cellulars_lib::positional::boundaries::Boundary;
-use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
+use cellulars_lib::positional::boundaries::{Boundary, ToLatticeBoundary};
+use cellulars_lib::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
-use rand::Rng;
-use std::ops::{Deref, DerefMut};
 use cellulars_lib::symmetric_table::SymmetricTable;
-use crate::genetics::genome::Genome;
+use rand::Rng;
+use std::collections::HashSet;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone)]
 pub struct ChemEnvironment {
@@ -107,7 +106,7 @@ impl ChemEnvironment {
         for pos in new_positions {
             self.grant_position(
                 pos,
-                Entity::Some(new_index),
+                Spin::Some(new_index),
             );
         }
         self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
@@ -131,7 +130,7 @@ impl ChemEnvironment {
     // gain is minimal (although the ergonomic gains are significant)
     pub fn reproduce(&mut self, search_scaler: f32, rng: &mut impl Rng) {
         let mut divide = vec![];
-        for cell in self.cells().iter() {
+        for cell in self.cells.iter() {
             if !cell.is_alive() {
                 continue;
             }
@@ -163,33 +162,33 @@ impl ChemEnvironment {
         cell_index: CellIndex,
         mom_index: CellIndex
     ) {
-        let cell = self.cells().get_cell(cell_index);
+        let cell = self.cells.get_cell(cell_index);
         let cell_neighs = self.cell_neighbours(cell, 2.0);
 
-        let mom_cell = self.cells().get_cell(mom_index);
+        let mom_cell = self.cells.get_cell(mom_index);
         let mom_neighs = self.cell_neighbours(
             mom_cell,
             2.0
         );
 
         let mom_clones = HashSet::from_iter(
-            (0..self.cells().n_cells())
+            (0..self.cells.n_cells())
                 .filter_map(|index| {
                     if self.clones_table[(mom_cell.index as usize, index as usize)] {
-                        Some(Entity::Some(index))
+                        Some(Spin::Some(index))
                     } else {
                         None
                     }
                 })
         );
         for spin in mom_clones.difference(&mom_neighs) {
-            if let Entity::Some(index) = spin {
+            if let Spin::Some(index) = spin {
                 self.clones_table[(mom_index as usize, *index as usize)] = false;
             }
         }
         let clones: Vec<_> = cell_neighs.intersection(&mom_clones).collect();
         for spin in &clones {
-            if let Entity::Some(index) = spin {
+            if let Spin::Some(index) = spin {
                 self.clones_table[(cell_index as usize, *index as usize)] = true;
             }
         }
@@ -306,12 +305,12 @@ impl DerefMut for ChemEnvironment {
 impl Habitable for ChemEnvironment {
     type Cell = Cell;
 
-    fn cells(&self) -> &CellContainer<Self::Cell> {
-        &self.env.cells
+    fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+        &self.env
     }
 
-    fn cells_mut(&mut self) -> &mut CellContainer<Self::Cell> {
-        &mut self.env.cells
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+        &mut self.env
     }
 
     fn grant_position(
@@ -320,12 +319,12 @@ impl Habitable for ChemEnvironment {
         to: Spin
     ) -> EdgesUpdate {
         let chem_at_pos = self.chem_lattice[pos];
-        if let Entity::Some(index) = to {
+        if let Spin::Some(index) = to {
             let to_cell = self.env.cells.get_cell_mut(index);
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
-        if let Entity::Some(index) = self.cell_lattice[pos] {
+        if let Spin::Some(index) = self.cell_lattice[pos] {
             let from_cell = self.env.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);
             from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
@@ -345,13 +344,13 @@ impl Habitable for ChemEnvironment {
         empty_cell: Self::Cell,
         positions: impl IntoIterator<Item = Pos<usize>>
     ) -> &RelCell<Self::Cell> {
-        let cell_index = self.cells_mut().add(empty_cell).index;
-        let new_spin = Entity::Some(cell_index);
+        let cell_index = self.cells.add(empty_cell).index;
+        let new_spin = Spin::Some(cell_index);
         for pos in positions {
             self.grant_position(pos, new_spin);
         }
         self.cells.get_cell_mut(cell_index).ancestor =  Some(cell_index);
-        self.cells().get_cell(cell_index)
+        self.cells.get_cell(cell_index)
     }
 }
 

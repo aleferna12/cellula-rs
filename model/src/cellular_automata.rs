@@ -4,7 +4,7 @@ use crate::clonal_adhesion::ClonalAdhesion;
 use bon::Builder;
 use cellulars_lib::adhesion::AdhesionSystem;
 use cellulars_lib::basic_cell::Cellular;
-use cellulars_lib::entity::{Entity, Spin};
+use cellulars_lib::spin::Spin;
 use cellulars_lib::environment::Habitable;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
@@ -64,7 +64,7 @@ impl CellularAutomata {
             let cell = env.cells.get_cell(cell_index);
             delta_h += self.size_energy_diff(true, cell.area(), cell.target_area());
         }
-        if let Entity::Some(cell_index) = spin_target {
+        if let Spin::Some(cell_index) = spin_target {
             let cell = env.cells.get_cell(cell_index);
             delta_h += self.size_energy_diff(false, cell.area(), cell.target_area());
         }
@@ -79,9 +79,7 @@ impl CellularAutomata {
         let delta_area = if area_increased { 1. } else { -1. };
         2. * self.size_lambda * delta_area * (area as f32 - target_area as f32) + self.size_lambda
     }
-}
-
-impl CellularAutomata {
+    
     pub fn step(
         &self, 
         env: &mut ChemEnvironment,
@@ -116,13 +114,13 @@ impl CellularAutomata {
         pos_target: Pos<usize>
     ) -> f32 {
         let spin_target = env.cell_lattice[pos_target];
-        if spin_target == Entity::Solid {
+        if spin_target == Spin::Solid {
             return 0.;
         }
         // If was going to copy from a Solid, create a Medium cell instead 
         let spin_source = {
             let spin = env.cell_lattice[pos_source];
-            if spin == Entity::Solid { Entity::Medium } else { spin }
+            if spin == Spin::Solid { Spin::Medium } else { spin }
         };
         let neigh_spins = env.bounds.lattice_boundary.valid_positions(
             env.neighbourhood.neighbours(pos_target.to_isize())
@@ -131,7 +129,7 @@ impl CellularAutomata {
         });
 
         let mut delta_h = self.delta_hamiltonian(spin_source, spin_target, neigh_spins, env);
-        if let Entity::Some(cell_index) = spin_source {
+        if let Spin::Some(cell_index) = spin_source {
             let cell = env.cells.get_cell(cell_index);
             if self.enable_migration && cell.is_migrating() {
                 delta_h += self.chemotaxis_bias(&cell.cell, pos_target, self.chemotaxis_mu, &env.bounds.boundary);

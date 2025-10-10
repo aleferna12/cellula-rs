@@ -1,4 +1,5 @@
 use crate::cell::Cell;
+use crate::chem_environment::ChemEnvironment;
 use crate::genetics::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
@@ -9,12 +10,12 @@ use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
 use cellulars_lib::constants::CellIndex;
-use cellulars_lib::entity::{Entity, Spin};
-use cellulars_lib::environment::Habitable;
+use cellulars_lib::spin::Spin;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::symmetric_table::SymmetricTable;
+use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -22,8 +23,6 @@ use std::collections::HashMap;
 use std::io;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
-use image::imageops::flip_vertical_in_place;
-use crate::chem_environment::ChemEnvironment;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -223,17 +222,17 @@ impl IoManager {
                 match maybe_val {
                     Some(val) => {
                         let val: &str = val;
-                        let entity = match val {
-                            "s" => Entity::Solid,
-                            "m" => Entity::Medium,
+                        let spin = match val {
+                            "s" => Spin::Solid,
+                            "m" => Spin::Medium,
                             _ => {
                                 let cell_index = val.parse::<CellIndex>().with_context(|| {
                                     format!("lattice contains invalid value {val}")
                                 })?;
-                                Entity::Some(cell_index)
+                                Spin::Some(cell_index)
                             },
                         };
-                        lattice[(j, i).into()] = entity;
+                        lattice[(j, i).into()] = spin;
                     },
                     None => bail!("file {} contains null values", file_path.display()),
                 }
@@ -295,7 +294,7 @@ impl IoManager {
         }
 
         if time_step % self.genomes_period == 0 {
-            let genomes = Self::make_genome_node_links(env.cells());
+            let genomes = Self::make_genome_node_links(&env.cells);
             let file_path = self.outdir
                 .join(GENOMES_PATH)
                 .join(format!("{time_str}.json"));

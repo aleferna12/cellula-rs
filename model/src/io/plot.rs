@@ -2,7 +2,7 @@ use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::CellIndex;
-use cellulars_lib::entity::Entity;
+use cellulars_lib::spin::Spin;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
@@ -68,9 +68,9 @@ impl Plot for SpinPlot {
         for pos in env.cell_lattice.iter_positions() {
             let spin = env.cell_lattice[pos];
             let rgb = match spin {
-                Entity::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
-                Entity::Solid => Some(self.solid_color),
-                Entity::Medium => self.medium_color
+                Spin::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
+                Spin::Solid => Some(self.solid_color),
+                Spin::Medium => self.medium_color
             };
             if let Some(color) = rgb {
                 image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
@@ -165,7 +165,7 @@ impl Plot for BorderPlot {
     fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
         for pos in env.cell_lattice.iter_positions() {
             let spin = env.cell_lattice[pos];
-            if !matches!(spin, Entity::Some(_)) {
+            if !matches!(spin, Spin::Some(_)) {
                 continue
             }
             let is_border = env
@@ -192,7 +192,7 @@ impl Plot for CellTypePlot {
     fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
         for pos in env.cell_lattice.iter_positions() {
             let spin = env.cell_lattice[pos];
-            if let Entity::Some(cell_index) = spin {
+            if let Spin::Some(cell_index) = spin {
                 let cell = env.cells.get_cell(cell_index);
                 let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
                 image.put_pixel(
@@ -227,7 +227,7 @@ impl Plot for AreaPlot {
         }
 
         for pos in env.cell_lattice.iter_positions() {
-            if let Entity::Some(cell_index) = env.cell_lattice[pos] {
+            if let Spin::Some(cell_index) = env.cell_lattice[pos] {
                 let cell = env.cells.get_cell(cell_index);
                 let color = self.lerp(
                     cell.area() as f32,

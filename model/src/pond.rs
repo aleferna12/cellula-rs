@@ -2,7 +2,6 @@ use crate::cellular_automata::CellularAutomata;
 use crate::chem_environment::ChemEnvironment;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
-use cellulars_lib::environment::Habitable;
 use cellulars_lib::evolution::selector::Fit;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -41,11 +40,11 @@ impl Fit for Pond {
     fn fitness(&self) -> f32 {
         let tot_fit: f32 = self
             .env
-            .cells()
+            .cells
             .iter()
             .filter(|cell| cell.is_valid())
             .map(|c| { c.fitness() })
             .sum();
-        tot_fit / self.env.cells().n_valid() as f32
+        tot_fit / self.env.cells.n_valid() as f32
     }
 }

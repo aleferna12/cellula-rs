@@ -1,8 +1,8 @@
-use crate::entity::Spin;
+use crate::spin::Spin;
 
 pub trait AdhesionSystem {
     type Context;
-    fn adhesion_energy(&self, entity1: Spin, entity2: Spin, context: &Self::Context) -> f32;
+    fn adhesion_energy(&self, spin1: Spin, spin2: Spin, context: &Self::Context) -> f32;
 }
 
 #[derive(Clone)]
@@ -16,11 +16,11 @@ impl AdhesionSystem for StaticAdhesion {
     type Context = ();
     fn adhesion_energy(
         &self,
-        entity1: Spin,
-        entity2: Spin,
+        spin1: Spin,
+        spin2: Spin,
         _: &Self::Context,
     ) -> f32 {
-        match (entity1, entity2) {
+        match (spin1, spin2) {
             (Spin::Some(c1), Spin::Some(c2)) => {
                 if c1 == c2 {
                     0.

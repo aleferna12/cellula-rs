@@ -1,5 +1,5 @@
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
-use cellulars_lib::entity::{Entity, Spin};
+use cellulars_lib::spin::Spin;
 use cellulars_lib::symmetric_table::SymmetricTable;
 
 #[derive(Clone)]
@@ -20,8 +20,8 @@ impl ClonalAdhesion {
 impl AdhesionSystem for ClonalAdhesion {
     type Context = SymmetricTable<bool>;
 
-    fn adhesion_energy(&self, entity1: Spin, entity2: Spin, clones_table: &Self::Context) -> f32 {
-        if let (Entity::Some(c1), Entity::Some(c2)) = (entity1, entity2) {
+    fn adhesion_energy(&self, spin1: Spin, spin2: Spin, clones_table: &Self::Context) -> f32 {
+        if let (Spin::Some(c1), Spin::Some(c2)) = (spin1, spin2) {
             if c1 == c2 {
                 return 0.
             }
@@ -30,7 +30,7 @@ impl AdhesionSystem for ClonalAdhesion {
             }
         }
         // Handle all other cases
-        self.static_adhesion.adhesion_energy(entity1, entity2, &())
+        self.static_adhesion.adhesion_energy(spin1, spin2, &())
     }
 }
 
@@ -38,7 +38,7 @@ impl AdhesionSystem for ClonalAdhesion {
 mod tests {
     use crate::clonal_adhesion::ClonalAdhesion;
     use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
-    use cellulars_lib::entity::{Entity, Spin};
+    use cellulars_lib::spin::Spin;
     use cellulars_lib::symmetric_table::SymmetricTable;
 
     fn make_static_adhesion() -> StaticAdhesion {
@@ -63,7 +63,7 @@ mod tests {
             0.
         );
         assert_eq!(
-            clonal_adhesion.adhesion_energy(Spin::Some(0), Entity::Some(1), &clones),
+            clonal_adhesion.adhesion_energy(Spin::Some(0), Spin::Some(1), &clones),
             2. * clonal_adhesion.static_adhesion.cell_energy
         );
 
