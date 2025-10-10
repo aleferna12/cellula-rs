@@ -35,7 +35,6 @@ pub trait Boundary {
     /// With fixed boundary conditions, that means filtering invalid positions.
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>>;
 
-    #[inline(always)]
     fn valid_positions(
         &self,
         positions: impl Iterator<Item = Pos<Self::Coord>>
@@ -50,7 +49,6 @@ pub trait Boundary {
 trait PeriodicBoundary: Boundary
 where
     Self::Coord: From<u8> + Num + Copy + Euclid {
-    #[inline(always)]
     fn periodic_displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
         let two = Self::Coord::from(2);
         let dx = ((pos2.x - pos1.x + self.rect().width() / two)
@@ -60,7 +58,6 @@ where
         (dx, dy)
     }
 
-    #[inline(always)]
     fn periodic_valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
         let p = Pos::new(
             Self::wrap_scalar(pos.x, self.rect().min.x, self.rect().max.x),
@@ -96,12 +93,10 @@ where
         + Sub<Output = T> {
     type Coord = T;
 
-    #[inline(always)]
     fn rect(&self) -> &Rect<T> {
         &self.rect
     }
 
-    #[inline(always)]
     fn valid_pos(&self, pos: Pos<T>) -> Option<Pos<T>> {
         if !(self.rect.min.x..self.rect.max.x).contains(&pos.x) {
             return None;
@@ -112,7 +107,6 @@ where
         Some(pos)
     }
 
-    #[inline(always)]
     fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
         (pos2.x - pos1.x, pos2.y - pos1.y)
     }
@@ -143,17 +137,14 @@ where
     T: Num + Copy + Euclid + From<u8> {
     type Coord = T;
 
-    #[inline(always)]
     fn rect(&self) -> &Rect<T> {
         &self.rect
     }
 
-    #[inline(always)]
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
         self.periodic_valid_pos(pos)
     }
 
-    #[inline(always)]
     fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
         self.periodic_displacement(pos1, pos2)
     }
@@ -162,7 +153,6 @@ where
 impl<T> PeriodicBoundary for SafePeriodicBoundary<T>
 where
     T: Num + Copy + Euclid + From<u8> {
-    #[inline(always)]
     fn wrap_scalar(val: Self::Coord, min: Self::Coord, max: Self::Coord) -> Self::Coord {
         let range = max - min;
         let mut offset = val - min;
@@ -203,17 +193,14 @@ where
     T: Num + Copy + Euclid + From<u8> + PartialOrd {
     type Coord = T;
 
-    #[inline(always)]
     fn rect(&self) -> &Rect<T> {
         &self.rect
     }
 
-    #[inline(always)]
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>> {
         self.periodic_valid_pos(pos)
     }
 
-    #[inline(always)]
     fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord) {
         self.periodic_displacement(pos1, pos2)
     }
@@ -222,7 +209,6 @@ where
 impl<T> PeriodicBoundary for UnsafePeriodicBoundary<T>
 where
     T: Num + Copy + Euclid + From<u8> + PartialOrd {
-    #[inline(always)]
     fn wrap_scalar(val: T, min: T, max: T) -> T {
         if val < min {
             max - (min - val)

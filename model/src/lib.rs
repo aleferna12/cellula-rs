@@ -1,7 +1,7 @@
 pub mod model;
 pub mod io;
 mod pond;
-mod cellular_automata;
+mod clonal_potts;
 mod constants;
 mod cell;
 mod genetics;

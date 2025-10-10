@@ -272,6 +272,7 @@ where
 
 pub trait Habitable {
     type Cell: Cellular;
+    
     fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
     
     fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;

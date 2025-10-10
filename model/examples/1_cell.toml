@@ -53,7 +53,7 @@ mutation-rate = 0.01
 # Standard deviation of the GRN parameter mutations.
 mutation-std = 0.01
 
-[ca]
+[potts]
 # Boltzmann temperature.
 # Increases likelihood of unfavourable copy attempts being accepted.
 boltz-t = 16.0
@@ -62,7 +62,7 @@ size-lambda = 1.0
 # Scaler constant for chemotaxis bias.
 chemotaxis-mu = 4.0
 
-[ca.adhesion]
+[potts.adhesion]
 # Adhesion energy at cell-cell interfaces of clonal cells.
 clone-energy = 8.0
 # Adhesion energy at cell-cell interfaces of non-clonal cells.

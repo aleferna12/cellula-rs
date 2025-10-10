@@ -10,3 +10,4 @@ pub mod basic_cell;
 pub mod constants;
 pub mod spin;
 pub mod evolution;
+pub mod potts;

@@ -1,15 +1,16 @@
-use crate::cellular_automata::CellularAutomata;
+use crate::clonal_potts::ClonalPotts;
 use crate::chem_environment::ChemEnvironment;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::evolution::selector::Fit;
 use rand_xoshiro::Xoshiro256StarStar;
+use cellulars_lib::potts::Potts;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 #[derive(Clone, Builder)]
 pub struct Pond {
     pub env: ChemEnvironment,
-    pub ca: CellularAutomata,
+    pub potts: ClonalPotts,
     pub rng: Xoshiro256StarStar,
     pub update_period: u32,
     pub cell_target_area: u32,
@@ -21,7 +22,7 @@ pub struct Pond {
 
 impl Pond {
     pub fn step(&mut self) {
-        self.ca.step(&mut self.env, &mut self.rng);
+        self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
             self.env.cells.iter_mut().for_each(|cell| cell.update());
             if self.division_enabled {

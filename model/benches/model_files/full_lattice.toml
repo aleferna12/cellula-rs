@@ -25,12 +25,12 @@ n-regulatory = 2
 mutation-rate = 0.01
 mutation-std = 0.01
 
-[ca]
+[potts]
 boltz-t = 16.0
 size-lambda = 1.0
 chemotaxis-mu = 4.0
 
-[ca.adhesion]
+[potts.adhesion]
 clone-energy = 8
 cell-energy = 16
 medium-energy = 16

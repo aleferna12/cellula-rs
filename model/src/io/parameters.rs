@@ -58,7 +58,7 @@ pub struct Parameters {
     pub general: GeneralParameters,
     pub pond: PondParameters,
     pub cell: CellParameters,
-    pub ca: CellularAutomataParameters,
+    pub potts: PottsParameters,
     pub io: IoParameters
 }
 
@@ -135,7 +135,7 @@ pub struct GenomeParameters {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
-pub struct CellularAutomataParameters {
+pub struct PottsParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,

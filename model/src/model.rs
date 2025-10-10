@@ -1,5 +1,5 @@
 use crate::cell::Cell;
-use crate::cellular_automata::CellularAutomata;
+use crate::clonal_potts::ClonalPotts;
 use crate::chem_environment::ChemEnvironment;
 use crate::clonal_adhesion::ClonalAdhesion;
 use crate::constants::{BoundaryType, NeighbourhoodType};
@@ -38,7 +38,7 @@ impl Model {
         Ok(Self {
             pond: Self::make_new_pond(
                 &parameters,
-                Self::make_ca(&parameters),
+                Self::make_potts(&parameters),
                 &mut rng
             )?,
             io: Self::setup_io(&parameters, seed)?,
@@ -116,19 +116,19 @@ impl Model {
         Ok(io)
     }
 
-    fn make_ca(parameters: &Parameters) -> CellularAutomata {
-        CellularAutomata::builder()
-            .boltz_t(parameters.ca.boltz_t)
-            .size_lambda(parameters.ca.size_lambda)
-            .chemotaxis_mu(parameters.ca.chemotaxis_mu)
+    fn make_potts(parameters: &Parameters) -> ClonalPotts {
+        ClonalPotts::builder()
+            .boltz_t(parameters.potts.boltz_t)
+            .size_lambda(parameters.potts.size_lambda)
+            .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
             .adhesion(
                 ClonalAdhesion::new(
-                    parameters.ca.adhesion.clone_energy,
+                    parameters.potts.adhesion.clone_energy,
                     StaticAdhesion {
-                        cell_energy: parameters.ca.adhesion.cell_energy,
-                        medium_energy: parameters.ca.adhesion.medium_energy,
-                        solid_energy: parameters.ca.adhesion.solid_energy,
+                        cell_energy: parameters.potts.adhesion.cell_energy,
+                        medium_energy: parameters.potts.adhesion.medium_energy,
+                        solid_energy: parameters.potts.adhesion.solid_energy,
                     }
                 )
             )
@@ -143,12 +143,12 @@ impl Model {
     fn make_empty_pond(
         parameters: &Parameters,
         env: ChemEnvironment,
-        ca: CellularAutomata,
+        ca: ClonalPotts,
         rng: &mut Xoshiro256StarStar
     ) -> Pond {
         Pond::builder()
             .env(env)
-            .ca(ca)
+            .potts(ca)
             .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
             .update_period(parameters.cell.update_period)
             .cell_target_area(parameters.cell.target_area)
@@ -159,7 +159,7 @@ impl Model {
 
     fn make_new_pond(
         parameters: &Parameters,
-        ca: CellularAutomata,
+        ca: ClonalPotts,
         rng: &mut Xoshiro256StarStar
     ) -> anyhow::Result<Pond> {
         let mut env = ChemEnvironment::new(
@@ -249,7 +249,7 @@ impl Model {
         let mut pond = Self::make_empty_pond(
             parameters,
             env,
-            Self::make_ca(parameters),
+            Self::make_potts(parameters),
             rng
         );
         pond.time_step = time_step;
