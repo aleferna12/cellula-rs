@@ -257,7 +257,7 @@ impl Model {
     }
 
     pub fn run_for(&mut self, time_steps: u32) {
-        for time_step in self.pond.time_step..=time_steps {
+        for time_step in self.pond.time_step..=self.pond.time_step + time_steps {
             if self.pond.time_step % self.info_period == 0 {
                 self.log_info();
             }
