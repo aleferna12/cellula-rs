@@ -22,12 +22,6 @@ pub struct Grn<const I: usize, const O: usize> {
 }
 
 impl<const I: usize, const O: usize> Grn<I, O> {
-    pub(crate) fn update_expression(&self) {
-        todo!()
-    }
-}
-
-impl<const I: usize, const O: usize> Grn<I, O> {
     pub fn from_graph(
         graph: DiGraph<GrnGeneType, f32>,
         mut_rate: f32,
