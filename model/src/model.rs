@@ -1,7 +1,6 @@
 use crate::cell::Cell;
 use crate::chem_environment::ChemEnvironment;
-use crate::clonal_adhesion::ClonalAdhesion;
-use crate::clonal_potts::ClonalPotts;
+use crate::contact_potts::ContactPotts;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::evolution::grn::Grn;
 use crate::io::io_manager::IoManager;
@@ -121,21 +120,18 @@ impl Model {
         Ok(io)
     }
 
-    fn make_potts(parameters: &Parameters) -> ClonalPotts {
-        ClonalPotts::builder()
+    fn make_potts(parameters: &Parameters) -> ContactPotts {
+        ContactPotts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
             .adhesion(
-                ClonalAdhesion::new(
-                    parameters.potts.adhesion.clone_energy,
-                    StaticAdhesion {
-                        cell_energy: parameters.potts.adhesion.cell_energy,
-                        medium_energy: parameters.potts.adhesion.medium_energy,
-                        solid_energy: parameters.potts.adhesion.solid_energy,
-                    }
-                )
+                StaticAdhesion {
+                    cell_energy: parameters.potts.adhesion.cell_energy,
+                    medium_energy: parameters.potts.adhesion.medium_energy,
+                    solid_energy: parameters.potts.adhesion.solid_energy,
+                }
             )
             .build()
     }
@@ -148,7 +144,7 @@ impl Model {
     fn make_empty_pond(
         parameters: &Parameters,
         env: ChemEnvironment,
-        ca: ClonalPotts,
+        ca: ContactPotts,
         rng: &mut Xoshiro256StarStar
     ) -> Pond {
         Pond::builder()
@@ -164,7 +160,7 @@ impl Model {
 
     fn make_new_pond(
         parameters: &Parameters,
-        ca: ClonalPotts,
+        ca: ContactPotts,
         rng: &mut Xoshiro256StarStar
     ) -> anyhow::Result<Pond> {
         let mut env = ChemEnvironment::new(

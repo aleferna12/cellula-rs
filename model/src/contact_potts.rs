@@ -1,7 +1,6 @@
 use crate::chem_environment::ChemEnvironment;
-use crate::clonal_adhesion::ClonalAdhesion;
 use bon::Builder;
-use cellulars_lib::adhesion::AdhesionSystem;
+use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
@@ -12,15 +11,15 @@ use cellulars_lib::spin::Spin;
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 #[derive(Clone, Builder)]
-pub struct ClonalPotts {
+pub struct ContactPotts {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
     pub enable_migration: bool,
-    pub adhesion: ClonalAdhesion
+    pub adhesion: StaticAdhesion
 }
 
-impl Potts for ClonalPotts {
+impl Potts for ContactPotts {
     type Environment = ChemEnvironment;
 
     fn boltz_t(&self) -> f32 {
@@ -62,19 +61,19 @@ impl Potts for ClonalPotts {
         spin_source: Spin, 
         spin_target: Spin,
         neigh_spin: impl Iterator<Item=Spin>,
-        env: &Self::Environment
+        _env: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_spin {
             energy -= self.adhesion.adhesion_energy(
                 spin_target,
                 neigh,
-                &env.clones_table
+                &()
             );
             energy += self.adhesion.adhesion_energy(
                 spin_source,
                 neigh,
-                &env.clones_table
+                &()
             );
         }
         energy
