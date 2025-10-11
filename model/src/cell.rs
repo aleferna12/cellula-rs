@@ -1,3 +1,4 @@
+use crate::evolution::genome::Genome;
 use crate::evolution::grn::Grn;
 use crate::evolution::selector::Fit;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
@@ -5,7 +6,6 @@ use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
-use crate::evolution::genome::Genome;
 
 #[derive(Clone, Debug)]
 pub struct Cell {
