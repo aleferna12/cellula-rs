@@ -32,6 +32,9 @@ impl Potts for ClonalPotts {
     }
 
     fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f32 {
+        if !self.enable_migration {
+            return 0.
+        }
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
         };
