@@ -1,12 +1,8 @@
 use rand::Rng;
 
 pub trait Selector {
-    fn select<F: Fit>(&mut self, selectable: &[F]) -> Vec<usize>;
+    fn select<'a, F: Fit>(&mut self, selectable: &'a [F]) -> Vec<&'a F>;
 }
-
-/// This trait is an assurance that the output of `select` will have the same number of elements as the input
-/// and that all organisms that didn't die will be represented in the same place.
-pub trait PreservesOrder: Selector {}
 
 #[derive(Clone)]
 pub struct WeightedSelection<R> {
@@ -15,22 +11,22 @@ pub struct WeightedSelection<R> {
 }
 
 impl<R: Rng> WeightedSelection<R> {
-    fn select_random_fit<F: Fit>(&mut self, selectable: &[F], tot_fit: f32) -> usize {
+    fn select_random_fit<'a, F: Fit>(&mut self, selectable: &'a [F], tot_fit: f32) -> &'a F {
         let mut rand_fit = self.rng.random::<f32>() * tot_fit;
-        for (i, s) in selectable.iter().enumerate() {
+        for s in selectable.iter() {
             let this_fit = s.fitness();
             if rand_fit < this_fit {
-                return i
+                return s
             } else {
                 rand_fit -= this_fit;
             }
         }
-        self.rng.random_range(0..selectable.len())
+        &selectable[self.rng.random_range(0..selectable.len())]
     }
 }
 
 impl<R: Rng> Selector for WeightedSelection<R> {
-    fn select<F: Fit>(&mut self, selectable: &[F]) -> Vec<usize> {
+    fn select<'a, F: Fit>(&mut self, selectable: &'a [F]) -> Vec<&'a F> {
         let tot_fit = selectable
             .iter()
             .map(|s| { s.fitness() })
@@ -47,18 +43,26 @@ pub struct WeightedOrderedSelection<R> {
 }
 
 impl<R: Rng> Selector for WeightedOrderedSelection<R> {
-    fn select<F: Fit>(&mut self, selectable: &[F]) -> Vec<usize> {
+    fn select<'a, F: Fit>(&mut self, selectable: &'a [F]) -> Vec<&'a F> {
         let mut selector = WeightedSelection {
             select_n: selectable.len() as u32,
             rng: &mut self.rng
         };
-        let selected: Vec<_> = selector.select(selectable);
+        let indexed = selectable.iter()
+            .enumerate()
+            .map(|(i, f)| IndexedFit {
+                index: i,
+                fit: f
+            })
+            .collect::<Vec<_>>();
+        let selected: Vec<_> = selector.select(&indexed);
+
         // TODO: it might be faster to iterate selected while removing elements, but then for each
         //  `s` in selectable we need to iterate selected once while comparing elements which might be slow
         //  Benchmark
         let mut selection_count = vec![0u32; selected.len()];
         for &s in &selected {
-            selection_count[s] += 1
+            selection_count[s.index] += 1
         }
         let mut dead = vec![];
         let mut parents = vec![0; selected.len()];
@@ -78,14 +82,23 @@ impl<R: Rng> Selector for WeightedOrderedSelection<R> {
             offspring[parent] -= 1;
         }
 
-        parents
+        parents.iter().map(|&i| &selectable[i]).collect()
     }
 }
 
-impl<R: Rng> PreservesOrder for WeightedOrderedSelection<R> {}
-
 pub trait Fit {
     fn fitness(&self) -> f32;
+}
+
+pub struct IndexedFit<'f, F> {
+    pub fit: &'f F,
+    pub index: usize,
+}
+
+impl<F: Fit> Fit for IndexedFit<'_, F> {
+    fn fitness(&self) -> f32 {
+        self.fit.fitness()
+    }
 }
 
 #[cfg(test)]
@@ -115,12 +128,12 @@ mod tests {
                 select_n: 100,
                 rng: Xoshiro256StarStar::seed_from_u64(seed)
             };
-            let new_fits = sel.select(&fits);
-            let new_fit_sum = new_fits.iter().map(|&f| fits[f].fitness()).sum::<f32>();
-            assert!(new_fit_sum > fit_sum);
+            let selected = sel.select(&fits);
+            let selected_sum = selected.iter().map(|&f| f.fitness()).sum::<f32>();
+            assert!(selected_sum > fit_sum);
 
-            let unique: HashSet<_> = new_fits.iter().collect();
-            assert!(unique.len() < new_fits.len());
+            let unique: HashSet<_> = selected.iter().collect();
+            assert!(unique.len() < selected.len());
         }
     }
 
@@ -131,25 +144,30 @@ mod tests {
         assert_eq!(fit_sum, 4950.);
 
         for seed in 0..100 {
-            let mut sel = WeightedOrderedSelection {
+            let mut order_sel = WeightedOrderedSelection {
                 rng: Xoshiro256StarStar::seed_from_u64(seed)
             };
-            let mut sel_ = WeightedSelection {
+            let mut sel = WeightedSelection {
                 select_n: 100,
                 rng: Xoshiro256StarStar::seed_from_u64(seed)
             };
 
-            let new_fits = sel.select(&fits);
-            let new_fit_sum = new_fits.iter().map(|&f| fits[f].fitness()).sum::<f32>();
-            let new_fits_ = sel_.select(&fits);
-            let new_fit_sum_ = new_fits_.iter().map(|&f| fits[f].fitness()).sum::<f32>();
+            let ordered_selected = order_sel.select(&fits);
+            let ordered_selected_sum = ordered_selected.iter().map(|&f| f.fitness()).sum::<f32>();
+            let selected = sel.select(&fits);
+            let selected_sum = selected.iter().map(|&f| f.fitness()).sum::<f32>();
             // Same organisms were selected
-            assert_eq!(new_fit_sum, new_fit_sum_);
+            assert_eq!(ordered_selected_sum, selected_sum);
 
-            for &f in &new_fits {
+            for f in ordered_selected.iter() {
+                let FitTest(index) = f;
                 // All survivors preserved their position
-                assert_eq!(f, new_fits[f]);
+                assert_eq!(f, &ordered_selected[*index]);
             }
+
+            // Some organisms reproduced
+            let set: HashSet<&FitTest> = HashSet::from_iter(ordered_selected.iter().copied());
+            assert!(ordered_selected.len() > set.len())
         }
     }
 }
