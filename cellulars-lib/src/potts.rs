@@ -1,5 +1,5 @@
 use crate::basic_cell::Cellular;
-use crate::environment::Habitable;
+use crate::habitable::Habitable;
 use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;

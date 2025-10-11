@@ -1,10 +1,11 @@
-use crate::clonal_potts::ClonalPotts;
 use crate::chem_environment::ChemEnvironment;
+use crate::clonal_potts::ClonalPotts;
+use crate::evolution::selector::Fit;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
-use cellulars_lib::evolution::selector::Fit;
-use rand_xoshiro::Xoshiro256StarStar;
 use cellulars_lib::potts::Potts;
+use cellulars_lib::stepper::Stepper;
+use rand_xoshiro::Xoshiro256StarStar;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 #[derive(Clone, Builder)]
@@ -21,7 +22,13 @@ pub struct Pond {
 }
 
 impl Pond {
-    pub fn step(&mut self) {
+    pub fn wipe_out(&mut self) {
+        self.env.wipe_out();
+    }
+}
+
+impl Stepper for Pond {
+    fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
             self.env.cells.iter_mut().for_each(|cell| cell.update());
@@ -30,10 +37,6 @@ impl Pond {
             }
         }
         self.time_step += 1;
-    }
-
-    pub fn wipe_out(&mut self) {
-        self.env.wipe_out();
     }
 }
 

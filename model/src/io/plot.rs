@@ -1,18 +1,18 @@
+use crate::chem_environment::ChemEnvironment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::CellIndex;
-use cellulars_lib::spin::Spin;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
+use cellulars_lib::spin::Spin;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-use crate::chem_environment::ChemEnvironment;
 
 pub trait Plot {
     fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage);

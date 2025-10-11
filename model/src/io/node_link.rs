@@ -1,4 +1,4 @@
-use crate::genetics::grn::{EdgeWeight, Grn, GrnGeneType};
+use crate::evolution::grn::{EdgeWeight, Grn, GrnGeneType};
 use anyhow::bail;
 use rustworkx_core::petgraph::prelude::{DiGraph, EdgeRef, NodeIndex};
 use rustworkx_core::petgraph::visit::IntoNodeReferences;

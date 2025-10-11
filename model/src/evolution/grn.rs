@@ -1,5 +1,5 @@
-use crate::genetics::genome::Genome;
-use crate::genetics::grn::GrnGeneType::{Input, Output, Regulatory};
+use crate::evolution::genome::Genome;
+use crate::evolution::grn::GrnGeneType::*;
 use rand::Rng;
 use rand_distr::Distribution;
 use rand_distr::Normal;
@@ -19,6 +19,12 @@ pub struct Grn<const I: usize, const O: usize> {
     pub mut_rate: f32,
     pub mut_distr: Normal<f32>,
     pub input_signals: [f32; I]
+}
+
+impl<const I: usize, const O: usize> Grn<I, O> {
+    pub(crate) fn update_expression(&self) {
+        todo!()
+    }
 }
 
 impl<const I: usize, const O: usize> Grn<I, O> {
