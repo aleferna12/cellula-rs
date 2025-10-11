@@ -61,7 +61,7 @@ pub trait Potts {
             } else {
                 (edge.p2, edge.p1)
             };
-            to_visit += self.attempt_site_copy(env, rng, pos_source, pos_target);
+            to_visit += self.attempt_site_copy(pos_source, pos_target, env, rng);
             to_visit -= 1.;
         }
     }
@@ -73,10 +73,10 @@ pub trait Potts {
     /// The number of extra updates that the copy attempt incurred.
     fn attempt_site_copy(
         &self,
-        env: &mut Self::Environment,
-        rng: &mut impl Rng,
         pos_source: Pos<usize>,
-        pos_target: Pos<usize>
+        pos_target: Pos<usize>,
+        env: &mut Self::Environment,
+        rng: &mut impl Rng
     ) -> f32 {
         let spin_target = env.env().cell_lattice[pos_target];
         if spin_target == Spin::Solid {
