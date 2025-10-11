@@ -25,10 +25,6 @@ pub struct ContactPotts {
 
 impl ContactPotts {
     fn migration_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
-        if !self.enable_migration {
-            return 0.
-        }
-        
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
         };
@@ -90,8 +86,11 @@ impl Potts for ContactPotts {
     }
 
     fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f32 {
-        self.migration_bias(pos_source, pos_target, env)
-            + self.act_bias(pos_source, pos_target, env)
+        let mut biases = self.act_bias(pos_source, pos_target, env);
+        if self.enable_migration {
+            biases += self.migration_bias(pos_source, pos_target, env);
+        }
+        biases
     }
 
     fn delta_hamiltonian_adhesion(
