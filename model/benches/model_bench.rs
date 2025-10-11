@@ -1,3 +1,4 @@
+use cellulars_lib::step::Step;
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use model::io::parameters::Parameters;
 use model::model::Model;
@@ -5,7 +6,6 @@ use std::cmp::max;
 use std::hint::black_box;
 use std::path::Path;
 use std::time::Duration;
-use cellulars_lib::step::Step;
 
 /// Builds all example models.
 fn find_parameters(parent_dir: impl AsRef<Path>) -> Vec<(String, Parameters)> {
