@@ -1,3 +1,4 @@
+use cellulars_lib::step::Step;
 use model::io::parameters::Parameters;
 use model::io::parameters::PlotType::*;
 use model::model::Model;

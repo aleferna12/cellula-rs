@@ -13,7 +13,7 @@ use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::stepper::Stepper;
+use cellulars_lib::step::Step;
 use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
@@ -25,7 +25,8 @@ pub struct Model {
     pub rng: Xoshiro256StarStar,
     pub dispersion_period: u32,
     pub info_period: u32,
-    time_steps: u32
+    time_steps: u32,
+    time_step: u32,
 }
 
 impl Model {
@@ -46,7 +47,8 @@ impl Model {
             rng,
             dispersion_period: parameters.general.dispersion_period,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps
+            time_steps: parameters.general.time_steps,
+            time_step: 0
         })
     }
 
@@ -61,18 +63,20 @@ impl Model {
 
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
+        let pond = Self::read_backup_pond(
+            &parameters,
+            &mut rng,
+            sim_path,
+            time_step
+        )?;
         Ok(Self {
-            pond: Self::read_backup_pond(
-                &parameters,
-                &mut rng,
-                sim_path,
-                time_step
-            )?,
             io: Self::setup_io(&parameters, seed)?,
-            rng,
             dispersion_period: parameters.general.dispersion_period,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps
+            time_steps: parameters.general.time_steps,
+            time_step: pond.time_step,
+            pond,
+            rng,
         })
     }
 
@@ -257,23 +261,6 @@ impl Model {
         Ok(pond)
     }
 
-    pub fn run_for(&mut self, time_steps: u32) {
-        for time_step in self.pond.time_step..=self.pond.time_step + time_steps {
-            if self.pond.time_step % self.info_period == 0 {
-                self.log_info();
-            }
-            
-            let saved = self.io.write_if_time(
-                time_step,
-                &self.pond.env
-            );
-            if let Err(e) = saved {
-                log::warn!("Failed to save data at time step {time_step} with error `{e}`")
-            }
-            self.pond.step();
-        }
-    }
-
     pub fn run(&mut self) {
         self.run_for(self.time_steps);
     }
@@ -286,6 +273,24 @@ impl Model {
         log::info!("Time step {}:", self.pond.time_step);
         let valid = self.pond.env.cells.n_valid();
         log::info!("\t{valid} cells");
+    }
+}
+
+impl Step for Model {
+    fn step(&mut self) {
+        if self.pond.time_step % self.info_period == 0 {
+            self.log_info();
+        }
+
+        let saved = self.io.write_if_time(
+            self.time_step,
+            &self.pond.env
+        );
+        if let Err(e) = saved {
+            log::warn!("Failed to save data at time step {} with error `{e}`", {self.time_step})
+        }
+        self.pond.step();
+        self.time_step = self.pond.time_step;
     }
 }
 

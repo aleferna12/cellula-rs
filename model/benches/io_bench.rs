@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criteri
 use model::io::parameters::{Parameters, PlotType};
 use model::model::Model;
 use strum::IntoEnumIterator;
+use cellulars_lib::step::Step;
 
 fn make_model(params: Parameters) -> Model {
     let mut model = Model::initialise_from_parameters(params).unwrap();

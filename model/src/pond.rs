@@ -4,7 +4,7 @@ use crate::evolution::selector::Fit;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
-use cellulars_lib::stepper::Stepper;
+use cellulars_lib::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
 
 // TODO: this struct can be made general if CellularAutomata is also general
@@ -27,7 +27,7 @@ impl Pond {
     }
 }
 
-impl Stepper for Pond {
+impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
