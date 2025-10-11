@@ -12,6 +12,7 @@ use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use rand_distr::num_traits::AsPrimitive;
 use thiserror::Error;
 
 pub trait Plot {
@@ -265,15 +266,15 @@ impl Plot for ChemPlot {
     fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
         let lat = &env.chem_lattice;
         for pos in lat.iter_positions() {
-            let chem = lat[pos];
+            let val = lat[pos];
             let color = self.lerp(
-                chem as f32,
+                val.as_(),
                 0.,
                 lat.height() as f32
             );
-            match color { 
+            match color {
                 Ok(c) => image.put_pixel(
-                    pos.x as u32, 
+                    pos.x as u32,
                     pos.y as u32,
                     srgb_to_rgba(Srgb::from_linear(c.into_color()))
                 ),
@@ -284,6 +285,46 @@ impl Plot for ChemPlot {
 }
 
 impl ContinuousPlot for ChemPlot {
+    fn min_color(&self) -> Luv {
+        self.min_color
+    }
+
+    fn max_color(&self) -> Luv {
+        self.max_color
+    }
+}
+
+pub struct ActPlot {
+    pub min_color: Luv,
+    pub max_color: Luv
+}
+
+impl Plot for ActPlot {
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        let lat = &env.act_lattice;
+        for pos in lat.iter_positions() {
+            let val = lat[pos];
+            if val == 0 {
+                continue;
+            }
+            let color = self.lerp(
+                val.as_(),
+                0.,
+                lat.height() as f32
+            );
+            match color {
+                Ok(c) => image.put_pixel(
+                    pos.x as u32,
+                    pos.y as u32,
+                    srgb_to_rgba(Srgb::from_linear(c.into_color()))
+                ),
+                Err(e) => log::warn!("Failed to plot chem for pos `{pos:?}` with error `{e:?}`")
+            }
+        }
+    }
+}
+
+impl ContinuousPlot for ActPlot {
     fn min_color(&self) -> Luv {
         self.min_color
     }
@@ -332,6 +373,10 @@ impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
                 PlotType::Chem => Box::new(ChemPlot {
                     min_color: srgb_to_luv(hex_to_srgb(&params.chem_min_color)?),
                     max_color: srgb_to_luv(hex_to_srgb(&params.chem_max_color)?)
+                }),
+                PlotType::Act => Box::new(ActPlot {
+                    min_color: srgb_to_luv(hex_to_srgb(&params.act_min_color)?),
+                    max_color: srgb_to_luv(hex_to_srgb(&params.act_max_color)?)
                 }),
                 PlotType::CellType => Box::new(CellTypePlot {
                     mig_color: hex_to_srgb(&params.migrating_color)?,

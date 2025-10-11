@@ -124,6 +124,8 @@ impl Model {
         ContactPotts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
+            .act_max(parameters.potts.act_max)
+            .act_lambda(parameters.potts.act_lambda)
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
             .adhesion(
@@ -171,7 +173,8 @@ impl Model {
                     (parameters.pond.width as f32, parameters.pond.height as f32).into(),
                 ))).context("lattice size is too big")?
             ).context("lattice size is too big")?,
-            parameters.cell.max_cells
+            parameters.cell.max_cells,
+            parameters.potts.act_max
         );
         if parameters.pond.enclose {
             env.make_border(true, true, true, true);
@@ -235,7 +238,8 @@ impl Model {
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(rect))?,
             ),
-            parameters.cell.max_cells
+            parameters.cell.max_cells,
+            parameters.potts.act_max
         );
         env.clones_table = IoManager::read_clones(IoManager::resolve_clones_path(
             sim_path,

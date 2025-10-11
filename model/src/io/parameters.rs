@@ -139,6 +139,8 @@ pub struct PottsParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
+    pub act_max: u32,
+    pub act_lambda: f32,
     pub adhesion: ClonalAdhesionParameters
 }
 
@@ -202,6 +204,8 @@ pub struct PlotParameters {
     pub area_max_color: String,
     pub chem_min_color: String,
     pub chem_max_color: String,
+    pub act_min_color: String,
+    pub act_max_color: String,
     pub migrating_color: String,
     pub dividing_color: String
 }
@@ -216,7 +220,8 @@ pub enum PlotType {
     Border,
     CellType,
     Area,
-    Chem
+    Chem,
+    Act
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

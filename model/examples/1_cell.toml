@@ -61,6 +61,10 @@ boltz-t = 16.0
 size-lambda = 1.0
 # Scaler constant for chemotaxis bias.
 chemotaxis-mu = 4.0
+# Max act value on a brand-new cell protusion.
+act-max = 40
+# Scaler constant for chemotaxis bias.
+act-lambda = 300.0
 
 [potts.adhesion]
 # Adhesion energy at cell-cell interfaces of clonal cells.
@@ -132,6 +136,10 @@ area-max-color = "#ffff00"
 chem-min-color = "#000000"
 # With which color to plot the maximum value for the chem in the environment.
 chem-max-color = "#ffffff"
+# With which color to plot the minimum value for the act in the environment.
+act-min-color = "#000000"
+# With which color to plot the maximum value for the act in the environment.
+act-max-color = "#ffffff"
 # With which color to plot migrating cells.
 migrating-color = "#b30000"
 # With which color to plot dividing cells.

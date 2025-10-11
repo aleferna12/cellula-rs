@@ -36,6 +36,11 @@ impl Step for Pond {
                 self.env.reproduce(self.cell_search_scaler, &mut self.rng);
             }
         }
+        for val in self.env.act_lattice.iter_values_mut() {
+            if *val > 0 {
+                *val -= 1;
+            }
+        }
         self.time_step += 1;
     }
 }

@@ -20,19 +20,24 @@ use std::ops::{Deref, DerefMut};
 pub struct ChemEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
     pub chem_lattice: Lattice<u32>,
+    pub act_lattice: Lattice<u32>,
     pub clones_table: SymmetricTable<bool>,
     pub max_cells: CellIndex,
+    act_max: u32,
     population_exploded: bool
 }
 
 impl ChemEnvironment {
-    pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: CellIndex) -> Self {
+    pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: CellIndex, act_max: u32) -> Self {
+        let lat = Lattice::new(env.cell_lattice.rect.clone());
         let mut env_ = Self {
-            chem_lattice: Lattice::new(env.cell_lattice.rect.clone()),
+            chem_lattice: lat.clone(),
+            act_lattice: lat,
             clones_table: SymmetricTable::new(max_cells as usize),
+            population_exploded: false,
             env,
             max_cells,
-            population_exploded: false
+            act_max
         };
         env_.make_chem_gradient();
         env_
@@ -324,6 +329,9 @@ impl Habitable for ChemEnvironment {
             let to_cell = self.env.cells.get_cell_mut(index);
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
+            self.act_lattice[pos] = self.act_max;
+        } else {
+            self.act_lattice[pos] = 0;
         }
         if let Spin::Some(index) = self.cell_lattice[pos] {
             let from_cell = self.env.cells.get_cell_mut(index);
