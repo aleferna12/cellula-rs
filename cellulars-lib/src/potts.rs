@@ -97,7 +97,7 @@ pub trait Potts {
             spin_source, 
             spin_target,
             neigh_spins,
-            &env
+            env
         ) + self.copy_biases(
             pos_source,
             pos_target,
