@@ -25,6 +25,10 @@ pub struct ContactPotts {
 
 impl ContactPotts {
     fn migration_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
+        if !self.enable_migration {
+            return 0.
+        }
+        
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
         };
