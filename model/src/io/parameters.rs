@@ -121,16 +121,7 @@ pub struct CellParameters {
     pub divide: bool,
     #[serde(default = "param_defaults::true_flag")]
     pub migrate: bool,
-    pub update_period: u32,
-    pub genome: GenomeParameters,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
-pub struct GenomeParameters {
-    pub n_regulatory: usize,
-    pub mutation_rate: f32,
-    pub mutation_std: f32,
+    pub update_period: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -170,7 +161,6 @@ pub struct IoParameters {
 #[serde(rename_all = "kebab-case")]
 pub struct DataParameters {
     pub cells_period: u32,
-    pub genomes_period: u32,
     pub clones_period: u32,
     pub lattice_period: u32
 }
@@ -200,6 +190,8 @@ pub struct PlotParameters {
     pub border_color: String,
     pub area_min_color: String,
     pub area_max_color: String,
+    pub food_min_color: String,
+    pub food_max_color: String,
     pub chem_min_color: String,
     pub chem_max_color: String,
     pub migrating_color: String,
@@ -216,6 +208,7 @@ pub enum PlotType {
     Border,
     CellType,
     Area,
+    Food,
     Chem
 }
 

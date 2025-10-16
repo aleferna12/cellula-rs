@@ -9,7 +9,7 @@ use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
-// Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
+// Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait
 // that just implements `step()`
 #[derive(Clone, Builder)]
 pub struct ClonalPotts {
@@ -61,8 +61,8 @@ impl Potts for ClonalPotts {
     }
 
     fn delta_hamiltonian_adhesion(
-        &self, 
-        spin_source: Spin, 
+        &self,
+        spin_source: Spin,
         spin_target: Spin,
         neigh_spin: impl Iterator<Item=Spin>,
         env: &Self::Environment

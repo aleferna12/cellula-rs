@@ -1,6 +1,5 @@
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
-use crate::evolution::genome::Genome;
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment};
@@ -28,7 +27,7 @@ pub struct ChemEnvironment {
 
 impl ChemEnvironment {
     pub fn new(
-        env: Environment<Cell, MooreNeighbourhood, BoundaryType>, 
+        env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
         max_cells: CellIndex,
         cell_search_scaler: f32
     ) -> Self {
@@ -46,8 +45,8 @@ impl ChemEnvironment {
 
     pub fn make_chem_gradient(&mut self) {
         for i in 0..self.width() {
-            for j in 0..self.height() {
-                self.chem_lattice[(i, j).into()] = j.try_into().expect("lattice is too big");
+            for j in self.height() / 2..self.height() {
+                self.chem_lattice[(i, j).into()] = 2;
             }
         }
     }
@@ -107,6 +106,7 @@ impl ChemEnvironment {
             .collect();
         
         let mut newborn = mom.birth();
+        newborn.food = mom.food / 2;
         newborn.ancestor = Some(mom_index);
         let newborn_ta = mom.newborn_target_area;
         let new_index = self.env.cells.add(newborn).index;
@@ -116,7 +116,9 @@ impl ChemEnvironment {
                 Spin::Some(new_index),
             );
         }
-        self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
+        let mut_mom = self.env.cells.get_cell_mut(mom_index);
+        mut_mom.set_target_area(newborn_ta);
+        mut_mom.food /= 2;
         self.cells.get_cell(new_index)
     }
 
@@ -135,7 +137,7 @@ impl ChemEnvironment {
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
     // gain is minimal (although the ergonomic gains are significant)
-    pub fn reproduce(&mut self, rng: &mut impl Rng) {
+    pub fn reproduce(&mut self) {
         let mut divide = vec![];
         for cell in self.cells.iter() {
             if !cell.is_alive() {
@@ -158,8 +160,6 @@ impl ChemEnvironment {
             if new_cell.is_valid() {
                 let new_index = new_cell.index;
                 self.update_clones(new_index, cell_index);
-                // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
-                self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(rng);
             }
         }
     }
@@ -200,6 +200,26 @@ impl ChemEnvironment {
             }
         }
         self.clones_table[(cell_index as usize, mom_index as usize)] = true;
+    }
+
+    pub fn feed_cells(&mut self) {
+        let to_feed = self.cells
+            .iter()
+            .filter_map(|cell| {
+                if cell.is_alive() && cell.chem_mass > 0 {
+                    self.search_cell_box(cell, self.cell_search_scaler).into_iter().find(|&pos| {
+                        self.chem_lattice[pos] > 0
+                    }).map(|pos| (cell.index, pos))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        for (cell_index, pos) in to_feed {
+            self.chem_lattice[pos] -= 1;
+            self.cells.get_cell_mut(cell_index).food += 1;
+        }
     }
 
     // TODO!: add plot to make sure this is right

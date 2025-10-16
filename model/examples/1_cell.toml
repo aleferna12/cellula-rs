@@ -42,16 +42,8 @@ divide = true
 # [default = true]
 migrate = true
 # Period (in MCS) with which the cell is updated.
-# This includes cell growth, genome updates and reproduction.
+# This includes cell growth and reproduction.
 update-period = 32
-
-[cell.genome]
-# Number of regulatory genes in the cell's GRN.
-n-regulatory = 2
-# Mutation rate for each GRN parameter.
-mutation-rate = 0.01
-# Standard deviation of the GRN parameter mutations.
-mutation-std = 0.01
 
 [potts]
 # Boltzmann temperature.
@@ -90,8 +82,6 @@ image-format = "webp"
 [io.data]
 # Period (in MCS) with which to save the cell attributes as a parquet file.
 cells-period = 2048
-# Period (in MCS) with which to save the cells' genomes as a JSON file.
-genomes-period = 4096
 # Period (in MCS) with which to save the cells' clones as a parquet file.
 clones-period = 4096
 # Period (in MCS) with which to save a parquet file containing the cell lattices.
@@ -128,6 +118,10 @@ all-clones = false
 area-min-color = "#ff00ff"
 # With which color to plot the maximum area in the cell population.
 area-max-color = "#ffff00"
+# With which color to plot the minimum food in the cell population.
+food-min-color = "#ff00ff"
+# With which color to plot the maximum food in the cell population.
+food-max-color = "#ffff00"
 # With which color to plot the minimum value for the chem in the environment.
 chem-min-color = "#000000"
 # With which color to plot the maximum value for the chem in the environment.

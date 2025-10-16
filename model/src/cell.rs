@@ -1,6 +1,3 @@
-use crate::evolution::genome::Genome;
-use crate::evolution::grn::Grn;
-use crate::evolution::selector::Fit;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
@@ -13,20 +10,20 @@ pub struct Cell {
     pub divide_area: u32,
     pub chem_center: Pos<f32>,
     pub chem_mass: u32,
-    pub genome: Grn<1, 1>,
-    pub ancestor: Option<CellIndex>
+    pub ancestor: Option<CellIndex>,
+    pub food: u32
 }
 
 impl Cell {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new_empty(target_area: u32, divide_area: u32, genome: Grn<1, 1>) -> Self {
+    pub fn new_empty(target_area: u32, divide_area: u32) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
+            food: 0,
             ancestor: None,
-            divide_area,
-            genome
+            divide_area
         }
     }
 
@@ -41,13 +38,10 @@ impl Cell {
     pub fn set_divide_area(&mut self, value: u32) {
         self.divide_area = value;
     }
-    
-    pub fn is_migrating(&self) -> bool {
-        self.genome.nth_output_gene(0).active
-    }
-    
+
     pub fn is_dividing(&self) -> bool {
-        !self.is_migrating()
+        // TODO!: Parameterize
+        self.food > 100
     }
 
     pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, add: bool, bound: &B) {
@@ -67,7 +61,6 @@ impl Cell {
         self.chem_mass = self.chem_mass
             .checked_add_signed(shift * chem_at as i32)
             .expect("overflow in `shift_chem`");
-        self.genome.input_signals[0] = self.chem_mass as f32 / self.area as f32;
     }
 
     pub fn update(&mut self) {
@@ -75,7 +68,6 @@ impl Cell {
             let new_target_area = self.target_area() + 1;
             self.set_target_area(new_target_area);
         }
-        self.genome.update_expression();
     }
 }
 
@@ -124,18 +116,14 @@ impl Alive for Cell {
         self.basic_cell.apoptosis()
     }
 
+    // TODO: maybe this should take mut self and return half of the food
     fn birth(&self) -> Self {
         Self { 
             basic_cell: self.basic_cell.birth(),
             chem_mass: 0,
+            food: 0,
             ..self.clone()
         }
-    }
-}
-
-impl Fit for Cell {
-    fn fitness(&self) -> f32 {
-        self.chem_mass as f32
     }
 }
 
@@ -152,8 +140,7 @@ mod tests {
     fn make_test_cell() -> Cell {
         Cell::new_empty(
             100,
-            200,
-            Grn::empty(),
+            200
         )
     }
 

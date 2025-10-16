@@ -194,7 +194,7 @@ impl Plot for CellTypePlot {
             let spin = env.cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
                 let cell = env.cells.get_cell(cell_index);
-                let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
+                let color = if cell.is_dividing() { self.div_color } else { self.mig_color };
                 image.put_pixel(
                     pos.x as u32,
                     pos.y as u32,
@@ -248,6 +248,57 @@ impl Plot for AreaPlot {
 }
 
 impl ContinuousPlot for AreaPlot {
+    fn min_color(&self) -> Luv {
+        self.min_color
+    }
+    fn max_color(&self) -> Luv {
+        self.max_color
+    }
+}
+
+pub struct FoodPlot {
+    pub min_color: Luv,
+    pub max_color: Luv
+}
+
+impl Plot for FoodPlot {
+    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
+        let mut min = u32::MAX;
+        let mut max = 0;
+        for cell in env.cells.iter() {
+            if !cell.is_valid() {
+                continue;
+            }
+            if cell.food < min {
+                min = cell.food
+            }
+            if cell.food > max {
+                max = cell.food
+            }
+        }
+
+        for pos in env.cell_lattice.iter_positions() {
+            if let Spin::Some(cell_index) = env.cell_lattice[pos] {
+                let cell = env.cells.get_cell(cell_index);
+                let color = self.lerp(
+                    cell.food as f32,
+                    min as f32,
+                    max as f32
+                );
+                match color {
+                    Ok(c) => image.put_pixel(
+                        pos.x as u32,
+                        pos.y as u32,
+                        srgb_to_rgba(Srgb::from_linear(c.into_color()))
+                    ),
+                    Err(e) => log::warn!("Failed to plot food for pos `{pos:?}` with error `{e:?}`")
+                };
+            }
+        }
+    }
+}
+
+impl ContinuousPlot for FoodPlot {
     fn min_color(&self) -> Luv {
         self.min_color
     }
@@ -325,6 +376,10 @@ impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
                 PlotType::Area => Box::new(AreaPlot{
                     min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
                     max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
+                }),
+                PlotType::Food => Box::new(FoodPlot{
+                    min_color: srgb_to_luv(hex_to_srgb(&params.food_min_color)?),
+                    max_color: srgb_to_luv(hex_to_srgb(&params.food_max_color)?),
                 }),
                 PlotType::Border => Box::new(BorderPlot {
                     color: hex_to_srgb(&params.border_color)?

@@ -1,8 +1,6 @@
 use crate::chem_environment::ChemEnvironment;
 use crate::clonal_potts::ClonalPotts;
-use crate::evolution::selector::Fit;
 use bon::Builder;
-use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
@@ -32,22 +30,10 @@ impl Step for Pond {
         if self.time_step % self.update_period == 0 {
             self.env.cells.iter_mut().for_each(|cell| cell.update());
             if self.division_enabled {
-                self.env.reproduce(&mut self.rng);
+                self.env.reproduce();
             }
+            self.env.feed_cells();
         }
         self.time_step += 1;
-    }
-}
-
-impl Fit for Pond {
-    fn fitness(&self) -> f32 {
-        let tot_fit: f32 = self
-            .env
-            .cells
-            .iter()
-            .filter(|cell| cell.is_valid())
-            .map(|c| { c.fitness() })
-            .sum();
-        tot_fit / self.env.cells.n_valid() as f32
     }
 }

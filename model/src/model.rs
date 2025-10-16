@@ -3,7 +3,6 @@ use crate::chem_environment::ChemEnvironment;
 use crate::clonal_adhesion::ClonalAdhesion;
 use crate::clonal_potts::ClonalPotts;
 use crate::constants::{BoundaryType, NeighbourhoodType};
-use crate::evolution::grn::Grn;
 use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
@@ -14,7 +13,6 @@ use cellulars_lib::environment::Environment;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::step::Step;
-use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
@@ -103,7 +101,6 @@ impl Model {
             .image_format(parameters.io.image_format.clone())
             .image_period(parameters.io.image_period)
             .cells_period(parameters.io.data.cells_period)
-            .genomes_period(parameters.io.data.genomes_period)
             .clones_period(parameters.io.data.clones_period)
             .lattices_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone().try_into()?)
@@ -186,14 +183,7 @@ impl Model {
         for _ in 0..parameters.cell.starting_cells {
             let cell = Cell::new_empty(
                 parameters.cell.target_area,
-                parameters.cell.div_area,
-                Grn::from_sampler(
-                    [1. / pond.env.height() as f32],
-                    parameters.cell.genome.n_regulatory,
-                    parameters.cell.genome.mutation_rate,
-                    parameters.cell.genome.mutation_std,
-                    || Uniform::new(-1., 1.).unwrap().sample(rng)
-                )
+                parameters.cell.div_area
             );
             pond.env.spawn_cell_random(
                 cell,
@@ -219,8 +209,7 @@ impl Model {
 
         log::info!("Reading pond");
         let cells = IoManager::read_cells(
-            IoManager::resolve_cells_path(sim_path, time_step),
-            IoManager::resolve_genomes_path(sim_path, time_step),
+            IoManager::resolve_cells_path(sim_path, time_step)
         )?;
 
         let rect = Rect::new(
