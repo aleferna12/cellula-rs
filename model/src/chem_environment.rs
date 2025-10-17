@@ -44,8 +44,18 @@ impl ChemEnvironment {
     }
 
     pub fn make_chem_gradient(&mut self) {
-        for i in 0..self.width() {
-            for j in self.height() / 2..self.height() {
+        for i in 480..520 {
+            for j in 0..self.height() / 2 {
+                self.chem_lattice[(i, j).into()] = 2;
+            }
+        }
+        for i in 440..480 {
+            for j in self.height() / 3..self.height() {
+                self.chem_lattice[(i, j).into()] = 2;
+            }
+        }
+        for i in 520..560 {
+            for j in self.height() / 3..self.height() {
                 self.chem_lattice[(i, j).into()] = 2;
             }
         }

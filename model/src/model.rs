@@ -16,6 +16,8 @@ use cellulars_lib::step::Step;
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
+use cellulars_lib::habitable::Habitable;
+use cellulars_lib::positional::pos::Pos;
 
 pub struct Model {
     pub pond: Pond,
@@ -185,11 +187,8 @@ impl Model {
                 parameters.cell.target_area,
                 parameters.cell.div_area
             );
-            pond.env.spawn_cell_random(
-                cell,
-                parameters.cell.starting_area,
-                &mut pond.rng
-            );
+            let positions = Rect::new(Pos::new(495, 0), Pos::new(505, 10)).iter_positions();
+            pond.env.spawn_cell(cell, positions);
         }
         log::info!(
                 "Created {} out of the {} cells requested",
