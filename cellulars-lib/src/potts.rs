@@ -126,10 +126,8 @@ pub trait Potts {
         neigh_spins: impl IntoIterator<Item = Spin>,
         env: &Self::Environment,
     ) -> f32 {
-        let mut delta_h = 0.;
-        delta_h += self.delta_hamiltonian_size(spin_source, spin_target, env);
-        delta_h += self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env);
-        delta_h
+        self.delta_hamiltonian_size(spin_source, spin_target, env)
+            + self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env)
     }
 
     fn delta_hamiltonian_adhesion(
