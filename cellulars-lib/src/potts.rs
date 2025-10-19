@@ -82,10 +82,14 @@ pub trait Potts {
         if spin_target == Spin::Solid {
             return 0.;
         }
-        // If was going to copy from a Solid, create a Medium cell instead 
         let spin_source = {
             let spin = env.env().cell_lattice[pos_source];
-            if spin == Spin::Solid { Spin::Medium } else { spin }
+            // If was going to copy from a Solid, treat it as a Medium cell instead
+            if let Spin::Solid = spin {
+                Spin::Medium
+            } else {
+                spin
+            }
         };
         let neigh_spins = env.env().bounds.lattice_boundary.valid_positions(
             env.env().neighbourhood.neighbours(pos_target.to_isize())
