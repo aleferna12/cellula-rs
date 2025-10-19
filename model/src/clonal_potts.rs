@@ -64,7 +64,7 @@ impl Potts for ClonalPotts {
         &self, 
         spin_source: Spin, 
         spin_target: Spin,
-        neigh_spin: impl Iterator<Item=Spin>,
+        neigh_spin: impl IntoIterator<Item = Spin>,
         env: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;
