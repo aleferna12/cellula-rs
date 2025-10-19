@@ -96,7 +96,7 @@ impl Potts for ContactPotts {
         &self, 
         spin_source: Spin, 
         spin_target: Spin,
-        neigh_spin: impl Iterator<Item=Spin>,
+        neigh_spin: impl IntoIterator<Item=Spin>,
         _env: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;

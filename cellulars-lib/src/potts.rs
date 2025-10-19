@@ -123,7 +123,7 @@ pub trait Potts {
         &self,
         spin_source: Spin,
         spin_target: Spin,
-        neigh_spins: impl Iterator<Item = Spin>,
+        neigh_spins: impl IntoIterator<Item = Spin>,
         env: &Self::Environment,
     ) -> f32 {
         let mut delta_h = 0.;
@@ -136,7 +136,7 @@ pub trait Potts {
         &self,
         spin_source: Spin,
         spin_target: Spin,
-        neigh_spin: impl Iterator<Item = Spin>,
+        neigh_spin: impl IntoIterator<Item = Spin>,
         env: &Self::Environment,
     ) -> f32;
 }
