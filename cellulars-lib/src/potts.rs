@@ -1,6 +1,5 @@
 use crate::basic_cell::Cellular;
 use crate::habitable::Habitable;
-use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
@@ -91,11 +90,10 @@ pub trait Potts {
                 spin
             }
         };
-        let neigh_spins = env.env().bounds.lattice_boundary.valid_positions(
-            env.env().neighbourhood.neighbours(pos_target.to_isize())
-        ).map(|neigh| {
-            env.env().cell_lattice[neigh.to_usize()]
-        });
+        let neigh_spins = env
+            .env()
+            .valid_neighbours(pos_target)
+            .map(|pos| env.env().cell_lattice[pos]);
 
         let delta_h = self.delta_hamiltonian(
             spin_source, 
