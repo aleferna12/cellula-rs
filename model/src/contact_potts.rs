@@ -142,30 +142,19 @@ impl Potts for ContactPotts {
         }).collect::<Vec<_>>();
 
         if let Spin::Some(cell_index) = spin_target {
-            let cell_target = env.env_mut().cells.get_cell_mut(cell_index);
-            cell_target.delta_perimeter = 0;
-            for spin in &neighs_target {
-                if spin == &spin_target {
-                    cell_target.delta_perimeter += 1;
-                } else {
-                    cell_target.delta_perimeter -= 1;
-                }
-            }
+            let delta_perimeter = neighs_target
+                .iter()
+                .map(|spin| if spin == &spin_target { 1 } else { -1 } )
+                .sum();
+            env.env_mut().cells.get_cell_mut(cell_index).delta_perimeter = delta_perimeter;
         }
 
         if let Spin::Some(cell_index) = spin_source {
-            let neighs_source = env.env().valid_neighbours(pos_source).map(|neigh| {
-                env.env().cell_lattice[neigh]
-            }).collect::<Vec<_>>();
-            let cell_source = env.env_mut().cells.get_cell_mut(cell_index);
-            cell_source.delta_perimeter = 0;
-            for spin in neighs_source {
-                if spin == spin_source {
-                    cell_source.delta_perimeter -= 1;
-                } else {
-                    cell_source.delta_perimeter += 1;
-                }
-            }
+            let delta_perimeter = neighs_target
+                .iter()
+                .map(|spin| if spin == &spin_source { -1 } else { 1 } )
+                .sum();
+            env.env_mut().cells.get_cell_mut(cell_index).delta_perimeter = delta_perimeter;
         }
 
         let delta_h = self.delta_hamiltonian(
