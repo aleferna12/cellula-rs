@@ -155,7 +155,6 @@ impl Model {
             .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
             .update_period(parameters.cell.update_period)
             .cell_target_area(parameters.cell.target_area)
-            .cell_search_scaler(parameters.cell.search_radius)
             .division_enabled(parameters.cell.divide)
             .build()
     }
@@ -174,7 +173,8 @@ impl Model {
                 ))).context("lattice size is too big")?
             ).context("lattice size is too big")?,
             parameters.cell.max_cells,
-            parameters.potts.act_max
+            parameters.potts.act_max,
+            parameters.cell.search_radius
         );
         if parameters.pond.enclose {
             env.make_border(true, true, true, true);
@@ -239,7 +239,8 @@ impl Model {
                 Boundaries::new(BoundaryType::new(rect))?,
             ),
             parameters.cell.max_cells,
-            parameters.potts.act_max
+            parameters.potts.act_max,
+            parameters.cell.search_radius
         );
         env.clones_table = IoManager::read_clones(IoManager::resolve_clones_path(
             sim_path,

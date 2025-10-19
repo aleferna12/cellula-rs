@@ -16,7 +16,6 @@ pub struct Pond {
     pub update_period: u32,
     pub cell_target_area: u32,
     pub division_enabled: bool,
-    pub cell_search_scaler: f32,
     #[builder(default = 0)]
     pub time_step: u32,
 }
@@ -33,7 +32,7 @@ impl Step for Pond {
         if self.time_step % self.update_period == 0 {
             self.env.cells.iter_mut().for_each(|cell| cell.update());
             if self.division_enabled {
-                self.env.reproduce(self.cell_search_scaler, &mut self.rng);
+                self.env.reproduce(&mut self.rng);
             }
         }
         for val in self.env.act_lattice.iter_values_mut() {

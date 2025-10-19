@@ -22,13 +22,14 @@ pub struct ChemEnvironment {
     pub chem_lattice: Lattice<u32>,
     pub act_lattice: Lattice<u32>,
     pub clones_table: SymmetricTable<bool>,
+    pub cell_search_scaler: f32,
     pub max_cells: CellIndex,
     act_max: u32,
     population_exploded: bool
 }
 
 impl ChemEnvironment {
-    pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: CellIndex, act_max: u32) -> Self {
+    pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: CellIndex, act_max: u32, cell_search_scaler: f32) -> Self {
         let lat = Lattice::new(env.cell_lattice.rect.clone());
         let mut env_ = Self {
             chem_lattice: lat.clone(),
@@ -36,6 +37,7 @@ impl ChemEnvironment {
             clones_table: SymmetricTable::new(max_cells as usize),
             population_exploded: false,
             env,
+            cell_search_scaler,
             max_cells,
             act_max
         };
@@ -90,14 +92,14 @@ impl ChemEnvironment {
         )
     }
 
-    pub fn divide_cell(&mut self, mom_index: CellIndex, search_scaler: f32) -> &RelCell<Cell> {
+    pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<Cell> {
         let mom = self
             .env
             .cells
             .get_cell(mom_index);
-        let div_axis = self.find_division_axis(mom, search_scaler);
+        let div_axis = self.find_division_axis(mom, self.cell_search_scaler);
         let new_positions: Vec<_> = self
-            .search_cell_box(mom, search_scaler)
+            .search_cell_box(mom, self.cell_search_scaler)
             .into_iter()
             .filter(|pos| {
                 let y = div_axis.slope * pos.x as f32 + div_axis.intercept;
@@ -134,7 +136,7 @@ impl ChemEnvironment {
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
     // gain is minimal (although the ergonomic gains are significant)
-    pub fn reproduce(&mut self, search_scaler: f32, rng: &mut impl Rng) {
+    pub fn reproduce(&mut self, rng: &mut impl Rng) {
         let mut divide = vec![];
         for cell in self.cells.iter() {
             if !cell.is_alive() {
@@ -153,7 +155,7 @@ impl ChemEnvironment {
             let mom = self
                 .cells
                 .get_cell(cell_index);
-            let new_cell = self.divide_cell(mom.index, search_scaler);
+            let new_cell = self.divide_cell(mom.index);
             if new_cell.is_valid() {
                 let new_index = new_cell.index;
                 self.update_clones(new_index, cell_index);
