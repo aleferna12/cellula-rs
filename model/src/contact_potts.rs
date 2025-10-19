@@ -28,6 +28,10 @@ impl ContactPotts {
             return 0.;
         };
         let cell = env.cells.get_cell(cell_index);
+        if !cell.is_migrating() {
+            return 0.;
+        }
+
         let (dx1, dy1) = env.bounds.boundary.displacement(
             cell.center(),
             Pos::new(pos_target.x as f32, pos_target.y as f32)
