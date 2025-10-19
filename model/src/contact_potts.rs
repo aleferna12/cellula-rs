@@ -8,6 +8,8 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 use std::hint::black_box;
+use rand::Rng;
+use cellulars_lib::habitable::Habitable;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -16,6 +18,7 @@ use std::hint::black_box;
 pub struct ContactPotts {
     pub boltz_t: f32,
     pub size_lambda: f32,
+    pub perimeter_lambda: f32,
     pub chemotaxis_mu: f32,
     pub act_lambda: f32,
     pub enable_migration: bool,
@@ -75,6 +78,23 @@ impl ContactPotts {
         let sum: f32 = acts.map(|x| (x as f32).ln()).sum();
         black_box((sum / root).exp())
     }
+
+    fn perimeter_energy_diff(&self, delta_perimeter: i32, perimeter: u32, target_perimeter: u32) -> f32 {
+        2. * self.perimeter_lambda * delta_perimeter as f32 * (perimeter as f32 - target_perimeter as f32) + self.perimeter_lambda
+    }
+
+    fn delta_hamiltonian_perimeter(&self, spin_source: Spin, spin_target: Spin, env: &ChemEnvironment) -> f32 {
+        let mut delta_h = 0.;
+        if let Spin::Some(cell_index) = spin_source {
+            let cell = env.env().cells.get_cell(cell_index);
+            delta_h += self.perimeter_energy_diff(cell.delta_perimeter, cell.perimeter, cell.target_perimeter);
+        }
+        if let Spin::Some(cell_index) = spin_target {
+            let cell = env.env().cells.get_cell(cell_index);
+            delta_h += self.perimeter_energy_diff(cell.delta_perimeter, cell.perimeter, cell.target_perimeter);
+        }
+        delta_h
+    }
 }
 
 impl Potts for ContactPotts {
@@ -94,6 +114,92 @@ impl Potts for ContactPotts {
             biases += self.migration_bias(pos_source, pos_target, env);
         }
         biases
+    }
+
+    fn attempt_site_copy(
+        &self,
+        pos_source: Pos<usize>,
+        pos_target: Pos<usize>,
+        env: &mut Self::Environment,
+        rng: &mut impl Rng
+    ) -> f32 {
+        let spin_target = env.env().cell_lattice[pos_target];
+        if spin_target == Spin::Solid {
+            return 0.;
+        }
+        let spin_source = {
+            let spin = env.env().cell_lattice[pos_source];
+            // If was going to copy from a Solid, treat it as a Medium cell instead
+            if let Spin::Solid = spin {
+                Spin::Medium
+            } else {
+                spin
+            }
+        };
+
+        let neighs_target = env.env().valid_neighbours(pos_target).map(|neigh| {
+            env.env().cell_lattice[neigh]
+        }).collect::<Vec<_>>();
+
+        if let Spin::Some(cell_index) = spin_target {
+            let cell_target = env.env_mut().cells.get_cell_mut(cell_index);
+            cell_target.delta_perimeter = 0;
+            for spin in &neighs_target {
+                if spin == &spin_target {
+                    cell_target.delta_perimeter += 1;
+                } else {
+                    cell_target.delta_perimeter -= 1;
+                }
+            }
+        }
+
+        if let Spin::Some(cell_index) = spin_source {
+            let neighs_source = env.env().valid_neighbours(pos_source).map(|neigh| {
+                env.env().cell_lattice[neigh]
+            }).collect::<Vec<_>>();
+            let cell_source = env.env_mut().cells.get_cell_mut(cell_index);
+            cell_source.delta_perimeter = 0;
+            for spin in neighs_source {
+                if spin == spin_source {
+                    cell_source.delta_perimeter -= 1;
+                } else {
+                    cell_source.delta_perimeter += 1;
+                }
+            }
+        }
+
+        let delta_h = self.delta_hamiltonian(
+            spin_source,
+            spin_target,
+            neighs_target,
+            env
+        ) + self.copy_biases(
+            pos_source,
+            pos_target,
+            env
+        );
+
+        if !self.accept_site_copy(rng, delta_h) {
+            return 0.;
+        }
+        let edges_update = env.grant_position(
+            pos_target,
+            spin_source
+        );
+        // Times 2 to represent the symmetric edge
+        2. * (edges_update.added as f32 - edges_update.removed as f32) / env.env().neighbourhood.n_neighs() as f32
+    }
+
+    fn delta_hamiltonian(
+        &self,
+        spin_source: Spin,
+        spin_target: Spin,
+        neigh_spins: impl IntoIterator<Item = Spin>,
+        env: &Self::Environment,
+    ) -> f32 {
+        self.delta_hamiltonian_size(spin_source, spin_target, env)
+            + self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env)
+            + self.delta_hamiltonian_perimeter(spin_source, spin_target, env)
     }
 
     fn delta_hamiltonian_adhesion(

@@ -92,7 +92,7 @@ impl IoManager {
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=celldf.height() {
-            cells.push(Cell::new_empty(0, 0, Grn::empty()));
+            cells.push(Cell::new_empty(0, 0, 0, Grn::empty()));
         }
 
         let index_map: HashMap<_, _> = HashMap::from_iter(
@@ -132,6 +132,10 @@ impl IoManager {
                             row[cols["center_y"]].try_extract::<f32>()?,
                         )
                     },
+                    perimeter: row[cols["perimeter"]].try_extract::<u32>()?,
+                    target_perimeter: row[cols["target_perimeter"]].try_extract::<u32>()?,
+                    // TODO: should we save this?
+                    delta_perimeter: 0,
                     ancestor: Some(row[cols["ancestor"]].try_extract::<CellIndex>()?),
                     divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
                     chem_center: Pos::new(
@@ -423,6 +427,8 @@ impl ToDataFrame for CellContainer<Cell> {
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
             "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Vec<_>>(),
+            "perimeter" => valid.iter().map(|cell| cell.perimeter).collect::<Vec<_>>(),
+            "target_perimeter" => valid.iter().map(|cell| cell.target_perimeter).collect::<Vec<_>>(),
             "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
             "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Vec<_>>(),
             "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Vec<_>>(),

@@ -13,18 +13,24 @@ pub struct Cell {
     pub divide_area: u32,
     pub chem_center: Pos<f32>,
     pub chem_mass: u32,
+    pub delta_perimeter: i32,
+    pub perimeter: u32,
+    pub target_perimeter: u32,
     pub genome: Grn<1, 1>,
     pub ancestor: Option<CellIndex>
 }
 
 impl Cell {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new_empty(target_area: u32, divide_area: u32, genome: Grn<1, 1>) -> Self {
+    pub fn new_empty(target_area: u32, target_perimeter: u32, divide_area: u32, genome: Grn<1, 1>) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
+            delta_perimeter: 0,
+            perimeter: 0,
             ancestor: None,
+            target_perimeter,
             divide_area,
             genome
         }
@@ -111,7 +117,9 @@ impl Cellular for Cell {
     }
 
     fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
-        self.basic_cell.shift_position(pos, add, bound)
+        self.basic_cell.shift_position(pos, add, bound);
+        self.perimeter = self.perimeter
+            .saturating_add_signed(self.delta_perimeter);
     }
 }
 
@@ -152,6 +160,7 @@ mod tests {
     fn make_test_cell() -> Cell {
         Cell::new_empty(
             100,
+            250,
             200,
             Grn::empty(),
         )

@@ -124,6 +124,8 @@ impl Model {
         ContactPotts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
+            // TODO!: parameterise
+            .perimeter_lambda(1.)
             .act_lambda(parameters.potts.act_lambda)
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
@@ -184,6 +186,8 @@ impl Model {
         for _ in 0..parameters.cell.starting_cells {
             let cell = Cell::new_empty(
                 parameters.cell.target_area,
+                // TODO!: parameterise
+                5,
                 parameters.cell.div_area,
                 Grn::from_sampler(
                     [1. / pond.env.height() as f32],
