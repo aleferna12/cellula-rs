@@ -310,7 +310,7 @@ impl Plot for ActPlot {
             let color = self.lerp(
                 val.as_(),
                 0.,
-                lat.height() as f32
+                env.act_max as f32
             );
             match color {
                 Ok(c) => image.put_pixel(

@@ -17,7 +17,6 @@ pub struct ContactPotts {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
-    pub act_max: u32,
     pub act_lambda: f32,
     pub enable_migration: bool,
     pub adhesion: StaticAdhesion
@@ -53,7 +52,7 @@ impl ContactPotts {
     fn act_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
         let act_source = Self::mean_act(pos_source, env);
         let act_target = Self::mean_act(pos_target, env);
-            -self.act_lambda / self.act_max as f32 * (act_source - act_target)
+            -self.act_lambda / env.act_max as f32 * (act_source - act_target)
     }
 
     fn mean_act(pos: Pos<usize>, env: &ChemEnvironment) -> f32 {

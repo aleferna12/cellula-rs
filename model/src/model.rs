@@ -124,7 +124,6 @@ impl Model {
         ContactPotts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
-            .act_max(parameters.potts.act_max)
             .act_lambda(parameters.potts.act_lambda)
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)

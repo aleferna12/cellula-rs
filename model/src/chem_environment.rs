@@ -24,7 +24,7 @@ pub struct ChemEnvironment {
     pub clones_table: SymmetricTable<bool>,
     pub cell_search_scaler: f32,
     pub max_cells: CellIndex,
-    act_max: u32,
+    pub act_max: u32,
     population_exploded: bool
 }
 

@@ -137,9 +137,9 @@ chem-min-color = "#000000"
 # With which color to plot the maximum value for the chem in the environment.
 chem-max-color = "#ffffff"
 # With which color to plot the minimum value for the act in the environment.
-act-min-color = "#000000"
+act-min-color = "#ff00ff"
 # With which color to plot the maximum value for the act in the environment.
-act-max-color = "#ffffff"
+act-max-color = "#ffff00"
 # With which color to plot migrating cells.
 migrating-color = "#b30000"
 # With which color to plot dividing cells.
