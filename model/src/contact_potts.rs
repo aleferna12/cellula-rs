@@ -141,19 +141,13 @@ impl Potts for ContactPotts {
             env.env().cell_lattice[neigh]
         }).collect::<Vec<_>>();
 
-        if let Spin::Some(cell_index) = spin_target {
-            let delta_perimeter = neighs_target
-                .iter()
-                .map(|spin| if spin == &spin_target { 1 } else { -1 } )
-                .sum();
+        if let Spin::Some(cell_index) = spin_source {
+            let delta_perimeter = env.delta_perimeter(true, cell_index, &neighs_target);
             env.env_mut().cells.get_cell_mut(cell_index).delta_perimeter = delta_perimeter;
         }
 
-        if let Spin::Some(cell_index) = spin_source {
-            let delta_perimeter = neighs_target
-                .iter()
-                .map(|spin| if spin == &spin_source { -1 } else { 1 } )
-                .sum();
+        if let Spin::Some(cell_index) = spin_target {
+            let delta_perimeter = env.delta_perimeter(false, cell_index, &neighs_target);
             env.env_mut().cells.get_cell_mut(cell_index).delta_perimeter = delta_perimeter;
         }
 

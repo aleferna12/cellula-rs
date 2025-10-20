@@ -295,6 +295,21 @@ impl ChemEnvironment {
 
         self.spawn_solid(border_positions.into_iter());
     }
+
+    pub fn delta_perimeter<'a, I: IntoIterator<Item = &'a Spin>>(
+        &self,
+        source: bool,
+        cell_index: CellIndex,
+        neighs_target: I
+    ) -> i32 {
+        let shift_when_eq = if source { -1 } else { 1 };
+        let cell_spin = Spin::Some(cell_index);
+        let delta_perimeter = neighs_target
+            .into_iter()
+            .map(|spin| if spin == &cell_spin { shift_when_eq } else { -shift_when_eq } )
+            .sum();
+        delta_perimeter
+    }
 }
 
 impl Deref for ChemEnvironment {
