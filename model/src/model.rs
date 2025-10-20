@@ -187,7 +187,7 @@ impl Model {
             let cell = Cell::new_empty(
                 parameters.cell.target_area,
                 // TODO!: parameterise
-                5,
+                120,
                 parameters.cell.div_area,
                 Grn::from_sampler(
                     [1. / pond.env.height() as f32],

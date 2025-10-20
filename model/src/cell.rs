@@ -119,7 +119,8 @@ impl Cellular for Cell {
     fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
         self.basic_cell.shift_position(pos, add, bound);
         self.perimeter = self.perimeter
-            .saturating_add_signed(self.delta_perimeter);
+            .checked_add_signed(self.delta_perimeter)
+            .expect("overflow when shifting perimeter");
     }
 }
 
@@ -136,6 +137,7 @@ impl Alive for Cell {
         Self { 
             basic_cell: self.basic_cell.birth(),
             chem_mass: 0,
+            perimeter: 0,
             ..self.clone()
         }
     }

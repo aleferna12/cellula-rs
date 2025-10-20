@@ -64,7 +64,7 @@ chemotaxis-mu = 4.0
 # Max act value on a brand-new cell protusion.
 act-max = 40
 # Scaler constant for chemotaxis bias.
-act-lambda = 300.0
+act-lambda = 20.0
 
 [potts.adhesion]
 # Adhesion energy at cell-cell interfaces of clonal cells.

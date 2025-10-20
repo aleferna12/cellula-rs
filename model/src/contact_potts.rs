@@ -7,7 +7,6 @@ use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
-use std::hint::black_box;
 use rand::Rng;
 use cellulars_lib::habitable::Habitable;
 
@@ -59,24 +58,24 @@ impl ContactPotts {
     fn act_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
         let act_source = Self::mean_act(pos_source, env);
         let act_target = Self::mean_act(pos_target, env);
-            -self.act_lambda / env.act_max as f32 * (act_source - act_target)
+        -self.act_lambda / env.act_max as f32 * (act_source - act_target)
     }
 
     fn mean_act(pos: Pos<usize>, env: &ChemEnvironment) -> f32 {
         // We do precompute these positions for pos_target in `attempt_site_copy`
         // Reusing that computation could be slightly faster
-        let mut acts = env.bounds.lattice_boundary.valid_positions(
-            env.neighbourhood.neighbours(pos.to_isize())
-        ).map(|neigh| {
-            env.act_lattice[neigh.to_usize()]
-        });
-        if acts.any(|x| x == 0) {
-            return 0.
-        }
-        // This could be wrong if there are invalid pos in the neighbourhood
-        let root = env.neighbourhood.n_neighs() as f32;
-        let sum: f32 = acts.map(|x| (x as f32).ln()).sum();
-        black_box((sum / root).exp())
+        let cell_spin = env.cell_lattice[pos];
+        let (count, sum) = env
+            .valid_neighbours(pos)
+            .filter(|&pos| env.cell_lattice[pos] == cell_spin)
+            .fold(
+                (1, (env.act_lattice[pos] as f32).ln()),
+                |(count, sum), pos2| {
+                    let act = env.act_lattice[pos2];
+                    (count + 1, sum + (act as f32).ln())
+                }
+            );
+        (sum / (count as f32)).exp()
     }
 
     fn perimeter_energy_diff(&self, delta_perimeter: i32, perimeter: u32, target_perimeter: u32) -> f32 {
@@ -137,18 +136,17 @@ impl Potts for ContactPotts {
             }
         };
 
+        // TODO!: Benchmark vs revalidating the positions inside update_delta_perimeter
         let neighs_target = env.env().valid_neighbours(pos_target).map(|neigh| {
             env.env().cell_lattice[neigh]
         }).collect::<Vec<_>>();
 
         if let Spin::Some(cell_index) = spin_source {
-            let delta_perimeter = env.delta_perimeter(true, cell_index, &neighs_target);
-            env.env_mut().cells.get_cell_mut(cell_index).delta_perimeter = delta_perimeter;
+            env.update_delta_perimeter(true, cell_index, neighs_target.iter().copied());
         }
 
         if let Spin::Some(cell_index) = spin_target {
-            let delta_perimeter = env.delta_perimeter(false, cell_index, &neighs_target);
-            env.env_mut().cells.get_cell_mut(cell_index).delta_perimeter = delta_perimeter;
+            env.update_delta_perimeter(false, cell_index, neighs_target.iter().copied());
         }
 
         let delta_h = self.delta_hamiltonian(
