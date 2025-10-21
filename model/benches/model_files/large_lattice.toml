@@ -29,9 +29,10 @@ mutation-std = 0.01
 boltz-t = 16.0
 size-lambda = 1.0
 chemotaxis-mu = 4.0
+act-max = 40
+act-lambda = 20.0
 
 [potts.adhesion]
-clone-energy = 8
 cell-energy = 16
 medium-energy = 16
 solid-energy = 16
@@ -65,6 +66,8 @@ all-clones = false
 border-color = "#000000"
 area-min-color = "#ff00ff"
 area-max-color = "#ffff00"
+act-min-color = "#ff00ff"
+act-max-color = "#ffff00"
 chem-min-color = "#000000"
 chem-max-color = "#ffffff"
 migrating-color = "#b30000"

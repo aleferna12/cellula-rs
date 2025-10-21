@@ -141,13 +141,12 @@ pub struct PottsParameters {
     pub chemotaxis_mu: f32,
     pub act_max: u32,
     pub act_lambda: f32,
-    pub adhesion: ClonalAdhesionParameters
+    pub adhesion: AdhesionParameters
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
-pub struct ClonalAdhesionParameters {
-    pub clone_energy: f32,
+pub struct AdhesionParameters {
     pub cell_energy: f32,
     pub medium_energy: f32,
     pub solid_energy: f32,

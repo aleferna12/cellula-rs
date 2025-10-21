@@ -67,9 +67,7 @@ act-max = 40
 act-lambda = 20.0
 
 [potts.adhesion]
-# Adhesion energy at cell-cell interfaces of clonal cells.
-clone-energy = 8.0
-# Adhesion energy at cell-cell interfaces of non-clonal cells.
+# Adhesion energy at cell-cell interfaces.
 cell-energy = 16.0
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16.0
