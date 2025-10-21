@@ -8,6 +8,7 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
+use rand_distr::num_traits::Pow;
 use cellulars_lib::habitable::Habitable;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
@@ -62,20 +63,24 @@ impl ContactPotts {
     }
 
     fn mean_act(pos: Pos<usize>, env: &ChemEnvironment) -> f32 {
+        let cell_spin = env.cell_lattice[pos];
         // We do precompute these positions for pos_target in `attempt_site_copy`
         // Reusing that computation could be slightly faster
-        let cell_spin = env.cell_lattice[pos];
-        let (count, sum) = env
+        // TODO!: Turns out this is a decent performance gain
+        let (count, product) = env
             .valid_neighbours(pos)
             .filter(|&pos| env.cell_lattice[pos] == cell_spin)
             .fold(
-                (1, (env.act_lattice[pos] as f32).ln()),
-                |(count, sum), pos2| {
+                // Use f64 throughout the calculation to prevent overflow
+                // We can alternatively sum logs instead of calculating the product
+                // This is a bit more costly though
+                (1, env.act_lattice[pos] as f64),
+                |(count, product), pos2| {
                     let act = env.act_lattice[pos2];
-                    (count + 1, sum + (act as f32).ln())
+                    (count + 1, product * act as f64)
                 }
             );
-        (sum / (count as f32)).exp()
+        product.pow(1. / count as f64) as f32
     }
 
     fn perimeter_energy_diff(&self, delta_perimeter: i32, perimeter: u32, target_perimeter: u32) -> f32 {

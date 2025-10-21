@@ -29,7 +29,12 @@ pub struct ChemEnvironment {
 }
 
 impl ChemEnvironment {
-    pub fn new(env: Environment<Cell, MooreNeighbourhood, BoundaryType>, max_cells: CellIndex, act_max: u32, cell_search_scaler: f32) -> Self {
+    pub fn new(
+        env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
+        max_cells: CellIndex,
+        act_max: u32,
+        cell_search_scaler: f32
+    ) -> Self {
         let lat = Lattice::new(env.cell_lattice.rect.clone());
         let mut env_ = Self {
             chem_lattice: lat.clone(),
