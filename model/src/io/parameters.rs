@@ -94,8 +94,7 @@ impl Parameters {
 #[serde(rename_all = "kebab-case")]
 pub struct GeneralParameters {
     pub time_steps: u32,
-    pub seed: Option<u64>,
-    pub dispersion_period: u32
+    pub seed: Option<u64>
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -117,6 +116,7 @@ pub struct CellParameters {
     pub starting_area: u32,
     pub target_area: u32,
     pub div_area: u32,
+    pub target_perimeter: u32,
     #[serde(default = "param_defaults::true_flag")]
     pub divide: bool,
     #[serde(default = "param_defaults::true_flag")]
@@ -138,6 +138,7 @@ pub struct GenomeParameters {
 pub struct PottsParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
+    pub perimeter_lambda: f32,
     pub chemotaxis_mu: f32,
     pub act_max: u32,
     pub act_lambda: f32,

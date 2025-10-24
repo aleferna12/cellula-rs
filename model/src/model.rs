@@ -22,7 +22,6 @@ pub struct Model {
     pub pond: Pond,
     pub io: IoManager,
     pub rng: Xoshiro256StarStar,
-    pub dispersion_period: u32,
     pub info_period: u32,
     time_steps: u32,
     time_step: u32,
@@ -44,7 +43,6 @@ impl Model {
             )?,
             io: Self::setup_io(&parameters, seed)?,
             rng,
-            dispersion_period: parameters.general.dispersion_period,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             time_step: 0
@@ -70,7 +68,6 @@ impl Model {
         )?;
         Ok(Self {
             io: Self::setup_io(&parameters, seed)?,
-            dispersion_period: parameters.general.dispersion_period,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             time_step: pond.time_step,
@@ -124,8 +121,7 @@ impl Model {
         ContactPotts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
-            // TODO!: parameterise
-            .perimeter_lambda(1.)
+            .perimeter_lambda(parameters.potts.perimeter_lambda)
             .act_lambda(parameters.potts.act_lambda)
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
@@ -186,8 +182,7 @@ impl Model {
         for _ in 0..parameters.cell.starting_cells {
             let cell = Cell::new_empty(
                 parameters.cell.target_area,
-                // TODO!: parameterise
-                120,
+                parameters.cell.target_perimeter,
                 parameters.cell.div_area,
                 Grn::from_sampler(
                     [1. / pond.env.height() as f32],

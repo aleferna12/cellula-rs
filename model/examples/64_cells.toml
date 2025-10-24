@@ -4,8 +4,6 @@ time-steps = 8192
 # Seed for the RNG.
 # Omit to pick a random seed.
 seed = 1241254152
-# Period (in MCS) with which to check and execute dispersion events.
-dispersion-period = 1000
 
 [pond]
 # Width of the lattice.
@@ -35,6 +33,8 @@ starting-area = 64
 target-area = 64
 # Cell area before division.
 div-area = 128
+# Target cell perimeter.
+target-perimeter = 120
 # Set to `false` to disable division.
 # [default = true]
 divide = true
@@ -59,6 +59,8 @@ mutation-std = 0.01
 boltz-t = 16.0
 # Scaler constant for area deviation penalties.
 size-lambda = 1.0
+# Scaler constant for perimeter deviation penalties.
+perimeter-lambda = 1.0
 # Scaler constant for chemotaxis bias.
 chemotaxis-mu = 4.0
 # Max act value on a brand-new cell protusion.
