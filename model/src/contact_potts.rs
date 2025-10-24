@@ -26,7 +26,7 @@ pub struct ContactPotts {
 }
 
 impl ContactPotts {
-    fn migration_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
+    fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
         };
@@ -113,11 +113,12 @@ impl Potts for ContactPotts {
     }
 
     fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f32 {
-        let mut biases = self.act_bias(pos_source, pos_target, env);
         if self.enable_migration {
-            biases += self.migration_bias(pos_source, pos_target, env);
+            self.act_bias(pos_source, pos_target, env)
+                + self.chemotaxis_bias(pos_source, pos_target, env)
+        } else {
+            0.
         }
-        biases
     }
 
     fn attempt_site_copy(
