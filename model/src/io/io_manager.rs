@@ -134,8 +134,7 @@ impl IoManager {
                     },
                     perimeter: row[cols["perimeter"]].try_extract::<u32>()?,
                     target_perimeter: row[cols["target_perimeter"]].try_extract::<u32>()?,
-                    // TODO: should we save this?
-                    delta_perimeter: 0,
+                    delta_perimeter: None,
                     ancestor: Some(row[cols["ancestor"]].try_extract::<CellIndex>()?),
                     divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
                     chem_center: Pos::new(

@@ -89,13 +89,22 @@ impl ContactPotts {
 
     fn delta_hamiltonian_perimeter(&self, spin_source: Spin, spin_target: Spin, env: &ChemEnvironment) -> f32 {
         let mut delta_h = 0.;
+        let message = "`delta_perimeter` not set";
         if let Spin::Some(cell_index) = spin_source {
             let cell = env.env().cells.get_cell(cell_index);
-            delta_h += self.perimeter_energy_diff(cell.delta_perimeter, cell.perimeter, cell.target_perimeter);
+            delta_h += self.perimeter_energy_diff(
+                cell.delta_perimeter.expect(message), 
+                cell.perimeter, 
+                cell.target_perimeter
+            );
         }
         if let Spin::Some(cell_index) = spin_target {
             let cell = env.env().cells.get_cell(cell_index);
-            delta_h += self.perimeter_energy_diff(cell.delta_perimeter, cell.perimeter, cell.target_perimeter);
+            delta_h += self.perimeter_energy_diff(
+                cell.delta_perimeter.expect(message), 
+                cell.perimeter,
+                cell.target_perimeter
+            );
         }
         delta_h
     }

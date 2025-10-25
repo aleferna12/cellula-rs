@@ -315,10 +315,10 @@ impl ChemEnvironment {
     ) {
         let shift_when_eq = if source { -1 } else { 1 };
         let cell_spin = Spin::Some(cell_index);
-        self.cells.get_cell_mut(cell_index).delta_perimeter = neighs_target
+        self.cells.get_cell_mut(cell_index).delta_perimeter = Some(neighs_target
             .into_iter()
             .map(|spin| if spin == cell_spin { shift_when_eq } else { -shift_when_eq } )
-            .sum();
+            .sum());
     }
 }
 

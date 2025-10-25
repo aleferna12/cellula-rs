@@ -13,7 +13,7 @@ pub struct Cell {
     pub divide_area: u32,
     pub chem_center: Pos<f32>,
     pub chem_mass: u32,
-    pub delta_perimeter: i32,
+    pub delta_perimeter: Option<i32>,
     pub perimeter: u32,
     pub target_perimeter: u32,
     pub genome: Grn<1, 1>,
@@ -27,7 +27,7 @@ impl Cell {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
-            delta_perimeter: 0,
+            delta_perimeter: None,
             perimeter: 0,
             ancestor: None,
             target_perimeter,
@@ -119,7 +119,7 @@ impl Cellular for Cell {
     fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
         self.basic_cell.shift_position(pos, add, bound);
         self.perimeter = self.perimeter
-            .checked_add_signed(self.delta_perimeter)
+            .checked_add_signed(self.delta_perimeter.expect("`delta_perimeter` not set"))
             .expect("overflow when shifting perimeter");
     }
 }
