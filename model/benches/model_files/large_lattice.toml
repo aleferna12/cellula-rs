@@ -15,6 +15,7 @@ search-radius = 3
 starting-area = 64
 target-area = 64
 div-area = 128
+target-perimeter = 120
 divide = true
 migrate = true
 update-period = 16
@@ -27,6 +28,7 @@ mutation-std = 0.01
 [potts]
 boltz-t = 16.0
 size-lambda = 1.0
+perimeter-lambda = 1.0
 chemotaxis-mu = 4.0
 act-max = 40
 act-lambda = 20.0
