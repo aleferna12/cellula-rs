@@ -387,6 +387,9 @@ impl Habitable for ChemEnvironment {
                 .valid_neighbours(pos)
                 .map(|pos| self.env.cell_lattice[pos])
                 .collect::<Vec<_>>();
+            if let Spin::Some(target_index) = self.cell_lattice[pos] {
+                self.update_delta_perimeter(false, target_index, neighs.iter().copied());
+            }
             self.update_delta_perimeter(true, cell_index, neighs.iter().copied());
             self.grant_position(pos, new_spin);
         }
