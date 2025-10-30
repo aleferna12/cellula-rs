@@ -32,10 +32,17 @@ impl Potts for ClonalPotts {
     }
 
     fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f32 {
+        if !self.enable_migration {
+            return 0.
+        }
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
         };
         let cell = env.cells.get_cell(cell_index);
+        if !cell.is_migrating() {
+            return 0.;
+        }
+
         let (dx1, dy1) = env.bounds.boundary.displacement(
             cell.center(),
             Pos::new(pos_target.x as f32, pos_target.y as f32)
@@ -61,7 +68,7 @@ impl Potts for ClonalPotts {
         &self, 
         spin_source: Spin, 
         spin_target: Spin,
-        neigh_spin: impl Iterator<Item=Spin>,
+        neigh_spin: impl IntoIterator<Item = Spin>,
         env: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;

@@ -1,6 +1,5 @@
 use crate::basic_cell::Cellular;
 use crate::habitable::Habitable;
-use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
@@ -61,7 +60,7 @@ pub trait Potts {
             } else {
                 (edge.p2, edge.p1)
             };
-            to_visit += self.attempt_site_copy(env, rng, pos_source, pos_target);
+            to_visit += self.attempt_site_copy(pos_source, pos_target, env, rng);
             to_visit -= 1.;
         }
     }
@@ -73,25 +72,28 @@ pub trait Potts {
     /// The number of extra updates that the copy attempt incurred.
     fn attempt_site_copy(
         &self,
-        env: &mut Self::Environment,
-        rng: &mut impl Rng,
         pos_source: Pos<usize>,
-        pos_target: Pos<usize>
+        pos_target: Pos<usize>,
+        env: &mut Self::Environment,
+        rng: &mut impl Rng
     ) -> f32 {
         let spin_target = env.env().cell_lattice[pos_target];
         if spin_target == Spin::Solid {
             return 0.;
         }
-        // If was going to copy from a Solid, create a Medium cell instead 
         let spin_source = {
             let spin = env.env().cell_lattice[pos_source];
-            if spin == Spin::Solid { Spin::Medium } else { spin }
+            // If was going to copy from a Solid, treat it as a Medium cell instead
+            if let Spin::Solid = spin {
+                Spin::Medium
+            } else {
+                spin
+            }
         };
-        let neigh_spins = env.env().bounds.lattice_boundary.valid_positions(
-            env.env().neighbourhood.neighbours(pos_target.to_isize())
-        ).map(|neigh| {
-            env.env().cell_lattice[neigh.to_usize()]
-        });
+        let neigh_spins = env
+            .env()
+            .valid_neighbours(pos_target)
+            .map(|pos| env.env().cell_lattice[pos]);
 
         let delta_h = self.delta_hamiltonian(
             spin_source, 
@@ -119,20 +121,18 @@ pub trait Potts {
         &self,
         spin_source: Spin,
         spin_target: Spin,
-        neigh_spins: impl Iterator<Item = Spin>,
+        neigh_spins: impl IntoIterator<Item = Spin>,
         env: &Self::Environment,
     ) -> f32 {
-        let mut delta_h = 0.;
-        delta_h += self.delta_hamiltonian_size(spin_source, spin_target, env);
-        delta_h += self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env);
-        delta_h
+        self.delta_hamiltonian_size(spin_source, spin_target, env)
+            + self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env)
     }
 
     fn delta_hamiltonian_adhesion(
         &self,
         spin_source: Spin,
         spin_target: Spin,
-        neigh_spin: impl Iterator<Item = Spin>,
+        neigh_spin: impl IntoIterator<Item = Spin>,
         env: &Self::Environment,
     ) -> f32;
 }

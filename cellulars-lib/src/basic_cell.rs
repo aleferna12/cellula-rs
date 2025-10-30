@@ -63,7 +63,7 @@ impl Cellular for BasicCell {
         ) {
             self.center = new_center;
         }
-        self.area = self.area.saturating_add_signed(shift);
+        self.area = self.area.checked_add_signed(shift).expect("overflow in `shift_position`");
     }
 }
 

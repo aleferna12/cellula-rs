@@ -36,7 +36,9 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
             neighbourhood
         })
     }
+}
 
+impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
     pub fn new(
         cells: CellContainer<C>,
         cell_lattice: Lattice<Spin>,
@@ -59,9 +61,16 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     pub fn height(&self) -> usize {
         self.cell_lattice.height()
     }
+
+    pub fn valid_neighbours(&self, pos: Pos<usize>) -> impl Iterator<Item = Pos<usize>>
+    where N: Neighbourhood {
+        self.bounds.lattice_boundary.valid_positions(
+            self.neighbourhood.neighbours(pos.to_isize())
+        ).map(|pos| pos.to_usize())
+    }
 }
 
-impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
+impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     // This function returns a Vec so that we can check that the site number matches
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///

@@ -66,7 +66,7 @@ impl Cell {
         }
         self.chem_mass = self.chem_mass
             .checked_add_signed(shift * chem_at as i32)
-            .expect("overflow in shift_chem");
+            .expect("overflow in `shift_chem`");
         self.genome.input_signals[0] = self.chem_mass as f32 / self.area as f32;
     }
 
