@@ -23,7 +23,6 @@ pub struct Model {
     pub pond: Pond,
     pub io: IoManager,
     pub rng: Xoshiro256StarStar,
-    pub dispersion_period: u32,
     pub info_period: u32,
     time_steps: u32,
     time_step: u32,
@@ -45,7 +44,6 @@ impl Model {
             )?,
             io: Self::setup_io(&parameters, seed)?,
             rng,
-            dispersion_period: parameters.general.dispersion_period,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             time_step: 0
@@ -71,7 +69,6 @@ impl Model {
         )?;
         Ok(Self {
             io: Self::setup_io(&parameters, seed)?,
-            dispersion_period: parameters.general.dispersion_period,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             time_step: pond.time_step,

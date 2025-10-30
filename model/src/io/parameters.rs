@@ -94,8 +94,7 @@ impl Parameters {
 #[serde(rename_all = "kebab-case")]
 pub struct GeneralParameters {
     pub time_steps: u32,
-    pub seed: Option<u64>,
-    pub dispersion_period: u32
+    pub seed: Option<u64>
 }
 
 #[derive(Serialize, Deserialize, Clone)]
