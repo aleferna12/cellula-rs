@@ -16,7 +16,7 @@ impl Transporter for WipeOut {
         for cell_index in cell_indexes {
             let cell = from.env.cells.get_cell(cell_index);
             let index_to = to.env.cells.add(cell.birth()).index;
-            for pos in from.env.search_cell_box(cell, from.cell_search_scaler) {
+            for pos in from.env.search_cell_box(cell, from.env.cell_search_scaler) {
                 from.env.grant_position(
                     pos,
                     Spin::Medium,

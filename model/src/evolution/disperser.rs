@@ -26,7 +26,7 @@ impl SelectiveDispersion {
             return vec![];
         }
         
-        let neighs_graph = pond.env.build_neighbours_graph(pond.cell_search_scaler);
+        let neighs_graph = pond.env.build_neighbours_graph(pond.env.cell_search_scaler);
         let mut subgraphs = connected_components(&neighs_graph);
         // There is only one cluster
         if subgraphs.len() <= 1 {
