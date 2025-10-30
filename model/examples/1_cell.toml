@@ -4,8 +4,6 @@ time-steps = 16384
 # Seed for the RNG.
 # Omit to pick a random seed.
 seed = 124125412345
-# Period (in MCS) with which to check and execute dispersion events.
-dispersion-period = 1000
 
 [pond]
 # Width of the lattice.
