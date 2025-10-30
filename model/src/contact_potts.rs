@@ -26,6 +26,7 @@ pub struct ContactPotts {
 }
 
 impl ContactPotts {
+    // TODO: Reimplement like in the model
     fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
