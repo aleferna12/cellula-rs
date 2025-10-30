@@ -173,7 +173,6 @@ pub struct IoParameters {
 pub struct DataParameters {
     pub cells_period: u32,
     pub genomes_period: u32,
-    pub clones_period: u32,
     pub lattice_period: u32
 }
 
@@ -196,9 +195,6 @@ pub struct PlotParameters {
     pub medium_color: Option<String>,
     pub center_color: String,
     pub chem_center_color: String,
-    pub clones_color: String,
-    #[serde(default = "param_defaults::false_flag")]
-    pub all_clones: bool,
     pub border_color: String,
     pub area_min_color: String,
     pub area_max_color: String,
@@ -216,7 +212,6 @@ pub enum PlotType {
     Spin,
     Center,
     ChemCenter,
-    Clones,
     Border,
     CellType,
     Area,

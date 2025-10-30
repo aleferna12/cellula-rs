@@ -100,7 +100,6 @@ impl Model {
             .image_period(parameters.io.image_period)
             .cells_period(parameters.io.data.cells_period)
             .genomes_period(parameters.io.data.genomes_period)
-            .clones_period(parameters.io.data.clones_period)
             .lattices_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone().try_into()?)
             .maybe_movie_maker(movie_maker)
@@ -240,10 +239,6 @@ impl Model {
             parameters.potts.act_max,
             parameters.cell.search_radius
         );
-        env.clones_table = IoManager::read_clones(IoManager::resolve_clones_path(
-            sim_path,
-            time_step
-        ))?;
         let env_ptr: *mut _ = &mut env;
         for pos in env.cell_lattice.iter_positions() {
             // We do this to avoid two lattices in memory

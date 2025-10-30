@@ -5,7 +5,7 @@ use model::model::Model;
 
 #[test]
 fn test_run() -> anyhow::Result<()> {
-    for plot in [Clones, CellType, Area, Center, ChemCenter] {
+    for plot in [CellType, Area, Center, ChemCenter] {
         let mut params = Parameters::parse("examples/64_cells.toml")?;
         params.io.outdir = format!("tests/{plot:?}").into();
         params.io.plot.order = vec![Chem, Spin, plot, Border];

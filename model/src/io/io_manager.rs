@@ -14,7 +14,6 @@ use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
-use cellulars_lib::symmetric_table::SymmetricTable;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use polars::prelude::*;
@@ -28,7 +27,6 @@ static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
 static GENOMES_PATH: &str = "genomes";
 static LATTICES_PATH: &str = "lattices";
-static CLONES_PATH: &str = "clones";
 static CONFIG_COPY_PATH: &str = "config.toml";
 
 #[derive(Builder)]
@@ -40,7 +38,6 @@ pub struct IoManager {
     image_period: u32,
     cells_period: u32,
     genomes_period: u32,
-    clones_period: u32,
     lattices_period: u32
 }
 
@@ -61,7 +58,6 @@ impl IoManager {
         std::fs::create_dir(self.outdir.join(IMAGES_PATH))?;
         std::fs::create_dir(self.outdir.join(CELLS_PATH))?;
         std::fs::create_dir(self.outdir.join(GENOMES_PATH))?;
-        std::fs::create_dir(self.outdir.join(CLONES_PATH))?;
         std::fs::create_dir(self.outdir.join(LATTICES_PATH))
     }
 
@@ -194,15 +190,6 @@ impl IoManager {
             .join(format!("{time_step}.parquet"))
     }
 
-    pub fn resolve_clones_path(
-        sim_path: impl AsRef<Path>,
-        time_step: u32
-    ) -> PathBuf {
-        sim_path.as_ref()
-            .join(CLONES_PATH)
-            .join(format!("{time_step}.parquet"))
-    }
-
     fn read_genomes(file_path: impl AsRef<Path>) -> anyhow::Result<Vec<CellIndexNodeLink>> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
@@ -244,32 +231,6 @@ impl IoManager {
         Ok(lattice)
     }
 
-    pub fn read_clones(file_path: impl AsRef<Path>) -> anyhow::Result<SymmetricTable<bool>> {
-        let file_path = file_path.as_ref();
-        let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
-        let reader = BufReader::new(file);
-        let clonedf = ParquetReader::new(reader).finish()?;
-        let mut table = SymmetricTable::new(clonedf.height());
-        for (j, column) in clonedf.get_columns().iter().enumerate() {
-            for (i, maybe_val) in column.i8()?.into_iter().enumerate() {
-                match maybe_val {
-                    Some(val) => {
-                        let val_bool = if val == 0 {
-                            false
-                        } else if val == 1 {
-                            true
-                        } else {
-                            bail!("file {} contains invalid value {}", file_path.display(), val);
-                        };
-                        table[(i, j)] = val_bool;
-                    },
-                    None => bail!("file {} contains null values", file_path.display()),
-                }
-            }
-        }
-        Ok(table)
-    }
-
     pub fn write_if_time(
         &mut self,
         time_step: u32,
@@ -303,15 +264,6 @@ impl IoManager {
                 .join(format!("{time_str}.json"));
             let file = std::fs::File::create(file_path)?;
             serde_json::to_writer(file, &genomes)?;
-        }
-
-        if time_step % self.clones_period == 0 {
-            let mut clonedf = env.clones_table.to_dataframe()?;
-            let file_path = self.outdir
-                .join(CLONES_PATH)
-                .join(format!("{time_str}.parquet"));
-            let file = std::fs::File::create(file_path)?;
-            ParquetWriter::new(file).finish(&mut clonedf)?;
         }
 
         if time_step % self.lattices_period == 0 {
@@ -436,19 +388,6 @@ impl ToDataFrame for CellContainer<Cell> {
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
             "is_dividing" => valid.iter().map(|cell| cell.is_dividing()).collect::<Vec<_>>()
         )
-    }
-}
-
-impl ToDataFrame for SymmetricTable<bool> {
-    fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let mut cols = Vec::with_capacity(self.length());
-        for j in 0..self.length() {
-            let series = (0..self.length())
-                .map(move |i| { self[(i, j)] as i8 })
-                .collect::<Series>();
-            cols.push(series.with_name(format!("col_{j}").into()).into());
-        };
-        DataFrame::new(cols)
     }
 }
 

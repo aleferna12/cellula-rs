@@ -11,9 +11,7 @@ use cellulars_lib::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
-use cellulars_lib::symmetric_table::SymmetricTable;
 use rand::Rng;
-use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone)]
@@ -21,7 +19,6 @@ pub struct ChemEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
     pub chem_lattice: Lattice<u32>,
     pub act_lattice: Lattice<u32>,
-    pub clones_table: SymmetricTable<bool>,
     pub cell_search_scaler: f32,
     pub max_cells: CellIndex,
     pub act_max: u32,
@@ -39,7 +36,6 @@ impl ChemEnvironment {
         let mut env_ = Self {
             chem_lattice: lat.clone(),
             act_lattice: lat,
-            clones_table: SymmetricTable::new(max_cells as usize),
             population_exploded: false,
             env,
             cell_search_scaler,
@@ -136,12 +132,6 @@ impl ChemEnvironment {
     pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
         cell.apoptosis();
     }
-    
-    pub fn invalidate_cell(&mut self, cell_index: CellIndex) {
-        for index in 0..self.clones_table.length() {
-            self.clones_table[(index, cell_index as usize)] = false;
-        }
-    }
 
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
@@ -169,49 +159,10 @@ impl ChemEnvironment {
             let new_cell = self.divide_cell(mom.index);
             if new_cell.is_valid() {
                 let new_index = new_cell.index;
-                self.update_clones(new_index, cell_index);
                 // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
                 self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(rng);
             }
         }
-    }
-
-    pub fn update_clones(
-        &mut self,
-        cell_index: CellIndex,
-        mom_index: CellIndex
-    ) {
-        let cell = self.cells.get_cell(cell_index);
-        let cell_neighs = self.cell_neighbours(cell, 2.0);
-
-        let mom_cell = self.cells.get_cell(mom_index);
-        let mom_neighs = self.cell_neighbours(
-            mom_cell,
-            2.0
-        );
-
-        let mom_clones = HashSet::from_iter(
-            (0..self.cells.n_cells())
-                .filter_map(|index| {
-                    if self.clones_table[(mom_cell.index as usize, index as usize)] {
-                        Some(Spin::Some(index))
-                    } else {
-                        None
-                    }
-                })
-        );
-        for spin in mom_clones.difference(&mom_neighs) {
-            if let Spin::Some(index) = spin {
-                self.clones_table[(mom_index as usize, *index as usize)] = false;
-            }
-        }
-        let clones: Vec<_> = cell_neighs.intersection(&mom_clones).collect();
-        for spin in &clones {
-            if let Spin::Some(index) = spin {
-                self.clones_table[(cell_index as usize, *index as usize)] = true;
-            }
-        }
-        self.clones_table[(cell_index as usize, mom_index as usize)] = true;
     }
 
     // TODO!: add plot to make sure this is right
@@ -272,7 +223,6 @@ impl ChemEnvironment {
     
     pub fn wipe_out(&mut self) {
         self.env.wipe_out();
-        self.clones_table.clear();
     }
 
     pub fn make_border(
@@ -367,7 +317,6 @@ impl Habitable for ChemEnvironment {
             // If the copy kills the cell
             if from_cell.area() == 0 {
                 from_cell.apoptosis();
-                self.invalidate_cell(index);
             }
         }
         // Executes the copy

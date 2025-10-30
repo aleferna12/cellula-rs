@@ -69,7 +69,7 @@ act-max = 40
 act-lambda = 20.0
 
 [potts.adhesion]
-# Adhesion energy at cell-cell interfaces.
+# Adhesion energy at cell-cell interfaces of non-clonal cells.
 cell-energy = 16.0
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16.0
@@ -96,8 +96,6 @@ image-format = "webp"
 cells-period = 2048
 # Period (in MCS) with which to save the cells' genomes as a JSON file.
 genomes-period = 4096
-# Period (in MCS) with which to save the cells' clones as a parquet file.
-clones-period = 4096
 # Period (in MCS) with which to save a parquet file containing the cell lattice.
 lattice-period = 4096
 
@@ -106,10 +104,10 @@ lattice-period = 4096
 # Options are:
 #   - "spin":         Plots lattice spins.
 #   - "center":       Plots cell centers.
-#   - "clones":       Plots will cells are attached.
 #   - "border":       Plots cell borders.
 #   - "chem":         Plots the chem gradient.
 #   - "chem-center":  Plots the perceived center of the chem gradient.
+#   - "area":         Plots the relative area of cells.
 #   - "cell-type":    Plots the cell type of cells.
 order = ["chem", "cell-type", "border"]
 # With which color to plot solid objects.
@@ -123,11 +121,6 @@ center-color = "#00ff00"
 chem-center-color = "#00ff00"
 # With which color to plot the border of cells.
 border-color = "#000000"
-# With which color to plot the connections between cell clones.
-clones-color = "#ff0000"
-# Set to true to display all clone pairs, even those span across the lattice due to periodic boundaries.
-# [default = false]
-all-clones = false
 # With which color to plot the minimum area in the cell population.
 area-min-color = "#ff00ff"
 # With which color to plot the maximum area in the cell population.

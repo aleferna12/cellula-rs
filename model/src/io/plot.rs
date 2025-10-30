@@ -8,7 +8,7 @@ use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::spin::Spin;
 use image::{Rgba, RgbaImage};
-use imageproc::drawing::{draw_cross_mut, draw_line_segment_mut};
+use imageproc::drawing::draw_cross_mut;
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -118,42 +118,6 @@ impl Plot for ChemCenterPlot {
             if let Some(pos) = center {
                 draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
             }
-        }
-    }
-}
-
-pub struct ClonesPlot {
-    pub color: Srgb<u8>,
-    pub all_clones: bool
-}
-
-impl Plot for ClonesPlot {
-    fn plot(&self, env: &ChemEnvironment, image: &mut RgbaImage) {
-        let clones = &env.clones_table;
-        for index_pair in clones.iter_index_pairs(None, None) {
-            if !clones[index_pair] {
-                continue;
-            }
-            let cell1 = env.cells.get_cell(index_pair.0 as CellIndex);
-            let cell2 = env.cells.get_cell(index_pair.1 as CellIndex);
-            if !cell1.is_valid() || !cell2.is_valid() {
-                continue;
-            }
-            let center1 = cell1.center();
-            let center2 = cell2.center();
-            if !self.all_clones {
-                let dist2 = (center1.x - center2.x).powf(2.) + (center1.y - center2.y).powf(2.);
-                let diag = env.width() * env.width() + env.height() * env.height();
-                if dist2 > diag as f32 / 4. {
-                    continue;
-                }
-            }
-            draw_line_segment_mut(
-                image,
-                (center1.x, center1.y),
-                (center2.x, center2.y),
-                srgb_to_rgba(self.color)
-            )
         }
     }
 }
@@ -358,10 +322,6 @@ impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
                 }),
                 PlotType::ChemCenter => Box::new(ChemCenterPlot {
                     color: hex_to_srgb(&params.chem_center_color)?
-                }),
-                PlotType::Clones => Box::new(ClonesPlot {
-                    color: hex_to_srgb(&params.clones_color)?,
-                    all_clones: params.all_clones
                 }),
                 PlotType::Area => Box::new(AreaPlot{
                     min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
