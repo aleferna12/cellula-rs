@@ -1,5 +1,5 @@
 use crate::chem_environment::ChemEnvironment;
-use crate::chem_potts::ClonalPotts;
+use crate::chem_potts::ChemPotts;
 use crate::evolution::selector::Fit;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
@@ -11,7 +11,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 #[derive(Clone, Builder)]
 pub struct Pond {
     pub env: ChemEnvironment,
-    pub potts: ClonalPotts,
+    pub potts: ChemPotts,
     pub rng: Xoshiro256StarStar,
     pub update_period: u32,
     pub cell_target_area: u32,

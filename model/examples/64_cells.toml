@@ -61,7 +61,7 @@ size-lambda = 1.0
 chemotaxis-mu = 4.0
 
 [potts.adhesion]
-# Adhesion energy at cell-cell interfaces of non-clonal cells.
+# Adhesion energy at cell-cell interfaces.
 cell-energy = 16.0
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16.0

@@ -11,7 +11,7 @@ use cellulars_lib::spin::Spin;
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 #[derive(Clone, Builder)]
-pub struct ClonalPotts {
+pub struct ChemPotts {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
@@ -19,7 +19,7 @@ pub struct ClonalPotts {
     pub adhesion: StaticAdhesion
 }
 
-impl Potts for ClonalPotts {
+impl Potts for ChemPotts {
     type Environment = ChemEnvironment;
 
     fn boltz_t(&self) -> f32 {
