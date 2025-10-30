@@ -1,7 +1,6 @@
 use crate::chem_environment::ChemEnvironment;
-use crate::clonal_adhesion::ClonalAdhesion;
 use bon::Builder;
-use cellulars_lib::adhesion::AdhesionSystem;
+use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
@@ -17,7 +16,7 @@ pub struct ClonalPotts {
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
     pub enable_migration: bool,
-    pub adhesion: ClonalAdhesion
+    pub adhesion: StaticAdhesion
 }
 
 impl Potts for ClonalPotts {
@@ -69,19 +68,19 @@ impl Potts for ClonalPotts {
         spin_source: Spin, 
         spin_target: Spin,
         neigh_spin: impl IntoIterator<Item = Spin>,
-        env: &Self::Environment
+        _: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_spin {
             energy -= self.adhesion.adhesion_energy(
                 spin_target,
                 neigh,
-                &env.clones_table
+                &()
             );
             energy += self.adhesion.adhesion_energy(
                 spin_source,
                 neigh,
-                &env.clones_table
+                &()
             );
         }
         energy

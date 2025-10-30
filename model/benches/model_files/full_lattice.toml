@@ -46,7 +46,6 @@ image-format = "webp"
 [io.data]
 cells-period = 1000
 genomes-period = 5000
-clones-period = 5000
 lattice-period = 5000
 
 [io.movie]
@@ -60,8 +59,6 @@ order = ["spin"]
 solid-color = "#000000"
 center-color = "#00ff00"
 chem-center-color = "#00ff00"
-clones-color = "#ff0000"
-all-clones = false
 border-color = "#000000"
 area-min-color = "#ff00ff"
 area-max-color = "#ffff00"

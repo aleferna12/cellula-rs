@@ -171,7 +171,6 @@ pub struct IoParameters {
 pub struct DataParameters {
     pub cells_period: u32,
     pub genomes_period: u32,
-    pub clones_period: u32,
     pub lattice_period: u32
 }
 
@@ -212,7 +211,6 @@ pub enum PlotType {
     Spin,
     Center,
     ChemCenter,
-    Clones,
     Border,
     CellType,
     Area,

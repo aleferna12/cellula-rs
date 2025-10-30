@@ -1,7 +1,6 @@
 use crate::cell::Cell;
 use crate::chem_environment::ChemEnvironment;
-use crate::clonal_adhesion::ClonalAdhesion;
-use crate::clonal_potts::ClonalPotts;
+use crate::chem_potts::ClonalPotts;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::evolution::grn::Grn;
 use crate::io::io_manager::IoManager;
@@ -104,7 +103,6 @@ impl Model {
             .image_period(parameters.io.image_period)
             .cells_period(parameters.io.data.cells_period)
             .genomes_period(parameters.io.data.genomes_period)
-            .clones_period(parameters.io.data.clones_period)
             .lattices_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone().try_into()?)
             .maybe_movie_maker(movie_maker)
@@ -128,14 +126,11 @@ impl Model {
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
             .adhesion(
-                ClonalAdhesion::new(
-                    parameters.potts.adhesion.clone_energy,
-                    StaticAdhesion {
-                        cell_energy: parameters.potts.adhesion.cell_energy,
-                        medium_energy: parameters.potts.adhesion.medium_energy,
-                        solid_energy: parameters.potts.adhesion.solid_energy,
-                    }
-                )
+                StaticAdhesion {
+                    cell_energy: parameters.potts.adhesion.cell_energy,
+                    medium_energy: parameters.potts.adhesion.medium_energy,
+                    solid_energy: parameters.potts.adhesion.solid_energy,
+                }
             )
             .build()
     }
@@ -242,10 +237,6 @@ impl Model {
             parameters.cell.max_cells,
             parameters.cell.search_radius
         );
-        env.clones_table = IoManager::read_clones(IoManager::resolve_clones_path(
-            sim_path,
-            time_step
-        ))?;
         let env_ptr: *mut _ = &mut env;
         for pos in env.cell_lattice.iter_positions() {
             // We do this to avoid two lattices in memory

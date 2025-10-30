@@ -1,5 +1,5 @@
 use crate::chem_environment::ChemEnvironment;
-use crate::clonal_potts::ClonalPotts;
+use crate::chem_potts::ClonalPotts;
 use crate::evolution::selector::Fit;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
