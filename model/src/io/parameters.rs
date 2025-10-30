@@ -139,13 +139,12 @@ pub struct PottsParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
-    pub adhesion: ClonalAdhesionParameters
+    pub adhesion: AdhesionParameters
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
-pub struct ClonalAdhesionParameters {
-    pub clone_energy: f32,
+pub struct AdhesionParameters {
     pub cell_energy: f32,
     pub medium_energy: f32,
     pub solid_energy: f32,
@@ -193,9 +192,6 @@ pub struct PlotParameters {
     pub medium_color: Option<String>,
     pub center_color: String,
     pub chem_center_color: String,
-    pub clones_color: String,
-    #[serde(default = "param_defaults::false_flag")]
-    pub all_clones: bool,
     pub border_color: String,
     pub area_min_color: String,
     pub area_max_color: String,
