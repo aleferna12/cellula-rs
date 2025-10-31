@@ -1,6 +1,6 @@
 use crate::cell::Cell;
-use crate::chem_environment::ChemEnvironment;
-use crate::contact_potts::ContactPotts;
+use crate::my_environment::MyEnvironment;
+use crate::my_potts::MyPotts;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::evolution::grn::Grn;
 use crate::io::io_manager::IoManager;
@@ -116,8 +116,8 @@ impl Model {
         Ok(io)
     }
 
-    fn make_potts(parameters: &Parameters) -> ContactPotts {
-        ContactPotts::builder()
+    fn make_potts(parameters: &Parameters) -> MyPotts {
+        MyPotts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
             .perimeter_lambda(parameters.potts.perimeter_lambda)
@@ -141,8 +141,8 @@ impl Model {
 
     fn make_empty_pond(
         parameters: &Parameters,
-        env: ChemEnvironment,
-        ca: ContactPotts,
+        env: MyEnvironment,
+        ca: MyPotts,
         rng: &mut Xoshiro256StarStar
     ) -> Pond {
         Pond::builder()
@@ -157,10 +157,10 @@ impl Model {
 
     fn make_new_pond(
         parameters: &Parameters,
-        ca: ContactPotts,
+        ca: MyPotts,
         rng: &mut Xoshiro256StarStar
     ) -> anyhow::Result<Pond> {
-        let mut env = ChemEnvironment::new(
+        let mut env = MyEnvironment::new(
             Environment::new_empty(
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(Rect::new(
@@ -228,7 +228,7 @@ impl Model {
             rect.clone().try_into()?,
         )?;
 
-        let mut env = ChemEnvironment::new(
+        let mut env = MyEnvironment::new(
             Environment::new(
                 cells,
                 lattice,

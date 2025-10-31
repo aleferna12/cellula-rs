@@ -1,4 +1,4 @@
-use crate::chem_environment::ChemEnvironment;
+use crate::my_environment::MyEnvironment;
 use bon::Builder;
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
 use cellulars_lib::basic_cell::Cellular;
@@ -15,7 +15,7 @@ use cellulars_lib::habitable::Habitable;
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 #[derive(Clone, Builder)]
-pub struct ContactPotts {
+pub struct MyPotts {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub perimeter_lambda: f32,
@@ -25,9 +25,9 @@ pub struct ContactPotts {
     pub adhesion: StaticAdhesion
 }
 
-impl ContactPotts {
+impl MyPotts {
     // TODO: Reimplement like in the model
-    fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
+    fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
         };
@@ -57,13 +57,13 @@ impl ContactPotts {
         }
     }
 
-    fn act_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f32 {
+    fn act_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let act_source = Self::mean_act(pos_source, env);
         let act_target = Self::mean_act(pos_target, env);
         -self.act_lambda / env.act_max as f32 * (act_source - act_target)
     }
 
-    fn mean_act(pos: Pos<usize>, env: &ChemEnvironment) -> f32 {
+    fn mean_act(pos: Pos<usize>, env: &MyEnvironment) -> f32 {
         let cell_spin = env.cell_lattice[pos];
         // We do precompute these positions for pos_target in `attempt_site_copy`
         // Reusing that computation could be slightly faster
@@ -88,7 +88,7 @@ impl ContactPotts {
         2. * self.perimeter_lambda * delta_perimeter as f32 * (perimeter as f32 - target_perimeter as f32) + self.perimeter_lambda
     }
 
-    fn delta_hamiltonian_perimeter(&self, spin_source: Spin, spin_target: Spin, env: &ChemEnvironment) -> f32 {
+    fn delta_hamiltonian_perimeter(&self, spin_source: Spin, spin_target: Spin, env: &MyEnvironment) -> f32 {
         let mut delta_h = 0.;
         let message = "`delta_perimeter` not set";
         if let Spin::Some(cell_index) = spin_source {
@@ -111,8 +111,8 @@ impl ContactPotts {
     }
 }
 
-impl Potts for ContactPotts {
-    type Environment = ChemEnvironment;
+impl Potts for MyPotts {
+    type Environment = MyEnvironment;
 
     fn boltz_t(&self) -> f32 {
         self.boltz_t
