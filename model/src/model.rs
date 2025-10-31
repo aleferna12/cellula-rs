@@ -1,4 +1,4 @@
-use crate::cell::Cell;
+use crate::cell::{Amoeba, Cell};
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::evolution::grn::Grn;
 use crate::io::io_manager::IoManager;
@@ -17,6 +17,7 @@ use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
+use cellulars_lib::basic_cell::BasicCell;
 
 pub struct Model {
     pub pond: Pond,
@@ -178,7 +179,7 @@ impl Model {
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
         for _ in 0..parameters.cell.starting_cells {
-            let cell = Cell::new_empty(
+            let cell = Cell::Amoeba(Amoeba::new_empty(
                 parameters.cell.target_area,
                 parameters.cell.target_perimeter,
                 parameters.cell.div_area,
@@ -189,13 +190,23 @@ impl Model {
                     parameters.cell.genome.mutation_std,
                     || Uniform::new(-1., 1.).unwrap().sample(rng)
                 )
-            );
+            ));
             pond.env.spawn_cell_random(
                 cell,
                 parameters.cell.starting_area,
                 &mut pond.rng
             );
         }
+        // TODO!: Parameterise
+        for _ in 0..10 {
+            let cell = Cell::Bacterium(BasicCell::new_empty(20));
+            pond.env.spawn_cell_random(
+                cell,
+                parameters.cell.starting_area,
+                &mut pond.rng
+            );
+        }
+
         log::info!(
                 "Created {} out of the {} cells requested",
                 pond.env.cells.n_valid(),

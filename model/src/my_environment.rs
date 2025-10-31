@@ -96,22 +96,24 @@ impl MyEnvironment {
             .collect();
         
         let mut newborn = mom.birth();
-        newborn.ancestor = Some(mom_index);
-        let newborn_ta = mom.newborn_target_area;
+        if let Cell::Amoeba(amoeba) = &mut newborn {
+            amoeba.ancestor = Some(mom_index);
+        }
+        let newborn_ta = mom.basic().newborn_target_area;
         let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
             let neighs = self
                 .valid_neighbours(pos)
                 .map(|pos| self.env.cell_lattice[pos])
                 .collect::<Vec<_>>();
-            self.update_delta_perimeter(false, mom_index, neighs.iter().copied());
-            self.update_delta_perimeter(true, new_index, neighs.iter().copied());
+            self.update_delta_perimeter_if_amoeba(false, mom_index, neighs.iter().copied());
+            self.update_delta_perimeter_if_amoeba(true, new_index, neighs.iter().copied());
             self.grant_position(
                 pos,
                 Spin::Some(new_index),
             );
         }
-        self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
+        self.env.cells.get_cell_mut(mom_index).basic_mut().set_target_area(newborn_ta);
         self.cells.get_cell(new_index)
     }
 
@@ -130,9 +132,11 @@ impl MyEnvironment {
             if !cell.is_alive() {
                 continue;
             }
-            // Currently cells don't need to express the dividing type to divide, they just need to be big enough
-            if cell.area() >= cell.divide_area() {
-                divide.push(cell.index);
+            if let Cell::Amoeba(amoeba) = &cell.cell {
+                // Currently cells don't need to express the dividing type to divide, they just need to be big enough
+                if amoeba.area() >= amoeba.divide_area() {
+                    divide.push(cell.index);
+                }
             }
         }
         for cell_index in divide {
@@ -146,8 +150,10 @@ impl MyEnvironment {
             let new_cell = self.divide_cell(mom.index);
             if new_cell.is_valid() {
                 let new_index = new_cell.index;
-                // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
-                self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(rng);
+                if let Cell::Amoeba(amoeba) = &mut self.env.cells.get_cell_mut(new_index).cell {
+                    // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
+                    amoeba.genome.attempt_mutate(rng);
+                }
             }
         }
     }
@@ -161,13 +167,13 @@ impl MyEnvironment {
         let mut sum_xy = 0.0;
 
         for p in &self.search_cell_box(cell, search_scaler) {
-            let (dx, dy) = self.bounds.boundary.displacement(p.to_f32(), cell.center);
+            let (dx, dy) = self.bounds.boundary.displacement(p.to_f32(), cell.center());
             sum_xx += dx * dx;
             sum_yy += dy * dy;
             sum_xy += dx * dy;
         }
 
-        let n = cell.area as f32;
+        let n = cell.area() as f32;
         let cov_xx = sum_xx / n;
         let cov_yy = sum_yy / n;
         let cov_xy = sum_xy / n;
@@ -203,7 +209,7 @@ impl MyEnvironment {
         } else {
             f32::INFINITY // vertical line
         };
-        let intercept = cell.center.y - slope * cell.center.x;
+        let intercept = cell.center().y - slope * cell.center().x;
 
         SplitLine { slope, intercept }
     }
@@ -244,7 +250,7 @@ impl MyEnvironment {
         self.spawn_solid(border_positions.into_iter());
     }
 
-    pub fn update_delta_perimeter(
+    pub fn update_delta_perimeter_if_amoeba(
         &mut self,
         source: bool,
         cell_index: CellIndex,
@@ -252,10 +258,13 @@ impl MyEnvironment {
     ) {
         let shift_when_eq = if source { -1 } else { 1 };
         let cell_spin = Spin::Some(cell_index);
-        self.cells.get_cell_mut(cell_index).delta_perimeter = Some(neighs_target
-            .into_iter()
-            .map(|spin| if spin == cell_spin { shift_when_eq } else { -shift_when_eq } )
-            .sum());
+        let cell = self.cells.get_cell_mut(cell_index);
+        if let Cell::Amoeba(amoeba) = &mut cell.cell {
+            amoeba.delta_perimeter = Some(neighs_target
+                .into_iter()
+                .map(|spin| if spin == cell_spin { shift_when_eq } else { -shift_when_eq } )
+                .sum());
+        }
     }
 }
 
@@ -320,13 +329,16 @@ impl Habitable for MyEnvironment {
                 .valid_neighbours(pos)
                 .map(|pos| self.env.cell_lattice[pos])
                 .collect::<Vec<_>>();
+
             if let Spin::Some(target_index) = self.cell_lattice[pos] {
-                self.update_delta_perimeter(false, target_index, neighs.iter().copied());
+                self.update_delta_perimeter_if_amoeba(false, target_index, neighs.iter().copied());
             }
-            self.update_delta_perimeter(true, cell_index, neighs.iter().copied());
+            self.update_delta_perimeter_if_amoeba(true, cell_index, neighs.iter().copied());
             self.grant_position(pos, new_spin);
         }
-        self.cells.get_cell_mut(cell_index).ancestor =  Some(cell_index);
+        if let Cell::Amoeba(amoeba) = &mut self.cells.get_cell_mut(cell_index).cell {
+            amoeba.ancestor =  Some(cell_index);
+        }
         self.cells.get_cell(cell_index)
     }
 }

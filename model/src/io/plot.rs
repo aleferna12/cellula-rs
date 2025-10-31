@@ -14,6 +14,7 @@ use rand_distr::num_traits::AsPrimitive;
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
+use crate::cell::Cell;
 
 pub trait Plot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage);
@@ -138,7 +139,13 @@ impl Plot for CellTypePlot {
             let spin = env.cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
                 let cell = env.cells.get_cell(cell_index);
-                let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
+                let color = match &cell.cell {
+                    Cell::Amoeba(amoeba) => {
+                        if amoeba.is_migrating() { self.mig_color } else { self.div_color }
+                    }
+                    // TODO!: Parameterise
+                    Cell::Bacterium(_) => Srgb::new(30, 235, 30)
+                };
                 image.put_pixel(
                     pos.x as u32,
                     pos.y as u32,

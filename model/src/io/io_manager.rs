@@ -1,4 +1,4 @@
-use crate::cell::Cell;
+use crate::cell::{Amoeba, Cell};
 use crate::evolution::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
@@ -18,7 +18,7 @@ use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -78,17 +78,10 @@ impl IoManager {
         celldf: DataFrame,
         genomes: Vec<CellIndexNodeLink>,
     ) -> anyhow::Result<CellContainer<Cell>> {
-        if celldf.height() > genomes.len() {
-            bail!("`celldf` contains more entries than `genomes`");
-        }
-        if celldf.height() < genomes.len() {
-            bail!("`genomes` contains more entries than `celldf`");
-        }
-
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=celldf.height() {
-            cells.push(Cell::new_empty(0, 0, 0, Grn::empty()));
+            cells.push(Cell::Bacterium(BasicCell::new_empty(0)));
         }
 
         let index_map: HashMap<_, _> = HashMap::from_iter(
@@ -99,6 +92,10 @@ impl IoManager {
                 .map(|(i, val)| {
                     (val, i)
                 })
+        );
+
+        let amoebas_indexes: HashSet<_> = HashSet::from_iter(
+            genomes.iter().map(|genome| genome.index)
         );
 
         let cols: HashMap<_, _> = HashMap::from_iter(
@@ -118,26 +115,40 @@ impl IoManager {
 
             cells.replace(RelCell {
                 index: cell_index,
-                cell: Cell {
-                    basic_cell: BasicCell {
-                        target_area: row[cols["target_area"]].try_extract::<u32>()?,
-                        newborn_target_area: row[cols["newborn_target_area"]].try_extract::<u32>()?,
-                        area: row[cols["area"]].try_extract::<u32>()?,
-                        center: Pos::new(
-                            row[cols["center_x"]].try_extract::<f32>()?,
-                            row[cols["center_y"]].try_extract::<f32>()?,
-                        )
-                    },
+                cell: Cell::Amoeba(Amoeba {
+                    basic_cell: Self::basic_cell_from_row(&row, &cols)?,
                     perimeter: row[cols["perimeter"]].try_extract::<u32>()?,
                     target_perimeter: row[cols["target_perimeter"]].try_extract::<u32>()?,
                     delta_perimeter: None,
                     ancestor: Some(row[cols["ancestor"]].try_extract::<CellIndex>()?),
                     divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
                     genome: grn,
-                }
+                })
+            });
+        }
+
+        for (cell_index, row_ix) in index_map
+            .iter()
+            .filter(|(key, _)| !amoebas_indexes.contains(key)) {
+            let row = celldf.get_row(*row_ix)?.0;
+            cells.replace(RelCell {
+                index: *cell_index,
+                cell: Cell::Bacterium(Self::basic_cell_from_row(&row, &cols)?)
             });
         }
         Ok(cells)
+    }
+    
+    fn basic_cell_from_row(row: &Vec<AnyValue>, cols: &HashMap<&str, usize>) -> anyhow::Result<BasicCell> {
+        Ok(BasicCell {
+            target_area: row[cols["target_area"]].try_extract::<u32>()?,
+            newborn_target_area: row[cols["newborn_target_area"]].try_extract::<u32>()?,
+            area: row[cols["area"]].try_extract::<u32>()?,
+            center: Pos::new(
+                row[cols["center_x"]].try_extract::<f32>()?,
+                row[cols["center_y"]].try_extract::<f32>()?,
+            )
+        })
     }
 
     pub fn read_cells(
@@ -274,10 +285,19 @@ impl IoManager {
         cells: &CellContainer<Cell>
     ) -> Vec<CellIndexNodeLink> {
         cells.iter()
-            .filter(|cell| cell.is_valid())
-            .map(|cell| CellIndexNodeLink {
-                index: cell.index,
-                node_link: NodeLinkData::from(cell.genome.clone())
+            .filter_map(|cell| {
+                if !cell.is_valid() {
+                    return None;
+                }
+                match &cell.cell {
+                    Cell::Amoeba(amoeba) => {
+                        Some(CellIndexNodeLink {
+                            index: cell.index,
+                            node_link: NodeLinkData::from(amoeba.genome.clone())
+                        })
+                    }
+                    Cell::Bacterium(_) => None
+                }
             })
             .collect()
     }
@@ -369,16 +389,42 @@ impl ToDataFrame for CellContainer<Cell> {
         let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
             "index" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
-            "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Vec<_>>(),
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
-            "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Vec<_>>(),
-            "perimeter" => valid.iter().map(|cell| cell.perimeter).collect::<Vec<_>>(),
-            "target_perimeter" => valid.iter().map(|cell| cell.target_perimeter).collect::<Vec<_>>(),
-            "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
+            "newborn_target_area" => valid.iter().map(|cell| {cell.basic().newborn_target_area}).collect::<Vec<_>>(),
             "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Vec<_>>(),
             "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Vec<_>>(),
-            "is_dividing" => valid.iter().map(|cell| cell.is_dividing()).collect::<Vec<_>>()
+            "species" => valid.iter().map(|cell| cell.cell.to_string()).collect::<Vec<_>>(),
+            "ancestor" => valid.iter().map(|cell| {
+                match &cell.cell {
+                    Cell::Amoeba(amoeba) => amoeba.ancestor,
+                    _ => None
+                }
+            }).collect::<Vec<_>>(),
+            "perimeter" => valid.iter().map(|cell| {
+                match &cell.cell {
+                    Cell::Amoeba(amoeba) => Some(amoeba.perimeter),
+                    _ => None
+                }
+            }).collect::<Vec<_>>(),
+            "target_perimeter" => valid.iter().map(|cell| {
+                match &cell.cell {
+                    Cell::Amoeba(amoeba) => Some(amoeba.target_perimeter),
+                    _ => None
+                }
+            }).collect::<Vec<_>>(),
+            "divide_area" => valid.iter().map(|cell| {
+                match &cell.cell {
+                    Cell::Amoeba(amoeba) => Some(amoeba.divide_area),
+                    _ => None
+                }
+            }).collect::<Vec<_>>(),
+            "is_dividing" => valid.iter().map(|cell| {
+                match &cell.cell {
+                    Cell::Amoeba(amoeba) => Some(amoeba.is_dividing()),
+                    _ => None
+                }
+            }).collect::<Vec<_>>(),
         )
     }
 }

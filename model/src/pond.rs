@@ -6,6 +6,7 @@ use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
+use crate::cell::Cell;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 #[derive(Clone, Builder)]
@@ -31,10 +32,12 @@ impl Step for Pond {
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
             self.env.cells.iter_mut().for_each(|cell| {
-                // TODO: do something with this, cell must express a target vector of proteins
-                //  right before the end of a season or something like that
-                cell.genome.input_signals[0] = self.time_step as f32;
-                cell.update();
+                if let Cell::Amoeba(amoeba) = &mut cell.cell {
+                    // TODO: do something with this, cell must express a target vector of proteins
+                    //  right before the end of a season or something like that
+                    amoeba.genome.input_signals[0] = self.time_step as f32;
+                    amoeba.update();
+                }
             });
             if self.division_enabled {
                 self.env.reproduce(&mut self.rng);

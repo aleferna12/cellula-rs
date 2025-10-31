@@ -6,9 +6,89 @@ use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
+use strum_macros::Display;
+
+#[derive(Clone, Debug, Display)]
+pub enum Cell {
+    #[strum(to_string = "amoeba")]
+    Amoeba(Amoeba),
+    #[strum(to_string = "bacterium")]
+    Bacterium(BasicCell)
+}
+
+impl Cell {
+    pub fn basic(&self) -> &BasicCell {
+        match self {
+            Cell::Amoeba(amoeba) => &amoeba.basic_cell,
+            Cell::Bacterium(basic) => basic,
+        }
+    }
+
+    pub fn basic_mut(&mut self) -> &mut BasicCell {
+        match self {
+            Cell::Amoeba(amoeba) => &mut amoeba.basic_cell,
+            Cell::Bacterium(basic) => basic,
+        }
+    }
+}
+
+impl Cellular for Cell {
+    fn target_area(&self) -> u32 {
+        self.basic().target_area()
+    }
+
+    fn area(&self) -> u32 {
+        self.basic().area()
+    }
+
+    fn center(&self) -> Pos<f32> {
+        self.basic().center()
+    }
+
+    fn is_valid(&self) -> bool {
+        self.basic().is_valid()
+    }
+
+    fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
+        match self {
+            Cell::Amoeba(amoeba) => {
+                amoeba.shift_position(pos, add, bound);
+            },
+            Cell::Bacterium(basic) => {
+                basic.shift_position(pos, add, bound);
+            }
+        }
+    }
+}
+
+impl Alive for Cell {
+    fn is_alive(&self) -> bool {
+        self.basic().is_alive()
+    }
+
+    fn apoptosis(&mut self) {
+        match self {
+            Cell::Amoeba(amoeba) => { amoeba.apoptosis() }
+            Cell::Bacterium(basic) => { basic.apoptosis() }
+        }
+    }
+
+    fn birth(&self) -> Self {
+        match self {
+            Cell::Amoeba(amoeba) => { Self::Amoeba(amoeba.birth()) }
+            Cell::Bacterium(basic) => { Self::Bacterium(basic.birth()) }
+        }
+    }
+}
+
+impl Fit for Cell {
+    fn fitness(&self) -> f32 {
+        todo!()
+    }
+}
 
 #[derive(Clone, Debug)]
-pub struct Cell {
+pub struct Amoeba {
     pub basic_cell: BasicCell,
     pub divide_area: u32,
     pub delta_perimeter: Option<i32>,
@@ -18,8 +98,8 @@ pub struct Cell {
     pub ancestor: Option<CellIndex>
 }
 
-impl Cell {
-    /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
+impl Amoeba {
+    /// Initialises an empty migrating `Amoeba` to be filled progressively with `shift_position()`.
     pub fn new_empty(target_area: u32, target_perimeter: u32, divide_area: u32, genome: Grn<1, 1>) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
@@ -55,38 +135,6 @@ impl Cell {
         }
         self.genome.update_expression();
     }
-}
-
-impl Deref for Cell {
-    type Target = BasicCell;
-
-    fn deref(&self) -> &Self::Target {
-        &self.basic_cell
-    }
-}
-
-impl DerefMut for Cell {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.basic_cell
-    }
-}
-
-impl Cellular for Cell {
-    fn target_area(&self) -> u32 {
-        self.basic_cell.target_area()
-    }
-
-    fn area(&self) -> u32 {
-        self.basic_cell.area()
-    }
-
-    fn center(&self) -> Pos<f32> {
-        self.basic_cell.center()
-    }
-
-    fn is_valid(&self) -> bool {
-        self.basic_cell.is_valid()
-    }
 
     fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
         self.basic_cell.shift_position(pos, add, bound);
@@ -94,19 +142,9 @@ impl Cellular for Cell {
             .checked_add_signed(self.delta_perimeter.expect("`delta_perimeter` not set"))
             .expect("overflow when shifting perimeter");
     }
-}
-
-impl Alive for Cell {
-    fn is_alive(&self) -> bool {
-        self.basic_cell.is_alive()
-    }
-
-    fn apoptosis(&mut self) {
-        self.basic_cell.apoptosis()
-    }
 
     fn birth(&self) -> Self {
-        Self { 
+        Self {
             basic_cell: self.basic_cell.birth(),
             perimeter: 0,
             ..self.clone()
@@ -114,9 +152,17 @@ impl Alive for Cell {
     }
 }
 
-impl Fit for Cell {
-    fn fitness(&self) -> f32 {
-        todo!()
+impl Deref for Amoeba {
+    type Target = BasicCell;
+
+    fn deref(&self) -> &Self::Target {
+        &self.basic_cell
+    }
+}
+
+impl DerefMut for Amoeba {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.basic_cell
     }
 }
 
@@ -130,8 +176,8 @@ mod tests {
         UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
     }
     
-    fn make_test_cell() -> Cell {
-        Cell::new_empty(
+    fn make_test_amoeba() -> Amoeba {
+        Amoeba::new_empty(
             100,
             250,
             200,
@@ -141,7 +187,7 @@ mod tests {
 
     #[test]
     fn test_shift_position_area_and_center() {
-        let mut cell = make_test_cell();
+        let mut cell = make_test_amoeba();
         let bound = make_unsafe_boundary();
 
         cell.shift_position(Pos::new(10, 10), true, &bound);

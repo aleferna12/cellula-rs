@@ -8,6 +8,7 @@ use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
 use rand_distr::num_traits::Pow;
+use crate::cell::Cell;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -36,7 +37,15 @@ impl MyPotts {
         // TODO!: Turns out this is a decent performance gain
         let (count, product) = env
             .valid_neighbours(pos)
-            .filter(|&pos| env.cell_lattice[pos] == cell_spin)
+            .filter(|&pos| {
+                match cell_spin {
+                    Spin::Some(cell_index) => {
+                        env.cell_lattice[pos] == cell_spin
+                            && matches!(&env.cells.get_cell(cell_index).cell, Cell::Amoeba(_))
+                    },
+                    _ => false
+                }
+            })
             .fold(
                 // Use f64 throughout the calculation to prevent overflow
                 // We can alternatively sum logs instead of calculating the product
@@ -55,25 +64,20 @@ impl MyPotts {
     }
 
     fn delta_hamiltonian_perimeter(&self, spin_source: Spin, spin_target: Spin, env: &MyEnvironment) -> f32 {
-        let mut delta_h = 0.;
-        let message = "`delta_perimeter` not set";
-        if let Spin::Some(cell_index) = spin_source {
-            let cell = env.env().cells.get_cell(cell_index);
-            delta_h += self.perimeter_energy_diff(
-                cell.delta_perimeter.expect(message),
-                cell.perimeter,
-                cell.target_perimeter
-            );
+        self.perimeter_if_amoeba(spin_source, env) + self.perimeter_if_amoeba(spin_target, env)
+    }
+
+    fn perimeter_if_amoeba(&self, spin: Spin, env: &MyEnvironment) -> f32 {
+        if let Spin::Some(cell_index) = spin
+            && let Cell::Amoeba(amoeba) = &env.env().cells.get_cell(cell_index).cell {
+            self.perimeter_energy_diff(
+                amoeba.delta_perimeter.expect("`delta_perimeter` not set"),
+                amoeba.perimeter,
+                amoeba.target_perimeter
+            )
+        } else {
+            0.
         }
-        if let Spin::Some(cell_index) = spin_target {
-            let cell = env.env().cells.get_cell(cell_index);
-            delta_h += self.perimeter_energy_diff(
-                cell.delta_perimeter.expect(message),
-                cell.perimeter,
-                cell.target_perimeter
-            );
-        }
-        delta_h
     }
 }
 
@@ -123,11 +127,11 @@ impl Potts for MyPotts {
         }).collect::<Vec<_>>();
 
         if let Spin::Some(cell_index) = spin_source {
-            env.update_delta_perimeter(true, cell_index, neighs_target.iter().copied());
+            env.update_delta_perimeter_if_amoeba(true, cell_index, neighs_target.iter().copied());
         }
 
         if let Spin::Some(cell_index) = spin_target {
-            env.update_delta_perimeter(false, cell_index, neighs_target.iter().copied());
+            env.update_delta_perimeter_if_amoeba(false, cell_index, neighs_target.iter().copied());
         }
 
         let delta_h = self.delta_hamiltonian(
