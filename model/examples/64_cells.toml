@@ -109,7 +109,8 @@ lattice-period = 4096
 #   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "area":         Plots the relative area of cells.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["chem", "cell-type", "border"]
+#   - "act":          Plots the activation of cells' membranes.
+order = ["chem", "cell-type", "act", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
