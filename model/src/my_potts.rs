@@ -19,14 +19,14 @@ pub struct MyPotts {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub perimeter_lambda: f32,
-    pub chemotaxis_mu: f32,
     pub act_lambda: f32,
+    pub chemotaxis_mu: f32,
     pub enable_migration: bool,
     pub adhesion: StaticAdhesion
 }
 
 impl MyPotts {
-    // TODO: Reimplement like in the model
+    // TODO: Reimplement like in the model (but keep this version!)
     fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
