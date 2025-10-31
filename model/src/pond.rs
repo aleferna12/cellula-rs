@@ -30,7 +30,12 @@ impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
-            self.env.cells.iter_mut().for_each(|cell| cell.update());
+            self.env.cells.iter_mut().for_each(|cell| {
+                // TODO: do something with this, cell must express a target vector of proteins
+                //  right before the end of a season or something like that
+                cell.genome.input_signals[0] = self.time_step as f32;
+                cell.update();
+            });
             if self.division_enabled {
                 self.env.reproduce(&mut self.rng);
             }
