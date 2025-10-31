@@ -1,6 +1,5 @@
 /*
 TODO!:
-    - strip down of non essential features (mom, chem, ...)
     - profile data write, something is taking awfully long (prob lattice write)
  */
 use clap::Parser;
