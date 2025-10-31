@@ -1,4 +1,4 @@
-use crate::chem_environment::ChemEnvironment;
+use crate::my_environment::MyEnvironment;
 use crate::clonal_adhesion::ClonalAdhesion;
 use bon::Builder;
 use cellulars_lib::adhesion::AdhesionSystem;
@@ -12,7 +12,7 @@ use cellulars_lib::spin::Spin;
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 #[derive(Clone, Builder)]
-pub struct ClonalPotts {
+pub struct MyPotts {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
@@ -20,8 +20,8 @@ pub struct ClonalPotts {
     pub adhesion: ClonalAdhesion
 }
 
-impl Potts for ClonalPotts {
-    type Environment = ChemEnvironment;
+impl Potts for MyPotts {
+    type Environment = MyEnvironment;
 
     fn boltz_t(&self) -> f32 {
         self.boltz_t

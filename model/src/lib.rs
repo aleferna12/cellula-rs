@@ -1,9 +1,9 @@
 pub mod model;
 pub mod io;
 mod pond;
-mod clonal_potts;
+mod my_potts;
 mod constants;
 mod cell;
 mod clonal_adhesion;
-mod chem_environment;
+mod my_environment;
 mod evolution;
