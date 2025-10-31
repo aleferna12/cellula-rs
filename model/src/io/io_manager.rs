@@ -1,10 +1,10 @@
 use crate::cell::Cell;
-use crate::my_environment::MyEnvironment;
 use crate::evolution::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
 use crate::io::parameters::Parameters;
 use crate::io::plot::*;
+use crate::my_environment::MyEnvironment;
 use anyhow::{anyhow, bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
@@ -133,11 +133,6 @@ impl IoManager {
                     delta_perimeter: None,
                     ancestor: Some(row[cols["ancestor"]].try_extract::<CellIndex>()?),
                     divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
-                    chem_center: Pos::new(
-                        row[cols["chem_center_x"]].try_extract::<f32>()?,
-                        row[cols["chem_center_y"]].try_extract::<f32>()?,
-                    ),
-                    chem_mass: row[cols["chem_mass"]].try_extract::<u32>()?,
                     genome: grn,
                 }
             });
@@ -383,9 +378,6 @@ impl ToDataFrame for CellContainer<Cell> {
             "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
             "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Vec<_>>(),
             "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Vec<_>>(),
-            "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
-            "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
-            "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
             "is_dividing" => valid.iter().map(|cell| cell.is_dividing()).collect::<Vec<_>>()
         )
     }

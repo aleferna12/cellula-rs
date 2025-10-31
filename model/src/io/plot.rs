@@ -1,6 +1,6 @@
-use crate::my_environment::MyEnvironment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
+use crate::my_environment::MyEnvironment;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
@@ -10,9 +10,9 @@ use cellulars_lib::spin::Spin;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
+use rand_distr::num_traits::AsPrimitive;
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use rand_distr::num_traits::AsPrimitive;
 use thiserror::Error;
 
 pub trait Plot {
@@ -93,27 +93,6 @@ impl Plot for CenterPlot {
             let center = env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.center().x as isize,
                 cell.center().y as isize,
-            ));
-            if let Some(pos) = center {
-                draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
-            }
-        }
-    }
-}
-
-pub struct ChemCenterPlot {
-    pub color: Srgb<u8>
-}
-
-impl Plot for ChemCenterPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for cell in env.cells.iter() {
-            if !cell.is_valid() {
-                continue;
-            }
-            let center = env.bounds.lattice_boundary.valid_pos(Pos::new(
-                cell.chem_center().x as isize,
-                cell.chem_center().y as isize,
             ));
             if let Some(pos) = center {
                 draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
@@ -221,43 +200,6 @@ impl ContinuousPlot for AreaPlot {
     }
 }
 
-pub struct ChemPlot {
-    pub min_color: Luv,
-    pub max_color: Luv
-}
-
-impl Plot for ChemPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        let lat = &env.chem_lattice;
-        for pos in lat.iter_positions() {
-            let val = lat[pos];
-            let color = self.lerp(
-                val.as_(),
-                0.,
-                lat.height() as f32
-            );
-            match color {
-                Ok(c) => image.put_pixel(
-                    pos.x as u32,
-                    pos.y as u32,
-                    srgb_to_rgba(Srgb::from_linear(c.into_color()))
-                ),
-                Err(e) => log::warn!("Failed to plot chem for pos `{pos:?}` with error `{e:?}`")
-            }
-        }
-    }
-}
-
-impl ContinuousPlot for ChemPlot {
-    fn min_color(&self) -> Luv {
-        self.min_color
-    }
-
-    fn max_color(&self) -> Luv {
-        self.max_color
-    }
-}
-
 pub struct ActPlot {
     pub min_color: Luv,
     pub max_color: Luv
@@ -320,19 +262,12 @@ impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
                 PlotType::Center => Box::new(CenterPlot {
                     color: hex_to_srgb(&params.center_color)?
                 }),
-                PlotType::ChemCenter => Box::new(ChemCenterPlot {
-                    color: hex_to_srgb(&params.chem_center_color)?
-                }),
                 PlotType::Area => Box::new(AreaPlot{
                     min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
                     max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
                 }),
                 PlotType::Border => Box::new(BorderPlot {
                     color: hex_to_srgb(&params.border_color)?
-                }),
-                PlotType::Chem => Box::new(ChemPlot {
-                    min_color: srgb_to_luv(hex_to_srgb(&params.chem_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.chem_max_color)?)
                 }),
                 PlotType::Act => Box::new(ActPlot {
                     min_color: srgb_to_luv(hex_to_srgb(&params.act_min_color)?),

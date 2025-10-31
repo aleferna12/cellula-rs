@@ -17,7 +17,6 @@ use std::ops::{Deref, DerefMut};
 #[derive(Clone)]
 pub struct MyEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
-    pub chem_lattice: Lattice<u32>,
     pub act_lattice: Lattice<u32>,
     pub cell_search_scaler: f32,
     pub max_cells: CellIndex,
@@ -32,25 +31,13 @@ impl MyEnvironment {
         act_max: u32,
         cell_search_scaler: f32
     ) -> Self {
-        let lat = Lattice::new(env.cell_lattice.rect.clone());
-        let mut env_ = Self {
-            chem_lattice: lat.clone(),
-            act_lattice: lat,
+        Self {
+            act_lattice: Lattice::new(env.cell_lattice.rect.clone()),
             population_exploded: false,
             env,
             cell_search_scaler,
             max_cells,
-            act_max
-        };
-        env_.make_chem_gradient();
-        env_
-    }
-
-    pub fn make_chem_gradient(&mut self) {
-        for i in 0..self.width() {
-            for j in 0..self.height() {
-                self.chem_lattice[(i, j).into()] = j.try_into().expect("lattice is too big");
-            }
+            act_max,
         }
     }
 
@@ -301,11 +288,9 @@ impl Habitable for MyEnvironment {
         pos: Pos<usize>,
         to: Spin
     ) -> EdgesUpdate {
-        let chem_at_pos = self.chem_lattice[pos];
         if let Spin::Some(index) = to {
             let to_cell = self.env.cells.get_cell_mut(index);
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
-            to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
             self.act_lattice[pos] = self.act_max;
         } else {
             self.act_lattice[pos] = 0;
@@ -313,7 +298,6 @@ impl Habitable for MyEnvironment {
         if let Spin::Some(index) = self.cell_lattice[pos] {
             let from_cell = self.env.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);
-            from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
             // If the copy kills the cell
             if from_cell.area() == 0 {
                 from_cell.apoptosis();

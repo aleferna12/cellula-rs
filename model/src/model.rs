@@ -1,11 +1,11 @@
 use crate::cell::Cell;
-use crate::my_environment::MyEnvironment;
-use crate::my_potts::MyPotts;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::evolution::grn::Grn;
 use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
+use crate::my_environment::MyEnvironment;
+use crate::my_potts::MyPotts;
 use crate::pond::Pond;
 use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
@@ -122,7 +122,6 @@ impl Model {
             .size_lambda(parameters.potts.size_lambda)
             .perimeter_lambda(parameters.potts.perimeter_lambda)
             .act_lambda(parameters.potts.act_lambda)
-            .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
             .adhesion(
                 StaticAdhesion {

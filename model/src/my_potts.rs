@@ -1,15 +1,13 @@
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
-use cellulars_lib::basic_cell::Cellular;
-use cellulars_lib::positional::boundaries::Boundary;
+use cellulars_lib::habitable::Habitable;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
 use rand_distr::num_traits::Pow;
-use cellulars_lib::habitable::Habitable;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -20,43 +18,11 @@ pub struct MyPotts {
     pub size_lambda: f32,
     pub perimeter_lambda: f32,
     pub act_lambda: f32,
-    pub chemotaxis_mu: f32,
     pub enable_migration: bool,
     pub adhesion: StaticAdhesion
 }
 
 impl MyPotts {
-    // TODO: Reimplement like in the model (but keep this version!)
-    fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
-        let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
-            return 0.;
-        };
-        let cell = env.cells.get_cell(cell_index);
-        if !cell.is_migrating() {
-            return 0.;
-        }
-
-        let (dx1, dy1) = env.bounds.boundary.displacement(
-            cell.center(),
-            Pos::new(pos_target.x as f32, pos_target.y as f32)
-        );
-        let (dx2, dy2) = env.bounds.boundary.displacement(
-            cell.center(),
-            cell.chem_center()
-        );
-
-        let dot = dx1 * dx2 + dy1 * dy2;
-        let norm1_sq = dx1 * dx1 + dy1 * dy1;
-        let norm2_sq = dx2 * dx2 + dy2 * dy2;
-        let denom = (norm1_sq * norm2_sq).sqrt();
-
-        if denom <= 0. {
-            0.
-        } else {
-            -self.chemotaxis_mu * (dot / denom)
-        }
-    }
-
     fn act_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let act_source = Self::mean_act(pos_source, env);
         let act_target = Self::mean_act(pos_target, env);
@@ -94,15 +60,15 @@ impl MyPotts {
         if let Spin::Some(cell_index) = spin_source {
             let cell = env.env().cells.get_cell(cell_index);
             delta_h += self.perimeter_energy_diff(
-                cell.delta_perimeter.expect(message), 
-                cell.perimeter, 
+                cell.delta_perimeter.expect(message),
+                cell.perimeter,
                 cell.target_perimeter
             );
         }
         if let Spin::Some(cell_index) = spin_target {
             let cell = env.env().cells.get_cell(cell_index);
             delta_h += self.perimeter_energy_diff(
-                cell.delta_perimeter.expect(message), 
+                cell.delta_perimeter.expect(message),
                 cell.perimeter,
                 cell.target_perimeter
             );
@@ -125,7 +91,6 @@ impl Potts for MyPotts {
     fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f32 {
         if self.enable_migration {
             self.act_bias(pos_source, pos_target, env)
-                + self.chemotaxis_bias(pos_source, pos_target, env)
         } else {
             0.
         }
@@ -203,7 +168,7 @@ impl Potts for MyPotts {
         &self, 
         spin_source: Spin, 
         spin_target: Spin,
-        neigh_spin: impl IntoIterator<Item=Spin>,
+        neigh_spin: impl IntoIterator<Item = Spin>,
         _env: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;
