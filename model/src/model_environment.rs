@@ -15,7 +15,7 @@ use rand::Rng;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone)]
-pub struct ChemEnvironment {
+pub struct ModelEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
     pub chem_lattice: Lattice<u32>,
     pub cell_search_scaler: f32,
@@ -23,7 +23,7 @@ pub struct ChemEnvironment {
     population_exploded: bool
 }
 
-impl ChemEnvironment {
+impl ModelEnvironment {
     pub fn new(
         env: Environment<Cell, MooreNeighbourhood, BoundaryType>, 
         max_cells: CellIndex,
@@ -246,20 +246,20 @@ impl ChemEnvironment {
     }
 }
 
-impl Deref for ChemEnvironment {
+impl Deref for ModelEnvironment {
     type Target = Environment<Cell, MooreNeighbourhood, BoundaryType>;
     fn deref(&self) -> &Self::Target {
         &self.env
     }
 }
 
-impl DerefMut for ChemEnvironment {
+impl DerefMut for ModelEnvironment {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.env
     }
 }
 
-impl Habitable for ChemEnvironment {
+impl Habitable for ModelEnvironment {
     type Cell = Cell;
 
     fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {

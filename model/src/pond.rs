@@ -1,5 +1,5 @@
-use crate::chem_environment::ChemEnvironment;
-use crate::chem_potts::ChemPotts;
+use crate::model_environment::ModelEnvironment;
+use crate::model_potts::ModelPotts;
 use crate::evolution::selector::Fit;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
@@ -10,8 +10,8 @@ use rand_xoshiro::Xoshiro256StarStar;
 // TODO: this struct can be made general if CellularAutomata is also general
 #[derive(Clone, Builder)]
 pub struct Pond {
-    pub env: ChemEnvironment,
-    pub potts: ChemPotts,
+    pub env: ModelEnvironment,
+    pub potts: ModelPotts,
     pub rng: Xoshiro256StarStar,
     pub update_period: u32,
     pub cell_target_area: u32,
