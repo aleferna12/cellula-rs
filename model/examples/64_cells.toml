@@ -105,7 +105,7 @@ lattice-period = 4096
 #   - "border":       Plots cell borders.
 #   - "area":         Plots the relative area of cells.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["cell-type", "border"]
+order = ["cell-type", "act", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
