@@ -57,8 +57,6 @@ mutation-std = 0.01
 boltz-t = 16.0
 # Scaler constant for area deviation penalties.
 size-lambda = 1.0
-# Scaler constant for chemotaxis bias.
-chemotaxis-mu = 4.0
 
 [potts.adhesion]
 # Adhesion energy at cell-cell interfaces.
@@ -97,11 +95,9 @@ lattice-period = 4096
 #   - "spin":         Plots lattice spins.
 #   - "center":       Plots cell centers.
 #   - "border":       Plots cell borders.
-#   - "chem":         Plots the chem gradient.
-#   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "area":         Plots the relative area of cells.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["chem", "cell-type", "border"]
+order = ["cell-type", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
@@ -111,16 +107,10 @@ solid-color = "#000000"
 center-color = "#00ff00"
 # With which color to plot the border of cells.
 border-color = "#000000"
-# With which color to plot the perceived center of chem of cells.
-chem-center-color = "#00ff00"
 # With which color to plot the minimum area in the cell population.
 area-min-color = "#ff00ff"
 # With which color to plot the maximum area in the cell population.
 area-max-color = "#ffff00"
-# With which color to plot the minimum value for the chem in the environment.
-chem-min-color = "#000000"
-# With which color to plot the maximum value for the chem in the environment.
-chem-max-color = "#ffffff"
 # With which color to plot migrating cells.
 migrating-color = "#b30000"
 # With which color to plot dividing cells.

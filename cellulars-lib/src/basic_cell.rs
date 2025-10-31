@@ -95,7 +95,6 @@ pub trait Cellular {
     );
 }
 
-// TODO!: mom should not be here and should instead be a symmetric table on ChemEnvironment or Environment
 /// Represents a cell that is bound to an `Environment`.
 ///
 /// Functions that do not need information about a cell's relational operators 

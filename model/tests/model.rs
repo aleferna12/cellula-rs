@@ -5,10 +5,10 @@ use model::model::Model;
 
 #[test]
 fn test_run() -> anyhow::Result<()> {
-    for plot in [CellType, Area, Center, ChemCenter] {
+    for plot in [CellType, Area, Center] {
         let mut params = Parameters::parse("examples/64_cells.toml")?;
         params.io.outdir = format!("tests/{plot:?}").into();
-        params.io.plot.order = vec![Chem, Spin, plot, Border];
+        params.io.plot.order = vec![Spin, plot, Border];
         params.io.image_period = 64;
         params.io.movie.show = false;
         params.cell.update_period = 1;

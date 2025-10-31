@@ -137,7 +137,6 @@ pub struct GenomeParameters {
 pub struct PottsParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
-    pub chemotaxis_mu: f32,
     pub adhesion: AdhesionParameters
 }
 
@@ -190,12 +189,9 @@ pub struct PlotParameters {
     pub solid_color: String,
     pub medium_color: Option<String>,
     pub center_color: String,
-    pub chem_center_color: String,
     pub border_color: String,
     pub area_min_color: String,
     pub area_max_color: String,
-    pub chem_min_color: String,
-    pub chem_max_color: String,
     pub migrating_color: String,
     pub dividing_color: String
 }
@@ -205,11 +201,9 @@ pub struct PlotParameters {
 pub enum PlotType {
     Spin,
     Center,
-    ChemCenter,
     Border,
     CellType,
-    Area,
-    Chem
+    Area
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
