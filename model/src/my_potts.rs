@@ -68,7 +68,7 @@ impl Potts for MyPotts {
         spin_source: Spin, 
         spin_target: Spin,
         neigh_spin: impl IntoIterator<Item = Spin>,
-        _: &Self::Environment
+        _env: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_spin {
