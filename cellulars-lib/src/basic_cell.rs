@@ -20,9 +20,7 @@ impl BasicCell {
             center: Pos::new(0., 0.,)
         }
     }
-}
 
-impl BasicCell {
     pub fn set_target_area(&mut self, value: u32) {
         self.target_area = value;
     }
