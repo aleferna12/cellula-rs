@@ -14,7 +14,7 @@ impl MovieMaker {
         frame_period: u32
     ) -> Result<Self, minifb::Error> {
         let window = minifb::Window::new(
-            "Evo-CPM",
+            "Cellulars Model",
             width as usize,
             height as usize,
             minifb::WindowOptions::default()
