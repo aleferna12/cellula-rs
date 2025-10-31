@@ -1,4 +1,4 @@
-use crate::model_environment::ModelEnvironment;
+use crate::my_environment::MyEnvironment;
 use bon::Builder;
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
 use cellulars_lib::basic_cell::Cellular;
@@ -11,7 +11,7 @@ use cellulars_lib::spin::Spin;
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 #[derive(Clone, Builder)]
-pub struct ModelPotts {
+pub struct MyPotts {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub chemotaxis_mu: f32,
@@ -19,8 +19,8 @@ pub struct ModelPotts {
     pub adhesion: StaticAdhesion
 }
 
-impl Potts for ModelPotts {
-    type Environment = ModelEnvironment;
+impl Potts for MyPotts {
+    type Environment = MyEnvironment;
 
     fn boltz_t(&self) -> f32 {
         self.boltz_t

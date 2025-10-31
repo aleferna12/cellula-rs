@@ -1,5 +1,5 @@
 use crate::cell::Cell;
-use crate::model_environment::ModelEnvironment;
+use crate::my_environment::MyEnvironment;
 use crate::evolution::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
@@ -231,7 +231,7 @@ impl IoManager {
     pub fn write_if_time(
         &mut self,
         time_step: u32,
-        env: &ModelEnvironment
+        env: &MyEnvironment
     ) -> anyhow::Result<()> {
         self.write_data_if_time(time_step, env)?;
         self.write_image_if_time(time_step, env)
@@ -240,7 +240,7 @@ impl IoManager {
     fn write_data_if_time(
         &self,
         time_step: u32,
-        env: &ModelEnvironment
+        env: &MyEnvironment
     ) -> anyhow::Result<()> {
         let time_str = time_step.to_string();
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
@@ -312,7 +312,7 @@ impl IoManager {
     fn write_image_if_time(
         &mut self,
         time_step: u32, 
-        env: &ModelEnvironment
+        env: &MyEnvironment
     ) -> anyhow::Result<()> {
         // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
@@ -348,7 +348,7 @@ impl IoManager {
 
     pub fn make_simulation_image(
         &self, 
-        env: &ModelEnvironment
+        env: &MyEnvironment
     ) -> RgbaImage {
         let mut image = RgbaImage::new(
             env.width() as u32,
