@@ -1,10 +1,10 @@
 use crate::cell::Cell;
-use crate::my_environment::MyEnvironment;
 use crate::evolution::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
 use crate::io::parameters::Parameters;
 use crate::io::plot::*;
+use crate::my_environment::MyEnvironment;
 use anyhow::{anyhow, bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
@@ -128,7 +128,6 @@ impl IoManager {
                             row[cols["center_y"]].try_extract::<f32>()?,
                         )
                     },
-                    ancestor: Some(row[cols["ancestor"]].try_extract::<CellIndex>()?),
                     divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
                     chem_center: Pos::new(
                         row[cols["chem_center_x"]].try_extract::<f32>()?,
@@ -371,7 +370,6 @@ impl ToDataFrame for CellContainer<Cell> {
         let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
         df!(
             "index" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
-            "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Vec<_>>(),
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
             "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Vec<_>>(),

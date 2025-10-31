@@ -2,7 +2,6 @@ use crate::evolution::genome::Genome;
 use crate::evolution::grn::Grn;
 use crate::evolution::selector::Fit;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
-use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
@@ -13,8 +12,7 @@ pub struct Cell {
     pub divide_area: u32,
     pub chem_center: Pos<f32>,
     pub chem_mass: u32,
-    pub genome: Grn<1, 1>,
-    pub ancestor: Option<CellIndex>
+    pub genome: Grn<1, 1>
 }
 
 impl Cell {
@@ -24,7 +22,6 @@ impl Cell {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
-            ancestor: None,
             divide_area,
             genome
         }

@@ -102,8 +102,7 @@ impl MyEnvironment {
             })
             .collect();
         
-        let mut newborn = mom.birth();
-        newborn.ancestor = Some(mom_index);
+        let newborn = mom.birth();
         let newborn_ta = mom.newborn_target_area;
         let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
@@ -305,7 +304,6 @@ impl Habitable for MyEnvironment {
         for pos in positions {
             self.grant_position(pos, new_spin);
         }
-        self.cells.get_cell_mut(cell_index).ancestor =  Some(cell_index);
         self.cells.get_cell(cell_index)
     }
 }

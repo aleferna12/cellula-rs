@@ -1,6 +1,6 @@
-use crate::my_environment::MyEnvironment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
+use crate::my_environment::MyEnvironment;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;

@@ -1,6 +1,6 @@
+use crate::evolution::selector::Fit;
 use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
-use crate::evolution::selector::Fit;
 use bon::Builder;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
