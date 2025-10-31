@@ -297,13 +297,20 @@ impl Habitable for MyEnvironment {
         pos: Pos<usize>,
         to: Spin
     ) -> EdgesUpdate {
-        if let Spin::Some(index) = to {
-            let to_cell = self.env.cells.get_cell_mut(index);
-            to_cell.shift_position(pos, true, &self.env.bounds.boundary);
-            self.act_lattice[pos] = self.act_max;
-        } else {
-            self.act_lattice[pos] = 0;
-        }
+        let acv_val = match to {
+            Spin::Some(index) => {
+                let to_cell = self.env.cells.get_cell_mut(index);
+                to_cell.shift_position(pos, true, &self.env.bounds.boundary);
+                if let Cell::Amoeba(_) = &self.cells.get_cell(index).cell {
+                    self.act_max
+                } else {
+                    0
+                }
+            },
+            _ => 0
+        };
+        self.act_lattice[pos] = acv_val;
+
         if let Spin::Some(index) = self.cell_lattice[pos] {
             let from_cell = self.env.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);

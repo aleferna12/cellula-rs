@@ -1,6 +1,7 @@
+use crate::cell::Cell;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
-use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
+use cellulars_lib::adhesion::AdhesionSystem;
 use cellulars_lib::habitable::Habitable;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
@@ -8,7 +9,7 @@ use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
 use rand_distr::num_traits::Pow;
-use crate::cell::Cell;
+use crate::species_adhesion::SpeciesAdhesion;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -20,7 +21,7 @@ pub struct MyPotts {
     pub perimeter_lambda: f32,
     pub act_lambda: f32,
     pub enable_migration: bool,
-    pub adhesion: StaticAdhesion
+    pub adhesion: SpeciesAdhesion
 }
 
 impl MyPotts {
@@ -37,15 +38,7 @@ impl MyPotts {
         // TODO!: Turns out this is a decent performance gain
         let (count, product) = env
             .valid_neighbours(pos)
-            .filter(|&pos| {
-                match cell_spin {
-                    Spin::Some(cell_index) => {
-                        env.cell_lattice[pos] == cell_spin
-                            && matches!(&env.cells.get_cell(cell_index).cell, Cell::Amoeba(_))
-                    },
-                    _ => false
-                }
-            })
+            .filter(|&pos| env.cell_lattice[pos] == cell_spin)
             .fold(
                 // Use f64 throughout the calculation to prevent overflow
                 // We can alternatively sum logs instead of calculating the product
@@ -173,19 +166,19 @@ impl Potts for MyPotts {
         spin_source: Spin, 
         spin_target: Spin,
         neigh_spin: impl IntoIterator<Item = Spin>,
-        _env: &Self::Environment
+        env: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_spin {
             energy -= self.adhesion.adhesion_energy(
                 spin_target,
                 neigh,
-                &()
+                env
             );
             energy += self.adhesion.adhesion_energy(
                 spin_source,
                 neigh,
-                &()
+                env
             );
         }
         energy

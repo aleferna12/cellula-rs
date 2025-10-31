@@ -6,3 +6,4 @@ mod constants;
 mod cell;
 mod my_environment;
 mod evolution;
+mod species_adhesion;

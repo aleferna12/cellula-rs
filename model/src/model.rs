@@ -8,7 +8,6 @@ use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
 use crate::pond::Pond;
 use anyhow::Context;
-use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
@@ -18,6 +17,7 @@ use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
 use cellulars_lib::basic_cell::BasicCell;
+use crate::species_adhesion::SpeciesAdhesion;
 
 pub struct Model {
     pub pond: Pond,
@@ -125,8 +125,11 @@ impl Model {
             .act_lambda(parameters.potts.act_lambda)
             .enable_migration(parameters.cell.migrate)
             .adhesion(
-                StaticAdhesion {
-                    cell_energy: parameters.potts.adhesion.cell_energy,
+                // TODO!: Parameterise
+                SpeciesAdhesion {
+                    amoeba_energy: parameters.potts.adhesion.cell_energy,
+                    bacteria_energy: 18.,
+                    interspecies_energy: parameters.potts.adhesion.cell_energy,
                     medium_energy: parameters.potts.adhesion.medium_energy,
                     solid_energy: parameters.potts.adhesion.solid_energy,
                 }
@@ -178,6 +181,17 @@ impl Model {
 
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
+
+        // TODO!: Parameterise
+        for _ in 0..1500 {
+            let cell = Cell::Bacterium(BasicCell::new_empty(5));
+            pond.env.spawn_cell_random(
+                cell,
+                parameters.cell.starting_area,
+                &mut pond.rng
+            );
+        }
+
         for _ in 0..parameters.cell.starting_cells {
             let cell = Cell::Amoeba(Amoeba::new_empty(
                 parameters.cell.target_area,
@@ -191,15 +205,6 @@ impl Model {
                     || Uniform::new(-1., 1.).unwrap().sample(rng)
                 )
             ));
-            pond.env.spawn_cell_random(
-                cell,
-                parameters.cell.starting_area,
-                &mut pond.rng
-            );
-        }
-        // TODO!: Parameterise
-        for _ in 0..10 {
-            let cell = Cell::Bacterium(BasicCell::new_empty(20));
             pond.env.spawn_cell_random(
                 cell,
                 parameters.cell.starting_area,
