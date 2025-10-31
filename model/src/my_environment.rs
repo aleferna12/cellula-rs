@@ -5,7 +5,6 @@ use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment};
 use cellulars_lib::habitable::Habitable;
-use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::boundaries::{Boundary, ToLatticeBoundary};
 use cellulars_lib::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use cellulars_lib::positional::pos::Pos;
