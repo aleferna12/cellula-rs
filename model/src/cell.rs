@@ -1,10 +1,8 @@
-use crate::evolution::genome::Genome;
-use crate::evolution::grn::Grn;
-use crate::evolution::selector::Fit;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
+use strum_macros::{Display, EnumString};
 
 #[derive(Clone, Debug)]
 pub struct Cell {
@@ -12,18 +10,18 @@ pub struct Cell {
     pub divide_area: u32,
     pub chem_center: Pos<f32>,
     pub chem_mass: u32,
-    pub genome: Grn<1, 1>
+    pub cell_type: CellType
 }
 
 impl Cell {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new_empty(target_area: u32, divide_area: u32, genome: Grn<1, 1>) -> Self {
+    pub fn new_empty(target_area: u32, divide_area: u32, cell_type: CellType) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
             divide_area,
-            genome
+            cell_type,
         }
     }
 
@@ -37,14 +35,6 @@ impl Cell {
 
     pub fn set_divide_area(&mut self, value: u32) {
         self.divide_area = value;
-    }
-    
-    pub fn is_migrating(&self) -> bool {
-        self.genome.nth_output_gene(0).active
-    }
-    
-    pub fn is_dividing(&self) -> bool {
-        !self.is_migrating()
     }
 
     pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, add: bool, bound: &B) {
@@ -64,15 +54,13 @@ impl Cell {
         self.chem_mass = self.chem_mass
             .checked_add_signed(shift * chem_at as i32)
             .expect("overflow in `shift_chem`");
-        self.genome.input_signals[0] = self.chem_mass as f32 / self.area as f32;
     }
 
     pub fn update(&mut self) {
-        if self.is_dividing() && self.target_area() < self.divide_area {
+        if let CellType::Dividing = self.cell_type && self.target_area() < self.divide_area {
             let new_target_area = self.target_area() + 1;
             self.set_target_area(new_target_area);
         }
-        self.genome.update_expression();
     }
 }
 
@@ -130,10 +118,11 @@ impl Alive for Cell {
     }
 }
 
-impl Fit for Cell {
-    fn fitness(&self) -> f32 {
-        self.chem_mass as f32
-    }
+#[derive(Clone, Debug, EnumString, Display)]
+#[strum(serialize_all = "kebab-case")]
+pub enum CellType {
+    Migrating,
+    Dividing
 }
 
 #[cfg(test)]
@@ -150,7 +139,7 @@ mod tests {
         Cell::new_empty(
             100,
             200,
-            Grn::empty(),
+            CellType::Migrating,
         )
     }
 

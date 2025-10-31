@@ -40,16 +40,8 @@ divide = true
 # [default = true]
 migrate = true
 # Period (in MCS) with which the cell is updated.
-# This includes cell growth, genome updates and reproduction.
+# This includes cell growth and reproduction.
 update-period = 32
-
-[cell.genome]
-# Number of regulatory genes in the cell's GRN.
-n-regulatory = 2
-# Mutation rate for each GRN parameter.
-mutation-rate = 0.01
-# Standard deviation of the GRN parameter mutations.
-mutation-std = 0.01
 
 [potts]
 # Boltzmann temperature.
@@ -86,8 +78,6 @@ image-format = "webp"
 [io.data]
 # Period (in MCS) with which to save the cell attributes as a parquet file.
 cells-period = 2048
-# Period (in MCS) with which to save the cells' genomes as a JSON file.
-genomes-period = 4096
 # Period (in MCS) with which to save a parquet file containing the cell lattices.
 lattice-period = 4096
 

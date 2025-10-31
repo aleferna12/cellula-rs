@@ -19,11 +19,6 @@ divide = true
 migrate = true
 update-period = 16
 
-[cell.genome]
-n-regulatory = 2
-mutation-rate = 0.01
-mutation-std = 0.01
-
 [potts]
 boltz-t = 16.0
 size-lambda = 1.0
@@ -43,7 +38,6 @@ image-format = "webp"
 
 [io.data]
 cells-period = 1000
-genomes-period = 5000
 lattice-period = 5000
 
 [io.movie]

@@ -1,3 +1,4 @@
+use crate::cell::CellType;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use crate::my_environment::MyEnvironment;
@@ -158,7 +159,10 @@ impl Plot for CellTypePlot {
             let spin = env.cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
                 let cell = env.cells.get_cell(cell_index);
-                let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
+                let color = match cell.cell_type {
+                    CellType::Migrating => self.mig_color,
+                    CellType::Dividing => self.div_color
+                };
                 image.put_pixel(
                     pos.x as u32,
                     pos.y as u32,

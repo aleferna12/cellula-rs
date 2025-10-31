@@ -1,6 +1,5 @@
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
-use crate::evolution::genome::Genome;
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment};
@@ -124,7 +123,7 @@ impl MyEnvironment {
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
     // gain is minimal (although the ergonomic gains are significant)
-    pub fn reproduce(&mut self, rng: &mut impl Rng) {
+    pub fn reproduce(&mut self) {
         let mut divide = vec![];
         for cell in self.cells.iter() {
             if !cell.is_alive() {
@@ -143,12 +142,7 @@ impl MyEnvironment {
             let mom = self
                 .cells
                 .get_cell(cell_index);
-            let new_cell = self.divide_cell(mom.index);
-            if new_cell.is_valid() {
-                let new_index = new_cell.index;
-                // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
-                self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(rng);
-            }
+            self.divide_cell(mom.index);
         }
     }
 

@@ -1,3 +1,4 @@
+use crate::cell::CellType;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
@@ -38,7 +39,7 @@ impl Potts for MyPotts {
             return 0.;
         };
         let cell = env.cells.get_cell(cell_index);
-        if !cell.is_migrating() {
+        if let CellType::Dividing = cell.cell_type {
             return 0.;
         }
 
