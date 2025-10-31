@@ -157,7 +157,7 @@ impl Model {
         ca: MyPotts,
         rng: &mut Xoshiro256StarStar
     ) -> anyhow::Result<Pond> {
-        let mut env = MyEnvironment::new(
+        let env = MyEnvironment::new(
             Environment::new_empty(
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(Rect::new(
@@ -168,9 +168,6 @@ impl Model {
             parameters.cell.max_cells,
             parameters.cell.search_radius
         );
-        if parameters.pond.enclose {
-            env.make_border(true, true, true, true);
-        }
 
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
@@ -197,6 +194,11 @@ impl Model {
                 pond.env.cells.n_valid(),
                 parameters.cell.starting_cells
             );
+
+        if parameters.pond.enclose {
+            dbg!("enclose");
+            pond.env.make_border(true, true, true, true);
+        }
         Ok(pond)
     }
 
