@@ -180,11 +180,12 @@ impl Model {
         let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
 
         // TODO!: Parameterise
-        for _ in 0..1500 {
-            let cell = Cell::Bacterium(BasicCell::new_empty(5));
+        for _ in 0..50 {
+            let area = 14;
+            let cell = Cell::Bacterium(BasicCell::new_empty(area));
             pond.env.spawn_cell_random(
                 cell,
-                parameters.cell.starting_area,
+                area,
                 &mut pond.rng
             );
         }
