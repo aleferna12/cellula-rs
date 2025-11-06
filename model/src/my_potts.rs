@@ -23,13 +23,15 @@ pub struct MyPotts {
     pub act_lambda: f32,
     pub chemotaxis_mu: f32,
     pub enable_migration: bool,
+    /// Minimum chemotaxis bias when cell experiences a chem. concentration = 0.
+    #[builder(with = |min: f32| { if min > 1. { panic!("`min` must be between 0 and 1") } else { min } } )]
+    pub chemotaxis_min: f32,
     pub adhesion: StaticAdhesion,
-    /// This is used to speed up the chemotaxis bias for the contact-inhibition case.
-    #[builder(with = |max_chem: u32| { 1. / (2 * max_chem) as f32 })]
-    contact_chemotaxis_const: f32
+    max_chem: u32
 }
 
 impl MyPotts {
+
     /// This is the chemotaxis bias as defined in Colizzi, 2020.
     ///
     /// The chemotaxis bias for the contact inhibition model is built-in the Act bias.
@@ -70,11 +72,15 @@ impl MyPotts {
         -self.act_lambda / env.act_max as f32 * (act_source - act_target)
     }
 
-    // TODO: check with Sandro that this is right.
-    //  Should we include this also for dividing cells??
+    // TODO!: confirm with Sandro that this is right (Ava's thesis doesnt agree with her code which doesnt agree
+    //  with what i think is the right implementation)
     fn contact_chemotaxis(&self, cell_index: CellIndex, env: &MyEnvironment) -> f32 {
         let cell = env.cells.get_cell(cell_index);
-        cell.chem_mass as f32 / cell.area as f32 * self.contact_chemotaxis_const + 0.5
+        cell.chem_mass as f32
+            / cell.area as f32
+            / self.max_chem as f32
+            * (1. - self.chemotaxis_min)
+            + self.chemotaxis_min
     }
 
     /// Geometric mean of Act content of neighbourhood of `pos`, multiplied by the relative chemotaxis term.

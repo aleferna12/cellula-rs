@@ -131,7 +131,8 @@ impl Model {
                     solid_energy: parameters.potts.adhesion.solid_energy,
                 }
             )
-            .contact_chemotaxis_const(parameters.pond.width, parameters.pond.height, parameters.pond.height as u32)
+            .chemotaxis_min(parameters.potts.chemotaxis_min)
+            .max_chem(parameters.pond.height as u32)
             .build()
     }
 
