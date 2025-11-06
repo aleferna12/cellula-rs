@@ -1,14 +1,13 @@
 use cellulars_lib::step::Step;
-use model::io::parameters::Parameters;
-use model::io::parameters::PlotType::*;
+use model::io::parameters::{Parameters, PlotType as PT};
 use model::model::Model;
 
 #[test]
 fn test_run() -> anyhow::Result<()> {
-    for plot in [CellType, Area, Center, ChemCenter] {
+    for plot in [PT::CellType, PT::Area, PT::Center, PT::ChemCenter] {
         let mut params = Parameters::parse("examples/64_cells.toml")?;
         params.io.outdir = format!("tests/{plot:?}");
-        params.io.plot.order = vec![Chem, Spin, plot, Border];
+        params.io.plot.order = vec![PT::Chem, PT::Spin, plot, PT::Border];
         params.io.image_period = 64;
         params.io.movie.show = false;
         params.cell.update_period = 1;
