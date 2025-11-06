@@ -1,10 +1,10 @@
 use crate::cell::Cell;
-use crate::my_environment::MyEnvironment;
 use crate::evolution::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::node_link::{GrnMutParams, NodeLinkData};
 use crate::io::parameters::Parameters;
-use crate::io::plot::*;
+use crate::io::plot::Plot;
+use crate::my_environment::MyEnvironment;
 use anyhow::{anyhow, bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
