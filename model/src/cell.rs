@@ -171,6 +171,7 @@ mod tests {
     #[test]
     fn test_shift_position_area_and_center() {
         let mut cell = make_test_cell();
+        cell.delta_perimeter = Some(1);
         let bound = make_unsafe_boundary();
 
         cell.shift_position(Pos::new(10, 10), true, &bound);
