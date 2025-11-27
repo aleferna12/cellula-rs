@@ -188,7 +188,6 @@ impl Model {
             );
 
         if parameters.pond.enclose {
-            dbg!("enclose");
             pond.env.make_border(true, true, true, true);
         }
         Ok(pond)
