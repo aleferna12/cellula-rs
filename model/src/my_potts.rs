@@ -25,7 +25,7 @@ pub struct MyPotts {
     pub enable_migration: bool,
     pub adhesion: StaticAdhesion,
     /// This is used to speed up the chemotaxis bias for the contact-inhibition case.
-    #[builder(with = |width: usize, height: usize, max_chem: u32| { 1. / (width * height * 2 * max_chem as usize) as f32 })]
+    #[builder(with = |max_chem: u32| { 1. / (2 * max_chem) as f32 })]
     contact_chemotaxis_const: f32
 }
 
@@ -74,7 +74,7 @@ impl MyPotts {
     //  Should we include this also for dividing cells??
     fn contact_chemotaxis(&self, cell_index: CellIndex, env: &MyEnvironment) -> f32 {
         let cell = env.cells.get_cell(cell_index);
-        cell.chem_mass as f32 * self.contact_chemotaxis_const + 0.5
+        cell.chem_mass as f32 / cell.area as f32 * self.contact_chemotaxis_const + 0.5
     }
 
     /// Geometric mean of Act content of neighbourhood of `pos`, multiplied by the relative chemotaxis term.
