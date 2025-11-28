@@ -113,10 +113,7 @@ impl MyEnvironment {
         let newborn_ta = mom.newborn_target_area;
         let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
-            let neighs = self
-                .valid_neighbours(pos)
-                .map(|pos| self.env.cell_lattice[pos])
-                .collect::<Vec<_>>();
+            let neighs = self.neighbour_spins(pos);
             self.update_delta_perimeter(false, mom_index, neighs.iter().copied());
             self.update_delta_perimeter(true, new_index, neighs.iter().copied());
             self.grant_position(
@@ -270,6 +267,12 @@ impl MyEnvironment {
             .map(|spin| if spin == cell_spin { shift_when_eq } else { -shift_when_eq } )
             .sum());
     }
+
+    fn neighbour_spins(&self, pos: Pos<usize>) -> Vec<Spin> {
+        self.valid_neighbours(pos)
+            .map(|pos| self.env.cell_lattice[pos])
+            .collect::<Vec<_>>()
+    }
 }
 
 impl Deref for MyEnvironment {
@@ -332,10 +335,7 @@ impl Habitable for MyEnvironment {
         let cell_index = self.cells.add(empty_cell).index;
         let new_spin = Spin::Some(cell_index);
         for pos in positions {
-            let neighs = self
-                .valid_neighbours(pos)
-                .map(|pos| self.env.cell_lattice[pos])
-                .collect::<Vec<_>>();
+            let neighs = self.neighbour_spins(pos);
             if let Spin::Some(target_index) = self.cell_lattice[pos] {
                 self.update_delta_perimeter(false, target_index, neighs.iter().copied());
             }
@@ -344,6 +344,16 @@ impl Habitable for MyEnvironment {
         }
         self.cells.get_cell_mut(cell_index).ancestor =  Some(cell_index);
         self.cells.get_cell(cell_index)
+    }
+
+    fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {
+        for pos in positions {
+            if let Spin::Some(target_index) = self.cell_lattice[pos] {
+                let neighs = self.neighbour_spins(pos);
+                self.update_delta_perimeter(false, target_index, neighs);
+            }
+            self.grant_position(pos, Spin::Solid);
+        }
     }
 }
 
