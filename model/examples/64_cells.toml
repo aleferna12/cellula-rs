@@ -41,6 +41,9 @@ divide = true
 # Set to `false` to disable migration.
 # [default = true]
 migrate = true
+# Set to `false` to disable cell updates.
+# [default = true]
+update = true
 # Period (in MCS) with which the cell is updated.
 # This includes cell growth, genome updates and reproduction.
 update-period = 32

@@ -15,7 +15,8 @@ pub struct Pond {
     pub rng: Xoshiro256StarStar,
     pub update_period: u32,
     pub cell_target_area: u32,
-    pub division_enabled: bool,
+    pub enable_division: bool,
+    pub enable_cell_updates: bool,
     #[builder(default = 0)]
     pub time_step: u32,
 }
@@ -30,8 +31,10 @@ impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
-            self.env.cells.iter_mut().for_each(|cell| cell.update());
-            if self.division_enabled {
+            if self.enable_cell_updates {
+                self.env.cells.iter_mut().for_each(|cell| cell.update());
+            }
+            if self.enable_division {
                 self.env.reproduce(&mut self.rng);
             }
         }

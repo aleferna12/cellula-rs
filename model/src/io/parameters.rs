@@ -121,6 +121,8 @@ pub struct CellParameters {
     pub divide: bool,
     #[serde(default = "param_defaults::true_flag")]
     pub migrate: bool,
+    #[serde(default = "param_defaults::true_flag")]
+    pub update: bool,
     pub update_period: u32,
     pub genome: GenomeParameters,
 }

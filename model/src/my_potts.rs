@@ -9,6 +9,7 @@ use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
 use rand_distr::num_traits::Pow;
+use cellulars_lib::constants::CellIndex;
 use cellulars_lib::habitable::Habitable;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
@@ -22,11 +23,16 @@ pub struct MyPotts {
     pub act_lambda: f32,
     pub chemotaxis_mu: f32,
     pub enable_migration: bool,
-    pub adhesion: StaticAdhesion
+    pub adhesion: StaticAdhesion,
+    /// This is used to speed up the chemotaxis bias for the contact-inhibition case.
+    #[builder(with = |width: usize, height: usize, max_chem: u32| { 1. / (width * height * 2 * max_chem as usize) as f32 })]
+    contact_chemotaxis_const: f32
 }
 
 impl MyPotts {
-    // TODO: Reimplement like in the model (but keep this version!)
+    /// This is the chemotaxis bias as defined in Colizzi, 2020.
+    ///
+    /// The chemotaxis bias for the contact inhibition model is built-in the Act bias.
     fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
             return 0.;
@@ -57,14 +63,27 @@ impl MyPotts {
         }
     }
 
-    fn act_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
-        let act_source = Self::mean_act(pos_source, env);
-        let act_target = Self::mean_act(pos_target, env);
+    /// This includes the combined copy biases for Act and chemotaxis as per Camley, 2016.
+    fn contact_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
+        let act_source = self.mean_act(pos_source, env);
+        let act_target = self.mean_act(pos_target, env);
         -self.act_lambda / env.act_max as f32 * (act_source - act_target)
     }
 
-    fn mean_act(pos: Pos<usize>, env: &MyEnvironment) -> f32 {
+    // TODO: check with Sandro that this is right.
+    //  Should we include this also for dividing cells??
+    fn contact_chemotaxis(&self, cell_index: CellIndex, env: &MyEnvironment) -> f32 {
+        let cell = env.cells.get_cell(cell_index);
+        cell.chem_mass as f32 * self.contact_chemotaxis_const + 0.5
+    }
+
+    /// Geometric mean of Act content of neighbourhood of `pos`, multiplied by the relative chemotaxis term.
+    fn mean_act(&self, pos: Pos<usize>, env: &MyEnvironment) -> f32 {
         let cell_spin = env.cell_lattice[pos];
+        let Spin::Some(cell_index) = cell_spin else {
+            return 0.;
+        };
+
         // We do precompute these positions for pos_target in `attempt_site_copy`
         // Reusing that computation could be slightly faster
         // TODO!: Turns out this is a decent performance gain
@@ -81,7 +100,7 @@ impl MyPotts {
                     (count + 1, product * act as f64)
                 }
             );
-        product.pow(1. / count as f64) as f32
+        product.pow(1. / count as f64) as f32 * self.contact_chemotaxis(cell_index, env)
     }
 
     fn perimeter_energy_diff(&self, delta_perimeter: i32, perimeter: u32, target_perimeter: u32) -> f32 {
@@ -89,25 +108,22 @@ impl MyPotts {
     }
 
     fn delta_hamiltonian_perimeter(&self, spin_source: Spin, spin_target: Spin, env: &MyEnvironment) -> f32 {
-        let mut delta_h = 0.;
-        let message = "`delta_perimeter` not set";
-        if let Spin::Some(cell_index) = spin_source {
+        self.delta_perimeter_energy(spin_source, env)
+            + self.delta_perimeter_energy(spin_target, env)
+    }
+
+    #[inline]
+    fn delta_perimeter_energy(&self, spin: Spin, env: &MyEnvironment) -> f32 {
+        if let Spin::Some(cell_index) = spin {
             let cell = env.env().cells.get_cell(cell_index);
-            delta_h += self.perimeter_energy_diff(
-                cell.delta_perimeter.expect(message), 
-                cell.perimeter, 
-                cell.target_perimeter
-            );
-        }
-        if let Spin::Some(cell_index) = spin_target {
-            let cell = env.env().cells.get_cell(cell_index);
-            delta_h += self.perimeter_energy_diff(
-                cell.delta_perimeter.expect(message), 
+            self.perimeter_energy_diff(
+                cell.delta_perimeter.expect("`delta_perimeter` not set"),
                 cell.perimeter,
                 cell.target_perimeter
-            );
+            )
+        } else {
+            0.
         }
-        delta_h
     }
 }
 
@@ -124,8 +140,7 @@ impl Potts for MyPotts {
 
     fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f32 {
         if self.enable_migration {
-            self.act_bias(pos_source, pos_target, env)
-                + self.chemotaxis_bias(pos_source, pos_target, env)
+            self.contact_biases(pos_source, pos_target, env)
         } else {
             0.
         }

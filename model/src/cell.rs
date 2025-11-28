@@ -49,11 +49,11 @@ impl Cell {
     }
     
     pub fn is_migrating(&self) -> bool {
-        self.genome.nth_output_gene(0).active
+        !self.is_dividing()
     }
     
     pub fn is_dividing(&self) -> bool {
-        !self.is_migrating()
+        self.genome.nth_output_gene(0).active
     }
 
     pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, add: bool, bound: &B) {

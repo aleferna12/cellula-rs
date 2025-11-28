@@ -18,6 +18,7 @@ div-area = 128
 target-perimeter = 120
 divide = true
 migrate = true
+update = true
 update-period = 16
 
 [cell.genome]

@@ -131,6 +131,7 @@ impl Model {
                     solid_energy: parameters.potts.adhesion.solid_energy,
                 }
             )
+            .contact_chemotaxis_const(parameters.pond.width, parameters.pond.height, parameters.pond.height as u32)
             .build()
     }
 
@@ -151,7 +152,8 @@ impl Model {
             .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
             .update_period(parameters.cell.update_period)
             .cell_target_area(parameters.cell.target_area)
-            .division_enabled(parameters.cell.divide)
+            .enable_division(parameters.cell.divide)
+            .enable_cell_updates(parameters.cell.update) // TODO: parameter
             .build()
     }
 
