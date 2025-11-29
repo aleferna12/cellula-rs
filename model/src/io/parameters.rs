@@ -63,10 +63,10 @@ pub struct Parameters {
 }
 
 impl Parameters {
-    pub fn parse(path: impl AsRef<Path>) -> Result<Parameters, config::ConfigError> {
+    pub fn parse(path: impl AsRef<Path>) -> anyhow::Result<Parameters> {
         let path = path.as_ref();
         log::info!("Reading parameters from {} and environmental variables", path.display());
-        let params = config::Config::builder()
+        let params: Parameters = config::Config::builder()
             .add_source(
                 config::File::from(path)
             ).add_source(
@@ -78,15 +78,23 @@ impl Parameters {
                     .with_list_parse_key("io.plot.order")
                     .try_parsing(true)
             ).build()?.try_deserialize()?;
+        params.check_conflicts()?;
         Ok(params)
     }
     
-    pub fn check_conflicts(&self) {
+    pub fn check_conflicts(&self) -> anyhow::Result<()> {
+        #[cfg(not(feature = "fixed_boundary"))]
         if self.pond.enclose && self.pond.neigh_r > 1 {
-            log::warn!("`enclose` can only be used when `neigh-r=1` by default");
-            log::warn!("You can circumvent this issue by changing `LatticeBoundaryType` in `Model` \
-                        from `UnsafePeriodicBoundary` to `FixedBoundary`");
+            anyhow::bail!(
+                "`enclose` can only be used with `neigh-r=1`. \
+                 If you need an enclosed pond with larger neighbourhoods, enable the `fixed_boundary` feature."
+            );
         }
+        #[cfg(feature = "fixed_boundary")]
+        if !self.pond.enclose {
+            anyhow::bail!("`enclose` must be `true` when the `fixed_boundary` feature is enabled")
+        }
+        Ok(())
     }
 }
 
@@ -214,7 +222,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse() -> Result<(), config::ConfigError> {
+    fn test_parse() -> anyhow::Result<()> {
         Parameters::parse("examples/64_cells.toml")?;
         Ok(())
     }
