@@ -5,6 +5,7 @@ edition = "2024"
 description = "A very fast, extensible CPM implementation."
 
 [features]
+default = ["fixed_boundary"]
 fixed_boundary = []
 
 [[bench]]
