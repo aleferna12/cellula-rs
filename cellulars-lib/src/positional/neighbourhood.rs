@@ -26,9 +26,9 @@ const MOORE_NEIGHS: [(i16, i16); MOORE_SIZE] = {
     ret
 };
 
-const VANNEUMANN_SIZE: usize = 2 * (MAX_NEIGH_R as usize) * (MAX_NEIGH_R as usize + 1);
-const VON_NEUMANN_NEIGHS: [(i16, i16); VANNEUMANN_SIZE] = {
-    let mut ret = [(0i16, 0i16); VANNEUMANN_SIZE];
+const VON_NEUMANN_SIZE: usize = 2 * (MAX_NEIGH_R as usize) * (MAX_NEIGH_R as usize + 1);
+const VON_NEUMANN_NEIGHS: [(i16, i16); VON_NEUMANN_SIZE] = {
+    let mut ret = [(0i16, 0i16); VON_NEUMANN_SIZE];
     let mut flat_index = 0usize;
 
     let mut r = 1;
