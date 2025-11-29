@@ -86,6 +86,7 @@ pub trait Cellular {
     fn target_area(&self) -> u32;
     fn area(&self) -> u32;
     fn center(&self) -> Pos<f32>;
+    // TODO: we should code this property into an enum type
     fn is_valid(&self) -> bool;
     fn shift_position(
         &mut self,
