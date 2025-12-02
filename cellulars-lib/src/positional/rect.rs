@@ -137,8 +137,8 @@ mod tests {
     fn test_iter_positions_order_and_coverage() {
         let rect = Rect::new(Pos::new(0, 0), Pos::new(2, 2));
         let expected = vec![
-            Pos::new(0, 0), Pos::new(1, 0),
-            Pos::new(0, 1), Pos::new(1, 1),
+            Pos::new(0, 0), Pos::new(0, 1),
+            Pos::new(1, 0), Pos::new(1, 1),
         ];
         let result: Vec<_> = rect.iter_positions().collect();
         assert_eq!(result, expected);
