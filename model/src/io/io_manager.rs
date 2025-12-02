@@ -1,3 +1,5 @@
+//! Contains logic related to [IoManager].
+
 use crate::cell::{Cell, CellType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
@@ -24,10 +26,14 @@ static CELLS_PATH: &str = "cells";
 static LATTICES_PATH: &str = "lattices";
 static CONFIG_COPY_PATH: &str = "config.toml";
 
+/// Manages all io operations, including saving and loading data and displaying the simulation movie.
 #[derive(Builder)]
 pub struct IoManager {
+    /// Path to directory where data and images of the simulation are saved.
     pub outdir: PathBuf,
+    /// Image format with which to save simulation images.
     pub image_format: String,
+    /// Used to update the simulation video when it's time.
     pub movie_maker: Option<MovieMaker>,
     plots: Vec<Box<dyn Plot>>,
     image_period: u32,
@@ -36,6 +42,9 @@ pub struct IoManager {
 }
 
 impl IoManager {
+    /// Create the main simulation folder and all subdirectories.
+    ///
+    /// Fails if `replace_outdir` is `false` and the main simulation folder already exists.
     pub fn create_directories(&self, replace_outdir: bool) -> io::Result<()> {
         let outdir_exists = self.outdir.try_exists()?;
         if outdir_exists {
@@ -54,6 +63,7 @@ impl IoManager {
         std::fs::create_dir(self.outdir.join(LATTICES_PATH))
     }
 
+    /// Creates a parameter file at \"[IoManager::outdir]/config.toml\".
     pub fn create_parameters_file(&self, parameters: &Parameters) -> anyhow::Result<()> {
         let params_copy = self.outdir.join(CONFIG_COPY_PATH);
         std::fs::write(
@@ -67,7 +77,7 @@ impl IoManager {
         Ok(())
     }
 
-    fn make_cells_from_data(celldf: DataFrame, ) -> anyhow::Result<CellContainer<Cell>> {
+    fn make_cells_from_data(celldf: DataFrame) -> anyhow::Result<CellContainer<Cell>> {
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=celldf.height() {
@@ -112,6 +122,7 @@ impl IoManager {
         Ok(cells)
     }
 
+    /// Reads a cell data file into a [CellContainer].
     pub fn read_cells(
         cells_path: impl AsRef<Path>
     ) -> anyhow::Result<CellContainer<Cell>> {
@@ -123,10 +134,14 @@ impl IoManager {
         )
     }
 
+    /// Given a path to the main folder of a simulation, resolve the path to the file
+    /// containing the simulation parameters.
     pub fn resolve_parameters_path(sim_path: impl AsRef<Path>) -> PathBuf {
         sim_path.as_ref().join(CONFIG_COPY_PATH)
     }
 
+    /// Given a path to the main folder of a simulation, resolve the path to the cell data file
+    /// that was saved at `time_step`.
     pub fn resolve_cells_path(
         sim_path: impl AsRef<Path>,
         time_step: u32
@@ -136,6 +151,8 @@ impl IoManager {
             .join(format!("{time_step}.parquet"))
     }
 
+    /// Given a path to the main folder of a simulation, resolve the path to the lattice file
+    /// that was saved at `time_step`.
     pub fn resolve_lattice_path(
         sim_path: impl AsRef<Path>,
         time_step: u32
@@ -145,6 +162,7 @@ impl IoManager {
             .join(format!("{time_step}.parquet"))
     }
 
+    /// Reads a lattice from a backup file at `file_path`.
     pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
@@ -179,6 +197,7 @@ impl IoManager {
         Ok(lattice)
     }
 
+    /// Writes both data and simulation images (including movie frames) if its time (according to `time_step`).
     pub fn write_if_time(
         &mut self,
         time_step: u32,
@@ -220,7 +239,7 @@ impl IoManager {
     // and performance diff was minimal and file size became larger, keeping as is
     fn write_lattice(file_path: &Path, lattice: &Lattice<Spin>) -> PolarsResult<u64>{
         let mut cols = vec![];
-        for (j, col) in lattice.as_array().chunks_exact(lattice.height()).enumerate() {
+        for (j, col) in lattice.as_slice().chunks_exact(lattice.height()).enumerate() {
             cols.push(Series::new(
                 format!("col_{j}").into(),
                 col.iter()
@@ -276,6 +295,7 @@ impl IoManager {
         Ok(())
     }
 
+    /// Makes a new frame of the simulation by drawing a succession of plots (see [io::plot](crate::io::plot)).
     pub fn make_simulation_image(
         &self, 
         env: &MyEnvironment

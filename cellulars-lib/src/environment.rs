@@ -1,3 +1,5 @@
+//! Contains logic associated with [Environment].
+
 use crate::basic_cell::{Alive, BasicCell, Cellular, RelCell};
 use crate::cell_container::CellContainer;
 use crate::constants::CellIndex;
@@ -15,15 +17,24 @@ use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::f32::consts::PI;
 
+/// An environment where cells are spatially and relationally localised.
 pub struct Environment<C, N, B: ToLatticeBoundary> {
+    /// Boundaries of the environment.
+    ///
+    /// These are used to validate that a position can be used to access information in the environment.
     pub bounds: Boundaries<B>,
+    /// Cell container with spins matching those in [Environment::cell_lattice].
     pub cells: CellContainer<C>,
+    /// Cell lattice with spins matching those in [Environment::cells].
     pub cell_lattice: Lattice<Spin>,
+    /// Edge book containing all positions at cell-cell interfaces.
     pub edge_book: EdgeBook,
+    /// Neighbourhood of the environment.
     pub neighbourhood: N
 }
 
 impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
+    /// Makes a new empty environment with no cells.
     pub fn new_empty(
         neighbourhood: N,
         bounds: Boundaries<B>,
@@ -39,6 +50,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
 }
 
 impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
+    /// Makes a new environment from its components.
     pub fn new(
         cells: CellContainer<C>,
         cell_lattice: Lattice<Spin>,
@@ -54,14 +66,17 @@ impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
         }
     }
 
+    /// Returns the width of the environment.
     pub fn width(&self) -> usize {
         self.cell_lattice.width()
     }
 
+    /// Returns the height of the environment.
     pub fn height(&self) -> usize {
         self.cell_lattice.height()
     }
 
+    /// Returns an iterator over all sites in the neighbourhood of `pos` that are within lattice boundaries.
     pub fn valid_neighbours(&self, pos: Pos<usize>) -> impl Iterator<Item = Pos<usize>>
     where N: Neighbourhood {
         self.bounds.lattice_boundary.valid_positions(
@@ -104,7 +119,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
     /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
     ///
-    /// Is considerably slower than `search_cell_box()` and may fail if the cell is not contiguous
+    /// Is considerably slower than [Environment::search_cell_box()] and may fail if the cell is not contiguous
     /// or if the cell centre is not a cell position.
     pub fn search_cell_contiguous(
         &self,
@@ -129,6 +144,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
         found
     }
 
+    /// Searches for all cell positions that interface a different spin.
     pub fn search_cell_outline(
         &self,
         cell: &RelCell<impl Cellular>,
@@ -150,6 +166,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
         )
     }
 
+    /// Finds all cells adjacent to `cell` using a search algorithm.
     pub fn cell_neighbours(
         &self,
         cell: &RelCell<impl Cellular>,
@@ -162,6 +179,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
         HashSet::from_iter(outline)
     }
 
+    /// Builds an undirected graph of cell-cell neighbours (cells that are adjacent).
     pub fn build_neighbours_graph(&self, search_scaler: f32) -> UnGraph<CellIndex, ()> {
         let mut graph = UnGraph::new_undirected();
         let mut node_map = HashMap::new();
@@ -192,6 +210,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
         graph
     }
 
+    /// Removes all cells from the environment and returns it to a clean state.
     pub fn wipe_out(&mut self) {
         self.cells.wipe_out();
         self.cell_lattice.iter_values_mut().for_each(|value| {
@@ -199,8 +218,10 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
                 *value = Spin::Medium;
             }
         });
+        self.edge_book.clear();
     }
 
+    /// Updates the edges around the position `pos` and counts how many were added/removed.
     pub fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
         let mut removed = 0;
         let mut added = 0;
@@ -280,8 +301,11 @@ where
     }
 }
 
+/// Counts the number of changed cell-cell edges after modifying the environment with [Habitable::grant_position()].
 pub struct EdgesUpdate {
+    /// Number of cell-cell edges added by granting the position.
     pub added: u16,
+    /// Number of cell-cell edges removed by granting the position.
     pub removed: u16
 }
 

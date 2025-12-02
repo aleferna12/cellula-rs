@@ -1,3 +1,5 @@
+//! Contains logic associated with the [Potts] trait.
+
 use crate::basic_cell::Cellular;
 use crate::habitable::Habitable;
 use crate::positional::neighbourhood::Neighbourhood;
@@ -6,17 +8,30 @@ use crate::spin::Spin;
 use rand::Rng;
 use std::f32::consts::E;
 
+/// This trait defines how a Monte Carlo [Potts::step()] of the model should modify a
+/// [Habitable] environment.
 pub trait Potts {
+    /// Type of environment that is going to be modified each [Potts::step()].
     type Environment: Habitable;
-    
+
+    /// Returns the Boltzmann temperature of the system.
     fn boltz_t(&self) -> f32;
-    
+
+    /// Returns the scaling constant associated with the penalty given to size deviations.
     fn size_lambda(&self) -> f32;
-    
+
+    /// Returns the energy differential associated with copy biases of the model.
+    ///
+    /// Returns 0 by default.
+    ///
+    /// Overriding this method allows to easily extend the model's behaviour
+    /// without having to override [Potts::attempt_site_copy()].
     fn copy_biases(&self, _pos_source: Pos<usize>, _pos_target: Pos<usize>, _env: &Self::Environment) -> f32 {
         0.
     }
 
+    /// Returns the energy differential associated with the size constraint if `spin_source`
+    /// were to be copied into `spin_target`.
     fn delta_hamiltonian_size(
         &self,
         spin_source: Spin,
@@ -35,15 +50,19 @@ pub trait Potts {
         delta_h
     }
 
+    /// Returns whether a copy attempt that results in an energy differential `delta_h` should be randomly accepted
+    /// by drawing from a Boltzmann distribution.
     fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f32) -> bool {
         delta_h < 0. || rng.random::<f32>() < E.powf(-delta_h / self.boltz_t())
     }
 
+    /// Returns the energy differential resulting from an atomic increase or decrease of `area`.
     fn size_energy_diff(&self, area_increased: bool, area: u32, target_area: u32) -> f32 {
         let delta_area = if area_increased { 1. } else { -1. };
         2. * self.size_lambda() * delta_area * (area as f32 - target_area as f32) + self.size_lambda()
     }
 
+    /// Executes a Monte Carlo step of the simulation by updating `env`.
     fn step(
         &self,
         env: &mut Self::Environment,
@@ -65,11 +84,11 @@ pub trait Potts {
         }
     }
 
-    /// Attempts to execute the selected site copy.
+    /// Attempts to execute the selected site copy from `pos_source` into `pos_target`.
     ///
     /// # Returns:
     ///
-    /// The number of extra updates that the copy attempt incurred.
+    /// The number of extra updates that the copy attempt should incur based on how many cell edges it modified.
     fn attempt_site_copy(
         &self,
         pos_source: Pos<usize>,
@@ -117,6 +136,7 @@ pub trait Potts {
         2. * (edges_update.added as f32 - edges_update.removed as f32) / env.env().neighbourhood.n_neighs() as f32
     }
 
+    /// Returns the total energy differential of the system if `spin_source` were to be copied into `spin_target`.
     fn delta_hamiltonian(
         &self,
         spin_source: Spin,
@@ -128,6 +148,7 @@ pub trait Potts {
             + self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env)
     }
 
+    /// Returns the energy differential associated with adhesion if `spin_source` were to be copied into `spin_target`.
     fn delta_hamiltonian_adhesion(
         &self,
         spin_source: Spin,

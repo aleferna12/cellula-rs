@@ -1,3 +1,5 @@
+//! Contains logic associated with [Lattice].
+
 use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
@@ -6,15 +8,18 @@ use rand::Rng;
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 
+/// A 2D rectangular lattice containing some objects of type `T`.
 #[derive(Debug, Clone)]
 pub struct Lattice<T> {
     array: Box<[T]>,
+    /// The lattice dimensions.
     pub rect: Rect<usize>
 }
 
 // Since the lattice size is naturally usize, boundary coord should be isize to avoid overflow errors
 // Although technically it only has to be slightly larger than its defined size
 impl<T> Lattice<T> {
+    /// Makes a lattice from a pre-existing buffer of values stored as an array.
     pub fn from_array<const N: usize>(buf: [T; N], rect: Rect<usize>) -> Option<Self> {
         if rect.area() != N {
             return None;
@@ -25,6 +30,7 @@ impl<T> Lattice<T> {
         })
     }
 
+    /// Makes a lattice from a pre-existing buffer of values stored in a [Box].
     pub fn from_box(buf: Box<[T]>, rect: Rect<usize>) -> Option<Self> {
         if rect.area() != buf.len() {
             return None;
@@ -35,14 +41,17 @@ impl<T> Lattice<T> {
         })
     }
 
+    /// Returns the width of the lattice.
     pub fn width(&self) -> usize {
         self.rect.width()
     }
 
+    /// Returns the height of the lattice.
     pub fn height(&self) -> usize {
         self.rect.height()
     }
 
+    /// Returns a random position from the lattice using a uniform distribution.
     pub fn random_pos(&self, rng: &mut impl Rng) -> Pos<usize> {
         Pos::new(
             rng.random_range(0..self.width()),
@@ -50,27 +59,33 @@ impl<T> Lattice<T> {
         )
     }
 
+    /// Iterates over all lattice positions in column-major order.
     pub fn iter_positions(&self) -> impl Iterator<Item = Pos<usize>> {
         self.rect.iter_positions()
     }
-    
+
+    /// Iterates over all values in the lattice in column-major order.
     pub fn iter_values(&self) -> impl Iterator<Item = &T> { self.array.iter() }
-    
+
+    /// Mutable version of [Lattice::iter_values()].
     pub fn iter_values_mut(&mut self) -> impl Iterator<Item = &mut T> { self.array.iter_mut() }
 
-    pub fn as_array(&self) -> &[T] {
+    /// Returns a slice to the values contained in the lattice.
+    pub fn as_slice(&self) -> &[T] {
         &self.array
     }
 }
 
 impl<T: Default + Clone> Lattice<T> {
+    /// Makes a new lattice using the default of the inner type of the lattice.
     pub fn new(rect: Rect<usize>) -> Self {
         Self {
             array: vec![T::default(); rect.width() * rect.height()].into_boxed_slice(),
             rect,
         }
     }
-    
+
+    /// Clears the lattice by setting all values to the default of the inner type of the lattice.
     pub fn clear(&mut self) {
         self.array.fill(T::default());
     }
@@ -107,7 +122,7 @@ impl<T: PartialEq> Lattice<T> {
 
     /// Searches for `value` using a BFS algorithm that iterates neighbours.
     ///
-    /// Is considerably slower than `search_box()`.
+    /// Is considerably slower than [Lattice::search_box()].
     pub fn search_contiguous(
         &self,
         value: &T,
@@ -141,7 +156,7 @@ impl<T: PartialEq> Lattice<T> {
 
     /// Returns the outline of a contiguous area containing `value`.
     ///
-    /// The first outline position is automatically determined using `search_box()` at `center_pos`.
+    /// The first outline position is automatically determined using [Lattice::search_box()] at `center_pos`.
     pub fn search_outline(
         &self,
         value: &T,

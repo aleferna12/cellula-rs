@@ -1,20 +1,26 @@
+//! Contains logic associated with [Cell].
+
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
 use strum_macros::{Display, EnumString};
 
+/// A cell that can track a chemical concentration and migrate towards it.
 #[derive(Clone, Debug)]
 pub struct Cell {
-    pub basic_cell: BasicCell,
-    pub divide_area: u32,
-    pub chem_center: Pos<f32>,
+    // These fields have to be partially public to construct the cell in io_manager
+    pub(crate) basic_cell: BasicCell,
+    pub(crate) divide_area: u32,
+    pub(crate) chem_center: Pos<f32>,
+    /// Total concentration of the chemical perceived by the cell.
     pub chem_mass: u32,
+    /// Type of the cell.
     pub cell_type: CellType
 }
 
 impl Cell {
-    /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
+    /// Initialises an empty [Cell] to be filled progressively with [Cell::shift_position()].
     pub fn new_empty(target_area: u32, divide_area: u32, cell_type: CellType) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
@@ -25,18 +31,24 @@ impl Cell {
         }
     }
 
+    /// Returns the center of the cell weighted by the chemical concentration at each cell position.
     pub fn chem_center(&self) -> Pos<f32> {
         self.chem_center
     }
 
+    /// Returns the area at which this cell divides when
+    /// [MyEnvironment::reproduce()](crate::my_environment::MyEnvironment::reproduce()) is called.
     pub fn divide_area(&self) -> u32 {
         self.divide_area
     }
 
+    /// Sets the area at which the cell divides when
+    /// [MyEnvironment::reproduce()](crate::my_environment::MyEnvironment::reproduce()) is called.
     pub fn set_divide_area(&mut self, value: u32) {
         self.divide_area = value;
     }
 
+    /// Adds or removes the chemical concentration `chem_at` at position `pos` from the cell.
     pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, add: bool, bound: &B) {
         let shift = if add { 1 } else { -1 };
         if let Some(new_chem) = shifted_com(
@@ -56,10 +68,11 @@ impl Cell {
             .expect("overflow in `shift_chem`");
     }
 
+    /// Updates parameters of the cell (called by [Pond::step()](cellulars_lib::step::Step::step())).
     pub fn update(&mut self) {
         if let CellType::Dividing = self.cell_type && self.target_area() < self.divide_area {
             let new_target_area = self.target_area() + 1;
-            self.set_target_area(new_target_area);
+            self.target_area = new_target_area;
         }
     }
 }
@@ -118,10 +131,13 @@ impl Alive for Cell {
     }
 }
 
+/// A cell is either migrating or dividing.
 #[derive(Clone, Debug, EnumString, Display)]
 #[strum(serialize_all = "kebab-case")]
 pub enum CellType {
+    /// A cell that is migrating.
     Migrating,
+    /// A cell that is dividing.
     Dividing
 }
 

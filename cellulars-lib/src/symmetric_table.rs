@@ -1,5 +1,8 @@
+//! Contains logic associated with [SymmetricTable].
+
 use std::ops::{Index, IndexMut};
 
+/// A symmetric table where indexes (x, y) and (y, x) map to the same value.
 #[derive(Clone)]
 pub struct SymmetricTable<T> {
     array: Box<[T]>,
@@ -7,10 +10,12 @@ pub struct SymmetricTable<T> {
 }
 
 impl<T> SymmetricTable<T> {
+    /// Returns the length of the sides of the table.
     pub fn length(&self) -> usize {
         self.length
     }
-    
+
+    /// Iterates over all unique pairs of indexes that can be used for the table.
     pub fn iter_index_pairs(&self, start: Option<usize>, end: Option<usize>) -> impl Iterator<Item = (usize, usize)> {
         let start = start.unwrap_or(0);
         let end = end.unwrap_or(self.length);
@@ -24,6 +29,7 @@ impl<T> SymmetricTable<T> {
 }
 
 impl<T: Default + Clone> SymmetricTable<T> {
+    /// Makes a new `length`x`length` table
     pub fn new(length: usize) -> Self {
         let size = length * (length + 1) / 2;
         Self {
@@ -32,6 +38,7 @@ impl<T: Default + Clone> SymmetricTable<T> {
         }
     }
 
+    /// Clears the table by setting all values to the default of the table's inner type.
     pub fn clear(&mut self) {
         self.array.fill(T::default());
     }

@@ -1,3 +1,5 @@
+//! Contains logic associated with [MyEnvironment].
+
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
@@ -13,16 +15,21 @@ use cellulars_lib::spin::Spin;
 use rand::Rng;
 use std::ops::{Deref, DerefMut};
 
+/// An environment that contains a chemical gradient and limits cell growth to [MyEnvironment::max_cells].
 #[derive(Clone)]
 pub struct MyEnvironment {
     env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
+    /// Lattice containing the chemical gradient.
     pub chem_lattice: Lattice<u32>,
+    /// Scaler used to determine the radius of search for cell positions starting from its center.
     pub cell_search_scaler: f32,
+    /// Maximum number of cells supported in the environment.
     pub max_cells: CellIndex,
     population_exploded: bool
 }
 
 impl MyEnvironment {
+    /// Make a new [MyEnvironment] from an existing [Environment].
     pub fn new(
         env: Environment<Cell, MooreNeighbourhood, BoundaryType>, 
         max_cells: CellIndex,
@@ -39,6 +46,7 @@ impl MyEnvironment {
         env_
     }
 
+    /// Creates a chemical gradient spanning from the top to the bottom of the environment.
     pub fn make_chem_gradient(&mut self) {
         for i in 0..self.width() {
             for j in 0..self.height() {
@@ -47,6 +55,7 @@ impl MyEnvironment {
         }
     }
 
+    /// Returns whether the environment supports additional cells based on [MyEnvironment::max_cells].
     pub fn can_add_cell(&mut self) -> bool {
         if self.cells.n_valid() < self.max_cells {
             return true;
@@ -63,6 +72,7 @@ impl MyEnvironment {
     }
 
     // TODO: make spawn as a circle with center at pos
+    /// Spawns a square cell centered at a random position with area = `cell_area`.
     pub fn spawn_cell_random(
         &mut self,
         empty_cell: Cell,
@@ -86,6 +96,7 @@ impl MyEnvironment {
         )
     }
 
+    /// Forces a cell to execute cell division.
     pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<Cell> {
         let mom = self
             .env
@@ -110,11 +121,12 @@ impl MyEnvironment {
                 Spin::Some(new_index),
             );
         }
-        self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
+        self.env.cells.get_cell_mut(mom_index).target_area = newborn_ta;
         self.cells.get_cell(new_index)
     }
 
     // Should this also replace some of the cell's positions with Medium?
+    /// Kills a cell by setting its [Cell::target_area()] to 0.
     pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
         cell.apoptosis();
     }
@@ -123,6 +135,7 @@ impl MyEnvironment {
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
     // gain is minimal (although the ergonomic gains are significant)
+    /// Checks which cells should divide and executes cell divisions.
     pub fn reproduce(&mut self) {
         let mut divide = vec![];
         for cell in self.cells.iter() {
@@ -147,7 +160,7 @@ impl MyEnvironment {
     }
 
     // TODO!: add plot to make sure this is right
-    /// Find the minor axis along which to split the cell.
+    /// Finds the minor axis along which to split the cell.
     pub fn find_division_axis(&self, cell: &RelCell<Cell>, search_scaler: f32) -> SplitLine {
         // Compute covariance elements relative to centroid
         let mut sum_xx = 0.0;
@@ -201,11 +214,13 @@ impl MyEnvironment {
 
         SplitLine { slope, intercept }
     }
-    
+
+    /// Removes all cells from the environment and restore it to a clean state.
     pub fn wipe_out(&mut self) {
         self.env.wipe_out();
     }
 
+    /// Creates a border of [Spin::Solid] around the environment.
     pub fn make_border(
         &mut self,
         bottom: bool,
@@ -287,25 +302,13 @@ impl Habitable for MyEnvironment {
         self.cell_lattice[pos] = to;
         self.update_edges(pos)
     }
-
-    fn spawn_cell(
-        &mut self,
-        empty_cell: Self::Cell,
-        positions: impl IntoIterator<Item = Pos<usize>>
-    ) -> &RelCell<Self::Cell> {
-        let cell_index = self.cells.add(empty_cell).index;
-        let new_spin = Spin::Some(cell_index);
-        for pos in positions {
-            self.grant_position(pos, new_spin);
-        }
-        self.cells.get_cell(cell_index)
-    }
 }
 
-/// Represents a split line through the centroid:
-///   y = slope * x + intercept
+/// Represents a split line through the centroid: y = `slope` * x + `intercept`.
 #[derive(Debug)]
 pub struct SplitLine {
+    /// Slope of the linear equation.
     pub slope: f32,
+    /// Intercept of the linear equation.
     pub intercept: f32,
 }

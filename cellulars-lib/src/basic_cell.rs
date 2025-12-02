@@ -1,17 +1,26 @@
+//! Contains logic related to cells.
+
 use crate::constants::CellIndex;
 use crate::positional::boundaries::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
 
+/// A basic cell capable of not much.
 #[derive(Clone, Debug)]
 pub struct BasicCell {
+    /// Cell's current target area.
     pub target_area: u32,
+    /// Target area for newborns of this cell (see [Alive::birth()]).
     pub newborn_target_area: u32,
+    /// Cell area.
     pub area: u32,
+    /// Center of mass of the cell.
     pub center: Pos<f32>,
 }
 
 impl BasicCell {
+    /// Returns an empty cell to be filled by methods like 
+    /// [Habitable::spawn_cell()](crate::habitable::Habitable::spawn_cell())
     pub fn new_empty(target_area: u32) -> Self {
         Self {
             target_area,
@@ -19,10 +28,6 @@ impl BasicCell {
             area: 0,
             center: Pos::new(0., 0.,)
         }
-    }
-
-    pub fn set_target_area(&mut self, value: u32) {
-        self.target_area = value;
     }
 }
 
@@ -71,7 +76,7 @@ impl Alive for BasicCell {
     }
 
     fn apoptosis(&mut self) {
-        self.set_target_area(0)
+        self.target_area = 0
     }
 
     fn birth(&self) -> Self {
@@ -82,12 +87,21 @@ impl Alive for BasicCell {
     }
 }
 
+/// Types that can be used a cell in a simulation.
 pub trait Cellular {
+    /// Returns the target area of the cell.
     fn target_area(&self) -> u32;
+    /// Returns the area of the cell.
     fn area(&self) -> u32;
+    /// Returns the center of mass of the cell.
     fn center(&self) -> Pos<f32>;
     // TODO: we should code this property into an enum type
+    /// Returns whether the cell is still valid or not.
+    /// 
+    /// Invalid cells cannot recover from this state, and can effectively be ignored by the simulation algorithm. 
     fn is_valid(&self) -> bool;
+    /// Shifts the center and area of the cell by granting (`add == true`) 
+    /// or stealing (`add == false`) a position from it.
     fn shift_position(
         &mut self,
         pos: Pos<usize>,
@@ -96,16 +110,18 @@ pub trait Cellular {
     );
 }
 
-// TODO!: mom should not be here and should instead be a symmetric table on ChemEnvironment or Environment
-/// Represents a cell that is bound to an `Environment`.
+/// Represents a cell that is bound to an [Environment](crate::environment::Environment).
 ///
 /// Functions that do not need information about a cell's relational operators 
 /// (`index` and `mom`) should take `&C` directly.
 ///
-/// Implements `Deref<Cell>`.
+/// Implements [`Deref<Target = Cell>`].
 #[derive(Debug, Clone)]
 pub struct RelCell<C> {
+    /// Relational cell index that unique to this cell in its 
+    /// [Environment](crate::environment::Environment).
     pub index: CellIndex,
+    /// Inner cell instance.
     pub cell: C
 }
 
@@ -133,9 +149,14 @@ impl<C> DerefMut for RelCell<C> {
     }
 }
 
+/// This trait indicates that a [Cellular] can be killed.
 pub trait Alive: Cellular {
+    /// Returns whether the cell is alive or not.
     fn is_alive(&self) -> bool;
+    /// Kills the cell.
     fn apoptosis(&mut self);
+    /// Returns a new cell that inherits properties from `self` but is empty and can be filled with 
+    /// [Habitable::grant_position()](crate::habitable::Habitable::grant_position).
     fn birth(&self) -> Self;
 }
 

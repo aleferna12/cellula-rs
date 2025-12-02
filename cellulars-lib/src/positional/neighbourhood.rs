@@ -1,3 +1,5 @@
+//! Contains logic associated with neighbourhoods for a discrete lattice.
+
 use crate::positional::pos::Pos;
 // TODO! test dynamic allocation instead of the const arrays
 
@@ -72,20 +74,26 @@ fn fetch_neighs(
         })
 }
 
+/// Describes a neighbourhood of a square, discrete lattice.
 pub trait Neighbourhood {
+    /// Returns the radius of the neighbourhood.
     fn radius(&self) -> u8;
-    
+
+    /// Returns the number of positions in this neighbourhood.
     fn n_neighs(&self) -> u16;
-    
+
+    /// Returns the positions in the neighbourhood of `pos`.
     fn neighbours(&self, pos: Pos<isize>) -> impl Iterator<Item = Pos<isize>>;
 }
 
+/// Moore neighbourhood with variable radius.
 #[derive(Clone)]
 pub struct MooreNeighbourhood {
     radius: u8
 }
 
 impl MooreNeighbourhood {
+    /// Makes a new neighbourhood with an associated `radius`.
     pub fn new(radius: u8) -> Self {
         Self { radius }
     }
@@ -107,12 +115,14 @@ impl Neighbourhood for MooreNeighbourhood {
     }
 }
 
+/// VonNeumann neighbourhood with variable radius.
 #[derive(Clone)]
 pub struct VonNeumannNeighbourhood {
     radius: u8,
 }
 
 impl VonNeumannNeighbourhood {
+    /// Makes a new neighbourhood with an associated `radius`.
     pub fn new(radius: u8) -> Self {
         Self { radius }
     }

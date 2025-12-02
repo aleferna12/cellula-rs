@@ -1,3 +1,5 @@
+//! Contains logic for plotting data about the simulation.
+
 use crate::cell::CellType;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
@@ -15,13 +17,19 @@ use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
 
+/// A trait to plot information about the environment.
 pub trait Plot {
+    /// Plots the information in `env` by drawing on `image`.
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage);
 }
 
+/// [Plot]s that can display continuous variables.
 pub trait ContinuousPlot: Plot {
+    /// Color for when `value` == `min`.
     fn min_color(&self) -> Luv;
+    /// Color for when `value` == `max`.
     fn max_color(&self) -> Luv;
+    /// Linearly interpolates `value` between `min` and `max`.
     fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Luv, LerpError> {
         if max < min {
             return Err(LerpError::NegativeRange);
@@ -39,15 +47,22 @@ pub trait ContinuousPlot: Plot {
     }
 }
 
+/// Error thrown when linear interpolation fails.
 #[derive(Debug)]
 pub enum LerpError {
+    /// Value falls outside the range because it's too small.
     ValueTooSmall,
+    /// Value falls outside the range because it's too large.
     ValueTooLarge,
+    /// Minimum value passed is larger than maximum.
     NegativeRange
 }
 
+/// Plots the spin of cells in random colors (except for the solid and medium spin colors, which can be chosen).
 pub struct SpinPlot {
+    /// Color used for [Spin::Solid].
     pub solid_color: Srgb<u8>,
+    /// Color used for [Spin::Medium].
     pub medium_color: Option<Srgb<u8>>
 }
 
@@ -80,7 +95,9 @@ impl Plot for SpinPlot {
     }
 }
 
+/// Plots the center of cells.
 pub struct CenterPlot {
+    /// Color of the cell center.
     pub color: Srgb<u8>
 }
 
@@ -101,7 +118,9 @@ impl Plot for CenterPlot {
     }
 }
 
+/// Plots the perceived chemical center of cells.
 pub struct ChemCenterPlot {
+    /// Color of the cell chemical center.
     pub color: Srgb<u8>
 }
 
@@ -122,7 +141,9 @@ impl Plot for ChemCenterPlot {
     }
 }
 
+/// Plots the border of cells.
 pub struct BorderPlot {
+    /// Color of the border.
     pub color: Srgb<u8>
 }
 
@@ -148,8 +169,11 @@ impl Plot for BorderPlot {
     }
 }
 
+/// Plots cells according to their cell type.
 pub struct CellTypePlot {
+    /// Color for the migrating cells.
     pub mig_color: Srgb<u8>,
+    /// Color for the dividing cells.
     pub div_color: Srgb<u8>
 }
 
@@ -173,8 +197,11 @@ impl Plot for CellTypePlot {
     }
 }
 
+/// Plots cell area.
 pub struct AreaPlot {
+    /// Color used to display the smallest value of the plot.
     pub min_color: Luv,
+    /// Color used to display the largest value of the plot.
     pub max_color: Luv
 }
 
@@ -224,8 +251,11 @@ impl ContinuousPlot for AreaPlot {
     }
 }
 
+/// Plots the chemical lattice.
 pub struct ChemPlot {
+    /// Color used to display the smallest value of the plot.
     pub min_color: Luv,
+    /// Color used to display the largest value of the plot.
     pub max_color: Luv
 }
 
@@ -261,6 +291,7 @@ impl ContinuousPlot for ChemPlot {
     }
 }
 
+/// Adds an alpha = 255 component to the `color`.
 pub fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
     let arr: [u8; 4] = color.with_alpha(255).into();
     Rgba::from(arr)
@@ -308,10 +339,12 @@ impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
     }
 }
 
+/// Converts [`Srgb<u8>`] to [Luv].
 pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {
     Luv::from_color(srgb.into_linear::<f32>())
 }
 
+/// Parses a hex string as an [`Srgb<u8>`].
 pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, HexError> {
     if !hex.starts_with("#") {
         return Err(HexError::MissingHashtag);
@@ -324,12 +357,16 @@ pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, HexError> {
     Ok([bytes[1], bytes[2], bytes[3]].into())
 }
 
+/// Error thrown when a string could not be parsed into a [`Srgb<u8>`]
 #[derive(Error, Debug)]
 pub enum HexError {
-    #[error("missing `#` in the color name")]
+    /// Hex string is missing "#" in the beginning.
+    #[error("missing \"#\" in the color name")]
     MissingHashtag,
+    /// Hex string has the wrong length.
     #[error("`hex` must be six characters long, excluding `#`")]
     WrongLength,
+    /// Failed to parse the hex string as a number.
     #[error("failed to parse the string as a hex `u8`: {0}")]
     ParseU8Error(#[from] std::num::ParseIntError),
 }

@@ -1,3 +1,5 @@
+//! Contains logic associated with [MyPotts].
+
 use crate::cell::CellType;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
@@ -11,12 +13,18 @@ use cellulars_lib::spin::Spin;
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
+/// A Potts model that implements cell migration.
 #[derive(Clone, Builder)]
 pub struct MyPotts {
+    /// Boltz temperature of the model.
     pub boltz_t: f32,
+    /// Scaler constant associated with the penalty for size deviations.
     pub size_lambda: f32,
+    /// Scaler constant associated with the speed of migration.
     pub chemotaxis_mu: f32,
+    /// Whether we allow cell migration.
     pub enable_migration: bool,
+    /// Adhesion system used in [MyPotts::delta_hamiltonian_adhesion()](Potts::delta_hamiltonian_adhesion)
     pub adhesion: StaticAdhesion
 }
 

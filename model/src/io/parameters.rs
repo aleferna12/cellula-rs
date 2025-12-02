@@ -1,3 +1,5 @@
+//! Contains logic related to the simulation parameters.
+
 use cellulars_lib::constants::CellIndex;
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
@@ -20,6 +22,7 @@ static RESUME_NOTES: &str = "\
     the simulation runs with its original parameters.
 ";
 
+/// CLI tool that executes [Commands].
 #[derive(Parser)]
 #[command(version, about)]
 pub struct Cli {
@@ -27,6 +30,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
+/// Commands available to the [Cli].
 #[derive(Subcommand)]
 pub enum Commands {
     /// Start a new run
@@ -63,6 +67,7 @@ pub struct Parameters {
 }
 
 impl Parameters {
+    /// Parses parameters from a config file at `path` + env. variables.
     pub fn parse(path: impl AsRef<Path>) -> anyhow::Result<Parameters> {
         let path = path.as_ref();
         log::info!("Reading parameters from {} and environmental variables", path.display());
@@ -81,7 +86,8 @@ impl Parameters {
         params.check_conflicts()?;
         Ok(params)
     }
-    
+
+    /// Checks for conflicting parameters choices and panics if any are found.
     pub fn check_conflicts(&self) -> anyhow::Result<()> {
         #[cfg(not(feature = "fixed_boundary"))]
         if self.pond.enclose && self.pond.neigh_r > 1 {
@@ -98,6 +104,7 @@ impl Parameters {
     }
 }
 
+/// General simulation parameters.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct GeneralParameters {
@@ -105,6 +112,7 @@ pub struct GeneralParameters {
     pub seed: Option<u64>
 }
 
+/// Parameters determining how a pond is created (see [pond](crate::pond));
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PondParameters {
@@ -115,6 +123,7 @@ pub struct PondParameters {
     pub neigh_r: u8,
 }
 
+/// Parameters specifying how cells are created and behave (see [cell](crate::cell)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct CellParameters {
@@ -131,6 +140,7 @@ pub struct CellParameters {
     pub update_period: u32,
 }
 
+/// Parameters for the cellular automata update algorithm (see [my_potts](crate::my_potts)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PottsParameters {
@@ -140,6 +150,7 @@ pub struct PottsParameters {
     pub adhesion: AdhesionParameters
 }
 
+/// Parameters used in cell adhesion (see [cellulars_lib::adhesion]).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct AdhesionParameters {
@@ -148,6 +159,7 @@ pub struct AdhesionParameters {
     pub solid_energy: f32,
 }
 
+/// Parameters used to control IO operations (see [io_manager](crate::io::io_manager)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct IoParameters {
@@ -163,6 +175,7 @@ pub struct IoParameters {
     pub plot: PlotParameters
 }
 
+/// Parameters used to determine how and when to save data (see [io_manager](crate::io::io_manager)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct DataParameters {
@@ -170,6 +183,7 @@ pub struct DataParameters {
     pub lattice_period: u32
 }
 
+/// Parameters used to display the real-time movie of the simulation (see [movie_maker](crate::io::movie_maker)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct MovieParameters {
@@ -180,11 +194,12 @@ pub struct MovieParameters {
     pub frame_period: u32
 }
 
+/// Parameters using for plotting (see [plot](crate::io::plot)).
 // We flatten the parameters here to allow order to be an env variable
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PlotParameters {
-    pub order: Vec<PlotType>, 
+    pub order: Vec<PlotType>,
     pub solid_color: String,
     pub medium_color: Option<String>,
     pub center_color: String,
@@ -198,15 +213,24 @@ pub struct PlotParameters {
     pub dividing_color: String
 }
 
+
+/// A type of plot.
 #[derive(Serialize, Deserialize, Clone, EnumIter, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum PlotType {
+    /// Cell spin.
     Spin,
+    /// Cell center.
     Center,
+    /// Cell perceived chemical center.
     ChemCenter,
+    /// Cell border.
     Border,
+    /// Cell type.
     CellType,
+    /// Cell area.
     Area,
+    /// Background chemical.
     Chem
 }
 

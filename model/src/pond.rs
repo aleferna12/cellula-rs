@@ -1,3 +1,5 @@
+//! Contains logic required to run an instance of a simulation in a [Pond].
+
 use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
 use bon::Builder;
@@ -5,20 +7,30 @@ use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
 
-// TODO: this struct can be made general if CellularAutomata is also general
+/// A pond is responsible for updating a [MyEnvironment] using the [MyPotts] algorithm.
+///
+/// All simulation logic is contained here, while [Model](crate::model::Model) is responsible for IO.
 #[derive(Clone, Builder)]
 pub struct Pond {
+    /// Environment containing the cells.
     pub env: MyEnvironment,
+    /// Potts algorithm with which to update the CA.
     pub potts: MyPotts,
+    /// Random number generator unique to this pond.
     pub rng: Xoshiro256StarStar,
+    /// Period with which the cells' [Cell::update()](crate::cell::Cell::update()) method should be called.
     pub update_period: u32,
-    pub cell_target_area: u32,
+    /// Whether cell division is enabled.
     pub division_enabled: bool,
+    /// Current time-step of the pond.
+    ///
+    /// Updated by [Pond::step()].
     #[builder(default = 0)]
     pub time_step: u32,
 }
 
 impl Pond {
+    /// Removes all cells from the pond and returns it to a clean state.
     pub fn wipe_out(&mut self) {
         self.env.wipe_out();
     }

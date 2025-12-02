@@ -1,29 +1,38 @@
+//! Contains logic associated with [Rect].
+
 use crate::positional::pos::Pos;
 use num::{Integer, Num, ToPrimitive};
 use std::ops::AddAssign;
 use thiserror::Error;
 
+/// A rectangle defined by two corners.
 #[derive(Clone, Debug)]
 pub struct Rect<T> {
+    /// Bottom-left corner.
     pub min: Pos<T>,
+    /// Upper-right corner.
     pub max: Pos<T>
 }
 
 impl<T> Rect<T>
 where
     T: Num + Copy {
+    /// Makes a new rectangle spanning from positions `min` to `max`.
     pub fn new(min: Pos<T>, max: Pos<T>) -> Self {
         Self{ min, max }
     }
 
+    /// Returns the width of the rectangle.
     pub fn width(&self) -> T {
         self.max.x - self.min.x
     }
 
+    /// Returns the height of the rectangle.
     pub fn height(&self) -> T {
         self.max.y - self.min.y
     }
 
+    /// Returns the area of the rectangle.
     pub fn area(&self) -> T {
         self.width() * self.height()
     }
@@ -34,11 +43,17 @@ where
     T: Integer
         + AddAssign
         + Copy {
+    /// Iterates over all discrete positions contained in the rectangle.
+    ///
+    /// The iterator range is inclusive on both ends (position \[width, height\] is included for example).
     pub fn iter_positions(&self) -> RectAreaIt<T> {
         RectAreaIt::new(self.clone())
     }
 }
 
+/// Iterator over all discrete positions contained in a [Rect].
+///
+/// The iterator range is inclusive on both ends (position \[width, height\] is included for example).
 pub struct RectAreaIt<T> {
     curr: Pos<T>,
     rect: Rect<T>
@@ -110,6 +125,7 @@ impl TryFrom<Rect<f32>> for Rect<usize> {
     }
 }
 
+/// Error raised when the coordinate type of [Rect] cannot be converted.
 #[derive(Error, Debug)]
 #[error("failed to convert `Rect`")]
 pub struct RectConversionError {}

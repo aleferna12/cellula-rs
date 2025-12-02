@@ -1,3 +1,5 @@
+//! Contains logic for creating and running the master [Model] struct.
+
 use crate::cell::{Cell, CellType};
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::io::io_manager::IoManager;
@@ -16,16 +18,22 @@ use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
 
+/// This is the master struct that runs the simulation in a [Pond] and manages IO through an [IoManager].
 pub struct Model {
+    /// Pond containing all cells and the model Potts algorithm.
     pub pond: Pond,
+    /// Instance responsible for managing IO for the model.
     pub io: IoManager,
+    /// Unique random number generator of this model.
     pub rng: Xoshiro256StarStar,
+    /// Period with which information is logged.
     pub info_period: u32,
     time_steps: u32,
     time_step: u32,
 }
 
 impl Model {
+    /// Initialises a brand-new model from some `parameters`.
     pub fn initialise_from_parameters(
         parameters: Parameters
     ) -> anyhow::Result<Self> {
@@ -47,6 +55,10 @@ impl Model {
         })
     }
 
+    /// Initialises the model from a previous state.
+    ///
+    /// `sim_path` should point to the main folder of a simulation, while `time_step` specifies which files from this
+    /// folder will be reloaded.
     pub fn initialise_from_backup(
         parameters: Parameters,
         sim_path: impl AsRef<Path>,
@@ -145,7 +157,6 @@ impl Model {
             .potts(ca)
             .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
             .update_period(parameters.cell.update_period)
-            .cell_target_area(parameters.cell.target_area)
             .division_enabled(parameters.cell.divide)
             .build()
     }
@@ -241,10 +252,12 @@ impl Model {
         Ok(pond)
     }
 
+    /// Runs the model for the number of time-steps specified when creating the model.
     pub fn run(&mut self) {
         self.run_for(self.time_steps);
     }
-    
+
+    /// Logs some information at end of the simulation.
     pub fn goodbye(&self) {
         log::info!("Finished after {} time steps", self.time_steps);
     }

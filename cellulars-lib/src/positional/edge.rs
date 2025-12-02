@@ -1,25 +1,36 @@
+//! Contains logic associated with [Edge].
+
 use crate::positional::pos::Pos;
 use std::hash::{Hash, Hasher};
 use std::mem;
 
+/// Error thrown when an edge cannot be created between two positions using [Edge::new_if_neighbour()].
 #[derive(Debug)]
 pub enum EdgeError {
+    /// Positions are the same.
     SamePosition,
+    /// Positions are not neighbours (too far apart).
     NotNeighbours
 }
 
+/// A symmetrical edge between two positions (such that `Edge(p1, p2) == Edge(p2, p1)`).
 #[derive(Eq, Clone)]
 #[derive(Debug)]
 pub struct Edge {
+    /// Position at one end of the edge.
     pub p1: Pos<usize>,
+    /// Position at the other end of the edge.
     pub p2: Pos<usize>
 }
 
 impl Edge {
+    /// Makes a new edge between `pos1` and `pos2` without checking if they are neighbours.
     pub fn new(p1: Pos<usize>, p2: Pos<usize>) -> Self {
         Self { p1, p2 }
     }
-    
+
+    // TODO: does this account for different neighbourhoods?
+    /// Makes a new edge while checking if `pos1` and `pos2` are neighbours.
     pub fn new_if_neighbour(p1: Pos<usize>, p2: Pos<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
         let cx = p1.x.abs_diff(p2.x);
         let cy = p1.y.abs_diff(p2.y);

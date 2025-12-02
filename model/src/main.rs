@@ -1,3 +1,7 @@
+//! Entry point for the main binary.
+//!
+//! Check [Cli] for the available commands (or run with `--help`).
+
 /*
 TODO!:
     -

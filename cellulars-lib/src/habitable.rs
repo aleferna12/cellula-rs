@@ -1,3 +1,5 @@
+//! Contains logic associated
+
 use crate::basic_cell::{Cellular, RelCell};
 use crate::environment::{EdgesUpdate, Environment};
 use crate::positional::boundaries::ToLatticeBoundary;
@@ -5,20 +7,37 @@ use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
 
+/// This trait asserts that an [Environment] is habitable,
+/// which is to say that it can contain active cells.
+///
+/// Overriding methods of this trait (especially [Habitable::grant_position()])
+/// allows for custom logic of how to update an environment.
 pub trait Habitable {
+    /// Cell type of the environment associated with this trait.
     type Cell: Cellular;
 
+    /// Returns a reference to the environment that we have made habitable by implementing this trait.
     fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
 
+    /// Returns a mutable reference to the environment that we have made habitable by implementing this trait.
     fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
 
+    /// Grants position `pos` to the entity represented by spin `to`.
+    ///
+    /// This method should be used whenever a position on the environment changes ownership.
     fn grant_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate;
 
+    /// Spawns a cell by progressively granting `empty_cell` a series of `positions` with [Habitable::grant_position()].
+    ///
+    /// Panics if `empty_cell` has area > 0.
     fn spawn_cell(
         &mut self,
         empty_cell: Self::Cell,
         positions: impl IntoIterator<Item = Pos<usize>>
     ) -> &RelCell<Self::Cell> {
+        if empty_cell.area() > 0 {
+            panic!("`empty_cell` must be empty.")
+        }
         let cell_index = self.env_mut().cells.add(empty_cell).index;
         let new_spin = Spin::Some(cell_index);
         for pos in positions {
@@ -27,6 +46,7 @@ pub trait Habitable {
         self.env().cells.get_cell(cell_index)
     }
 
+    /// Spawns a [Spin::Solid] at each position in `positions`.
     fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {
         for pos in positions {
             self.grant_position(pos, Spin::Solid);

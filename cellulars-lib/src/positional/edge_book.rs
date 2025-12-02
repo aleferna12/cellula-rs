@@ -1,9 +1,14 @@
+//! Contains logic associated with [EdgeBook].
+
 use crate::positional::edge::Edge;
 use indexmap::IndexSet;
 use rand::Rng;
 use std::ops::Index;
 
 /// This struct exists to book-keep the edges in a lattice.
+///
+/// It provides both fast index-based and hash-based access to edges by keeping separate but related contiguous and
+/// hash map representations of the data.
 #[derive(Clone)]
 pub struct EdgeBook {
     // TODO: profile using this crate, I have no clue of whether it's fast enough
@@ -11,32 +16,45 @@ pub struct EdgeBook {
 }
 
 impl EdgeBook {
+    /// Makes an empty edge book.
     pub fn new() -> Self {
         Self { edge_set: IndexSet::new() }
     }
 
+    /// Returns the number of edges in the edge book.
     pub fn len(&self) -> usize { self.edge_set.len() }
 
+    /// Returns whether the edge book is empty.
     pub fn is_empty(&self) -> bool { self.len() == 0 }
 
+    /// Returns an edge from the edge book at a specified index.
     pub fn at(&self, index: usize) -> &Edge {
         self.edge_set.index(index)
     }
 
+    /// Removes an edge from the edge book at a specified index.
     pub fn remove_at(&mut self, index: usize) -> Option<Edge> {
         self.edge_set.swap_remove_index(index)
     }
 
+    /// Inserts an edge into the edge book.
     pub fn insert(&mut self, edge: Edge) -> bool {
         self.edge_set.insert(edge)
     }
 
+    /// Removes an edge from the edge book.
     pub fn remove(&mut self, edge: &Edge) -> bool {
         self.edge_set.swap_remove(edge)
     }
 
+    /// Returns a random number between 0 and the number of edges in the edge book.
     pub fn random_index(&self, rng: &mut impl Rng) -> usize {
         rng.random_range(0..self.edge_set.len())
+    }
+
+    /// Clears the edgebook of all edges.
+    pub fn clear(&mut self) {
+        self.edge_set.clear();
     }
 }
 

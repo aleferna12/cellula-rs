@@ -1,5 +1,7 @@
-/// TODO!:
-///     - Implement EnvNeighbours, which tracks neighbours
+//! This crate contains library functions for the [Cellulars](https://github.com/aleferna12/cellulars) project.
+
+// TODO!:
+//     - Implement EnvNeighbours, which tracks neighbours
 pub mod lattice;
 pub mod positional;
 pub mod environment;

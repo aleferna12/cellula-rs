@@ -1,3 +1,5 @@
+//! Contains logic associated with boundary conditions and position validation.
+
 // TODO! remove inlines in this mod and benchmark
 use crate::positional::pos::Pos;
 use crate::positional::rect::{Rect, RectConversionError};
@@ -6,13 +8,17 @@ use num::Num;
 use std::error::Error;
 use std::ops::Sub;
 
+/// A conjugate pair of continuous/discrete boundaries that have the same boundary conditions.
 #[derive(Clone)]
 pub struct Boundaries<B: ToLatticeBoundary> {
+    /// The conjugate continuous boundary type.
     pub boundary: B,
+    /// The conjugate discrete boundary type.
     pub lattice_boundary: B::LatticeBoundary,
 }
 
 impl<B: ToLatticeBoundary> Boundaries<B> {
+    /// Makes a new boundary pair from a continuous boundary type.
     pub fn new(bound: B) -> Result<Self, B::Error>
     where
         B: ToLatticeBoundary<Coord = f32>,
@@ -24,10 +30,12 @@ impl<B: ToLatticeBoundary> Boundaries<B> {
     }
 }
 
+/// Types that implement boundary conditions to validate positions in space.
 pub trait Boundary {
+    /// Coordinate system associated with the boundaries.
     type Coord;
 
-    /// Expose the boundary as a `Rect`.
+    /// Expose the size of the boundary as a [Rect].
     fn rect(&self) -> &Rect<Self::Coord>;
 
     /// Validates that positions are in bounds.
@@ -35,6 +43,7 @@ pub trait Boundary {
     /// With fixed boundary conditions, that means filtering invalid positions.
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>>;
 
+    /// Validates a series of positions using [Boundary::valid_pos()].
     fn valid_positions(
         &self,
         positions: impl Iterator<Item = Pos<Self::Coord>>
@@ -42,6 +51,7 @@ pub trait Boundary {
         positions.filter_map(|pos| self.valid_pos(pos))
     }
 
+    /// Calculates the minimum displacement between two positions by taking into account boundary conditions.
     fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord);
 }
 
@@ -69,18 +79,24 @@ where
     fn wrap_scalar(val: Self::Coord, min: Self::Coord, max: Self::Coord) -> Self::Coord;
 }
 
+/// This trait is used to define conjugate continuous, discrete boundary conditions used to make [Boundaries].
 pub trait ToLatticeBoundary: Boundary {
+    /// Conjugate discrete boundary type of this continuous boundary type.
     type LatticeBoundary: Boundary<Coord = isize>;
+    /// Error associated with the continuous -> discrete boundary conversion.
     type Error;
+    /// Returns an instance of the conjugate [ToLatticeBoundary::LatticeBoundary] type.
     fn to_lattice_boundary(&self) -> Result<Self::LatticeBoundary, Self::Error>;
 }
 
+/// Implementation of fixed (truncated) boundary conditions.
 #[derive(Clone)]
 pub struct FixedBoundary<T> {
     rect: Rect<T>
 }
 
 impl<T> FixedBoundary<T> {
+    /// Makes a new boundary with size determined by `rect`.
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
@@ -121,12 +137,14 @@ impl ToLatticeBoundary for FixedBoundary<f32> {
     }
 }
 
+/// Mathematically sound (albeit slow) implementation of periodic boundary conditions.
 #[derive(Clone)]
 pub struct SafePeriodicBoundary<T> {
     rect: Rect<T>
 }
 
 impl<T> SafePeriodicBoundary<T> {
+    /// Makes a new boundary with size determined by `rect`.
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
@@ -170,7 +188,8 @@ impl ToLatticeBoundary for SafePeriodicBoundary<f32> {
     }
 }
 
-/// This struct can only validate positions that are at most one `width()` or `height()` away from the boundaries.
+/// This struct can only validate positions that are at most one [UnsafePeriodicBoundary::rect]
+/// away from the boundaries (in either x or y direction).
 ///
 /// <div class="warning">
 ///
@@ -183,6 +202,7 @@ pub struct UnsafePeriodicBoundary<T> {
 }
 
 impl<T> UnsafePeriodicBoundary<T> {
+    /// Makes a new boundary with size determined by `rect`.
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
