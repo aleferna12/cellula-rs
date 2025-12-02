@@ -61,15 +61,15 @@ where
     type Item = Pos<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.curr.y >= self.rect.max.y {
+        if self.curr.x >= self.rect.max.x {
             return None;
         }
         let ret_pos = self.curr;
-        if self.curr.x < self.rect.max.x - T::one() {
-            self.curr.x += T::one();
-        } else {
-            self.curr.x = self.rect.min.x;
+        if self.curr.y < self.rect.max.y - T::one() {
             self.curr.y += T::one();
+        } else {
+            self.curr.y = self.rect.min.y;
+            self.curr.x += T::one();
         }
         Some(ret_pos)
     }
