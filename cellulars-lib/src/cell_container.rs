@@ -14,7 +14,7 @@ impl<C> CellContainer<C> {
     }
     
     pub fn n_cells(&self) -> CellIndex {
-        self.vec.len().try_into().expect("there are more cells than supported by the type `Spin`")
+        self.vec.len().try_into().expect("there are more cells than supported by the type `CellIndex`")
     }
     
     /// Replaces the cell at `cell.index`.
