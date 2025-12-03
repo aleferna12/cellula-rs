@@ -13,7 +13,7 @@ height = 128
 # Whether to create a solid border around the cell lattice.
 # Should not be used with `neigh_r` > 1.
 # [default = false]
-enclose = false
+enclose = true
 # Radius of the neighbourhood.
 neigh-r = 1
 

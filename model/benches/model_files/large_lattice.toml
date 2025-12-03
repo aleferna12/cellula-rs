@@ -5,7 +5,7 @@ seed = 1241254152
 [pond]
 width = 2000
 height = 2000
-enclose = false
+enclose = true
 neigh-r = 1
 
 [cell]
