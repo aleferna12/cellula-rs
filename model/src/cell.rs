@@ -6,7 +6,7 @@ use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
 use strum_macros::{Display, EnumString};
 
-/// A cell that can track a chemical concentration and migrate towards it.
+/// A cell that can track a chemical concentration and migrate towards its source.
 #[derive(Clone, Debug)]
 pub struct Cell {
     // These fields have to be partially public to construct the cell in io_manager
