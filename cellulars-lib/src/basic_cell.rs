@@ -5,17 +5,17 @@ use crate::positional::boundaries::Boundary;
 use crate::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
 
-/// A basic cell capable of not much.
+/// Minimum components required to simulate a cell.
 #[derive(Clone, Debug)]
 pub struct BasicCell {
     /// Cell's current target area.
     pub target_area: u32,
     /// Target area for newborns of this cell (see [Alive::birth()]).
     pub newborn_target_area: u32,
-    /// Cell area.
-    pub area: u32,
+    /// Cell's area.
+    area: u32,
     /// Center of mass of the cell.
-    pub center: Pos<f32>,
+    center: Pos<f32>,
 }
 
 impl BasicCell {
@@ -28,6 +28,34 @@ impl BasicCell {
             area: 0,
             center: Pos::new(0., 0.,)
         }
+    }
+
+    /// Makes a new, ready-to-go cell from a pre-existing state.
+    ///
+    /// Useful to initialise a cell from a backup.
+    /// For most use cases, use [BasicCell::new_empty()] instead.
+    pub fn new_ready(
+        area: u32,
+        center: Pos<f32>,
+        target_area: u32,
+        newborn_target_area: u32
+    ) -> Self {
+        Self {
+            area,
+            center,
+            target_area,
+            newborn_target_area
+        }
+    }
+
+    /// Returns the cell's area.
+    pub fn area(&self) -> u32 {
+        self.area
+    }
+
+    /// Returns the center of mass of the cell.
+    pub fn center(&self) -> Pos<f32> {
+        self.center
     }
 }
 

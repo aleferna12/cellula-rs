@@ -23,16 +23,21 @@ pub struct Pond {
     /// Whether cell division is enabled.
     pub division_enabled: bool,
     /// Current time-step of the pond.
-    ///
-    /// Updated by [Pond::step()].
     #[builder(default = 0)]
-    pub time_step: u32,
+    time_step: u32,
 }
 
 impl Pond {
     /// Removes all cells from the pond and returns it to a clean state.
     pub fn wipe_out(&mut self) {
         self.env.wipe_out();
+    }
+
+    /// Returns the current time-step of the pond.
+    ///
+    /// Updated by [Pond::step()].
+    pub fn time_step(&self) -> u32 {
+        self.time_step
     }
 }
 

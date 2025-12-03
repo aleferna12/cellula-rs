@@ -80,7 +80,7 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
-            time_step: pond.time_step,
+            time_step: pond.time_step(),
             pond,
             rng,
         })
@@ -150,7 +150,8 @@ impl Model {
         parameters: &Parameters,
         env: MyEnvironment,
         ca: MyPotts,
-        rng: &mut Xoshiro256StarStar
+        rng: &mut Xoshiro256StarStar,
+        time_step: u32,
     ) -> Pond {
         Pond::builder()
             .env(env)
@@ -158,6 +159,7 @@ impl Model {
             .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
             .update_period(parameters.cell.update_period)
             .division_enabled(parameters.cell.divide)
+            .time_step(time_step)
             .build()
     }
 
@@ -179,7 +181,7 @@ impl Model {
         );
 
         log::info!("Making pond");
-        let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
+        let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng, 0);
         for _ in 0..parameters.cell.starting_cells {
             let cell = Cell::new_empty(
                 parameters.cell.target_area,
@@ -242,13 +244,13 @@ impl Model {
             unsafe { (*env_ptr).update_edges(pos); };
         }
 
-        let mut pond = Self::make_empty_pond(
+        let pond = Self::make_empty_pond(
             parameters,
             env,
             Self::make_potts(parameters),
-            rng
+            rng,
+            time_step,
         );
-        pond.time_step = time_step;
         Ok(pond)
     }
 
@@ -263,7 +265,7 @@ impl Model {
     }
 
     fn log_info(&self) {
-        log::info!("Time step {}:", self.pond.time_step);
+        log::info!("Time step {}:", self.pond.time_step());
         let valid = self.pond.env.cells.n_valid();
         log::info!("\t{valid} cells");
     }
@@ -271,7 +273,7 @@ impl Model {
 
 impl Step for Model {
     fn step(&mut self) {
-        if self.pond.time_step % self.info_period == 0 {
+        if self.pond.time_step() % self.info_period == 0 {
             self.log_info();
         }
 
@@ -283,7 +285,7 @@ impl Step for Model {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.time_step)
         }
         self.pond.step();
-        self.time_step = self.pond.time_step;
+        self.time_step = self.pond.time_step();
     }
 }
 

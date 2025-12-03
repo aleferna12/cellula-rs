@@ -97,26 +97,27 @@ impl IoManager {
                 .get_str()
                 .ok_or(anyhow!("could not extract cell type string"))?
                 .try_into()?;
+            let basic_cell = BasicCell::new_ready(
+                row[cols["area"]].try_extract::<u32>()?,
+                Pos::new(
+                    row[cols["center_x"]].try_extract::<f32>()?,
+                    row[cols["center_y"]].try_extract::<f32>()?,
+                ),
+                row[cols["target_area"]].try_extract::<u32>()?,
+                row[cols["newborn_target_area"]].try_extract::<u32>()?
+            );
             cells.replace(RelCell {
                 index: row[cols["index"]].try_extract::<CellIndex>()?,
-                cell: Cell {
-                    basic_cell: BasicCell {
-                        target_area: row[cols["target_area"]].try_extract::<u32>()?,
-                        newborn_target_area: row[cols["newborn_target_area"]].try_extract::<u32>()?,
-                        area: row[cols["area"]].try_extract::<u32>()?,
-                        center: Pos::new(
-                            row[cols["center_x"]].try_extract::<f32>()?,
-                            row[cols["center_y"]].try_extract::<f32>()?,
-                        )
-                    },
-                    divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
-                    chem_center: Pos::new(
+                cell: Cell::builder()
+                    .basic_cell(basic_cell)
+                    .divide_area(row[cols["divide_area"]].try_extract::<u32>()?)
+                    .chem_center(Pos::new(
                         row[cols["chem_center_x"]].try_extract::<f32>()?,
-                        row[cols["chem_center_y"]].try_extract::<f32>()?,
-                    ),
-                    chem_mass: row[cols["chem_mass"]].try_extract::<u32>()?,
-                    cell_type,
-                }
+                        row[cols["chem_center_y"]].try_extract::<f32>()?, 
+                    ))
+                    .chem_mass(row[cols["chem_mass"]].try_extract::<u32>()?)
+                    .cell_type(cell_type)
+                    .build()
             });
         }
         Ok(cells)
@@ -327,9 +328,9 @@ impl ToDataFrame for CellContainer<Cell> {
             "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
             "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Vec<_>>(),
             "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Vec<_>>(),
-            "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
-            "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
-            "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
+            "chem_center_x" => valid.iter().map(|cell| cell.chem_center().x).collect::<Vec<_>>(),
+            "chem_center_y" => valid.iter().map(|cell| cell.chem_center().y).collect::<Vec<_>>(),
+            "chem_mass" => valid.iter().map(|cell| cell.chem_mass()).collect::<Vec<_>>(),
             "cell_type" => valid.iter().map(|cell| cell.cell_type.to_string()).collect::<Vec<_>>()
         )
     }
