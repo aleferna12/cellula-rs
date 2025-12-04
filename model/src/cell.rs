@@ -4,19 +4,22 @@ use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
+use bon::Builder;
 use strum_macros::{Display, EnumString};
 
-/// A cell that can track a chemical concentration and migrate towards it.
-#[derive(Clone, Debug)]
+/// A cell that can track a chemical concentration and migrate towards its source.
+#[derive(Clone, Debug, Builder)]
 pub struct Cell {
-    // These fields have to be partially public to construct the cell in io_manager
-    pub(crate) basic_cell: BasicCell,
-    pub(crate) divide_area: u32,
-    pub(crate) chem_center: Pos<f32>,
+    /// Area at which the cell divides.
+    pub divide_area: u32,
+    /// Current type of the cell.
+    pub cell_type: CellType,
+    /// Underlying basic cell.
+    basic_cell: BasicCell,
+    /// Center of the cell weighted by the chemical concentration at each cell position.
+    chem_center: Pos<f32>,
     /// Total concentration of the chemical perceived by the cell.
-    pub chem_mass: u32,
-    /// Type of the cell.
-    pub cell_type: CellType
+    chem_mass: u32
 }
 
 impl Cell {
@@ -30,16 +33,15 @@ impl Cell {
             cell_type,
         }
     }
+    
+    /// Returns the total concentration of the chemical perceived by the cell.
+    pub fn chem_mass(&self) -> u32 {
+        self.chem_mass
+    }
 
     /// Returns the center of the cell weighted by the chemical concentration at each cell position.
     pub fn chem_center(&self) -> Pos<f32> {
         self.chem_center
-    }
-
-    /// Returns the area at which this cell divides when
-    /// [MyEnvironment::reproduce()](crate::my_environment::MyEnvironment::reproduce()) is called.
-    pub fn divide_area(&self) -> u32 {
-        self.divide_area
     }
 
     /// Sets the area at which the cell divides when

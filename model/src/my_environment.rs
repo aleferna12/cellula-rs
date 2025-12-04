@@ -143,7 +143,7 @@ impl MyEnvironment {
                 continue;
             }
             // Currently cells don't need to express the dividing type to divide, they just need to be big enough
-            if cell.area() >= cell.divide_area() {
+            if cell.area() >= cell.divide_area {
                 divide.push(cell.index);
             }
         }
@@ -168,13 +168,13 @@ impl MyEnvironment {
         let mut sum_xy = 0.0;
 
         for p in &self.search_cell_box(cell, search_scaler) {
-            let (dx, dy) = self.bounds.boundary.displacement(p.to_f32(), cell.center);
+            let (dx, dy) = self.bounds.boundary.displacement(p.to_f32(), cell.center());
             sum_xx += dx * dx;
             sum_yy += dy * dy;
             sum_xy += dx * dy;
         }
 
-        let n = cell.area as f32;
+        let n = cell.area() as f32;
         let cov_xx = sum_xx / n;
         let cov_yy = sum_yy / n;
         let cov_xy = sum_xy / n;
@@ -210,7 +210,7 @@ impl MyEnvironment {
         } else {
             f32::INFINITY // vertical line
         };
-        let intercept = cell.center.y - slope * cell.center.x;
+        let intercept = cell.center().y - slope * cell.center().x;
 
         SplitLine { slope, intercept }
     }
