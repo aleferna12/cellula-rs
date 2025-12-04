@@ -44,6 +44,7 @@ impl Cellular for BasicCell {
         self.center
     }
 
+    // TODO!: This should be type-encoded (CellContainer should be Vec<[State<CellT>]>) where State = {Invalid, Valid}
     fn is_valid(&self) -> bool {
         self.area > 0
     }
