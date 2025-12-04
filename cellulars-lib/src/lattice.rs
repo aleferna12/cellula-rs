@@ -1,3 +1,5 @@
+//! Contains logic associated with [Lattice].
+
 use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
@@ -50,12 +52,13 @@ impl<T> Lattice<T> {
         )
     }
 
-    pub fn iter_positions(&self) -> impl Iterator<Item = Pos<usize>> {
+    /// Iterates over all lattice positions in column-major order.
+    pub fn iter_positions(&self) -> impl Iterator<Item = Pos<usize>> + use<T> {
         self.rect.iter_positions()
     }
-    
+
     pub fn iter_values(&self) -> impl Iterator<Item = &T> { self.array.iter() }
-    
+
     pub fn iter_values_mut(&mut self) -> impl Iterator<Item = &mut T> { self.array.iter_mut() }
 
     pub fn as_array(&self) -> &[T] {
@@ -70,7 +73,7 @@ impl<T: Default + Clone> Lattice<T> {
             rect,
         }
     }
-    
+
     pub fn clear(&mut self) {
         self.array.fill(T::default());
     }

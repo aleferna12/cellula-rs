@@ -243,10 +243,9 @@ impl Model {
             parameters.potts.act_max,
             parameters.cell.search_radius
         );
-        let env_ptr: *mut _ = &mut env;
         for pos in env.cell_lattice.iter_positions() {
             // We do this to avoid two lattices in memory
-            unsafe { (*env_ptr).update_edges(pos); };
+            env.update_edges(pos);
         }
 
         let mut pond = Self::make_empty_pond(
