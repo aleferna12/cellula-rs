@@ -22,7 +22,8 @@ pub struct MyEnvironment {
     pub cell_search_scaler: f32,
     pub max_cells: CellIndex,
     pub act_max: u32,
-    population_exploded: bool
+    pub max_chem: u32,
+    population_exploded: bool,
 }
 
 impl MyEnvironment {
@@ -33,24 +34,33 @@ impl MyEnvironment {
         cell_search_scaler: f32
     ) -> Self {
         let lat = Lattice::new(env.cell_lattice.rect.clone());
-        let mut env_ = Self {
+        Self {
+            max_chem: Self::distance(
+                (0, 0).into(),
+                (lat.width(), lat.height()).into()
+            ).round() as u32,
             chem_lattice: lat.clone(),
             act_lattice: lat,
             population_exploded: false,
             env,
             cell_search_scaler,
             max_cells,
-            act_max
-        };
-        env_.make_chem_gradient();
-        env_
+            act_max,
+        }
     }
 
-    pub fn make_chem_gradient(&mut self) {
-        for i in 0..self.width() {
-            for j in 0..self.height() {
-                self.chem_lattice[(i, j).into()] = j.try_into().expect("lattice is too big");
-            }
+    fn distance2(pos1: Pos<usize>, pos2: Pos<usize>) -> usize {
+        (pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)
+    }
+
+    fn distance(pos1: Pos<usize>, pos2: Pos<usize>) -> f32 {
+        (Self::distance2(pos1, pos2) as f32).sqrt()
+    }
+
+    pub fn make_chem_gradient(&mut self, center: Pos<usize>) {
+        for pos in self.chem_lattice.iter_positions() {
+            let dist = Self::distance(pos, center).round() as u32;
+            self.chem_lattice[pos] = self.max_chem - dist;
         }
     }
 

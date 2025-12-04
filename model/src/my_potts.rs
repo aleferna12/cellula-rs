@@ -1,16 +1,14 @@
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
-use cellulars_lib::basic_cell::Cellular;
-use cellulars_lib::positional::boundaries::Boundary;
+use cellulars_lib::constants::CellIndex;
+use cellulars_lib::habitable::Habitable;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
 use rand_distr::num_traits::Pow;
-use cellulars_lib::constants::CellIndex;
-use cellulars_lib::habitable::Habitable;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -27,45 +25,11 @@ pub struct MyPotts {
     #[builder(with = |min: f32| { if min > 1. { panic!("`min` must be between 0 and 1") } else { min } } )]
     pub chemotaxis_min: f32,
     pub adhesion: StaticAdhesion,
-    max_chem: u32
 }
 
 impl MyPotts {
 
-    /// This is the chemotaxis bias as defined in Colizzi, 2020.
-    ///
-    /// The chemotaxis bias for the contact inhibition model is built-in the Act bias.
-    fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
-        let Spin::Some(cell_index) = env.cell_lattice[pos_source] else {
-            return 0.;
-        };
-        let cell = env.cells.get_cell(cell_index);
-        if !cell.is_migrating() {
-            return 0.;
-        }
-
-        let (dx1, dy1) = env.bounds.boundary.displacement(
-            cell.center(),
-            Pos::new(pos_target.x as f32, pos_target.y as f32)
-        );
-        let (dx2, dy2) = env.bounds.boundary.displacement(
-            cell.center(),
-            cell.chem_center()
-        );
-
-        let dot = dx1 * dx2 + dy1 * dy2;
-        let norm1_sq = dx1 * dx1 + dy1 * dy1;
-        let norm2_sq = dx2 * dx2 + dy2 * dy2;
-        let denom = (norm1_sq * norm2_sq).sqrt();
-
-        if denom <= 0. {
-            0.
-        } else {
-            -self.chemotaxis_mu * (dot / denom)
-        }
-    }
-
-    /// This includes the combined copy biases for Act and chemotaxis as per Camley, 2016.
+    /// This includes the combined copy biases for Act and chemotaxis.
     fn contact_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let act_source = self.mean_act(pos_source, env);
         let act_target = self.mean_act(pos_target, env);
@@ -78,7 +42,7 @@ impl MyPotts {
         let cell = env.cells.get_cell(cell_index);
         cell.chem_mass as f32
             / cell.area as f32
-            / self.max_chem as f32
+            / env.max_chem as f32
             * (1. - self.chemotaxis_min)
             + self.chemotaxis_min
     }

@@ -132,7 +132,6 @@ impl Model {
                 }
             )
             .chemotaxis_min(parameters.potts.chemotaxis_min)
-            .max_chem(parameters.pond.height as u32)
             .build()
     }
 
