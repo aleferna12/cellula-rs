@@ -24,7 +24,7 @@ pub struct Pond {
     pub division_enabled: bool,
     /// Current time-step of the pond.
     #[builder(default = 0)]
-    time_step: u32,
+    pub time_step: u32,
 }
 
 impl Pond {
