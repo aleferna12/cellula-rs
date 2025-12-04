@@ -20,14 +20,14 @@ fn main() -> anyhow::Result<()> {
     let mut model = match cli.command {
         Run { config } => {
             let params = Parameters::parse(config)?;
-            Model::initialise_from_parameters(params)?
+            Model::new_from_parameters(params)?
         },
         Resume { directory, config, time_step } => {
             let params = match config {
                 Some(config_) => Parameters::parse(config_),
                 None => Parameters::parse(IoManager::resolve_parameters_path(&directory))
             }?;
-            Model::initialise_from_backup(params, directory, time_step)?
+            Model::new_from_backup(params, directory, time_step)?
         }
     };
     model.run();

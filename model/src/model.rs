@@ -34,7 +34,7 @@ pub struct Model {
 
 impl Model {
     /// Initialises a brand-new model from some `parameters`.
-    pub fn initialise_from_parameters(
+    pub fn new_from_parameters(
         parameters: Parameters
     ) -> anyhow::Result<Self> {
         log::info!("Initialising model");
@@ -59,7 +59,7 @@ impl Model {
     ///
     /// `sim_path` should point to the main folder of a simulation, while `time_step` specifies which files from this
     /// folder will be reloaded.
-    pub fn initialise_from_backup(
+    pub fn new_from_backup(
         parameters: Parameters,
         sim_path: impl AsRef<Path>,
         time_step: u32
