@@ -60,7 +60,7 @@ impl<T> Lattice<T> {
     }
 
     /// Iterates over all lattice positions in column-major order.
-    pub fn iter_positions(&self) -> impl Iterator<Item = Pos<usize>> {
+    pub fn iter_positions(&self) -> impl Iterator<Item = Pos<usize>> + use<T> {
         self.rect.iter_positions()
     }
 
