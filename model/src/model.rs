@@ -274,11 +274,11 @@ impl Step for Model {
         }
 
         let saved = self.io.write_if_time(
-            self.pond.time_step,
+            self.pond.time_step(),
             &self.pond.env
         );
         if let Err(e) = saved {
-            log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step)
+            log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())
         }
         self.pond.step();
     }
