@@ -23,8 +23,7 @@ pub struct Model {
     pub io: IoManager,
     pub rng: Xoshiro256StarStar,
     pub info_period: u32,
-    time_steps: u32,
-    time_step: u32,
+    time_steps: u32
 }
 
 impl Model {
@@ -44,8 +43,7 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             rng,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps,
-            time_step: 0
+            time_steps: parameters.general.time_steps
         })
     }
 
@@ -70,7 +68,6 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
-            time_step: pond.time_step,
             pond,
             rng,
         })
@@ -279,14 +276,13 @@ impl Step for Model {
         }
 
         let saved = self.io.write_if_time(
-            self.time_step,
+            self.pond.time_step,
             &self.pond.env
         );
         if let Err(e) = saved {
-            log::warn!("Failed to save data at time step {} with error `{e}`", self.time_step)
+            log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step)
         }
         self.pond.step();
-        self.time_step = self.pond.time_step;
     }
 }
 
