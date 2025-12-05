@@ -9,7 +9,6 @@ use cellulars_lib::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
 use cellulars_lib::positional::pos::Pos;
 
-// TODO: this struct can be made general if CellularAutomata is also general
 #[derive(Clone, Builder)]
 pub struct Pond {
     pub env: MyEnvironment,
