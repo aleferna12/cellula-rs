@@ -1,0 +1,7 @@
+{
+    "undefined": "#ffdddddd",
+    "unicellular": "#ffb163a0",
+    "multicellular": "#fffbdd5a",
+    "uni_propagules": "#ff308fbf",
+    "mul_propagules": "#ff67bf75"
+}

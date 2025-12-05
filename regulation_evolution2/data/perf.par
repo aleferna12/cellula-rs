@@ -1,0 +1,114 @@
+mcs = 20000
+sizex = 2000
+sizey = 2000
+
+###############################
+## Cellular Potts parameters ##
+###############################
+
+T = 16
+neighbours = 2
+conn_diss = 0
+border_energy = 100
+rseed = -1
+chancemediumcopied = 0.0
+lambda = 4
+
+## Migration parameters ##
+
+startmu = 3.0
+persduration = 50
+init_chemmu = 1.0
+
+## Cell parameters ##
+
+target_area = 50
+min_area_for_life = 4
+
+## Adhesion ##
+
+Jmed = 24
+Jalpha = 12
+dynamic_adh = false
+key_lock_weights = 1 2 3 4 5 6 7 8
+
+#########################################
+## Genome regulation of cell behaviour ##
+#########################################
+
+nr_regnodes = 18
+input_scales = 0.1 1
+divtime = 20	# scaled nr of steps before a cell initiates division
+divdur = 1000     # duration of division, during which a cell stops moving
+grn_update_period = 20
+nodivisions = true
+nodeaths = true
+
+########################
+## Initial conditions ##
+########################
+
+n_init_cells = 300
+size_init_cells = 25
+init_cell_config = 0
+randgroups = false
+
+##########################
+## Evolution parameters ##
+##########################
+
+evolreg = false
+groupextinction = false
+
+## Genome mutation ##
+mu = 0.05
+mustd = 0.05
+scatter_start = true
+
+gompertz_alpha = 0.0
+gompertz_beta = 0
+
+#################################
+### Chem. gradient parameters ###
+#################################
+
+gradnoise = 1.0
+gradscale = 5
+foodpatches = 1
+maxfoodpatches = 1
+foodpatchperiod = 100000
+foodpatcharea = 12
+foodperspot = 25
+foodstart = 200000000
+metabperiod = 100000
+eatperiod = 10
+seasonduration = 100000
+seasonamplitude = 0
+
+############
+## Output ##
+############
+
+graphics = false
+save_movie = true
+save_movie_period = 100000
+save_data_period = 100000
+save_lattice_period = 100000
+info_period = 10000
+existing_dirs = true
+replace_dirs = true
+
+##############
+## Plotting ##
+##############
+
+colortablefile = ../data/colortable.ctb
+plots = group
+
+miglines = true
+chemgrad = true
+chemcircles = true
+circle_thickness = 2
+circle_dist = 40
+circle_segments = 15
+circle_coverage = 0.5

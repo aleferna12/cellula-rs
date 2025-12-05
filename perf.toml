@@ -1,0 +1,134 @@
+[general]
+# How many MCS the simulation will run for.
+time-steps = 20000
+# Seed for the RNG.
+# Omit to pick a random seed.
+seed = 1241254152
+
+[pond]
+# Width of the lattice.
+width = 2000
+# Height of the lattice.
+height = 2000
+# Whether to create a solid border around the cell lattice.
+# Should not be used with `neigh_r` > 1.
+# [default = false]
+enclose = true
+# Radius of the neighbourhood.
+neigh-r = 1
+
+[cell]
+# Number of starting cells in the environment.
+starting-cells = 300
+# Maximum number of cells allowed in the environment.
+# Cell division is prevented if it would cause the cell population to exceed this threshold.
+max-cells = 200000
+# How many times to enlarge the cells' putative radii when searching for them in the environment.
+# Decreasing this parameter improves performance but may lead to critical warnings reporting that not
+# all cell postitions could be found.
+search-radius = 3.0
+# Starting cell area.
+starting-area = 25
+# Target cell area.
+target-area = 50
+# Cell area before division.
+div-area = 100
+# Set to `false` to disable division.
+# [default = true]
+divide = false
+# Set to `false` to disable migration.
+# [default = true]
+migrate = true
+# Period (in MCS) with which the cell is updated.
+# This includes cell growth, genome updates and reproduction.
+update-period = 20
+
+[potts]
+# Boltzmann temperature.
+# Increases likelihood of unfavourable copy attempts being accepted.
+boltz-t = 16.0
+# Scaler constant for area deviation penalties.
+size-lambda = 4.0
+# Scaler constant for chemotaxis bias.
+chemotaxis-mu = 1.0
+
+[potts.adhesion]
+# Adhesion energy at cell-cell interfaces of non-clonal cells.
+cell-energy = 16.0
+# Adhesion energy at cell-medium interfaces.
+medium-energy = 16.0
+# Adhesion energy at cell-solid interfaces.
+solid-energy = 16.0
+
+[io]
+# Output directory for files.
+outdir = "model/examples/perf"
+# Flag used to delete contents of `outdir` if it exists.
+# [default = false]
+replace-outdir = true
+# Period (in MCS) with which to log information about the simulation to stdout.
+info-period = 10000
+# Period (in MCS) with which to save an image of the simulation.
+image-period = 100000
+# Format used to save images.
+# Supports any format supported by the `image` crate.
+# [default = "webp"]
+image-format = "webp"
+
+[io.data]
+# Period (in MCS) with which to save the cell attributes as a parquet file.
+cells-period = 100000
+# Period (in MCS) with which to save a parquet file containing the cell lattice.
+lattice-period = 100000
+
+[io.plot]
+# Defines which plots to make and in what order.
+# Options are:
+#   - "spin":         Plots lattice spins.
+#   - "center":       Plots cell centers.
+#   - "clones":       Plots will cells are attached.
+#   - "border":       Plots cell borders.
+#   - "chem":         Plots the chem gradient.
+#   - "chem-center":  Plots the perceived center of the chem gradient.
+#   - "cell-type":    Plots the cell type of cells.
+order = ["chem", "cell-type", "border"]
+# With which color to plot solid objects.
+solid-color = "#000000"
+# With which color to plot the medium.
+# Ommit to make the medium transparent.
+# medium-color = "#ffffff"
+# With which color to plot the centers of cells.
+center-color = "#00ff00"
+# With which color to plot the perceived center of chem of cells.
+chem-center-color = "#00ff00"
+# With which color to plot the border of cells.
+border-color = "#000000"
+# With which color to plot the connections between cell clones.
+clones-color = "#ff0000"
+# Set to true to display all clone pairs, even those span across the lattice due to periodic boundaries.
+# [default = false]
+all-clones = false
+# With which color to plot the minimum area in the cell population.
+area-min-color = "#ff00ff"
+# With which color to plot the maximum area in the cell population.
+area-max-color = "#ffff00"
+# With which color to plot the minimum value for the chem in the environment.
+chem-min-color = "#000000"
+# With which color to plot the maximum value for the chem in the environment.
+chem-max-color = "#ffffff"
+# With which color to plot migrating cells.
+migrating-color = "#b30000"
+# With which color to plot dividing cells.
+dividing-color = "#045a8d"
+
+[io.movie]
+# Whether the real-time movie should be shown or not.
+# This will slow down the simulation a lot.
+# [default = false]
+show = false
+# Width of the movie window.
+width = 320
+# Height of the movie window.
+height = 320
+# How many MCS to skip between the displayed frames.
+frame-period = 100000

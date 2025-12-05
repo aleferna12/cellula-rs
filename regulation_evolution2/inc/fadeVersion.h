@@ -1,0 +1,15 @@
+#ifdef FADE2D_EXPORT
+#error FADE2D_EXPORT is defined
+#endif
+
+#pragma once
+#define GEOM_TRUE 100
+#define GEOM_FALSE 99
+#undef GEOM_PSEUDO3D
+#define GEOM_PSEUDO3D GEOM_FALSE
+
+#define FADE_VERSION_MAJ 2
+#define FADE_VERSION_MIN 16
+#define FADE_VERSION_REV 3
+#define FADE_VERSION_NUM 21603
+#define FADE_VERSION_STR "2.16.3"
