@@ -29,7 +29,7 @@ pub struct MyPotts {
 
 impl MyPotts {
 
-    /// This includes the combined copy biases for Act and chemotaxis.
+    /// This includes the combined copy biases for Act and chem-polarisation.
     fn contact_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let act_source = self.mean_act(pos_source, env);
         let act_target = self.mean_act(pos_target, env);
@@ -47,7 +47,7 @@ impl MyPotts {
             + self.chemotaxis_min
     }
 
-    /// Geometric mean of Act content of neighbourhood of `pos`, multiplied by the relative chemotaxis term.
+    /// Geometric mean of Act content of neighbourhood of `pos`, multiplied by the chem-polarisation term.
     fn mean_act(&self, pos: Pos<usize>, env: &MyEnvironment) -> f32 {
         let cell_spin = env.cell_lattice[pos];
         let Spin::Some(cell_index) = cell_spin else {
