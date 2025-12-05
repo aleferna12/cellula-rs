@@ -234,7 +234,7 @@ impl Plot for ChemPlot {
             let color = self.lerp(
                 val.as_(),
                 0.,
-                lat.height() as f32
+                env.max_chem as f32
             );
             match color {
                 Ok(c) => image.put_pixel(

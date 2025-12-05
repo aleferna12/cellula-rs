@@ -2,10 +2,12 @@ use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
 use crate::evolution::selector::Fit;
 use bon::Builder;
+use rand::Rng;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
+use cellulars_lib::positional::pos::Pos;
 
 // TODO: this struct can be made general if CellularAutomata is also general
 #[derive(Clone, Builder)]
@@ -17,13 +19,31 @@ pub struct Pond {
     pub cell_target_area: u32,
     pub enable_division: bool,
     pub enable_cell_updates: bool,
+    pub season_duration: u32,
+    #[builder(default = [
+        (0, 0).into(), (env.width() - 1, 0).into(),
+        (0, env.height() - 1).into(),
+        (env.width() - 1, env.height() - 1).into()
+    ])]
+    corners: [Pos<usize>; 4],
     #[builder(default = 0)]
-    pub time_step: u32,
+    next_corner: usize,
+    #[builder(default = 0)]
+    pub time_step: u32
 }
 
 impl Pond {
     pub fn wipe_out(&mut self) {
         self.env.wipe_out();
+    }
+
+    pub fn make_next_chem_gradient(&mut self) -> Pos<usize> {
+        let curr_corner = self.next_corner;
+        self.env.make_chem_gradient(self.corners[curr_corner]);
+        while self.next_corner == curr_corner {
+            self.next_corner = self.rng.random_range(0..self.corners.len());
+        }
+       self.corners[curr_corner]
     }
 }
 

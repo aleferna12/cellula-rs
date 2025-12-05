@@ -7,6 +7,7 @@ width = 2000
 height = 2000
 enclose = true
 neigh-r = 1
+season-duration = 10_000
 
 [cell]
 starting-cells = 300

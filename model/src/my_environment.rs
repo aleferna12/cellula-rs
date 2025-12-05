@@ -23,7 +23,7 @@ pub struct MyEnvironment {
     pub max_cells: CellIndex,
     pub act_max: u32,
     pub max_chem: u32,
-    population_exploded: bool,
+    population_exploded: bool
 }
 
 impl MyEnvironment {
@@ -50,7 +50,8 @@ impl MyEnvironment {
     }
 
     fn distance2(pos1: Pos<usize>, pos2: Pos<usize>) -> usize {
-        (pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)
+        (pos1.x as isize - pos2.x as isize).pow(2) as usize
+            + (pos1.y as isize - pos2.y as isize).pow(2) as usize
     }
 
     fn distance(pos1: Pos<usize>, pos2: Pos<usize>) -> f32 {
