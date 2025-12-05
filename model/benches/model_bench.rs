@@ -52,7 +52,7 @@ fn bench_param_files(
                         // either after the setup run or the whole simulation
                         params.io.image_period = max(time_steps, 100);
                         params.io.movie.show = false;
-                        let mut model = Model::initialise_from_parameters(params).unwrap();
+                        let mut model = Model::new_from_parameters(params).unwrap();
                         model.run_for(100);
                         model
                     },
@@ -83,7 +83,7 @@ fn bench_slow(c: &mut Criterion) {
                 let mut params = Parameters::parse("examples/1_cell.toml").unwrap();
                 params.io.image_period = 50_000;
                 params.io.movie.show = false;
-                let mut model = Model::initialise_from_parameters(params).unwrap();
+                let mut model = Model::new_from_parameters(params).unwrap();
                 model.run_for(50_000);
                 model
             },
@@ -102,7 +102,7 @@ fn bench_slow(c: &mut Criterion) {
                 ).unwrap();
                 params.io.image_period = 10_000;
                 params.io.movie.show = false;
-                let mut model = Model::initialise_from_parameters(params).unwrap();
+                let mut model = Model::new_from_parameters(params).unwrap();
                 model.run_for(100);
                 model
             },

@@ -27,7 +27,8 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn initialise_from_parameters(
+    /// Initialises a brand-new model from some `parameters`.
+    pub fn new_from_parameters(
         parameters: Parameters
     ) -> anyhow::Result<Self> {
         log::info!("Initialising model");
@@ -47,7 +48,11 @@ impl Model {
         })
     }
 
-    pub fn initialise_from_backup(
+    /// Initialises the model from a previous state.
+    ///
+    /// `sim_path` should point to the main folder of a simulation, while `time_step` specifies which files from this
+    /// folder will be reloaded.
+    pub fn new_from_backup(
         parameters: Parameters,
         sim_path: impl AsRef<Path>,
         time_step: u32
@@ -260,7 +265,7 @@ impl Model {
     pub fn run(&mut self) {
         self.run_for(self.time_steps);
     }
-    
+
     pub fn goodbye(&self) {
         log::info!("Finished after {} time steps", self.time_steps);
     }
@@ -279,11 +284,11 @@ impl Step for Model {
         }
 
         let saved = self.io.write_if_time(
-            self.pond.time_step,
+            self.pond.time_step(),
             &self.pond.env
         );
         if let Err(e) = saved {
-            log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step)
+            log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())
         }
         self.pond.step();
     }
