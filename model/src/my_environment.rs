@@ -13,6 +13,7 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
 use std::ops::{Deref, DerefMut};
+use bon::{bon};
 
 #[derive(Clone)]
 pub struct MyEnvironment {
@@ -26,7 +27,9 @@ pub struct MyEnvironment {
     population_exploded: bool
 }
 
+#[bon]
 impl MyEnvironment {
+    #[builder]
     pub fn new(
         env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
         max_cells: CellIndex,
@@ -46,6 +49,30 @@ impl MyEnvironment {
             cell_search_scaler,
             max_cells,
             act_max,
+        }
+    }
+    
+    #[builder]
+    pub fn new_from_backup(
+        env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
+        chem_lattice: Lattice<u32>,
+        act_lattice: Lattice<u32>,
+        max_cells: CellIndex,
+        act_max: u32,
+        cell_search_scaler: f32
+    ) -> Self {
+        Self {
+            max_chem: Self::distance(
+                (0, 0).into(),
+                (env.cell_lattice.width(), env.cell_lattice.height()).into()
+            ).round() as u32,
+            population_exploded: false,
+            env,
+            cell_search_scaler,
+            max_cells,
+            act_max,
+            chem_lattice,
+            act_lattice,
         }
     }
 

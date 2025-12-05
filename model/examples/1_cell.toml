@@ -17,7 +17,7 @@ enclose = true
 # Radius of the neighbourhood.
 neigh-r = 1
 # Period with which the gradient is erased and centered around a new location.
-season-duration = 10_000
+season-duration = 512
 
 [cell]
 # Number of starting cells in the environment.

@@ -26,7 +26,9 @@ use std::path::{Path, PathBuf};
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
 static GENOMES_PATH: &str = "genomes";
-static LATTICES_PATH: &str = "lattices";
+static CELL_LATTICES_PATH: &str = "lattices";
+static CHEM_LATTICES_PATH: &str = "chem_lattices";
+static ACT_LATTICES_PATH: &str = "act_lattices";
 static CONFIG_COPY_PATH: &str = "config.toml";
 
 #[derive(Builder)]
@@ -58,7 +60,9 @@ impl IoManager {
         std::fs::create_dir(self.outdir.join(IMAGES_PATH))?;
         std::fs::create_dir(self.outdir.join(CELLS_PATH))?;
         std::fs::create_dir(self.outdir.join(GENOMES_PATH))?;
-        std::fs::create_dir(self.outdir.join(LATTICES_PATH))
+        std::fs::create_dir(self.outdir.join(CELL_LATTICES_PATH))?;
+        std::fs::create_dir(self.outdir.join(CHEM_LATTICES_PATH))?;
+        std::fs::create_dir(self.outdir.join(ACT_LATTICES_PATH))
     }
 
     pub fn create_parameters_file(&self, parameters: &Parameters) -> anyhow::Result<()> {
@@ -181,15 +185,6 @@ impl IoManager {
             .join(format!("{time_step}.json"))
     }
 
-    pub fn resolve_lattice_path(
-        sim_path: impl AsRef<Path>,
-        time_step: u32
-    ) -> PathBuf {
-        sim_path.as_ref()
-            .join(LATTICES_PATH)
-            .join(format!("{time_step}.parquet"))
-    }
-
     fn read_genomes(file_path: impl AsRef<Path>) -> anyhow::Result<Vec<CellIndexNodeLink>> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
@@ -197,7 +192,34 @@ impl IoManager {
         Ok(serde_json::from_reader(reader)?)
     }
 
-    pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
+    pub fn resolve_cell_lattice_path(
+        sim_path: impl AsRef<Path>,
+        time_step: u32
+    ) -> PathBuf {
+        sim_path.as_ref()
+            .join(CELL_LATTICES_PATH)
+            .join(format!("{time_step}.parquet"))
+    }
+
+    pub fn resolve_chem_lattice_path(
+        sim_path: impl AsRef<Path>,
+        time_step: u32
+    ) -> PathBuf {
+        sim_path.as_ref()
+            .join(CHEM_LATTICES_PATH)
+            .join(format!("{time_step}.parquet"))
+    }
+
+    pub fn resolve_act_lattice_path(
+        sim_path: impl AsRef<Path>,
+        time_step: u32
+    ) -> PathBuf {
+        sim_path.as_ref()
+            .join(ACT_LATTICES_PATH)
+            .join(format!("{time_step}.parquet"))
+    }
+
+    fn read_ladf(file_path: impl AsRef<Path>, rect: &Rect<usize>) -> anyhow::Result<DataFrame> {
         let file_path = file_path.as_ref();
         let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
         let latdf = ParquetReader::new(file).finish()?;
@@ -205,7 +227,12 @@ impl IoManager {
             || latdf.height() != rect.height() {
             bail!("expected lattice dimensions do not match those in file");
         }
+        Ok(latdf)
+    }
 
+    pub fn read_cell_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
+        let file_path = file_path.as_ref();
+        let latdf = Self::read_ladf(file_path, &rect)?;
         let mut lattice = Lattice::new(rect);
         for (j, column) in latdf.get_columns().iter().enumerate() {
             for (i, maybe_val) in column.str()?.into_iter().enumerate() {
@@ -223,6 +250,23 @@ impl IoManager {
                             },
                         };
                         lattice[(j, i).into()] = spin;
+                    },
+                    None => bail!("file {} contains null values", file_path.display()),
+                }
+            }
+        }
+        Ok(lattice)
+    }
+
+    pub fn read_lattice_u32(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<u32>> {
+        let file_path = file_path.as_ref();
+        let latdf = Self::read_ladf(file_path, &rect)?;
+        let mut lattice = Lattice::new(rect);
+        for (j, column) in latdf.get_columns().iter().enumerate() {
+            for (i, maybe_val) in column.u32()?.into_iter().enumerate() {
+                match maybe_val {
+                    Some(val) => {
+                        lattice[(j, i).into()] = val;
                     },
                     None => bail!("file {} contains null values", file_path.display()),
                 }
@@ -267,10 +311,20 @@ impl IoManager {
         }
 
         if time_step % self.lattices_period == 0 {
-            let file_path = self.outdir
-                .join(LATTICES_PATH)
+            let cell_lat_file_path = self.outdir
+                .join(CELL_LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            Self::write_lattice(file_path.as_path(), &env.cell_lattice)?;
+            Self::write_lattice(cell_lat_file_path.as_path(), &env.cell_lattice)?;
+
+            let chem_lat_file_path = self.outdir
+                .join(CHEM_LATTICES_PATH)
+                .join(format!("{time_str}.parquet"));
+            Self::write_lattice_u32(chem_lat_file_path.as_path(), &env.chem_lattice)?;
+
+            let act_lat_file_path = self.outdir
+                .join(ACT_LATTICES_PATH)
+                .join(format!("{time_str}.parquet"));
+            Self::write_lattice_u32(act_lat_file_path.as_path(), &env.act_lattice)?;
         }
         Ok(())
     }
@@ -305,6 +359,19 @@ impl IoManager {
                         }
                     })
                     .collect::<Vec<_>>(),
+            ).into())
+        }
+        let mut latdf = DataFrame::new(cols)?;
+        let file = std::fs::File::create(file_path)?;
+        ParquetWriter::new(file).finish(&mut latdf)
+    }
+
+    fn write_lattice_u32(file_path: &Path, lattice: &Lattice<u32>) -> PolarsResult<u64>{
+        let mut cols = vec![];
+        for (j, col) in lattice.as_array().chunks_exact(lattice.height()).enumerate() {
+            cols.push(Series::new(
+                format!("col_{j}").into(),
+                col.to_vec(),
             ).into())
         }
         let mut latdf = DataFrame::new(cols)?;

@@ -165,18 +165,18 @@ impl Model {
         ca: MyPotts,
         rng: &mut Xoshiro256StarStar
     ) -> anyhow::Result<Pond> {
-        let env = MyEnvironment::new(
-            Environment::new_empty(
+        let env = MyEnvironment::builder()
+            .env(Environment::new_empty(
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(Rect::new(
                     (0., 0.).into(),
                     (parameters.pond.width as f32, parameters.pond.height as f32).into(),
                 ))).context("lattice size is too big")?
-            ).context("lattice size is too big")?,
-            parameters.cell.max_cells,
-            parameters.potts.act_max,
-            parameters.cell.search_radius
-        );
+            ).context("lattice size is too big")?)
+            .max_cells(parameters.cell.max_cells)
+            .act_max(parameters.potts.act_max)
+            .cell_search_scaler(parameters.cell.search_radius)
+            .build();
 
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
@@ -231,22 +231,33 @@ impl Model {
             (0., 0.).into(),
             (parameters.pond.width as f32, parameters.pond.height as f32).into(),
         );
-        let lattice = IoManager::read_lattice(
-            IoManager::resolve_lattice_path(sim_path, time_step),
-            rect.clone().try_into()?,
+        let rect_usize: Rect<usize> = rect.clone().try_into()?;
+        let cell_lattice = IoManager::read_cell_lattice(
+            IoManager::resolve_cell_lattice_path(sim_path, time_step),
+            rect_usize.clone(),
+        )?;
+        let chem_lattice = IoManager::read_lattice_u32(
+            IoManager::resolve_chem_lattice_path(sim_path, time_step),
+            rect_usize.clone(),
+        )?;
+        let act_lattice = IoManager::read_lattice_u32(
+            IoManager::resolve_act_lattice_path(sim_path, time_step),
+            rect_usize,
         )?;
 
-        let mut env = MyEnvironment::new(
-            Environment::new(
+        let mut env = MyEnvironment::new_from_backup()
+            .env(Environment::new(
                 cells,
-                lattice,
+                cell_lattice,
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(rect))?,
-            ),
-            parameters.cell.max_cells,
-            parameters.potts.act_max,
-            parameters.cell.search_radius
-        );
+            ))
+            .chem_lattice(chem_lattice)
+            .act_lattice(act_lattice)
+            .max_cells(parameters.cell.max_cells)
+            .act_max(parameters.potts.act_max)
+            .cell_search_scaler(parameters.cell.search_radius)
+            .call();
         for pos in env.cell_lattice.iter_positions() {
             // We do this to avoid two lattices in memory
             env.update_edges(pos);
