@@ -87,8 +87,26 @@ impl MyEnvironment {
 
     pub fn make_chem_gradient(&mut self, center: Pos<usize>) {
         for pos in self.chem_lattice.iter_positions() {
-            let dist = Self::distance(pos, center).round() as u32;
-            self.chem_lattice[pos] = self.max_chem - dist;
+            let new_chem = self.max_chem - Self::distance(pos, center).round() as u32;
+            if let Spin::Some(cell_index) = self.cell_lattice[pos] {
+                let prev_chem = self.chem_lattice[pos];
+                let cell = self.env.cells.get_cell_mut(cell_index);
+                // Remove position from center_chem/chem_mass
+                cell.shift_chem(
+                    pos,
+                    prev_chem,
+                    false,
+                    &self.env.bounds.boundary
+                );
+                // Add position to center_chem/chem_mass
+                cell.shift_chem(
+                    pos,
+                    new_chem,
+                    true,
+                    &self.env.bounds.boundary
+                );
+            }
+            self.chem_lattice[pos] = new_chem;
         }
     }
 

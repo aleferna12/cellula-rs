@@ -57,6 +57,9 @@ impl Step for Pond {
                 self.env.reproduce(&mut self.rng);
             }
         }
+        if self.time_step % self.season_duration == 0 {
+            self.make_next_chem_gradient();
+        }
         for val in self.env.act_lattice.iter_values_mut() {
             if *val > 0 {
                 *val -= 1;
