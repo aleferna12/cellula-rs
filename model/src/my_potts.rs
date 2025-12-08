@@ -36,8 +36,6 @@ impl MyPotts {
         -self.act_lambda / env.act_max as f32 * (act_source - act_target)
     }
 
-    // TODO!: confirm with Sandro that this is right (Ava's thesis doesnt agree with her code which doesnt agree
-    //  with what i think is the right implementation)
     fn contact_chemotaxis(&self, cell_index: CellIndex, env: &MyEnvironment) -> f32 {
         let cell = env.cells.get_cell(cell_index);
         cell.chem_mass as f32
@@ -137,23 +135,17 @@ impl Potts for MyPotts {
             }
         };
 
-        // TODO!: Benchmark vs revalidating the positions inside update_delta_perimeter
-        let neighs_target = env.env().valid_neighbours(pos_target).map(|neigh| {
-            env.env().cell_lattice[neigh]
-        }).collect::<Vec<_>>();
-
         if let Spin::Some(cell_index) = spin_source {
-            env.update_delta_perimeter(true, cell_index, neighs_target.iter().copied());
+            env.update_delta_perimeter(true, cell_index, pos_target);
         }
-
         if let Spin::Some(cell_index) = spin_target {
-            env.update_delta_perimeter(false, cell_index, neighs_target.iter().copied());
+            env.update_delta_perimeter(false, cell_index, pos_target);
         }
 
         let delta_h = self.delta_hamiltonian(
             spin_source,
             spin_target,
-            neighs_target,
+            env.neighbour_spins(pos_target),
             env
         ) + self.copy_biases(
             pos_source,

@@ -155,7 +155,7 @@ impl Model {
             .update_period(parameters.cell.update_period)
             .cell_target_area(parameters.cell.target_area)
             .enable_division(parameters.cell.divide)
-            .enable_cell_updates(parameters.cell.update) // TODO: parameter
+            .enable_cell_updates(parameters.cell.update)
             .season_duration(parameters.pond.season_duration)
             .build()
     }

@@ -169,9 +169,8 @@ impl MyEnvironment {
         let newborn_ta = mom.newborn_target_area;
         let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
-            let neighs = self.neighbour_spins(pos);
-            self.update_delta_perimeter(false, mom_index, neighs.iter().copied());
-            self.update_delta_perimeter(true, new_index, neighs.iter().copied());
+            self.update_delta_perimeter(false, mom_index, pos);
+            self.update_delta_perimeter(true, new_index, pos);
             self.grant_position(
                 pos,
                 Spin::Some(new_index),
@@ -314,20 +313,22 @@ impl MyEnvironment {
         &mut self,
         source: bool,
         cell_index: CellIndex,
-        neighs_target: impl IntoIterator<Item = Spin>
+        pos: Pos<usize>
     ) {
         let shift_when_eq = if source { -1 } else { 1 };
         let cell_spin = Spin::Some(cell_index);
-        self.cells.get_cell_mut(cell_index).delta_perimeter = Some(neighs_target
-            .into_iter()
+        self.cells.get_cell_mut(cell_index).delta_perimeter = Some(self
+            .neighbour_spins(pos)
             .map(|spin| if spin == cell_spin { shift_when_eq } else { -shift_when_eq } )
-            .sum());
+            .sum()
+        );
     }
 
-    fn neighbour_spins(&self, pos: Pos<usize>) -> Vec<Spin> {
-        self.valid_neighbours(pos)
-            .map(|pos| self.env.cell_lattice[pos])
-            .collect::<Vec<_>>()
+    // This is slightly faster than allocating a Vec that can be reutilized
+    pub fn neighbour_spins(&self, pos: Pos<usize>) -> impl Iterator<Item = Spin> {
+        self.valid_neighbours(pos).map(|neigh| {
+            self.cell_lattice[neigh]
+        })
     }
 }
 
@@ -391,11 +392,10 @@ impl Habitable for MyEnvironment {
         let cell_index = self.cells.add(empty_cell).index;
         let new_spin = Spin::Some(cell_index);
         for pos in positions {
-            let neighs = self.neighbour_spins(pos);
             if let Spin::Some(target_index) = self.cell_lattice[pos] {
-                self.update_delta_perimeter(false, target_index, neighs.iter().copied());
+                self.update_delta_perimeter(false, target_index, pos);
             }
-            self.update_delta_perimeter(true, cell_index, neighs.iter().copied());
+            self.update_delta_perimeter(true, cell_index, pos);
             self.grant_position(pos, new_spin);
         }
         self.cells.get_cell_mut(cell_index).ancestor =  Some(cell_index);
@@ -405,8 +405,7 @@ impl Habitable for MyEnvironment {
     fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {
         for pos in positions {
             if let Spin::Some(target_index) = self.cell_lattice[pos] {
-                let neighs = self.neighbour_spins(pos);
-                self.update_delta_perimeter(false, target_index, neighs);
+                self.update_delta_perimeter(false, target_index, pos);
             }
             self.grant_position(pos, Spin::Solid);
         }
