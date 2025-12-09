@@ -28,7 +28,6 @@ pub struct MyPotts {
 }
 
 impl MyPotts {
-
     /// This includes the combined copy biases for Act and chem-polarisation.
     fn contact_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let act_source = self.mean_act(pos_source, env);
@@ -52,9 +51,6 @@ impl MyPotts {
             return 0.;
         };
 
-        // We do precompute these positions for pos_target in `attempt_site_copy`
-        // Reusing that computation could be slightly faster
-        // TODO!: Turns out this is a decent performance gain
         let (count, product) = env
             .valid_neighbours(pos)
             .filter(|&pos| env.cell_lattice[pos] == cell_spin)
