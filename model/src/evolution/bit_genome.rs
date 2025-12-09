@@ -1,15 +1,10 @@
 use crate::evolution::genome::Genome;
-use bitvec::BitArr;
-use bitvec::slice::BitSlice;
 use rand::Rng;
-use crate::constants::MAX_GENOME_LENGTH;
-
-type ArrayType = BitArr!(for MAX_GENOME_LENGTH as usize, in u64);
 
 #[derive(Debug, Clone)]
 pub struct BitGenome {
-    ligands: ArrayType,
-    receptors: ArrayType,
+    ligands: u64,
+    receptors: u64,
     pub mut_rate: f32,
     pub length: u16
 }

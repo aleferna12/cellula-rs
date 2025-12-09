@@ -19,6 +19,3 @@ pub type NeighbourhoodType = MooreNeighbourhood;
 ///
 /// Used to compute cell division axis for example.
 pub const EPSILON: f32 = 1e-6;
-
-/// Maximum number of bits that can be used for ligands and receptors in the genome.
-pub const MAX_GENOME_LENGTH: u16 = 64;

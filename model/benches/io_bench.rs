@@ -1,5 +1,11 @@
+use std::hint::black_box;
+use std::ops::BitXorAssign;
+use bitvec::field::BitField;
+use bitvec::prelude::Msb0;
+use bitvec::view::BitView;
 use cellulars_lib::step::Step;
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
+use palette::blend::Compose;
 use model::io::parameters::{Parameters, PlotType};
 use model::model::Model;
 use strum::IntoEnumIterator;
