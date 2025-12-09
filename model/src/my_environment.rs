@@ -177,7 +177,6 @@ impl MyEnvironment {
         
         let mut newborn = mom.birth();
         newborn.ancestor = Some(mom_index);
-        let newborn_ta = mom.newborn_target_area;
         let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
             self.update_delta_perimeter(false, mom_index, pos);
@@ -187,7 +186,6 @@ impl MyEnvironment {
                 Spin::Some(new_index),
             );
         }
-        self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
         self.cells.get_cell(new_index)
     }
 

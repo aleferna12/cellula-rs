@@ -92,7 +92,7 @@ impl IoManager {
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=celldf.height() {
-            cells.push(Cell::new_empty(0, 0, 0, Grn::empty()));
+            cells.push(Cell::new_empty(0, 0, Grn::empty()));
         }
 
         let index_map: HashMap<_, _> = HashMap::from_iter(
@@ -125,7 +125,6 @@ impl IoManager {
                 cell: Cell {
                     basic_cell: BasicCell {
                         target_area: row[cols["target_area"]].try_extract::<u32>()?,
-                        newborn_target_area: row[cols["newborn_target_area"]].try_extract::<u32>()?,
                         area: row[cols["area"]].try_extract::<u32>()?,
                         center: Pos::new(
                             row[cols["center_x"]].try_extract::<f32>()?,
@@ -136,7 +135,6 @@ impl IoManager {
                     target_perimeter: row[cols["target_perimeter"]].try_extract::<u32>()?,
                     delta_perimeter: None,
                     ancestor: Some(row[cols["ancestor"]].try_extract::<CellIndex>()?),
-                    divide_area: row[cols["divide_area"]].try_extract::<u32>()?,
                     chem_center: Pos::new(
                         row[cols["chem_center_x"]].try_extract::<f32>()?,
                         row[cols["chem_center_y"]].try_extract::<f32>()?,
@@ -444,10 +442,8 @@ impl ToDataFrame for CellContainer<Cell> {
             "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Vec<_>>(),
             "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
             "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
-            "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Vec<_>>(),
             "perimeter" => valid.iter().map(|cell| cell.perimeter).collect::<Vec<_>>(),
             "target_perimeter" => valid.iter().map(|cell| cell.target_perimeter).collect::<Vec<_>>(),
-            "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
             "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Vec<_>>(),
             "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Vec<_>>(),
             "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
