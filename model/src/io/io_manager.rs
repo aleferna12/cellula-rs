@@ -5,7 +5,7 @@ use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::io::plot::Plot;
 use crate::my_environment::MyEnvironment;
-use anyhow::{anyhow, bail, Context};
+use anyhow::{bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
@@ -17,9 +17,10 @@ use cellulars_lib::spin::Spin;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use polars::prelude::*;
-use std::collections::HashMap;
 use std::io;
 use std::path::{Path, PathBuf};
+use num_traits::NumCast;
+use polars::frame::row::Row;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -78,49 +79,57 @@ impl IoManager {
     }
 
     fn make_cells_from_data(celldf: DataFrame) -> anyhow::Result<CellContainer<Cell>> {
+        let last_index = celldf
+            .column("index")?
+            .u32()?
+            .max()
+            .ok_or(anyhow::anyhow!("null `index` column"))?;
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
-        for _ in 0..=celldf.height() {
+        for _ in 0..=last_index {
             cells.push(Cell::new_empty(0, 0, CellType::Migrating));
         }
 
-        let cols: HashMap<_, _> = HashMap::from_iter(
-            celldf.get_column_names()
-                .into_iter()
-                .enumerate()
-                .map(|(i, name)| (name.as_str(), i))
-        );
-
         for row_i in 0..celldf.height() {
-            let row = celldf.get_row(row_i)?.0;
-            let cell_type = row[cols["cell_type"]]
-                .get_str()
-                .ok_or(anyhow!("could not extract cell type string"))?
-                .try_into()?;
+            let row = celldf.get_row(row_i)?;
             let basic_cell = BasicCell::new_ready(
-                row[cols["area"]].try_extract::<u32>()?,
+                Self::get_col_num(&row, "area", &celldf)?,
                 Pos::new(
-                    row[cols["center_x"]].try_extract::<f32>()?,
-                    row[cols["center_y"]].try_extract::<f32>()?,
+                    Self::get_col_num(&row, "center_x", &celldf)?,
+                    Self::get_col_num(&row, "center_y", &celldf)?,
                 ),
-                row[cols["target_area"]].try_extract::<u32>()?
+                Self::get_col_num(&row, "target_area", &celldf)?
             );
             cells.replace(RelCell {
-                index: row[cols["index"]].try_extract::<CellIndex>()?,
+                index: Self::get_col_num(&row, "index", &celldf)?,
                 cell: Cell::builder()
                     .basic_cell(basic_cell)
-                    .divide_area(row[cols["divide_area"]].try_extract::<u32>()?)
-                    .newborn_target_area(row[cols["newborn_target_area"]].try_extract::<u32>()?)
+                    .divide_area(Self::get_col_num(&row, "divide_area", &celldf)?)
+                    .newborn_target_area(Self::get_col_num(&row, "newborn_target_area", &celldf)?)
                     .chem_center(Pos::new(
-                        row[cols["chem_center_x"]].try_extract::<f32>()?,
-                        row[cols["chem_center_y"]].try_extract::<f32>()?, 
+                        Self::get_col_num(&row, "chem_center_x", &celldf)?,
+                        Self::get_col_num(&row, "chem_center_y", &celldf)?,
                     ))
-                    .chem_mass(row[cols["chem_mass"]].try_extract::<u32>()?)
-                    .cell_type(cell_type)
+                    .chem_mass(Self::get_col_num(&row, "chem_mass", &celldf)?)
+                    .cell_type(Self::get_col_str(&row, "cell_type", &celldf)?.try_into()?)
                     .build()
             });
         }
         Ok(cells)
+    }
+
+    fn get_col_str<'r>(row: &'r Row, col_name: &str, celldf: &DataFrame) -> anyhow::Result<&'r str> {
+        let col_index = celldf
+            .get_column_index(col_name)
+            .ok_or(anyhow::anyhow!("missing `{col_name}`"))?;
+        row.0[col_index].get_str().context("could not extract `{col_name}`")
+    }
+
+    fn get_col_num<T: NumCast>(row: &Row, col_name: &str, celldf: &DataFrame) -> anyhow::Result<T> {
+        let col_index = celldf
+            .get_column_index(col_name)
+            .ok_or(anyhow::anyhow!("missing `{col_name}`"))?;
+        row.0[col_index].try_extract::<T>().context("could not extract `{col_name}`")
     }
 
     /// Reads a cell data file into a [CellContainer].
