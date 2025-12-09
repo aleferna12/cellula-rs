@@ -47,20 +47,14 @@ divide = true
 # Set to `false` to disable migration.
 # [default = true]
 migrate = true
-# Set to `false` to disable cell updates.
-# [default = true]
-update = true
-# Period (in MCS) with which the cell is updated.
-# This includes cell growth, genome updates and reproduction.
-update-period = 32
 
 [cell.genome]
 # Number of regulatory genes in the cell's GRN.
 n-regulatory = 2
 # Mutation rate for each GRN parameter.
 mutation-rate = 0.01
-# Standard deviation of the GRN parameter mutations.
-mutation-std = 0.01
+# Number of ligands and receptors in the genome (total size is double this parameter).
+genome-length = 8
 
 [potts]
 # Boltzmann temperature.
@@ -121,9 +115,8 @@ lattice-period = 4096
 #   - "chem":         Plots the chem gradient.
 #   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "area":         Plots the relative area of cells.
-#   - "cell-type":    Plots the cell type of cells.
 #   - "act":          Plots the activation of cells' membranes.
-order = ["chem", "cell-type", "act", "border"]
+order = ["chem", "act", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.

@@ -4,13 +4,12 @@ use model::model::Model;
 
 #[test]
 fn test_run() -> anyhow::Result<()> {
-    for plot in [PT::Center, PT::ChemCenter, PT::CellType, PT::Area] {
+    for plot in [PT::Center, PT::ChemCenter, PT::Area] {
         let mut params = Parameters::parse("examples/64_cells.toml")?;
         params.io.outdir = format!("tests/{plot:?}");
         params.io.plot.order = vec![PT::Chem, PT::Spin, plot, PT::Border];
         params.io.image_period = 64;
         params.io.movie.show = false;
-        params.cell.update_period = 1;
         let mut model = Model::new_from_parameters(params.clone())?;
         model.run_for(512);
         // For now we resort to lying abt the time to trick IoManager into writing info

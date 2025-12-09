@@ -1,6 +1,6 @@
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, NeighbourhoodType};
-use crate::evolution::grn::Grn;
+use crate::evolution::bit_genome::BitGenome;
 use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
@@ -13,7 +13,6 @@ use cellulars_lib::environment::Environment;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::step::Step;
-use rand::distr::{Distribution, Uniform};
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
@@ -101,7 +100,6 @@ impl Model {
             .image_format(parameters.io.image_format.clone())
             .image_period(parameters.io.image_period)
             .cells_period(parameters.io.data.cells_period)
-            .genomes_period(parameters.io.data.genomes_period)
             .lattices_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone().try_into()?)
             .maybe_movie_maker(movie_maker)
@@ -152,10 +150,8 @@ impl Model {
             .env(env)
             .potts(ca)
             .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
-            .update_period(parameters.cell.update_period)
             .cell_target_area(parameters.cell.target_area)
             .enable_division(parameters.cell.divide)
-            .enable_cell_updates(parameters.cell.update)
             .season_duration(parameters.pond.season_duration)
             .half_fitness(parameters.pond.half_fitness)
             .reproduction_steps(parameters.pond.reproduction_steps)
@@ -188,12 +184,10 @@ impl Model {
             let cell = Cell::new_empty(
                 parameters.cell.target_area,
                 parameters.cell.target_perimeter,
-                Grn::from_sampler(
-                    [1. / pond.env.height() as f32],
-                    parameters.cell.genome.n_regulatory,
+                BitGenome::new_random(
                     parameters.cell.genome.mutation_rate,
-                    parameters.cell.genome.mutation_std,
-                    || Uniform::new(-1., 1.).unwrap().sample(rng)
+                    parameters.cell.genome.genome_length,
+                    &mut pond.rng,
                 )
             );
             pond.env.spawn_cell_random(
@@ -225,7 +219,8 @@ impl Model {
         log::info!("Reading pond");
         let cells = IoManager::read_cells(
             IoManager::resolve_cells_path(sim_path, time_step),
-            IoManager::resolve_genomes_path(sim_path, time_step),
+            parameters.cell.genome.mutation_rate,
+            parameters.cell.genome.genome_length
         )?;
 
         let rect = Rect::new(

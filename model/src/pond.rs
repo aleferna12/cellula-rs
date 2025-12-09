@@ -16,10 +16,8 @@ pub struct Pond {
     pub env: MyEnvironment,
     pub potts: MyPotts,
     pub rng: Xoshiro256StarStar,
-    pub update_period: u32,
     pub cell_target_area: u32,
     pub enable_division: bool,
-    pub enable_cell_updates: bool,
     pub season_duration: u32,
     pub half_fitness: f32,
     pub reproduction_steps: u32,
@@ -116,9 +114,6 @@ impl Pond {
 impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
-        if self.time_step % self.update_period == 0 && self.enable_division {
-            self.env.cells.iter_mut().for_each(|cell| cell.update());
-        }
         if self.time_step % self.season_duration == 0 {
             if self.enable_division {
                 // TODO!: is this what sandro did in his paper?

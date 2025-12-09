@@ -27,7 +27,7 @@ update-period = 16
 [cell.genome]
 n-regulatory = 2
 mutation-rate = 0.01
-mutation-std = 0.01
+genome-length = 8
 
 [potts]
 boltz-t = 16.0

@@ -1,11 +1,10 @@
-use crate::evolution::genome::Genome;
-use crate::evolution::grn::Grn;
 use crate::evolution::selector::Fit;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use std::ops::{Deref, DerefMut};
+use crate::evolution::bit_genome::BitGenome;
 
 #[derive(Clone, Debug)]
 pub struct Cell {
@@ -15,13 +14,13 @@ pub struct Cell {
     pub delta_perimeter: Option<i32>,
     pub perimeter: u32,
     pub target_perimeter: u32,
-    pub genome: Grn<1, 1>,
+    pub genome: BitGenome,
     pub ancestor: Option<CellIndex>
 }
 
 impl Cell {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new_empty(target_area: u32, target_perimeter: u32, genome: Grn<1, 1>) -> Self {
+    pub fn new_empty(target_area: u32, target_perimeter: u32, genome: BitGenome) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
@@ -36,14 +35,6 @@ impl Cell {
 
     pub fn chem_center(&self) -> Pos<f32> {
         self.chem_center
-    }
-    
-    pub fn is_migrating(&self) -> bool {
-        !self.is_dividing()
-    }
-    
-    pub fn is_dividing(&self) -> bool {
-        self.genome.nth_output_gene(0).active
     }
 
     pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, add: bool, bound: &B) {
@@ -63,11 +54,6 @@ impl Cell {
         self.chem_mass = self.chem_mass
             .checked_add_signed(shift * chem_at as i32)
             .expect("overflow in `shift_chem`");
-        self.genome.input_signals[0] = self.chem_mass as f32 / self.area as f32;
-    }
-
-    pub fn update(&mut self) {
-        self.genome.update_expression();
     }
 }
 
@@ -155,7 +141,7 @@ mod tests {
         Cell::new_empty(
             100,
             250,
-            Grn::empty(),
+            BitGenome::new_empty(0., 1),
         )
     }
 

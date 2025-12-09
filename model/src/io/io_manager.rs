@@ -1,7 +1,5 @@
 use crate::cell::Cell;
-use crate::evolution::grn::{EdgeWeight, Grn, GrnGeneType};
 use crate::io::movie_maker::MovieMaker;
-use crate::io::node_link::{GrnMutParams, NodeLinkData};
 use crate::io::parameters::Parameters;
 use crate::io::plot::Plot;
 use crate::my_environment::MyEnvironment;
@@ -17,15 +15,13 @@ use cellulars_lib::spin::Spin;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use polars::prelude::*;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io;
-use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use crate::evolution::bit_genome::BitGenome;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
-static GENOMES_PATH: &str = "genomes";
 static CELL_LATTICES_PATH: &str = "lattices";
 static CHEM_LATTICES_PATH: &str = "chem_lattices";
 static ACT_LATTICES_PATH: &str = "act_lattices";
@@ -39,7 +35,6 @@ pub struct IoManager {
     plots: Vec<Box<dyn Plot>>,
     image_period: u32,
     cells_period: u32,
-    genomes_period: u32,
     lattices_period: u32
 }
 
@@ -59,7 +54,6 @@ impl IoManager {
         std::fs::create_dir_all(&self.outdir)?;
         std::fs::create_dir(self.outdir.join(IMAGES_PATH))?;
         std::fs::create_dir(self.outdir.join(CELLS_PATH))?;
-        std::fs::create_dir(self.outdir.join(GENOMES_PATH))?;
         std::fs::create_dir(self.outdir.join(CELL_LATTICES_PATH))?;
         std::fs::create_dir(self.outdir.join(CHEM_LATTICES_PATH))?;
         std::fs::create_dir(self.outdir.join(ACT_LATTICES_PATH))
@@ -80,30 +74,14 @@ impl IoManager {
 
     fn make_cells_from_data(
         celldf: DataFrame,
-        genomes: Vec<CellIndexNodeLink>,
+        mut_rate: f32,
+        genome_length: u16
     ) -> anyhow::Result<CellContainer<Cell>> {
-        if celldf.height() > genomes.len() {
-            bail!("`celldf` contains more entries than `genomes`");
-        }
-        if celldf.height() < genomes.len() {
-            bail!("`genomes` contains more entries than `celldf`");
-        }
-
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=celldf.column("index")?.u32()?.max().ok_or(anyhow::anyhow!("null column"))? {
-            cells.push(Cell::new_empty(0, 0, Grn::empty()));
+            cells.push(Cell::new_empty(0, 0, BitGenome::new_empty(0., 0)));
         }
-
-        let index_map: HashMap<_, _> = HashMap::from_iter(
-            celldf.column("index")?
-                .u32()?
-                .into_no_null_iter()
-                .enumerate()
-                .map(|(i, val)| {
-                    (val, i)
-                })
-        );
 
         let cols: HashMap<_, _> = HashMap::from_iter(
             celldf.get_column_names()
@@ -112,16 +90,10 @@ impl IoManager {
                 .map(|(i, name)| (name.as_str(), i))
         );
 
-        for genome in genomes {
-            let cell_index = genome.index;
-            let grn = Grn::<1, 1>::try_from(genome.node_link)?;
-            let row_ix = index_map
-                .get(&cell_index)
-                .ok_or(anyhow!("cell index {cell_index} was found in `genomes` but is missing from `celldf`"))?;
-            let row = celldf.get_row(*row_ix)?.0;
-
+        for i in 0..celldf.height() {
+            let row = celldf.get_row(i)?.0;
             cells.replace(RelCell {
-                index: cell_index,
+                index: row[cols["index"]].try_extract::<u32>()?,
                 cell: Cell {
                     basic_cell: BasicCell {
                         target_area: row[cols["target_area"]].try_extract::<u32>()?,
@@ -140,25 +112,31 @@ impl IoManager {
                         row[cols["chem_center_y"]].try_extract::<f32>()?,
                     ),
                     chem_mass: row[cols["chem_mass"]].try_extract::<u32>()?,
-                    genome: grn,
+                    genome: BitGenome::from_iterators(
+                        Self::str_to_bool_it(row[cols["ligands"]].get_str().ok_or(anyhow!("missing `ligands`"))?),
+                        Self::str_to_bool_it(row[cols["receptors"]].get_str().ok_or(anyhow!("missing `receptors`"))?),
+                        mut_rate,
+                        genome_length
+                    ).ok_or(anyhow!("`ligands` or `receptors` are too short for the given genome_length"))?,
                 }
             });
         }
         Ok(cells)
     }
 
+    fn str_to_bool_it(bits: &str) -> impl Iterator<Item = bool> {
+        bits.chars().map(|c| c == '1')
+    }
+
     pub fn read_cells(
         cells_path: impl AsRef<Path>,
-        genomes_path: impl AsRef<Path>,
+        mut_rate: f32,
+        genome_length: u16
     ) -> anyhow::Result<CellContainer<Cell>> {
         let cells_path = cells_path.as_ref();
         let file = std::fs::File::open(cells_path).context(format!("while opening {}", cells_path.display()))?;
         let celldf = ParquetReader::new(file).finish()?;
-        let genomes = Self::read_genomes(genomes_path)?;
-        Self::make_cells_from_data(
-            celldf,
-            genomes
-        )
+        Self::make_cells_from_data(celldf, mut_rate, genome_length)
     }
 
     pub fn resolve_parameters_path(sim_path: impl AsRef<Path>) -> PathBuf {
@@ -172,22 +150,6 @@ impl IoManager {
         sim_path.as_ref()
             .join(CELLS_PATH)
             .join(format!("{time_step}.parquet"))
-    }
-
-    pub fn resolve_genomes_path(
-        sim_path: impl AsRef<Path>,
-        time_step: u32
-    ) -> PathBuf {
-        sim_path.as_ref()
-            .join(GENOMES_PATH)
-            .join(format!("{time_step}.json"))
-    }
-
-    fn read_genomes(file_path: impl AsRef<Path>) -> anyhow::Result<Vec<CellIndexNodeLink>> {
-        let file_path = file_path.as_ref();
-        let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
-        let reader = BufReader::new(file);
-        Ok(serde_json::from_reader(reader)?)
     }
 
     pub fn resolve_cell_lattice_path(
@@ -299,15 +261,6 @@ impl IoManager {
             ParquetWriter::new(file).finish(&mut celldf)?;
         }
 
-        if time_step % self.genomes_period == 0 {
-            let genomes = Self::make_genome_node_links(&env.cells);
-            let file_path = self.outdir
-                .join(GENOMES_PATH)
-                .join(format!("{time_str}.json"));
-            let file = std::fs::File::create(file_path)?;
-            serde_json::to_writer(file, &genomes)?;
-        }
-
         if time_step % self.lattices_period == 0 {
             let cell_lat_file_path = self.outdir
                 .join(CELL_LATTICES_PATH)
@@ -325,18 +278,6 @@ impl IoManager {
             Self::write_lattice_u32(act_lat_file_path.as_path(), &env.act_lattice)?;
         }
         Ok(())
-    }
-
-    fn make_genome_node_links(
-        cells: &CellContainer<Cell>
-    ) -> Vec<CellIndexNodeLink> {
-        cells.iter()
-            .filter(|cell| cell.is_valid())
-            .map(|cell| CellIndexNodeLink {
-                index: cell.index,
-                node_link: NodeLinkData::from(cell.genome.clone())
-            })
-            .collect()
     }
 
     // Experimented with:
@@ -449,13 +390,8 @@ impl ToDataFrame for CellContainer<Cell> {
             "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
             "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
-            "is_dividing" => valid.iter().map(|cell| cell.is_dividing()).collect::<Vec<_>>()
+            "ligands" => valid.iter().map(|cell| cell.genome.ligands_string()).collect::<Vec<_>>(),
+            "receptors" => valid.iter().map(|cell| cell.genome.receptors_string()).collect::<Vec<_>>()
         )
     }
-}
-
-#[derive(Serialize, Deserialize)]
-struct CellIndexNodeLink {
-    index: CellIndex,
-    node_link: NodeLinkData<GrnGeneType, EdgeWeight, GrnMutParams>
 }

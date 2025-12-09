@@ -1,6 +1,6 @@
-use crate::my_environment::MyEnvironment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
+use crate::my_environment::MyEnvironment;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
@@ -10,9 +10,9 @@ use cellulars_lib::spin::Spin;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
+use rand_distr::num_traits::AsPrimitive;
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use rand_distr::num_traits::AsPrimitive;
 use thiserror::Error;
 
 pub trait Plot {
@@ -151,23 +151,6 @@ impl Plot for BorderPlot {
 pub struct CellTypePlot {
     pub mig_color: Srgb<u8>,
     pub div_color: Srgb<u8>
-}
-
-impl Plot for CellTypePlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.cell_lattice.iter_positions() {
-            let spin = env.cell_lattice[pos];
-            if let Spin::Some(cell_index) = spin {
-                let cell = env.cells.get_cell(cell_index);
-                let color = if cell.is_migrating() { self.mig_color } else { self.div_color };
-                image.put_pixel(
-                    pos.x as u32,
-                    pos.y as u32,
-                    srgb_to_rgba(color)
-                )
-            }
-        }
-    }
 }
 
 pub struct AreaPlot {
@@ -337,10 +320,6 @@ impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
                 PlotType::Act => Box::new(ActPlot {
                     min_color: srgb_to_luv(hex_to_srgb(&params.act_min_color)?),
                     max_color: srgb_to_luv(hex_to_srgb(&params.act_max_color)?)
-                }),
-                PlotType::CellType => Box::new(CellTypePlot {
-                    mig_color: hex_to_srgb(&params.migrating_color)?,
-                    div_color: hex_to_srgb(&params.dividing_color)?,
                 })
             };
             plots.push(plot);
