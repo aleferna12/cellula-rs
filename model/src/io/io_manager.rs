@@ -103,14 +103,14 @@ impl IoManager {
                     row[cols["center_x"]].try_extract::<f32>()?,
                     row[cols["center_y"]].try_extract::<f32>()?,
                 ),
-                row[cols["target_area"]].try_extract::<u32>()?,
-                row[cols["newborn_target_area"]].try_extract::<u32>()?
+                row[cols["target_area"]].try_extract::<u32>()?
             );
             cells.replace(RelCell {
                 index: row[cols["index"]].try_extract::<CellIndex>()?,
                 cell: Cell::builder()
                     .basic_cell(basic_cell)
                     .divide_area(row[cols["divide_area"]].try_extract::<u32>()?)
+                    .newborn_target_area(row[cols["newborn_target_area"]].try_extract::<u32>()?)
                     .chem_center(Pos::new(
                         row[cols["chem_center_x"]].try_extract::<f32>()?,
                         row[cols["chem_center_y"]].try_extract::<f32>()?, 

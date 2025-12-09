@@ -12,6 +12,8 @@ use strum_macros::{Display, EnumString};
 pub struct Cell {
     /// Area at which the cell divides.
     pub divide_area: u32,
+    /// Target area for newborns of this cell (see [Alive::birth()]).
+    pub newborn_target_area: u32,
     /// Current type of the cell.
     pub cell_type: CellType,
     /// Underlying basic cell.
@@ -29,6 +31,7 @@ impl Cell {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
+            newborn_target_area: target_area,
             divide_area,
             cell_type,
         }
@@ -125,8 +128,10 @@ impl Alive for Cell {
     }
 
     fn birth(&self) -> Self {
+        let mut basic_cell = self.basic_cell.birth();
+        basic_cell.target_area = self.newborn_target_area;
         Self { 
-            basic_cell: self.basic_cell.birth(),
+            basic_cell,
             chem_mass: 0,
             ..self.clone()
         }

@@ -10,8 +10,6 @@ use std::ops::{Deref, DerefMut};
 pub struct BasicCell {
     /// Cell's current target area.
     pub target_area: u32,
-    /// Target area for newborns of this cell (see [Alive::birth()]).
-    pub newborn_target_area: u32,
     /// Cell's area.
     area: u32,
     /// Center of mass of the cell.
@@ -24,7 +22,6 @@ impl BasicCell {
     pub fn new_empty(target_area: u32) -> Self {
         Self {
             target_area,
-            newborn_target_area: target_area,
             area: 0,
             center: Pos::new(0., 0.,)
         }
@@ -37,14 +34,12 @@ impl BasicCell {
     pub fn new_ready(
         area: u32,
         center: Pos<f32>,
-        target_area: u32,
-        newborn_target_area: u32
+        target_area: u32
     ) -> Self {
         Self {
             area,
             center,
-            target_area,
-            newborn_target_area
+            target_area
         }
     }
 
@@ -111,7 +106,6 @@ impl Alive for BasicCell {
     fn birth(&self) -> Self {
         let mut newborn = self.clone();
         newborn.area = 0;
-        newborn.target_area = self.newborn_target_area;
         newborn
     }
 }
