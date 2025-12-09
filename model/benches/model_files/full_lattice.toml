@@ -8,6 +8,8 @@ height = 128
 enclose = true
 neigh-r = 1
 season-duration = 10_000
+half-fitness = 50.0
+reproduction-steps = 5
 
 [cell]
 starting-cells = 1024
