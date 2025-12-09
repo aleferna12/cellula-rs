@@ -15,6 +15,7 @@ pub type BoundaryType = UnsafePeriodicBoundary<f32>;
 #[cfg(feature = "fixed_boundary")]
 pub type BoundaryType = FixedBoundary<f32>;
 
+// TODO: add feature flag
 /// Neighbourhood type of the environment.
 pub type NeighbourhoodType = MooreNeighbourhood;
 
