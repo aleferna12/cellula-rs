@@ -7,7 +7,7 @@ use crate::io::parameters::Parameters;
 use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
 use crate::pond::Pond;
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::positional::boundaries::Boundaries;
@@ -16,6 +16,7 @@ use cellulars_lib::step::Step;
 use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
+use crate::bit_adhesion::BitAdhesion;
 
 pub struct Model {
     pub pond: Pond,
@@ -124,13 +125,13 @@ impl Model {
             .act_lambda(parameters.potts.act_lambda)
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
-            .adhesion(
-                StaticAdhesion {
+            .adhesion(BitAdhesion { 
+                static_adhesion: StaticAdhesion {
                     cell_energy: parameters.potts.adhesion.cell_energy,
                     medium_energy: parameters.potts.adhesion.medium_energy,
                     solid_energy: parameters.potts.adhesion.solid_energy,
                 }
-            )
+            })
             .chemotaxis_min(parameters.potts.chemotaxis_min)
             .build()
     }
@@ -188,7 +189,7 @@ impl Model {
                     parameters.cell.genome.mutation_rate,
                     parameters.cell.genome.genome_length,
                     &mut pond.rng,
-                )
+                ).ok_or(anyhow!("invalid `genome_length`"))?
             );
             pond.env.spawn_cell_random(
                 cell,

@@ -139,7 +139,7 @@ pub struct CellParameters {
 #[serde(rename_all = "kebab-case")]
 pub struct GenomeParameters {
     pub mutation_rate: f32,
-    pub genome_length: u16,
+    pub genome_length: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -141,7 +141,7 @@ mod tests {
         Cell::new_empty(
             100,
             250,
-            BitGenome::new_empty(0., 1),
+            BitGenome::new(0, 0, 0., 1).unwrap(),
         )
     }
 

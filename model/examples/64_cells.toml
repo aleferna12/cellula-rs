@@ -76,8 +76,8 @@ act-max = 40
 act-lambda = 20.0
 
 [potts.adhesion]
-# Adhesion energy at cell-cell interfaces.
-cell-energy = 16.0
+# Minimum adhesion energy at cell-cell interfaces (summed to adhesion from adh. proteins).
+cell-energy = 12.0
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16.0
 # Adhesion energy at cell-solid interfaces.

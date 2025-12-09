@@ -1,6 +1,7 @@
+use crate::bit_adhesion::BitAdhesion;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
-use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
+use cellulars_lib::adhesion::AdhesionSystem;
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::habitable::Habitable;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
@@ -24,7 +25,7 @@ pub struct MyPotts {
     /// Minimum chemotaxis bias when cell experiences a chem. concentration = 0.
     #[builder(with = |min: f32| { if min > 1. { panic!("`min` must be between 0 and 1") } else { min } } )]
     pub chemotaxis_min: f32,
-    pub adhesion: StaticAdhesion,
+    pub adhesion: BitAdhesion,
 }
 
 impl MyPotts {
@@ -177,19 +178,19 @@ impl Potts for MyPotts {
         spin_source: Spin, 
         spin_target: Spin,
         neigh_spin: impl IntoIterator<Item=Spin>,
-        _env: &Self::Environment
+        env: &Self::Environment
     ) -> f32 {
         let mut energy = 0.;
         for neigh in neigh_spin {
             energy -= self.adhesion.adhesion_energy(
                 spin_target,
                 neigh,
-                &()
+                env
             );
             energy += self.adhesion.adhesion_energy(
                 spin_source,
                 neigh,
-                &()
+                env
             );
         }
         energy

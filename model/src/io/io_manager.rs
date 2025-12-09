@@ -1,4 +1,5 @@
 use crate::cell::Cell;
+use crate::evolution::bit_genome::BitGenome;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::io::plot::Plot;
@@ -18,7 +19,6 @@ use polars::prelude::*;
 use std::collections::HashMap;
 use std::io;
 use std::path::{Path, PathBuf};
-use crate::evolution::bit_genome::BitGenome;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -75,12 +75,21 @@ impl IoManager {
     fn make_cells_from_data(
         celldf: DataFrame,
         mut_rate: f32,
-        genome_length: u16
+        genome_length: u8
     ) -> anyhow::Result<CellContainer<Cell>> {
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=celldf.column("index")?.u32()?.max().ok_or(anyhow::anyhow!("null column"))? {
-            cells.push(Cell::new_empty(0, 0, BitGenome::new_empty(0., 0)));
+            cells.push(Cell::new_empty(
+                0, 
+                0,
+                BitGenome::new(
+                    0, 
+                    0,
+                    0.,
+                    1
+                ).unwrap(),
+            ));
         }
 
         let cols: HashMap<_, _> = HashMap::from_iter(
@@ -112,26 +121,22 @@ impl IoManager {
                         row[cols["chem_center_y"]].try_extract::<f32>()?,
                     ),
                     chem_mass: row[cols["chem_mass"]].try_extract::<u32>()?,
-                    genome: BitGenome::from_iterators(
-                        Self::str_to_bool_it(row[cols["ligands"]].get_str().ok_or(anyhow!("missing `ligands`"))?),
-                        Self::str_to_bool_it(row[cols["receptors"]].get_str().ok_or(anyhow!("missing `receptors`"))?),
+                    genome: BitGenome::new(
+                        row[cols["ligands"]].try_extract::<u64>()?,
+                        row[cols["receptors"]].try_extract::<u64>()?,
                         mut_rate,
                         genome_length
-                    ).ok_or(anyhow!("`ligands` or `receptors` are too short for the given genome_length"))?,
+                    ).ok_or(anyhow!("invalid `genome_length`"))?,
                 }
             });
         }
         Ok(cells)
     }
 
-    fn str_to_bool_it(bits: &str) -> impl Iterator<Item = bool> {
-        bits.chars().map(|c| c == '1')
-    }
-
     pub fn read_cells(
         cells_path: impl AsRef<Path>,
         mut_rate: f32,
-        genome_length: u16
+        genome_length: u8
     ) -> anyhow::Result<CellContainer<Cell>> {
         let cells_path = cells_path.as_ref();
         let file = std::fs::File::open(cells_path).context(format!("while opening {}", cells_path.display()))?;
@@ -390,8 +395,8 @@ impl ToDataFrame for CellContainer<Cell> {
             "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
             "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
-            "ligands" => valid.iter().map(|cell| cell.genome.ligands_string()).collect::<Vec<_>>(),
-            "receptors" => valid.iter().map(|cell| cell.genome.receptors_string()).collect::<Vec<_>>()
+            "ligands" => valid.iter().map(|cell| cell.genome.ligands()).collect::<Vec<_>>(),
+            "receptors" => valid.iter().map(|cell| cell.genome.receptors()).collect::<Vec<_>>()
         )
     }
 }

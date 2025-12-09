@@ -6,90 +6,89 @@ pub struct BitGenome {
     ligands: u64,
     receptors: u64,
     pub mut_rate: f32,
-    pub length: u16
+    pub length: u8
 }
 
 impl BitGenome {
-    pub fn new_random(mut_rate: f32, length: u16, rng: &mut impl Rng) -> Self {
-        Self {
-            ligands: ArrayType::new(rng.random()),
-            receptors: ArrayType::new(rng.random()),
-            mut_rate,
-            length
+    /// Creates a new [BitGenome] using `length` significant bits of `ligands` and `receptors` if 0 < `length` < 64.
+    pub fn new(ligands: u64, receptors: u64, mut_rate: f32, length: u8) -> Option<Self> {
+        if length == 0 || length > 64 {
+            return None;
         }
-    }
-
-    pub fn new_empty(mut_rate: f32, length: u16) -> Self {
-        Self {
-            ligands: ArrayType::ZERO,
-            receptors: ArrayType::ZERO,
-            mut_rate,
-            length
-        }
-    }
-    
-    pub fn from_iterators(
-        ligands: impl IntoIterator<Item = bool>,
-        receptors: impl IntoIterator<Item = bool>,
-        mut_rate: f32,
-        length: u16
-    ) -> Option<Self> {
-        let mut ligands = ligands.into_iter();
-        let mut receptors = receptors.into_iter();
-        let mut ligands_array = ArrayType::ZERO;
-        let mut receptor_array = ArrayType::ZERO;
-
-        for i in 0..length as usize{
-            ligands_array.set(i, ligands.next()?);
-            receptor_array.set(i, receptors.next()?);
-        }
-
         Some(Self {
-            ligands: ligands_array,
-            receptors: receptor_array,
+            ligands: Self::truncate(ligands, length),
+            receptors: Self::truncate(receptors, length),
             mut_rate,
             length
         })
     }
 
-    pub fn ligands(&self) -> &BitSlice<u64> {
-        &self.ligands.as_bitslice()[..self.length as usize]
+    /// Creates a new [BitGenome] with random ligands and receptors if 0 < `length` < 64.
+    pub fn new_random(mut_rate: f32, length: u8, rng: &mut impl Rng) -> Option<Self> {
+        Self::new(
+            rng.random::<u64>(),
+            rng.random::<u64>(),
+            mut_rate,
+            length
+        )
     }
 
-    pub fn receptors(&self) -> &BitSlice<u64> {
-        &self.receptors.as_bitslice()[..self.length as usize]
+    pub fn ligands(&self) -> u64 {
+        self.ligands
     }
 
-    pub fn ligands_string(&self) -> String {
-        self.ligands()
-            .iter()
-            .map(|b| if *b { "1" } else { "0" })
-            .collect::<String>()
+    pub fn receptors(&self) -> u64 {
+        self.receptors
     }
 
-    pub fn receptors_string(&self) -> String {
-        self.receptors()
-            .iter()
-            .map(|b| if *b { "1" } else { "0" })
-            .collect::<String>()
+    fn truncate(protein: u64, length: u8) -> u64 {
+        protein & (u64::MAX >> (64 - length))
+    }
+
+    fn flip_bit(protein: u64, bit_index: u8) -> u64 {
+        protein ^ (1 << bit_index)
     }
 }
 
 impl Genome for BitGenome {
     fn attempt_mutate(&mut self, rng: &mut impl Rng) -> u32 {
         let mut mut_count = 0;
-        for i in 0..self.length as usize {
+        for i in 0..self.length {
             if rng.random::<f32>() < self.mut_rate {
-                let prev = self.ligands[i];
-                self.ligands.set(i, !prev);
+                self.ligands = Self::flip_bit(self.ligands, i);
                 mut_count += 1;
             }
             if rng.random::<f32>() < self.mut_rate {
-                let prev = self.receptors[i];
-                self.receptors.set(i, !prev);
+                self.receptors = Self::flip_bit(self.receptors, i);
                 mut_count += 1;
             }
         }
         mut_count
+    }
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_bit_genome() {
+        assert!(BitGenome::new(0, 0, 0., 0).is_none());
+        assert!(BitGenome::new(0, 0, 0., 65).is_none());
+
+        let bit_genome = BitGenome::new(
+            255,
+            257,
+            0.,
+            8
+        ).unwrap();
+        assert_eq!(bit_genome.ligands(), 255);
+        assert_eq!(bit_genome.receptors(), 1);
+    }
+
+    #[test]
+    fn test_mut_bit() {
+        let ligand = 0b1101u64;
+        assert_eq!(0b1100, BitGenome::flip_bit(ligand, 0));
+        assert_eq!(0b1111, BitGenome::flip_bit(ligand, 1));
     }
 }
