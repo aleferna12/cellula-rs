@@ -4,10 +4,11 @@ use crate::evolution::selector::{Selector, WeightedSelection};
 use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
 use bon::Builder;
-use indexmap::IndexMap;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
+use indexmap::IndexMap;
+use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
 
 #[derive(Clone, Builder)]
@@ -87,11 +88,27 @@ impl Pond {
                 }
             }
 
-            if divisions_left {
-                for _ in 0..self.reproduction_steps {
-                    self.step();
-                }
+            for _ in 0..self.reproduction_steps {
+                self.potts.step(&mut self.env, &mut self.rng);
             }
+        }
+    }
+
+    pub fn erase_half_population(&mut self) {
+        let mut valid_cells = self.env.cells.iter().filter_map(|cell| {
+            if !cell.is_valid() {
+                return None;
+            }
+            Some(cell.index)
+        }).collect::<Vec<_>>();
+        let population_n = valid_cells.len();
+        let mut kill_count = 0;
+        while kill_count < population_n / 2 {
+            let vec_index = self.rng.random_range(0..valid_cells.len());
+            let cell_index = valid_cells[vec_index];
+            self.env.erase_cell(cell_index);
+            valid_cells.swap_remove(vec_index);
+            kill_count += 1;
         }
     }
 }
@@ -104,7 +121,10 @@ impl Step for Pond {
         }
         if self.time_step % self.season_duration == 0 {
             if self.enable_division {
+                // TODO!: is this what sandro did in his paper?
+                //  its different from reproducing only cells selected multiple times and killing those missing
                 self.reproduce();
+                self.erase_half_population();
             }
             self.env.make_next_chem_gradient(&mut self.rng);
         }

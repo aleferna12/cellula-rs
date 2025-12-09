@@ -66,7 +66,7 @@ impl Cellular for BasicCell {
 
 impl Alive for BasicCell {
     fn is_alive(&self) -> bool {
-        self.target_area() > 0
+        self.is_valid() && self.target_area() > 0
     }
 
     fn apoptosis(&mut self) {

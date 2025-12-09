@@ -189,9 +189,13 @@ impl MyEnvironment {
         self.cells.get_cell(new_index)
     }
 
-    // Should this also replace some of the cell's positions with Medium?
-    pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
-        cell.apoptosis();
+    pub fn erase_cell(&mut self, cell_index: CellIndex) {
+        let cell = self.env.cells.get_cell(cell_index);
+        for pos in self.search_cell_box(cell, self.cell_search_scaler) {
+            self.update_delta_perimeter(false, cell_index, pos);
+            self.grant_position(pos, Spin::Medium);
+        }
+        self.env.cells.get_cell_mut(cell_index).apoptosis();
     }
 
     // TODO!: add plot to make sure this is right
