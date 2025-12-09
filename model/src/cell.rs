@@ -1,7 +1,7 @@
 use crate::evolution::genome::Genome;
 use crate::evolution::grn::Grn;
 use crate::evolution::selector::Fit;
-use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
+use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
@@ -143,9 +143,15 @@ impl Alive for Cell {
     }
 }
 
-impl Fit for Cell {
+pub struct FitCell<'c> {
+    pub cell: &'c RelCell<Cell>,
+    pub half_fit: f32
+}
+
+impl Fit for FitCell<'_> {
     fn fitness(&self) -> f32 {
-        self.chem_mass as f32
+        let ratio = self.half_fit / self.cell.chem_mass as f32;
+        1. / (1. + ratio * ratio)
     }
 }
 
