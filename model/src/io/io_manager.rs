@@ -81,10 +81,10 @@ impl IoManager {
         // We need this to call replace on cells later
         for _ in 0..=celldf.column("index")?.u32()?.max().ok_or(anyhow::anyhow!("null column"))? {
             cells.push(Cell::new_empty(
-                0, 
+                0,
                 0,
                 BitGenome::new(
-                    0, 
+                    0,
                     0,
                     0.,
                     1
@@ -257,6 +257,7 @@ impl IoManager {
         let time_str = time_step.to_string();
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
+        // TODO!: reset ancestor
         if time_step % self.cells_period == 0 {
             let mut celldf = env.cells.to_dataframe()?;
             let file_path = self.outdir
