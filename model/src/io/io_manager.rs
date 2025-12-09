@@ -91,7 +91,7 @@ impl IoManager {
 
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
-        for _ in 0..=celldf.height() {
+        for _ in 0..=celldf.column("index")?.u32()?.max().ok_or(anyhow::anyhow!("null column"))? {
             cells.push(Cell::new_empty(0, 0, Grn::empty()));
         }
 
