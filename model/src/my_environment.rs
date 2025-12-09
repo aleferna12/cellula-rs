@@ -1,6 +1,6 @@
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
-use crate::evolution::genome::Genome;
+use bon::bon;
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment};
@@ -13,7 +13,6 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
 use std::ops::{Deref, DerefMut};
-use bon::{bon};
 
 #[derive(Clone)]
 pub struct MyEnvironment {
@@ -24,7 +23,9 @@ pub struct MyEnvironment {
     pub max_cells: CellIndex,
     pub act_max: u32,
     pub max_chem: u32,
-    population_exploded: bool
+    population_exploded: bool,
+    corners: [Pos<usize>; 4],
+    next_corner: usize,
 }
 
 #[bon]
@@ -37,19 +38,14 @@ impl MyEnvironment {
         cell_search_scaler: f32
     ) -> Self {
         let lat = Lattice::new(env.cell_lattice.rect.clone());
-        Self {
-            max_chem: Self::distance(
-                (0, 0).into(),
-                (lat.width(), lat.height()).into()
-            ).round() as u32,
-            chem_lattice: lat.clone(),
-            act_lattice: lat,
-            population_exploded: false,
-            env,
-            cell_search_scaler,
-            max_cells,
-            act_max,
-        }
+        Self::new_from_backup()
+            .env(env)
+            .chem_lattice(lat.clone())
+            .act_lattice(lat)
+            .max_cells(max_cells)
+            .act_max(act_max)
+            .cell_search_scaler(cell_search_scaler)
+            .call()
     }
     
     #[builder]
@@ -67,12 +63,18 @@ impl MyEnvironment {
                 (env.cell_lattice.width(), env.cell_lattice.height()).into()
             ).round() as u32,
             population_exploded: false,
+            corners: [
+                (0, 0).into(), (env.width() - 1, 0).into(),
+                (0, env.height() - 1).into(),
+                (env.width() - 1, env.height() - 1).into()
+            ],
+            next_corner: 0,
             env,
             cell_search_scaler,
             max_cells,
             act_max,
             chem_lattice,
-            act_lattice,
+            act_lattice
         }
     }
 
@@ -108,6 +110,15 @@ impl MyEnvironment {
             }
             self.chem_lattice[pos] = new_chem;
         }
+    }
+
+    pub fn make_next_chem_gradient(&mut self, rng: &mut impl Rng) -> Pos<usize> {
+        let curr_corner = self.next_corner;
+        self.make_chem_gradient(self.corners[curr_corner]);
+        while self.next_corner == curr_corner {
+            self.next_corner = rng.random_range(0..self.corners.len());
+        }
+        self.corners[curr_corner]
     }
 
     pub fn can_add_cell(&mut self) -> bool {
@@ -166,7 +177,6 @@ impl MyEnvironment {
         
         let mut newborn = mom.birth();
         newborn.ancestor = Some(mom_index);
-        let newborn_ta = mom.newborn_target_area;
         let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
             self.update_delta_perimeter(false, mom_index, pos);
@@ -176,45 +186,12 @@ impl MyEnvironment {
                 Spin::Some(new_index),
             );
         }
-        self.env.cells.get_cell_mut(mom_index).set_target_area(newborn_ta);
         self.cells.get_cell(new_index)
     }
 
     // Should this also replace some of the cell's positions with Medium?
     pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
         cell.apoptosis();
-    }
-
-    // With some unsafe code we can return Vec<&RelCell> from this function, but it would
-    // require that self.divide_cell never invalidates any references to self.cells
-    // we need thorough testing of self.divide_cells to make this change, and the performance
-    // gain is minimal (although the ergonomic gains are significant)
-    pub fn reproduce(&mut self, rng: &mut impl Rng) {
-        let mut divide = vec![];
-        for cell in self.cells.iter() {
-            if !cell.is_alive() {
-                continue;
-            }
-            // Currently cells don't need to express the dividing type to divide, they just need to be big enough
-            if cell.area() >= cell.divide_area() {
-                divide.push(cell.index);
-            }
-        }
-        for cell_index in divide {
-            if !self.can_add_cell() {
-                return;
-            }
-
-            let mom = self
-                .cells
-                .get_cell(cell_index);
-            let new_cell = self.divide_cell(mom.index);
-            if new_cell.is_valid() {
-                let new_index = new_cell.index;
-                // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
-                self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(rng);
-            }
-        }
     }
 
     // TODO!: add plot to make sure this is right

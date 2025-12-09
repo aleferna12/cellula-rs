@@ -1,11 +1,11 @@
 use crate::cell::Cell;
-use crate::my_environment::MyEnvironment;
-use crate::my_potts::MyPotts;
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::evolution::grn::Grn;
 use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
+use crate::my_environment::MyEnvironment;
+use crate::my_potts::MyPotts;
 use crate::pond::Pond;
 use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
@@ -157,6 +157,8 @@ impl Model {
             .enable_division(parameters.cell.divide)
             .enable_cell_updates(parameters.cell.update)
             .season_duration(parameters.pond.season_duration)
+            .half_fitness(parameters.pond.half_fitness)
+            .reproduction_steps(parameters.pond.reproduction_steps)
             .build()
     }
 
@@ -181,12 +183,11 @@ impl Model {
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng);
         // Gradient has to be initialised before cells are added so that chem center pos are tracked
-        pond.make_next_chem_gradient();
+        pond.env.make_next_chem_gradient(&mut pond.rng);
         for _ in 0..parameters.cell.starting_cells {
             let cell = Cell::new_empty(
                 parameters.cell.target_area,
                 parameters.cell.target_perimeter,
-                parameters.cell.div_area,
                 Grn::from_sampler(
                     [1. / pond.env.height() as f32],
                     parameters.cell.genome.n_regulatory,

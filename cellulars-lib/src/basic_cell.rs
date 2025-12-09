@@ -6,7 +6,6 @@ use std::ops::{Deref, DerefMut};
 #[derive(Clone, Debug)]
 pub struct BasicCell {
     pub target_area: u32,
-    pub newborn_target_area: u32,
     pub area: u32,
     pub center: Pos<f32>,
 }
@@ -15,7 +14,6 @@ impl BasicCell {
     pub fn new_empty(target_area: u32) -> Self {
         Self {
             target_area,
-            newborn_target_area: target_area,
             area: 0,
             center: Pos::new(0., 0.,)
         }
@@ -78,7 +76,6 @@ impl Alive for BasicCell {
     fn birth(&self) -> Self {
         let mut newborn = self.clone();
         newborn.area = 0;
-        newborn.target_area = self.newborn_target_area;
         newborn
     }
 }

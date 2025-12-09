@@ -1,7 +1,7 @@
 use crate::evolution::genome::Genome;
 use crate::evolution::grn::Grn;
 use crate::evolution::selector::Fit;
-use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
+use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
@@ -10,7 +10,6 @@ use std::ops::{Deref, DerefMut};
 #[derive(Clone, Debug)]
 pub struct Cell {
     pub basic_cell: BasicCell,
-    pub divide_area: u32,
     pub chem_center: Pos<f32>,
     pub chem_mass: u32,
     pub delta_perimeter: Option<i32>,
@@ -22,7 +21,7 @@ pub struct Cell {
 
 impl Cell {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new_empty(target_area: u32, target_perimeter: u32, divide_area: u32, genome: Grn<1, 1>) -> Self {
+    pub fn new_empty(target_area: u32, target_perimeter: u32, genome: Grn<1, 1>) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
@@ -31,21 +30,12 @@ impl Cell {
             perimeter: 0,
             ancestor: None,
             target_perimeter,
-            divide_area,
             genome
         }
     }
 
     pub fn chem_center(&self) -> Pos<f32> {
         self.chem_center
-    }
-
-    pub fn divide_area(&self) -> u32 {
-        self.divide_area
-    }
-
-    pub fn set_divide_area(&mut self, value: u32) {
-        self.divide_area = value;
     }
     
     pub fn is_migrating(&self) -> bool {
@@ -77,10 +67,6 @@ impl Cell {
     }
 
     pub fn update(&mut self) {
-        if self.is_dividing() && self.target_area() < self.divide_area {
-            let new_target_area = self.target_area() + 1;
-            self.set_target_area(new_target_area);
-        }
         self.genome.update_expression();
     }
 }
@@ -143,9 +129,15 @@ impl Alive for Cell {
     }
 }
 
-impl Fit for Cell {
+pub struct FitCell<'c> {
+    pub cell: &'c RelCell<Cell>,
+    pub half_fit: f32
+}
+
+impl Fit for FitCell<'_> {
     fn fitness(&self) -> f32 {
-        self.chem_mass as f32
+        let ratio = self.half_fit / self.cell.chem_mass as f32;
+        1. / (1. + ratio * ratio)
     }
 }
 
@@ -163,7 +155,6 @@ mod tests {
         Cell::new_empty(
             100,
             250,
-            200,
             Grn::empty(),
         )
     }

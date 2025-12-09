@@ -113,7 +113,9 @@ pub struct PondParameters {
     #[serde(default = "param_defaults::false_flag")]
     pub enclose: bool,
     pub neigh_r: u8,
-    pub season_duration: u32
+    pub season_duration: u32,
+    pub half_fitness: f32,
+    pub reproduction_steps: u32
 }
 
 #[derive(Serialize, Deserialize, Clone)]

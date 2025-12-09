@@ -4,13 +4,12 @@ pub trait Selector {
     fn select<'a, F: Fit>(&mut self, selectable: &'a [F]) -> Vec<&'a F>;
 }
 
-#[derive(Clone)]
-pub struct WeightedSelection<R> {
-    select_n: u32,
-    rng: R
+pub struct WeightedSelection<'r, R> {
+    pub select_n: u32,
+    pub rng: &'r mut R
 }
 
-impl<R: Rng> WeightedSelection<R> {
+impl<R: Rng> WeightedSelection<'_, R> {
     fn select_random_fit<'a, F: Fit>(&mut self, selectable: &'a [F], tot_fit: f32) -> &'a F {
         let mut rand_fit = self.rng.random::<f32>() * tot_fit;
         for s in selectable.iter() {
@@ -25,7 +24,7 @@ impl<R: Rng> WeightedSelection<R> {
     }
 }
 
-impl<R: Rng> Selector for WeightedSelection<R> {
+impl<R: Rng> Selector for WeightedSelection<'_, R> {
     fn select<'a, F: Fit>(&mut self, selectable: &'a [F]) -> Vec<&'a F> {
         let tot_fit = selectable
             .iter()
@@ -37,12 +36,11 @@ impl<R: Rng> Selector for WeightedSelection<R> {
     }
 }
 
-#[derive(Clone)]
-pub struct WeightedOrderedSelection<R> {
-    pub rng: R
+pub struct WeightedOrderedSelection<'r, R> {
+    pub rng: &'r mut R
 }
 
-impl<R: Rng> Selector for WeightedOrderedSelection<R> {
+impl<R: Rng> Selector for WeightedOrderedSelection<'_, R> {
     fn select<'a, F: Fit>(&mut self, selectable: &'a [F]) -> Vec<&'a F> {
         let mut selector = WeightedSelection {
             select_n: selectable.len() as u32,
@@ -126,7 +124,7 @@ mod tests {
         for seed in 0..100 {
             let mut sel = WeightedSelection {
                 select_n: 100,
-                rng: Xoshiro256StarStar::seed_from_u64(seed)
+                rng: &mut Xoshiro256StarStar::seed_from_u64(seed)
             };
             let selected = sel.select(&fits);
             let selected_sum = selected.iter().map(|&f| f.fitness()).sum::<f32>();
@@ -145,11 +143,11 @@ mod tests {
 
         for seed in 0..100 {
             let mut order_sel = WeightedOrderedSelection {
-                rng: Xoshiro256StarStar::seed_from_u64(seed)
+                rng: &mut Xoshiro256StarStar::seed_from_u64(seed)
             };
             let mut sel = WeightedSelection {
                 select_n: 100,
-                rng: Xoshiro256StarStar::seed_from_u64(seed)
+                rng: &mut Xoshiro256StarStar::seed_from_u64(seed)
             };
 
             let ordered_selected = order_sel.select(&fits);

@@ -1,13 +1,14 @@
+use crate::cell::FitCell;
+use crate::evolution::genome::Genome;
+use crate::evolution::selector::{Selector, WeightedSelection};
 use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
-use crate::evolution::selector::Fit;
 use bon::Builder;
-use rand::Rng;
+use indexmap::IndexMap;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
-use cellulars_lib::positional::pos::Pos;
 
 #[derive(Clone, Builder)]
 pub struct Pond {
@@ -19,14 +20,8 @@ pub struct Pond {
     pub enable_division: bool,
     pub enable_cell_updates: bool,
     pub season_duration: u32,
-    #[builder(default = [
-        (0, 0).into(), (env.width() - 1, 0).into(),
-        (0, env.height() - 1).into(),
-        (env.width() - 1, env.height() - 1).into()
-    ])]
-    corners: [Pos<usize>; 4],
-    #[builder(default = 0)]
-    next_corner: usize,
+    pub half_fitness: f32,
+    pub reproduction_steps: u32,
     #[builder(default = 0)]
     pub time_step: u32
 }
@@ -36,29 +31,82 @@ impl Pond {
         self.env.wipe_out();
     }
 
-    pub fn make_next_chem_gradient(&mut self) -> Pos<usize> {
-        let curr_corner = self.next_corner;
-        self.env.make_chem_gradient(self.corners[curr_corner]);
-        while self.next_corner == curr_corner {
-            self.next_corner = self.rng.random_range(0..self.corners.len());
+    // With some unsafe code we can return Vec<&RelCell> from this function, but it would
+    // require that self.divide_cell never invalidates any references to self.cells
+    // we need thorough testing of self.divide_cells to make this change, and the performance
+    // gain is minimal (although the ergonomic gains are significant)
+    pub fn reproduce(&mut self) {
+        let pop_size = self.env.cells.n_valid();
+        let fit_cells = self.env.cells.iter().filter_map(|cell| {
+            if !cell.is_valid() {
+                return None;
+            }
+            Some(FitCell {
+                cell,
+                half_fit: self.half_fitness
+            })
+        }).collect::<Vec<_>>();
+
+        let mut selector = WeightedSelection {
+            select_n: pop_size,
+            rng: &mut self.rng
+        };
+        let mut divide = IndexMap::new();
+        for fit in selector.select(&fit_cells) {
+            let entry = divide.entry(fit.cell.index).or_insert(0u32);
+            *entry += 1;
         }
-       self.corners[curr_corner]
+
+        let mut divisions_left = true;
+        while divisions_left {
+            divisions_left = false;
+            for (cell_index, divide_n) in &mut divide {
+                if !self.env.can_add_cell() {
+                    return;
+                }
+                // Could instead remove the entries from the index map after divide_n == 0
+                // but would have to store entries to remove in a vec
+                if *divide_n == 0 {
+                    continue;
+                }
+
+                let mom = self
+                    .env
+                    .cells
+                    .get_cell(*cell_index);
+                let new_cell = self.env.divide_cell(mom.index);
+                if new_cell.is_valid() {
+                    let new_index = new_cell.index;
+                    // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
+                    self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(&mut self.rng);
+                }
+
+                *divide_n -= 1;
+                if *divide_n > 0 {
+                    divisions_left = true;
+                }
+            }
+
+            if divisions_left {
+                for _ in 0..self.reproduction_steps {
+                    self.step();
+                }
+            }
+        }
     }
 }
 
 impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
-        if self.time_step % self.update_period == 0 {
-            if self.enable_cell_updates {
-                self.env.cells.iter_mut().for_each(|cell| cell.update());
-            }
-            if self.enable_division {
-                self.env.reproduce(&mut self.rng);
-            }
+        if self.time_step % self.update_period == 0 && self.enable_division {
+            self.env.cells.iter_mut().for_each(|cell| cell.update());
         }
         if self.time_step % self.season_duration == 0 {
-            self.make_next_chem_gradient();
+            if self.enable_division {
+                self.reproduce();
+            }
+            self.env.make_next_chem_gradient(&mut self.rng);
         }
         for val in self.env.act_lattice.iter_values_mut() {
             if *val > 0 {
@@ -66,18 +114,5 @@ impl Step for Pond {
             }
         }
         self.time_step += 1;
-    }
-}
-
-impl Fit for Pond {
-    fn fitness(&self) -> f32 {
-        let tot_fit: f32 = self
-            .env
-            .cells
-            .iter()
-            .filter(|cell| cell.is_valid())
-            .map(|c| { c.fitness() })
-            .sum();
-        tot_fit / self.env.cells.n_valid() as f32
     }
 }
