@@ -38,7 +38,7 @@ pub struct IoManager {
     plots: Vec<Box<dyn Plot>>,
     image_period: u32,
     cells_period: u32,
-    lattices_period: u32
+    lattice_period: u32
 }
 
 impl IoManager {
@@ -225,7 +225,7 @@ impl IoManager {
             ParquetWriter::new(file).finish(&mut celldf)?;
         }
 
-        if time_step % self.lattices_period == 0 {
+        if time_step % self.lattice_period == 0 {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
