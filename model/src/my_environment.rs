@@ -125,12 +125,6 @@ impl MyEnvironment {
         self.cells.get_cell(new_index)
     }
 
-    // Should this also replace some of the cell's positions with Medium?
-    /// Kills a cell by setting its [Cell::target_area()] to 0.
-    pub fn kill_cell(&mut self, cell: &mut RelCell<Cell>) {
-        cell.apoptosis();
-    }
-
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
     // require that self.divide_cell never invalidates any references to self.cells
     // we need thorough testing of self.divide_cells to make this change, and the performance
