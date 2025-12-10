@@ -68,7 +68,7 @@ impl Cell {
             Ok(new_center) => self.chem_center = new_center,
             Err(e) => {
                 log::warn!("Failed to shift cell: {}", e);
-                self.chem_center = self.center;
+                self.chem_center = self.center();
             }
         }
         self.chem_mass = self.chem_mass
