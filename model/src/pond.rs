@@ -8,7 +8,6 @@ use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
 use indexmap::IndexMap;
-use rand::Rng;
 use rand_xoshiro::Xoshiro256StarStar;
 
 #[derive(Clone, Builder)]
@@ -30,11 +29,7 @@ impl Pond {
         self.env.wipe_out();
     }
 
-    // With some unsafe code we can return Vec<&RelCell> from this function, but it would
-    // require that self.divide_cell never invalidates any references to self.cells
-    // we need thorough testing of self.divide_cells to make this change, and the performance
-    // gain is minimal (although the ergonomic gains are significant)
-    pub fn reproduce(&mut self) {
+    pub fn select(&mut self) {
         let pop_size = self.env.cells.n_valid();
         let fit_cells = self.env.cells.iter().filter_map(|cell| {
             if !cell.is_valid() {
@@ -50,22 +45,39 @@ impl Pond {
             select_n: pop_size,
             rng: &mut self.rng
         };
-        let mut divide = IndexMap::new();
+        let mut selected = IndexMap::new();
         for fit in selector.select(&fit_cells) {
-            let entry = divide.entry(fit.cell.index).or_insert(0u32);
+            let entry = selected.entry(fit.cell.index).or_insert(0u32);
             *entry += 1;
         }
 
+        // Kills cells that were not selected
+        let kill = self
+            .env
+            .cells
+            .iter()
+            .filter_map(|cell| {
+                if !cell.is_valid() || selected.contains_key(&cell.index) {
+                    return None;
+                }
+                Some(cell.index)
+            })
+            .collect::<Vec<_>>();
+        for cell_index in kill {
+            self.env.erase_cell(cell_index);
+        }
+
+        // Multiple rounds of division and growth
         let mut divisions_left = true;
         while divisions_left {
             divisions_left = false;
-            for (cell_index, divide_n) in &mut divide {
+            for (cell_index, n_children) in &mut selected {
                 if !self.env.can_add_cell() {
                     return;
                 }
-                // Could instead remove the entries from the index map after divide_n == 0
+                // Could instead remove the entries from the index map after n_children <= 1
                 // but would have to store entries to remove in a vec
-                if *divide_n == 0 {
+                if *n_children <= 1 {
                     continue;
                 }
 
@@ -80,8 +92,8 @@ impl Pond {
                     self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(&mut self.rng);
                 }
 
-                *divide_n -= 1;
-                if *divide_n > 0 {
+                *n_children -= 1;
+                if *n_children > 1 {
                     divisions_left = true;
                 }
             }
@@ -91,24 +103,6 @@ impl Pond {
             }
         }
     }
-
-    pub fn erase_half_population(&mut self) {
-        let mut valid_cells = self.env.cells.iter().filter_map(|cell| {
-            if !cell.is_valid() {
-                return None;
-            }
-            Some(cell.index)
-        }).collect::<Vec<_>>();
-        let population_n = valid_cells.len();
-        let mut kill_count = 0;
-        while kill_count < population_n / 2 {
-            let vec_index = self.rng.random_range(0..valid_cells.len());
-            let cell_index = valid_cells[vec_index];
-            self.env.erase_cell(cell_index);
-            valid_cells.swap_remove(vec_index);
-            kill_count += 1;
-        }
-    }
 }
 
 impl Step for Pond {
@@ -116,10 +110,7 @@ impl Step for Pond {
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.season_duration == 0 {
             if self.enable_division {
-                // TODO!: is this what sandro did in his paper?
-                //  its different from reproducing only cells selected multiple times and killing those missing
-                self.reproduce();
-                self.erase_half_population();
+                self.select();
             }
             self.env.make_next_chem_gradient(&mut self.rng);
         }
