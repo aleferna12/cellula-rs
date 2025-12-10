@@ -187,9 +187,9 @@ impl Model {
                 parameters.cell.target_perimeter,
                 BitGenome::new_random(
                     parameters.cell.genome.mutation_rate,
-                    parameters.cell.genome.genome_length,
+                    parameters.cell.genome.length,
                     &mut pond.rng,
-                ).ok_or(anyhow!("invalid `genome_length`"))?
+                ).ok_or(anyhow!("invalid `parameters.cell.genome.length`"))?
             );
             pond.env.spawn_cell_random(
                 cell,
@@ -221,7 +221,7 @@ impl Model {
         let cells = IoManager::read_cells(
             IoManager::resolve_cells_path(sim_path, time_step),
             parameters.cell.genome.mutation_rate,
-            parameters.cell.genome.genome_length
+            parameters.cell.genome.length
         )?;
 
         let rect = Rect::new(

@@ -94,6 +94,9 @@ impl Parameters {
         if !self.pond.enclose {
             anyhow::bail!("`enclose` must be `true` when the `fixed_boundary` feature is enabled")
         }
+        if self.cell.genome.length < 1 || self.cell.genome.length > 64 {
+            anyhow::bail!("`cell.genome.length` must be between 1 and 64")
+        }
         Ok(())
     }
 }
@@ -139,7 +142,7 @@ pub struct CellParameters {
 #[serde(rename_all = "kebab-case")]
 pub struct GenomeParameters {
     pub mutation_rate: f32,
-    pub genome_length: u8,
+    pub length: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
