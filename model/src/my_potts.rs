@@ -20,7 +20,6 @@ pub struct MyPotts {
     pub size_lambda: f32,
     pub perimeter_lambda: f32,
     pub act_lambda: f32,
-    pub enable_migration: bool,
     /// Minimum chemotaxis bias when cell experiences a chem. concentration = 0.
     #[builder(with = |min: f32| { if min > 1. { panic!("`min` must be between 0 and 1") } else { min } } )]
     pub chemotaxis_min: f32,
@@ -103,11 +102,7 @@ impl Potts for MyPotts {
     }
 
     fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f32 {
-        if self.enable_migration {
-            self.contact_biases(pos_source, pos_target, env)
-        } else {
-            0.
-        }
+        self.contact_biases(pos_source, pos_target, env)
     }
 
     fn attempt_site_copy(

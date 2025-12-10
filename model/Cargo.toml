@@ -7,6 +7,7 @@ description = "A very fast, extensible CPM implementation."
 [features]
 default = ["fixed_boundary"]
 fixed_boundary = []
+static_adhesion = []
 
 [[bench]]
 name = "main"

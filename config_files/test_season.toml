@@ -21,7 +21,6 @@ target-area = 200
 div-area = 128
 target-perimeter = 180
 divide = true
-migrate = true
 
 [cell.genome]
 mutation-rate = 0.01
@@ -39,7 +38,6 @@ act-lambda = 200.0
 cell-energy = 8.0
 medium-energy = 20.0
 solid-energy = 20.0
-static-adhesion = false
 
 [io]
 outdir = "runs/"

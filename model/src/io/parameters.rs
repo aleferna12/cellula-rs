@@ -133,8 +133,6 @@ pub struct CellParameters {
     pub target_perimeter: u32,
     #[serde(default = "param_defaults::true_flag")]
     pub divide: bool,
-    #[serde(default = "param_defaults::true_flag")]
-    pub migrate: bool,
     pub genome: GenomeParameters,
 }
 
@@ -162,9 +160,7 @@ pub struct PottsParameters {
 pub struct AdhesionParameters {
     pub cell_energy: f32,
     pub medium_energy: f32,
-    pub solid_energy: f32,
-    #[serde(default = "param_defaults::false_flag")]
-    pub static_adhesion: bool
+    pub solid_energy: f32
 }
 
 #[derive(Serialize, Deserialize, Clone)]
