@@ -56,17 +56,20 @@ impl Cell {
     /// Adds or removes the chemical concentration `chem_at` at position `pos` from the cell.
     pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, add: bool, bound: &B) {
         let shift = if add { 1 } else { -1 };
-        if let Some(new_chem) = shifted_com(
+        let shifted = shifted_com(
             self.chem_center,
             pos,
             self.chem_mass as f32,
             chem_at as f32,
             shift,
             bound
-        ) {
-            self.chem_center = new_chem;
-        } else {
-            self.chem_center = self.center();
+        );
+        match shifted {
+            Ok(new_center) => self.chem_center = new_center,
+            Err(e) => {
+                log::warn!("Failed to shift cell: {}", e);
+                self.chem_center = self.center;
+            }
         }
         self.chem_mass = self.chem_mass
             .checked_add_signed(shift * chem_at as i32)
