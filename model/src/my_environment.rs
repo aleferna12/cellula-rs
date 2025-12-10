@@ -102,6 +102,7 @@ impl MyEnvironment {
             .env
             .cells
             .get_cell(mom_index);
+        // TODO!: This searches cell positions twice (once to find div axis).
         let div_axis = self.find_division_axis(mom, self.cell_search_scaler);
         let new_positions: Vec<_> = self
             .search_cell_box(mom, self.cell_search_scaler)
