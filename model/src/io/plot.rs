@@ -251,7 +251,7 @@ impl Plot for ActPlot {
         let lat = &env.act_lattice;
         for pos in lat.iter_positions() {
             let val = lat[pos];
-            if val == 0 && matches!(env.cell_lattice[pos], Spin::Medium) {
+            if val == 0 && !matches!(env.cell_lattice[pos], Spin::Some(_)) {
                 continue;
             }
             let color = self.lerp(
