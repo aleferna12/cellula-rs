@@ -64,8 +64,6 @@ boltz-t = 16.0
 size-lambda = 1.0
 # Scaler constant for perimeter deviation penalties.
 perimeter-lambda = 1.0
-# Scaler constant for chemotaxis bias.
-chemotaxis-mu = 4.0
 # Minimum strength of chemotaxis bias when cells experience a chem. concentration = 0 in the contact case
 # (relative to the bias at max concentration, which is the full effect of the Act term).
 # Use 0 to deactivate chemotaxis at low concentrations, and 1 to maintain full chemotaxis throughout the lattice.
