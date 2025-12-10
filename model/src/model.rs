@@ -123,7 +123,6 @@ impl Model {
             .size_lambda(parameters.potts.size_lambda)
             .perimeter_lambda(parameters.potts.perimeter_lambda)
             .act_lambda(parameters.potts.act_lambda)
-            .chemotaxis_mu(parameters.potts.chemotaxis_mu)
             .enable_migration(parameters.cell.migrate)
             .adhesion(BitAdhesion { 
                 static_adhesion: StaticAdhesion {

@@ -148,7 +148,6 @@ pub struct PottsParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
     pub perimeter_lambda: f32,
-    pub chemotaxis_mu: f32,
     pub chemotaxis_min: f32,
     pub act_max: u32,
     pub act_lambda: f32,

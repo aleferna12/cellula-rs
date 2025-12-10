@@ -20,7 +20,6 @@ pub struct MyPotts {
     pub size_lambda: f32,
     pub perimeter_lambda: f32,
     pub act_lambda: f32,
-    pub chemotaxis_mu: f32,
     pub enable_migration: bool,
     /// Minimum chemotaxis bias when cell experiences a chem. concentration = 0.
     #[builder(with = |min: f32| { if min > 1. { panic!("`min` must be between 0 and 1") } else { min } } )]
