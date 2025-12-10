@@ -54,7 +54,7 @@ n-regulatory = 2
 # Mutation rate for each GRN parameter.
 mutation-rate = 0.01
 # Number of ligands and receptors in the genome (total size is double this parameter).
-genome-length = 8
+length = 8
 
 [potts]
 # Boltzmann temperature.

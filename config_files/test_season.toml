@@ -25,7 +25,7 @@ migrate = true
 
 [cell.genome]
 mutation-rate = 0.01
-genome-length = 8
+length = 8
 
 [potts]
 boltz-t = 20.0
