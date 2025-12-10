@@ -4,7 +4,8 @@ use cellulars_lib::spin::Spin;
 
 #[derive(Clone)]
 pub struct BitAdhesion {
-    pub(crate) static_adhesion: StaticAdhesion
+    pub static_adhesion: StaticAdhesion,
+    pub use_static_adhesion: bool,
 }
 
 impl BitAdhesion {
@@ -17,6 +18,9 @@ impl AdhesionSystem for BitAdhesion {
     type Context = MyEnvironment;
 
     fn adhesion_energy(&self, spin1: Spin, spin2: Spin, context: &Self::Context) -> f32 {
+        if self.use_static_adhesion {
+            return self.static_adhesion.adhesion_energy(spin1, spin2, &());
+        }
         match (spin1, spin2) {
             (Spin::Some(c1), Spin::Some(c2)) => {
                 if c1 == c2 {

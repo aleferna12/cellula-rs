@@ -39,6 +39,7 @@ act-lambda = 200.0
 cell-energy = 8.0
 medium-energy = 20.0
 solid-energy = 20.0
+static-adhesion = false
 
 [io]
 outdir = "runs/"

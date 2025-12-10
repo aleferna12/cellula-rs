@@ -24,7 +24,7 @@ pub struct MyPotts {
     /// Minimum chemotaxis bias when cell experiences a chem. concentration = 0.
     #[builder(with = |min: f32| { if min > 1. { panic!("`min` must be between 0 and 1") } else { min } } )]
     pub chemotaxis_min: f32,
-    pub adhesion: BitAdhesion,
+    pub adhesion: BitAdhesion
 }
 
 impl MyPotts {

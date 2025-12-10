@@ -129,7 +129,8 @@ impl Model {
                     cell_energy: parameters.potts.adhesion.cell_energy,
                     medium_energy: parameters.potts.adhesion.medium_energy,
                     solid_energy: parameters.potts.adhesion.solid_energy,
-                }
+                },
+                use_static_adhesion: parameters.potts.adhesion.static_adhesion,
             })
             .chemotaxis_min(parameters.potts.chemotaxis_min)
             .build()

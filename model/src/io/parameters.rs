@@ -151,7 +151,7 @@ pub struct PottsParameters {
     pub chemotaxis_min: f32,
     pub act_max: u32,
     pub act_lambda: f32,
-    pub adhesion: AdhesionParameters
+    pub adhesion: AdhesionParameters,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -160,6 +160,8 @@ pub struct AdhesionParameters {
     pub cell_energy: f32,
     pub medium_energy: f32,
     pub solid_energy: f32,
+    #[serde(default = "param_defaults::false_flag")]
+    pub static_adhesion: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]
