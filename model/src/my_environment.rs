@@ -174,10 +174,8 @@ impl MyEnvironment {
                 (pos.y as f32) < y
             })
             .collect();
-        
-        let mut newborn = mom.birth();
-        newborn.ancestor = Some(mom_index);
-        let new_index = self.env.cells.add(newborn).index;
+
+        let new_index = self.env.cells.add(mom.birth()).index;
         for pos in new_positions {
             self.update_delta_perimeter(false, mom_index, pos);
             self.update_delta_perimeter(true, new_index, pos);

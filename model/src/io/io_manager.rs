@@ -243,7 +243,7 @@ impl IoManager {
     pub fn write_if_time(
         &mut self,
         time_step: u32,
-        env: &MyEnvironment
+        env: &mut MyEnvironment
     ) -> anyhow::Result<()> {
         self.write_data_if_time(time_step, env)?;
         self.write_image_if_time(time_step, env)
@@ -252,12 +252,11 @@ impl IoManager {
     fn write_data_if_time(
         &self,
         time_step: u32,
-        env: &MyEnvironment
+        env: &mut MyEnvironment
     ) -> anyhow::Result<()> {
         let time_str = time_step.to_string();
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
-        // TODO!: reset ancestor
         if time_step % self.cells_period == 0 {
             let mut celldf = env.cells.to_dataframe()?;
             let file_path = self.outdir
@@ -265,6 +264,13 @@ impl IoManager {
                 .join(format!("{time_str}.parquet"));
             let file = std::fs::File::create(file_path)?;
             ParquetWriter::new(file).finish(&mut celldf)?;
+
+            for cell in env.cells.iter_mut() {
+                if !cell.is_valid() {
+                    continue;
+                }
+                cell.ancestor = Some(cell.index);
+            }
         }
 
         if time_step % self.lattices_period == 0 {
