@@ -15,7 +15,7 @@ reproduction-steps = 5
 [cell]
 starting-cells = 100
 max-cells = 1024
-search-radius = 3.0
+search-radius = 4.0
 starting-area = 64
 target-area = 200
 div-area = 128

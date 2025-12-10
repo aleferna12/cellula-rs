@@ -189,7 +189,15 @@ impl MyEnvironment {
 
     pub fn erase_cell(&mut self, cell_index: CellIndex) {
         let cell = self.env.cells.get_cell(cell_index);
-        for pos in self.search_cell_box(cell, self.cell_search_scaler) {
+        // It's imperative to find all positions here as otherwise we are left over with a partial cell
+        let mut cell_positions = self.search_cell_box(cell, self.cell_search_scaler);
+        if cell.area as usize != cell_positions.len() {
+            cell_positions = self.search_cell_box(cell, 2. * self.cell_search_scaler);
+        }
+        if cell.area as usize != cell_positions.len() {
+            log::error!("Critical: cell with index {} was only partially erased after two attempts", cell.index);
+        }
+        for pos in cell_positions {
             self.update_delta_perimeter(false, cell_index, pos);
             self.grant_position(pos, Spin::Medium);
         }
