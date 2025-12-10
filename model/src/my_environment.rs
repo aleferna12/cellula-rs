@@ -177,12 +177,15 @@ impl MyEnvironment {
 
         let new_index = self.env.cells.add(mom.birth()).index;
         for pos in new_positions {
+            let prev_act = self.act_lattice[pos];
             self.update_delta_perimeter(false, mom_index, pos);
             self.update_delta_perimeter(true, new_index, pos);
             self.grant_position(
                 pos,
                 Spin::Some(new_index),
             );
+            // We dont want to model this position transfer as a copy
+            self.act_lattice[pos] = prev_act;
         }
         self.cells.get_cell(new_index)
     }
