@@ -1,3 +1,5 @@
+#![allow(dead_code)]  // Want to keep the WightedOrder stuff for now
+
 use rand::Rng;
 
 pub trait Selector {
