@@ -31,12 +31,16 @@ impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
+            let can_add = self.env.can_add_cell();
             self.env.cells.iter_mut().for_each(|cell| {
                 if let Cell::Amoeba(amoeba) = &mut cell.cell {
                     // TODO: do something with this, cell must express a target vector of proteins
                     //  right before the end of a season or something like that
                     amoeba.genome.input_signals[0] = self.time_step as f32;
                     amoeba.update();
+                    if !can_add {
+                        amoeba.target_area = amoeba.newborn_target_area;
+                    }
                 }
             });
             if self.division_enabled {

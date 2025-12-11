@@ -181,7 +181,7 @@ impl Model {
 
         // TODO!: Parameterise
         for _ in 0..50 {
-            let area = 14;
+            let area = 8;
             let cell = Cell::Bacterium(BasicCell::new_empty(area));
             pond.env.spawn_cell_random(
                 cell,

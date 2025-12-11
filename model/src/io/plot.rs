@@ -110,9 +110,13 @@ impl Plot for BorderPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         for pos in env.cell_lattice.iter_positions() {
             let spin = env.cell_lattice[pos];
-            if !matches!(spin, Spin::Some(_)) {
+            let Spin::Some(cell_index) = spin else {
+                continue;
+            };
+            if !matches!(env.cells.get_cell(cell_index).cell, Cell::Amoeba(_)) {
                 continue
             }
+
             let is_border = env
                 .bounds
                 .lattice_boundary
