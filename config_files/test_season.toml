@@ -10,7 +10,7 @@ enclose = true
 neigh-r = 1
 season-duration = 2_500_000
 half-fitness = 250
-reproduction-steps = 5
+reproduction-steps = 50
 
 [cell]
 starting-cells = 100
