@@ -193,7 +193,7 @@ impl Model {
         }
         log::info!(
                 "Created {} out of the {} cells requested",
-                pond.env.cells.n_valid(),
+                pond.env.env().cells.n_valid(),
                 parameters.cell.starting_cells
             );
 
@@ -235,9 +235,8 @@ impl Model {
             parameters.cell.max_cells,
             parameters.cell.search_radius
         );
-        for pos in env.cell_lattice.iter_positions() {
-            // We do this to avoid two lattices in memory
-            env.update_edges(pos);
+        for pos in env.env().cell_lattice.iter_positions() {
+            env.env_mut().update_edges(pos);
         }
 
         let pond = Self::make_empty_pond(
@@ -262,7 +261,7 @@ impl Model {
 
     fn log_info(&self) {
         log::info!("Time step {}:", self.pond.time_step());
-        let valid = self.pond.env.cells.n_valid();
+        let valid = self.pond.env.env().cells.n_valid();
         log::info!("\t{valid} cells");
     }
 }

@@ -226,7 +226,7 @@ impl IoManager {
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step % self.cells_period == 0 {
-            let mut celldf = env.cells.to_dataframe()?;
+            let mut celldf = env.env().cells.to_dataframe()?;
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
@@ -238,7 +238,7 @@ impl IoManager {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            Self::write_lattice(file_path.as_path(), &env.cell_lattice)?;
+            Self::write_lattice(file_path.as_path(), &env.env().cell_lattice)?;
         }
         Ok(())
     }
@@ -311,8 +311,8 @@ impl IoManager {
         env: &MyEnvironment
     ) -> RgbaImage {
         let mut image = RgbaImage::new(
-            env.width() as u32,
-            env.height() as u32 
+            env.env().width() as u32,
+            env.env().height() as u32 
         );
         for plot in &self.plots {
             plot.plot(env, &mut image);

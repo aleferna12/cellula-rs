@@ -13,7 +13,6 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
-use std::ops::{Deref, DerefMut};
 
 /// An environment that contains a chemical gradient and limits cell growth to [MyEnvironment::max_cells].
 #[derive(Clone)]
@@ -46,10 +45,20 @@ impl MyEnvironment {
         env_
     }
 
+    /// Returns a reference to the inner [cellulars_lib::environment::Environment].
+    pub fn env(&self) -> &Environment<Cell, MooreNeighbourhood, BoundaryType> {
+        &self.env
+    }
+
+    /// Returns a mutable reference to the inner [cellulars_lib::environment::Environment].
+    pub fn env_mut(&mut self) -> &mut Environment<Cell, MooreNeighbourhood, BoundaryType> {
+        &mut self.env
+    }
+
     /// Creates a chemical gradient spanning from the top to the bottom of the environment.
     pub fn make_chem_gradient(&mut self) {
-        for i in 0..self.width() {
-            for j in 0..self.height() {
+        for i in 0..self.env.width() {
+            for j in 0..self.env.height() {
                 self.chem_lattice[(i, j).into()] = j.try_into().expect("lattice is too big");
             }
         }
@@ -57,7 +66,7 @@ impl MyEnvironment {
 
     /// Returns whether the environment supports additional cells based on [MyEnvironment::max_cells].
     pub fn can_add_cell(&mut self) -> bool {
-        if self.cells.n_valid() < self.max_cells {
+        if self.env.cells.n_valid() < self.max_cells {
             return true;
         }
         if !self.population_exploded {
@@ -79,7 +88,7 @@ impl MyEnvironment {
         cell_area: u32,
         rng: &mut impl Rng,
     ) -> &RelCell<Cell> {
-        let pos_isize = self.cell_lattice.random_pos(rng).to_isize();
+        let pos_isize = self.env.cell_lattice.random_pos(rng).to_isize();
         let cell_side = ((cell_area as f32).sqrt() / 2.) as isize;
         let rect = Rect::new(
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
@@ -87,7 +96,7 @@ impl MyEnvironment {
         );
         let positions = rect
             .iter_positions()
-            .filter_map(|pos| self.bounds.lattice_boundary.valid_pos(pos))
+            .filter_map(|pos| self.env.bounds.lattice_boundary.valid_pos(pos))
             .map(|pos| pos.to_usize())
             .collect::<Vec<_>>();
         self.spawn_cell(
@@ -105,6 +114,7 @@ impl MyEnvironment {
         // TODO!: This searches cell positions twice (once to find div axis).
         let div_axis = self.find_division_axis(mom, self.cell_search_scaler);
         let new_positions: Vec<_> = self
+            .env
             .search_cell_box(mom, self.cell_search_scaler)
             .into_iter()
             .filter(|pos| {
@@ -122,8 +132,8 @@ impl MyEnvironment {
                 Spin::Some(new_index),
             );
         }
-        self.env.cells.get_cell_mut(mom_index).target_area = newborn_ta;
-        self.cells.get_cell(new_index)
+        self.env.cells.get_cell_mut(mom_index).basic_cell_mut().target_area = newborn_ta;
+        self.env.cells.get_cell(new_index)
     }
 
     // With some unsafe code we can return Vec<&RelCell> from this function, but it would
@@ -133,7 +143,7 @@ impl MyEnvironment {
     /// Checks which cells should divide and executes cell divisions.
     pub fn reproduce(&mut self) {
         let mut divide = vec![];
-        for cell in self.cells.iter() {
+        for cell in self.env.cells.iter() {
             if !cell.is_alive() {
                 continue;
             }
@@ -148,6 +158,7 @@ impl MyEnvironment {
             }
 
             let mom = self
+                .env
                 .cells
                 .get_cell(cell_index);
             self.divide_cell(mom.index);
@@ -162,8 +173,8 @@ impl MyEnvironment {
         let mut sum_yy = 0.0;
         let mut sum_xy = 0.0;
 
-        for p in &self.search_cell_box(cell, search_scaler) {
-            let (dx, dy) = self.bounds.boundary.displacement(p.to_f32(), cell.center());
+        for p in &self.env.search_cell_box(cell, search_scaler) {
+            let (dx, dy) = self.env.bounds.boundary.displacement(p.to_f32(), cell.center());
             sum_xx += dx * dx;
             sum_yy += dy * dy;
             sum_xy += dx * dy;
@@ -225,40 +236,27 @@ impl MyEnvironment {
     ) {
         let mut border_positions = Vec::<Pos<usize>>::new();
         if bottom {
-            for x in 0..self.width() {
+            for x in 0..self.env.width() {
                 border_positions.push((x, 0).into());
             }
         }
         if top {
-            for x in (0..self.width() - 1).rev() {
-                border_positions.push((x, self.height() - 1).into());
+            for x in (0..self.env.width() - 1).rev() {
+                border_positions.push((x, self.env.height() - 1).into());
             }
         }
         if left {
-            for y in (1..self.height() - 1).rev() {
+            for y in (1..self.env.height() - 1).rev() {
                 border_positions.push((0, y).into());
             }
         }
         if right {
-            for y in 1..self.height() {
-                border_positions.push((self.width() - 1, y).into());
+            for y in 1..self.env.height() {
+                border_positions.push((self.env.width() - 1, y).into());
             }
         }
 
         self.spawn_solid(border_positions.into_iter());
-    }
-}
-
-impl Deref for MyEnvironment {
-    type Target = Environment<Cell, MooreNeighbourhood, BoundaryType>;
-    fn deref(&self) -> &Self::Target {
-        &self.env
-    }
-}
-
-impl DerefMut for MyEnvironment {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.env
     }
 }
 
@@ -284,7 +282,7 @@ impl Habitable for MyEnvironment {
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
-        if let Spin::Some(index) = self.cell_lattice[pos] {
+        if let Spin::Some(index) = self.env.cell_lattice[pos] {
             let from_cell = self.env.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);
             from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
@@ -294,8 +292,8 @@ impl Habitable for MyEnvironment {
             }
         }
         // Executes the copy
-        self.cell_lattice[pos] = to;
-        self.update_edges(pos)
+        self.env.cell_lattice[pos] = to;
+        self.env.update_edges(pos)
     }
 }
 
