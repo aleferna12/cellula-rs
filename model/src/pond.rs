@@ -45,7 +45,7 @@ impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step % self.update_period == 0 {
-            self.env.cells.iter_mut().for_each(|cell| cell.update());
+            self.env.env_mut().cells.iter_mut().for_each(|cell| cell.update());
             if self.division_enabled {
                 self.env.reproduce();
             }

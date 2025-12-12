@@ -37,7 +37,7 @@ pub struct IoManager {
     pub image_format: String,
     /// Used to update the simulation video when it's time.
     pub movie_maker: Option<MovieMaker>,
-    plots: Vec<Box<dyn Plot>>,
+    plots: Box<[Box<dyn Plot>]>,
     image_period: u32,
     cells_period: u32,
     lattice_period: u32
@@ -227,7 +227,7 @@ impl IoManager {
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step % self.cells_period == 0 {
-            let mut celldf = env.cells.to_dataframe()?;
+            let mut celldf = env.env().cells.to_dataframe()?;
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
@@ -239,7 +239,7 @@ impl IoManager {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            Self::write_lattice(file_path.as_path(), &env.cell_lattice)?;
+            Self::write_lattice(file_path.as_path(), &env.env().cell_lattice)?;
         }
         Ok(())
     }
@@ -312,8 +312,8 @@ impl IoManager {
         env: &MyEnvironment
     ) -> RgbaImage {
         let mut image = RgbaImage::new(
-            env.width() as u32,
-            env.height() as u32 
+            env.env().width() as u32,
+            env.env().height() as u32 
         );
         for plot in &self.plots {
             plot.plot(env, &mut image);
@@ -329,19 +329,19 @@ trait ToDataFrame {
 
 impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
+        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
         df!(
-            "index" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
-            "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
-            "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
-            "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Vec<_>>(),
-            "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Vec<_>>(),
-            "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Vec<_>>(),
-            "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Vec<_>>(),
-            "chem_center_x" => valid.iter().map(|cell| cell.chem_center().x).collect::<Vec<_>>(),
-            "chem_center_y" => valid.iter().map(|cell| cell.chem_center().y).collect::<Vec<_>>(),
-            "chem_mass" => valid.iter().map(|cell| cell.chem_mass()).collect::<Vec<_>>(),
-            "cell_type" => valid.iter().map(|cell| cell.cell_type.to_string()).collect::<Vec<_>>()
+            "index" => valid.iter().map(|cell| cell.index).collect::<Box<_>>(),
+            "area" => valid.iter().map(|cell| cell.area()).collect::<Box<_>>(),
+            "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Box<_>>(),
+            "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Box<_>>(),
+            "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Box<_>>(),
+            "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Box<_>>(),
+            "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Box<_>>(),
+            "chem_center_x" => valid.iter().map(|cell| cell.chem_center().x).collect::<Box<_>>(),
+            "chem_center_y" => valid.iter().map(|cell| cell.chem_center().y).collect::<Box<_>>(),
+            "chem_mass" => valid.iter().map(|cell| cell.chem_mass()).collect::<Box<_>>(),
+            "cell_type" => valid.iter().map(|cell| cell.cell_type.to_string()).collect::<Box<[String]>>()
         )
     }
 }

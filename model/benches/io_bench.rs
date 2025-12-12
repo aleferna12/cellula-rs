@@ -20,7 +20,7 @@ fn bench_io(c: &mut Criterion) {
             &plot,
             |b, i| {b.iter_batched_ref(
                 || {
-                    params.io.plot.order = vec![i.clone()];
+                    params.io.plot.order = vec![i.clone()].into();
                     make_model(params.clone())
                 },
                 |model| {

@@ -1,10 +1,9 @@
 //! Contains logic associated with [Cell].
 
+use bon::Builder;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
-use std::ops::{Deref, DerefMut};
-use bon::Builder;
 use strum_macros::{Display, EnumString};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
@@ -35,6 +34,16 @@ impl Cell {
             divide_area,
             cell_type,
         }
+    }
+
+    /// Returns a reference to this cell's inner [cellulars_lib::basic_cell::BasicCell](BasicCell).
+    pub fn basic_cell(&self) -> &BasicCell {
+        &self.basic_cell
+    }
+
+    /// Returns a mutable reference to this cell's inner [cellulars_lib::basic_cell::BasicCell](BasicCell).
+    pub fn basic_cell_mut(&mut self) -> &mut BasicCell {
+        &mut self.basic_cell
     }
     
     /// Returns the total concentration of the chemical perceived by the cell.
@@ -67,7 +76,7 @@ impl Cell {
         match shifted {
             Ok(new_center) => self.chem_center = new_center,
             Err(e) => {
-                log::warn!("Failed to shift cell: {}", e);
+                log::warn!("Failed to shift chem center: {e}");
                 self.chem_center = self.center();
             }
         }
@@ -80,22 +89,8 @@ impl Cell {
     pub fn update(&mut self) {
         if let CellType::Dividing = self.cell_type && self.target_area() < self.divide_area {
             let new_target_area = self.target_area() + 1;
-            self.target_area = new_target_area;
+            self.basic_cell.target_area = new_target_area;
         }
-    }
-}
-
-impl Deref for Cell {
-    type Target = BasicCell;
-
-    fn deref(&self) -> &Self::Target {
-        &self.basic_cell
-    }
-}
-
-impl DerefMut for Cell {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.basic_cell
     }
 }
 

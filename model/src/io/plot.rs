@@ -81,8 +81,8 @@ impl SpinPlot {
 
 impl Plot for SpinPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.cell_lattice.iter_positions() {
-            let spin = env.cell_lattice[pos];
+        for pos in env.env().cell_lattice.iter_positions() {
+            let spin = env.env().cell_lattice[pos];
             let rgb = match spin {
                 Spin::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
                 Spin::Solid => Some(self.solid_color),
@@ -103,11 +103,11 @@ pub struct CenterPlot {
 
 impl Plot for CenterPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for cell in env.cells.iter() {
+        for cell in env.env().cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
-            let center = env.bounds.lattice_boundary.valid_pos(Pos::new(
+            let center = env.env().bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.center().x as isize,
                 cell.center().y as isize,
             ));
@@ -126,11 +126,11 @@ pub struct ChemCenterPlot {
 
 impl Plot for ChemCenterPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for cell in env.cells.iter() {
+        for cell in env.env().cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
-            let center = env.bounds.lattice_boundary.valid_pos(Pos::new(
+            let center = env.env().bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.chem_center().x as isize,
                 cell.chem_center().y as isize,
             ));
@@ -149,18 +149,19 @@ pub struct BorderPlot {
 
 impl Plot for BorderPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.cell_lattice.iter_positions() {
-            let spin = env.cell_lattice[pos];
+        for pos in env.env().cell_lattice.iter_positions() {
+            let spin = env.env().cell_lattice[pos];
             let Spin::Some(cell_index) = spin else {
                 continue;
             };
 
             let is_border = env
+                .env()
                 .bounds
                 .lattice_boundary
-                .valid_positions(env.neighbourhood.neighbours(pos.to_isize()))
+                .valid_positions(env.env().neighbourhood.neighbours(pos.to_isize()))
                 .any(|neigh| {
-                    let neigh_spin = env.cell_lattice[neigh.to_usize()];
+                    let neigh_spin = env.env().cell_lattice[neigh.to_usize()];
                     match neigh_spin {
                         Spin::Some(neigh_index) => {
                             cell_index < neigh_index
@@ -185,10 +186,10 @@ pub struct CellTypePlot {
 
 impl Plot for CellTypePlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.cell_lattice.iter_positions() {
-            let spin = env.cell_lattice[pos];
+        for pos in env.env().cell_lattice.iter_positions() {
+            let spin = env.env().cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
-                let cell = env.cells.get_cell(cell_index);
+                let cell = env.env().cells.get_cell(cell_index);
                 let color = match cell.cell_type {
                     CellType::Migrating => self.mig_color,
                     CellType::Dividing => self.div_color
@@ -215,7 +216,7 @@ impl Plot for AreaPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
-        for cell in env.cells.iter() {
+        for cell in env.env().cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
@@ -227,9 +228,9 @@ impl Plot for AreaPlot {
             }
         }
 
-        for pos in env.cell_lattice.iter_positions() {
-            if let Spin::Some(cell_index) = env.cell_lattice[pos] {
-                let cell = env.cells.get_cell(cell_index);
+        for pos in env.env().cell_lattice.iter_positions() {
+            if let Spin::Some(cell_index) = env.env().cell_lattice[pos] {
+                let cell = env.env().cells.get_cell(cell_index);
                 let color = self.lerp(
                     cell.area() as f32,
                     min as f32,
@@ -303,7 +304,7 @@ pub fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
     Rgba::from(arr)
 }
 
-impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
+impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
     type Error = HexError;
 
     fn try_from(params: PlotParameters) -> Result<Self, HexError> {
@@ -341,7 +342,7 @@ impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
             };
             plots.push(plot);
         }
-        Ok(plots)
+        Ok(plots.into_boxed_slice())
     }
 }
 

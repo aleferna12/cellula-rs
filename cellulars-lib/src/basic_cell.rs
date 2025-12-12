@@ -91,7 +91,7 @@ impl Cellular for BasicCell {
         );
         match shifted {
             Ok(new_center) => self.center = new_center,
-            Err(e) => log::warn!("Failed to shift cell: {}", e)
+            Err(e) => log::warn!("Failed to shift center of mass: {e}")
         }
         self.area = self.area.checked_add_signed(shift).expect("overflow in `shift_position`");
     }

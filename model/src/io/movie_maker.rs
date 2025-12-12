@@ -42,7 +42,7 @@ impl MovieMaker {
 
     /// Tries to update the window with a new frame `image`.
     pub fn update(&mut self, image: &RgbaImage) -> minifb::Result<()> {
-        let buffer: Vec<_> = image
+        let buffer: Box<_> = image
             .as_bytes()
             .chunks_exact(4)
             .map(|rgba| {
