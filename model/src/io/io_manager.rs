@@ -32,7 +32,7 @@ pub struct IoManager {
     pub outdir: PathBuf,
     pub image_format: String,
     pub movie_maker: Option<MovieMaker>,
-    plots: Vec<Box<dyn Plot>>,
+    plots: Box<[Box<dyn Plot>]>,
     image_period: u32,
     cells_period: u32,
     lattices_period: u32
@@ -389,21 +389,21 @@ trait ToDataFrame {
 
 impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Vec<_>>();
+        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
         df!(
-            "index" => valid.iter().map(|cell| cell.index).collect::<Vec<_>>(),
-            "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Vec<_>>(),
-            "area" => valid.iter().map(|cell| cell.area()).collect::<Vec<_>>(),
-            "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Vec<_>>(),
-            "perimeter" => valid.iter().map(|cell| cell.perimeter).collect::<Vec<_>>(),
-            "target_perimeter" => valid.iter().map(|cell| cell.target_perimeter).collect::<Vec<_>>(),
-            "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Vec<_>>(),
-            "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Vec<_>>(),
-            "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Vec<_>>(),
-            "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Vec<_>>(),
-            "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Vec<_>>(),
-            "ligands" => valid.iter().map(|cell| cell.genome.ligands()).collect::<Vec<_>>(),
-            "receptors" => valid.iter().map(|cell| cell.genome.receptors()).collect::<Vec<_>>()
+            "index" => valid.iter().map(|cell| cell.index).collect::<Box<_>>(),
+            "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Box<_>>(),
+            "area" => valid.iter().map(|cell| cell.area()).collect::<Box<_>>(),
+            "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Box<_>>(),
+            "perimeter" => valid.iter().map(|cell| cell.perimeter).collect::<Box<_>>(),
+            "target_perimeter" => valid.iter().map(|cell| cell.target_perimeter).collect::<Box<_>>(),
+            "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Box<_>>(),
+            "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Box<_>>(),
+            "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Box<_>>(),
+            "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Box<_>>(),
+            "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Box<_>>(),
+            "ligands" => valid.iter().map(|cell| cell.genome.ligands()).collect::<Box<_>>(),
+            "receptors" => valid.iter().map(|cell| cell.genome.receptors()).collect::<Box<_>>()
         )
     }
 }

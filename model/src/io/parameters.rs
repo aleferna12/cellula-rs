@@ -199,7 +199,7 @@ pub struct MovieParameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PlotParameters {
-    pub order: Vec<PlotType>, 
+    pub order: Box<[PlotType]>, 
     pub solid_color: String,
     pub medium_color: Option<String>,
     pub center_color: String,

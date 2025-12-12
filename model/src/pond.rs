@@ -39,7 +39,7 @@ impl Pond {
                 cell,
                 half_fit: self.half_fitness
             })
-        }).collect::<Vec<_>>();
+        }).collect::<Box<_>>();
 
         let mut selector = WeightedSelection {
             select_n: pop_size,
@@ -62,7 +62,7 @@ impl Pond {
                 }
                 Some(cell.index)
             })
-            .collect::<Vec<_>>();
+            .collect::<Box<_>>();
         for cell_index in kill {
             self.env.erase_cell(cell_index);
         }

@@ -153,7 +153,7 @@ impl MyEnvironment {
             .iter_positions()
             .filter_map(|pos| self.bounds.lattice_boundary.valid_pos(pos))
             .map(|pos| pos.to_usize())
-            .collect::<Vec<_>>();
+            .collect::<Box<_>>();
         self.spawn_cell(
             empty_cell,
             positions
@@ -166,7 +166,7 @@ impl MyEnvironment {
             .cells
             .get_cell(mom_index);
         let div_axis = self.find_division_axis(mom, self.cell_search_scaler);
-        let new_positions: Vec<_> = self
+        let new_positions: Box<_> = self
             .search_cell_box(mom, self.cell_search_scaler)
             .into_iter()
             .filter(|pos| {

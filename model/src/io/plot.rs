@@ -286,7 +286,7 @@ pub fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
     Rgba::from(arr)
 }
 
-impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
+impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
     type Error = HexError;
 
     fn try_from(params: PlotParameters) -> Result<Self, HexError> {
@@ -324,7 +324,7 @@ impl TryFrom<PlotParameters> for Vec<Box<dyn Plot>> {
             };
             plots.push(plot);
         }
-        Ok(plots)
+        Ok(plots.into())
     }
 }
 
