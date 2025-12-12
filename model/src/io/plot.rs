@@ -163,9 +163,7 @@ impl Plot for BorderPlot {
                 .any(|neigh| {
                     let neigh_spin = env.env().cell_lattice[neigh.to_usize()];
                     match neigh_spin {
-                        Spin::Some(neigh_index) => {
-                            cell_index < neigh_index
-                        },
+                        Spin::Some(neigh_index) => cell_index < neigh_index,
                         _ => true
                     }
                 });
