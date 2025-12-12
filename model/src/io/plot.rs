@@ -130,16 +130,22 @@ impl Plot for BorderPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         for pos in env.cell_lattice.iter_positions() {
             let spin = env.cell_lattice[pos];
-            if !matches!(spin, Spin::Some(_)) {
-                continue
-            }
+            let Spin::Some(cell_index) = spin else {
+                continue;
+            };
+
             let is_border = env
                 .bounds
                 .lattice_boundary
                 .valid_positions(env.neighbourhood.neighbours(pos.to_isize()))
                 .any(|neigh| {
                     let neigh_spin = env.cell_lattice[neigh.to_usize()];
-                    neigh_spin != spin
+                    match neigh_spin {
+                        Spin::Some(neigh_index) => {
+                            cell_index < neigh_index
+                        },
+                        _ => true
+                    }
                 });
             if is_border {
                 image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(self.color));
