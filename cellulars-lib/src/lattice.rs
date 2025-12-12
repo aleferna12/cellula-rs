@@ -129,7 +129,7 @@ impl<T: PartialEq> Lattice<T> {
         start_pos: Pos<usize>,
         bound: &impl Boundary<Coord = isize>,
         neighbourhood: &impl Neighbourhood
-    ) -> Vec<Pos<usize>> {
+    ) -> Box<[Pos<usize>]> {
         let mut found = vec![];
         let mut queue = VecDeque::from([start_pos.to_isize()]);
         let mut visited = Lattice::<bool>::new(self.rect.clone());
@@ -151,7 +151,7 @@ impl<T: PartialEq> Lattice<T> {
                 });
             found.push(lat_pos);
         }
-        found
+        found.into()
     }
 
     /// Returns the outline of a contiguous area containing `value`.
@@ -164,7 +164,7 @@ impl<T: PartialEq> Lattice<T> {
         box_side: usize,
         bound: &impl Boundary<Coord = isize>,
         neighbourhood: &impl Neighbourhood
-    ) -> Vec<Pos<usize>> {
+    ) -> Box<[Pos<usize>]> {
         let mut found = vec![];
         let border_pos = match self.search_box(
             value,
@@ -180,7 +180,7 @@ impl<T: PartialEq> Lattice<T> {
             }
         }) {
             Some(neigh) => neigh,
-            None => return found
+            None => return found.into()
         };
 
         let mut queue = VecDeque::from([border_pos]);
@@ -212,7 +212,7 @@ impl<T: PartialEq> Lattice<T> {
                 }
             }
         }
-        found
+        found.into()
     }
 }
 

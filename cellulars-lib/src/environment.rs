@@ -90,7 +90,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
     /// May fail if `radius_scaler` is too small, in which case logs a warning.
-    pub fn search_cell_box(&self, cell: &RelCell<impl Cellular>, search_scaler: f32) -> Vec<Pos<usize>> {
+    pub fn search_cell_box(&self, cell: &RelCell<impl Cellular>, search_scaler: f32) -> Box<[Pos<usize>]> {
         let search_diam = (
             search_scaler
                 * 2.
@@ -98,7 +98,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
                 .sqrt()
         ) as usize;
 
-        let found: Vec<_> = self.cell_lattice.search_box(
+        let found: Box<_> = self.cell_lattice.search_box(
             &Spin::Some(cell.index),
             cell.center().to_usize(),
             search_diam,
@@ -124,7 +124,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     pub fn search_cell_contiguous(
         &self,
         cell: &RelCell<impl Cellular>,
-    ) -> Vec<Pos<usize>> {
+    ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
             &Spin::Some(cell.index),
             cell.center().to_usize(),
@@ -149,7 +149,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
         &self,
         cell: &RelCell<impl Cellular>,
         search_scaler: f32
-    ) -> Vec<Pos<usize>> {
+    ) -> Box<[Pos<usize>]> {
         let search_diam = (
             search_scaler
                 * 2.

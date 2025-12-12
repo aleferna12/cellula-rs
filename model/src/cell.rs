@@ -36,12 +36,12 @@ impl Cell {
         }
     }
 
-    /// Returns a reference to this cell's inner [cellulars_lib::basic_cell::BasicCell].
+    /// Returns a reference to this cell's inner [cellulars_lib::basic_cell::BasicCell](BasicCell).
     pub fn basic_cell(&self) -> &BasicCell {
         &self.basic_cell
     }
 
-    /// Returns a mutable reference to this cell's inner [cellulars_lib::basic_cell::BasicCell].
+    /// Returns a mutable reference to this cell's inner [cellulars_lib::basic_cell::BasicCell](BasicCell).
     pub fn basic_cell_mut(&mut self) -> &mut BasicCell {
         &mut self.basic_cell
     }

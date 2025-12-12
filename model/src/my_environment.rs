@@ -45,12 +45,12 @@ impl MyEnvironment {
         env_
     }
 
-    /// Returns a reference to the inner [cellulars_lib::environment::Environment].
+    /// Returns a reference to the inner [cellulars_lib::environment::Environment](Environment).
     pub fn env(&self) -> &Environment<Cell, MooreNeighbourhood, BoundaryType> {
         &self.env
     }
 
-    /// Returns a mutable reference to the inner [cellulars_lib::environment::Environment].
+    /// Returns a mutable reference to the inner [cellulars_lib::environment::Environment](Environment).
     pub fn env_mut(&mut self) -> &mut Environment<Cell, MooreNeighbourhood, BoundaryType> {
         &mut self.env
     }
@@ -94,11 +94,11 @@ impl MyEnvironment {
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
             Pos::new(pos_isize.x + cell_side, pos_isize.y + cell_side)
         );
-        let positions = rect
+        let positions: Box<_> = rect
             .iter_positions()
             .filter_map(|pos| self.env.bounds.lattice_boundary.valid_pos(pos))
             .map(|pos| pos.to_usize())
-            .collect::<Vec<_>>();
+            .collect();
         self.spawn_cell(
             empty_cell,
             positions
@@ -113,7 +113,7 @@ impl MyEnvironment {
             .get_cell(mom_index);
         // TODO!: This searches cell positions twice (once to find div axis).
         let div_axis = self.find_division_axis(mom, self.cell_search_scaler);
-        let new_positions: Vec<_> = self
+        let new_positions: Box<_> = self
             .env
             .search_cell_box(mom, self.cell_search_scaler)
             .into_iter()
