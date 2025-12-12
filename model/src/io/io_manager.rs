@@ -16,11 +16,12 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
+use num_traits::NumCast;
+use polars::frame::row::Row;
+use polars::polars_utils::float::IsFloat;
 use polars::prelude::*;
 use std::io;
 use std::path::{Path, PathBuf};
-use num_traits::NumCast;
-use polars::frame::row::Row;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -125,7 +126,7 @@ impl IoManager {
         row.0[col_index].get_str().context("could not extract `{col_name}`")
     }
 
-    fn get_col_num<T: NumCast>(row: &Row, col_name: &str, celldf: &DataFrame) -> anyhow::Result<T> {
+    fn get_col_num<T: NumCast + IsFloat>(row: &Row, col_name: &str, celldf: &DataFrame) -> anyhow::Result<T> {
         let col_index = celldf
             .get_column_index(col_name)
             .ok_or(anyhow::anyhow!("missing `{col_name}`"))?;
@@ -245,7 +246,7 @@ impl IoManager {
 
     // Experimented with:
     //   - saving Medium and Solid as negative i32s
-    //   - parallelisation with rayon
+    //   - parallelization with rayon
     // and performance diff was minimal and file size became larger, keeping as is
     fn write_lattice(file_path: &Path, lattice: &Lattice<Spin>) -> PolarsResult<u64>{
         let mut cols = vec![];
