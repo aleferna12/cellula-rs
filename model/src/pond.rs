@@ -90,9 +90,9 @@ impl Pond {
                     let new_index = new_cell.index;
                     // We could also instead choose to mutate at a fix rate throughout the cell's life cycle
                     self.env.cells.get_cell_mut(new_index).genome.attempt_mutate(&mut self.rng);
+                    *n_children -= 1;
                 }
 
-                *n_children -= 1;
                 if *n_children > 1 {
                     divisions_left = true;
                 }
