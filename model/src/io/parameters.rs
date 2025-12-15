@@ -9,10 +9,10 @@ use strum_macros::EnumIter;
 static RUN_NOTES: &str = "\
     Model parameters are loaded from a TOML file specified by CONFIG.\n\
     You can also override any parameter from the CONFIG file with environmental variables \
-    (use `__` for the parameter section, e.g. `GENERAL__TIME_STEPS`).\n\
-    Use commas to pass parameters that expect lists (e.g. `IO__PLOT__ORDER=spin,center`).
+    (use `CPM` as a prefix and `__` as a separator for the parameter section, e.g. `CPM__GENERAL__TIME_STEPS`).\n\
+    Use commas to pass parameters that expect lists (e.g. `CPM__IO__PLOT__ORDER=spin,center`).
     \n\
-    Documentation for parameters can be found in `examples/64_cells.toml`.\n\
+    Documentation for parameters can be found in `model/examples/64_cells.toml`.\n\
 ";
 
 static RESUME_NOTES: &str = "\
@@ -57,7 +57,7 @@ pub enum Commands {
 ///
 /// Documentation for each parameter is in `examples/64_cells.toml`
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Parameters {
     pub general: GeneralParameters,
     pub pond: PondParameters,
@@ -77,12 +77,15 @@ impl Parameters {
             ).add_source(
                 // Converts an env CPM_TIME_STEPS to time-steps
                 config::Environment::default()
+                    .prefix("CPM")
+                    .prefix_separator("__")
                     .separator("__")
                     .convert_case(config::Case::Kebab)
                     .list_separator(",")
                     .with_list_parse_key("io.plot.order")
                     .try_parsing(true)
-            ).build()?.try_deserialize()?;
+            ).build()?
+            .try_deserialize()?;
         params.check_conflicts()?;
         Ok(params)
     }
@@ -106,7 +109,7 @@ impl Parameters {
 
 /// General simulation parameters.
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct GeneralParameters {
     pub time_steps: u32,
     pub seed: Option<u64>
@@ -114,7 +117,7 @@ pub struct GeneralParameters {
 
 /// Parameters determining how a pond is created (see [pond](crate::pond));
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PondParameters {
     pub width: usize,
     pub height: usize,
@@ -125,7 +128,7 @@ pub struct PondParameters {
 
 /// Parameters specifying how cells are created and behave (see [cell](crate::cell)).
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct CellParameters {
     pub starting_cells: CellIndex,
     pub max_cells: CellIndex,
@@ -142,7 +145,7 @@ pub struct CellParameters {
 
 /// Parameters for the cellular automata update algorithm (see [my_potts](crate::my_potts)).
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PottsParameters {
     pub boltz_t: f32,
     pub size_lambda: f32,
@@ -152,7 +155,7 @@ pub struct PottsParameters {
 
 /// Parameters used in cell adhesion (see [cellulars_lib::adhesion]).
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct AdhesionParameters {
     pub cell_energy: f32,
     pub medium_energy: f32,
@@ -161,7 +164,7 @@ pub struct AdhesionParameters {
 
 /// Parameters used to control IO operations (see [io_manager](crate::io::io_manager)).
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct IoParameters {
     pub outdir: String,
     #[serde(default = "param_defaults::false_flag")]
@@ -177,7 +180,7 @@ pub struct IoParameters {
 
 /// Parameters used to determine how and when to save data (see [io_manager](crate::io::io_manager)).
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct DataParameters {
     pub cells_period: u32,
     pub lattice_period: u32
@@ -185,7 +188,7 @@ pub struct DataParameters {
 
 /// Parameters used to display the real-time movie of the simulation (see [movie_maker](crate::io::movie_maker)).
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct MovieParameters {
     #[serde(default = "param_defaults::false_flag")]
     pub show: bool,
@@ -197,7 +200,7 @@ pub struct MovieParameters {
 /// Parameters using for plotting (see [plot](crate::io::plot)).
 // We flatten the parameters here to allow order to be an env variable
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PlotParameters {
     pub order: Box<[PlotType]>,
     pub solid_color: String,
