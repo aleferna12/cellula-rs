@@ -97,6 +97,7 @@ impl Parameters {
         if !self.pond.enclose {
             anyhow::bail!("`enclose` must be `true` when the `fixed_boundary` feature is enabled")
         }
+        #[cfg(not(feature = "static_adhesion"))]
         if self.cell.genome.length < 1 || self.cell.genome.length > 64 {
             anyhow::bail!("`cell.genome.length` must be between 1 and 64")
         }
