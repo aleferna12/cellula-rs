@@ -125,7 +125,8 @@ pub struct FitCell<'c> {
 
 impl Fit for FitCell<'_> {
     fn fitness(&self) -> f32 {
-        let ratio = self.half_fit / self.cell.chem_mass as f32;
+        let avg_chem = self.cell.chem_mass as f32 / self.cell.area as f32;
+        let ratio = self.half_fit / avg_chem;
         1. / (1. + ratio * ratio)
     }
 }

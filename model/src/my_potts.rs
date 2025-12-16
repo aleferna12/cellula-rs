@@ -31,7 +31,8 @@ impl MyPotts {
     fn contact_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
         let act_source = self.mean_act(pos_source, env);
         let act_target = self.mean_act(pos_target, env);
-        -self.act_lambda / env.act_max as f32 * (act_source - act_target)
+        // There is an error in Niculescu where the source and targets are switched
+        self.act_lambda / env.act_max as f32 * (act_target - act_source)
     }
 
     fn contact_chemotaxis(&self, cell_index: CellIndex, env: &MyEnvironment) -> f32 {
@@ -43,7 +44,7 @@ impl MyPotts {
             + self.chemotaxis_min
     }
 
-    /// Geometric mean of Act content of neighbourhood of `pos`, multiplied by the chem-polarisation term.
+    /// Geometric mean of Act content of neighbourhood of `pos`, multiplied by the chem-polarization term.
     fn mean_act(&self, pos: Pos<usize>, env: &MyEnvironment) -> f32 {
         let cell_spin = env.cell_lattice[pos];
         let Spin::Some(cell_index) = cell_spin else {

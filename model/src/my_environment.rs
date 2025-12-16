@@ -25,7 +25,7 @@ pub struct MyEnvironment {
     pub max_chem: u32,
     population_exploded: bool,
     corners: [Pos<usize>; 4],
-    next_corner: usize,
+    current_corner: usize,
 }
 
 #[bon]
@@ -61,14 +61,14 @@ impl MyEnvironment {
             max_chem: Self::distance(
                 (0, 0).into(),
                 (env.cell_lattice.width(), env.cell_lattice.height()).into()
-            ).round() as u32,
+            ).round() as u32 + 1,
             population_exploded: false,
             corners: [
                 (0, 0).into(), (env.width() - 1, 0).into(),
                 (0, env.height() - 1).into(),
                 (env.width() - 1, env.height() - 1).into()
             ],
-            next_corner: 0,
+            current_corner: 0,
             env,
             cell_search_scaler,
             max_cells,
@@ -76,6 +76,10 @@ impl MyEnvironment {
             chem_lattice,
             act_lattice
         }
+    }
+
+    pub fn chem_center(&self) -> Pos<usize> {
+        self.corners[self.current_corner]
     }
 
     fn distance2(pos1: Pos<usize>, pos2: Pos<usize>) -> usize {
@@ -87,9 +91,13 @@ impl MyEnvironment {
         (Self::distance2(pos1, pos2) as f32).sqrt()
     }
 
-    pub fn make_chem_gradient(&mut self, center: Pos<usize>) {
+    pub fn chem_signal(&self, pos: Pos<usize>, chem_center: Pos<usize>) -> u32 {
+        self.max_chem - Self::distance(pos, chem_center).round() as u32
+    }
+
+    fn make_chem_gradient(&mut self, chem_center: Pos<usize>) {
         for pos in self.chem_lattice.iter_positions() {
-            let new_chem = self.max_chem - Self::distance(pos, center).round() as u32;
+            let new_chem = self.chem_signal(pos, chem_center);
             if let Spin::Some(cell_index) = self.cell_lattice[pos] {
                 let prev_chem = self.chem_lattice[pos];
                 let cell = self.env.cells.get_cell_mut(cell_index);
@@ -112,13 +120,12 @@ impl MyEnvironment {
         }
     }
 
-    pub fn make_next_chem_gradient(&mut self, rng: &mut impl Rng) -> Pos<usize> {
-        let curr_corner = self.next_corner;
-        self.make_chem_gradient(self.corners[curr_corner]);
-        while self.next_corner == curr_corner {
-            self.next_corner = rng.random_range(0..self.corners.len());
+    pub fn make_next_chem_gradient(&mut self, rng: &mut impl Rng) {
+        let curr_corner = self.current_corner;
+        while self.current_corner == curr_corner {
+            self.current_corner = rng.random_range(0..self.corners.len());
         }
-        self.corners[curr_corner]
+        self.make_chem_gradient(self.corners[curr_corner]);
     }
 
     pub fn can_add_cell(&mut self) -> bool {

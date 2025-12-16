@@ -18,7 +18,8 @@ enclose = true
 neigh-r = 1
 # Period with which the gradient is erased and centered around a new location.
 season-duration = 512
-# Distance from the center of the gradient at which the fitness of cells is 0.5.
+# Chemical concentration at which the fitness of cells is 0.5.
+# The chemical concentration is the diagonal of the lattice - the distance of a site from the centre of the gradient.
 half-fitness = 50.0
 # Number of MCSperformed between rounds of cell divisions when a single cell is selected more than once.
 reproduction-steps = 5
