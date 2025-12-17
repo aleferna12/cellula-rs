@@ -14,4 +14,5 @@ model = ["dep:model"]
 
 [dependencies]
 model = { path =  "../model", optional = true }
-pyo3 = "0.27.0"
+pyo3 = "0.26.0"
+pyo3-polars = "0.25.0"
