@@ -1,0 +1,17 @@
+[package]
+name = "analyses"
+version = "0.1.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "rust"
+crate-type = ["cdylib"]
+
+[features]
+default = ["model"]
+model = ["dep:model"]
+
+[dependencies]
+model = { path =  "../model", optional = true }
+pyo3 = "0.27.0"

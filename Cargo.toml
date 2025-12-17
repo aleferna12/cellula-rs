@@ -1,5 +1,5 @@
 [workspace]
-members = ["cellulars-lib", "model"]
+members = ["cellulars-lib", "model", "analyses"]
 resolver = "3"
 
 [profile.fastest]
