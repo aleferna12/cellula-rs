@@ -29,8 +29,9 @@ pub struct MyPotts {
 impl MyPotts {
     /// This includes the combined copy biases for Act and chem-polarization.
     fn contact_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
-        #[cfg(not(feature = "chem-polarization"))]
-        return 0.0;
+        if !cfg!(feature = "chem-polarization") {
+            return 0.0;
+        }
 
         let act_source = self.mean_act(pos_source, env);
         let act_target = self.mean_act(pos_target, env);

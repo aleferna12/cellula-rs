@@ -86,18 +86,18 @@ impl Parameters {
     }
     
     pub fn check_conflicts(&self) -> anyhow::Result<()> {
-        #[cfg(not(feature = "fixed_boundary"))]
+        #[cfg(not(feature = "fixed-boundary"))]
         if self.pond.enclose && self.pond.neigh_r > 1 {
             anyhow::bail!(
                 "`enclose` can only be used with `neigh-r=1`. \
-                 If you need an enclosed pond with larger neighbourhoods, enable the `fixed_boundary` feature."
+                 If you need an enclosed pond with larger neighbourhoods, enable the `fixed-boundary` feature."
             );
         }
-        #[cfg(feature = "fixed_boundary")]
+        #[cfg(feature = "fixed-boundary")]
         if !self.pond.enclose {
-            anyhow::bail!("`enclose` must be `true` when the `fixed_boundary` feature is enabled")
+            anyhow::bail!("`enclose` must be `true` when the `fixed-boundary` feature is enabled")
         }
-        #[cfg(not(feature = "static_adhesion"))]
+        #[cfg(not(feature = "static-adhesion"))]
         if self.cell.genome.length < 1 || self.cell.genome.length > 64 {
             anyhow::bail!("`cell.genome.length` must be between 1 and 64")
         }
