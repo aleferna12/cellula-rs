@@ -92,14 +92,14 @@ impl Parameters {
 
     /// Checks for conflicting parameters choices and panics if any are found.
     pub fn check_conflicts(&self) -> anyhow::Result<()> {
-        #[cfg(not(feature = "fixed_boundary"))]
+        #[cfg(not(feature = "fixed-boundary"))]
         if self.pond.enclose && self.pond.neigh_r > 1 {
             anyhow::bail!(
                 "`enclose` can only be used with `neigh-r=1`. \
                  If you need an enclosed pond with larger neighbourhoods, enable the `fixed_boundary` feature."
             );
         }
-        #[cfg(feature = "fixed_boundary")]
+        #[cfg(feature = "fixed-boundary")]
         if !self.pond.enclose {
             anyhow::bail!("`enclose` must be `true` when the `fixed_boundary` feature is enabled")
         }

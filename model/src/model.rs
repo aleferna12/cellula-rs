@@ -268,7 +268,7 @@ impl Model {
 
 impl Step for Model {
     fn step(&mut self) {
-        if self.pond.time_step() % self.info_period == 0 {
+        if self.pond.time_step().is_multiple_of(self.info_period) {
             self.log_info();
         }
 

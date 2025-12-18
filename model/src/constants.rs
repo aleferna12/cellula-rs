@@ -1,18 +1,18 @@
 //! Contains constants that are set at compile-time with feature flags.
 
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
-#[cfg(not(feature = "fixed_boundary"))]
+#[cfg(not(feature = "fixed-boundary"))]
 use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
-#[cfg(feature = "fixed_boundary")]
+#[cfg(feature = "fixed-boundary")]
 use cellulars_lib::positional::boundaries::FixedBoundary;
 
 /// Boundary type of the environment.
 ///
 /// [FixedBoundary](cellulars_lib::positional::boundaries::FixedBoundary) is ~18% faster than [UnsafePeriodicBoundary]
 /// (in total run time).
-#[cfg(not(feature = "fixed_boundary"))]
+#[cfg(not(feature = "fixed-boundary"))]
 pub type BoundaryType = UnsafePeriodicBoundary<f32>;
-#[cfg(feature = "fixed_boundary")]
+#[cfg(feature = "fixed-boundary")]
 pub type BoundaryType = FixedBoundary<f32>;
 
 // TODO: add feature flag

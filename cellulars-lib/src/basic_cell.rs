@@ -30,7 +30,7 @@ impl BasicCell {
 
     /// Makes a new, ready-to-go cell from a pre-existing state.
     ///
-    /// Useful to initialise a cell from a backup.
+    /// Useful to initialize a cell from a backup.
     /// For most use cases, use [BasicCell::new_empty()] instead.
     pub fn new_ready(
         area: u32,
