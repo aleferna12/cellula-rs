@@ -12,3 +12,4 @@ dependencies:
     - jupyter==1.1.1
     - colorir==2.1.3
     - maturin==1.10.2
+    - -e ./analyses
