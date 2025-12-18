@@ -17,7 +17,6 @@ max-cells = 1024
 search-radius = 3
 starting-area = 64
 target-area = 64
-div-area = 128
 target-perimeter = 120
 divide = true
 
@@ -49,7 +48,6 @@ image-format = "webp"
 
 [io.data]
 cells-period = 1000
-genomes-period = 5000
 lattice-period = 5000
 
 [io.movie]
@@ -70,5 +68,3 @@ act-min-color = "#ff00ff"
 act-max-color = "#ffff00"
 chem-min-color = "#000000"
 chem-max-color = "#ffffff"
-migrating-color = "#b30000"
-dividing-color = "#045a8d"

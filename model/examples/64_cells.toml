@@ -38,8 +38,6 @@ search-radius = 3.0
 starting-area = 64
 # Target cell area.
 target-area = 64
-# Cell area before division.
-div-area = 128
 # Target cell perimeter.
 target-perimeter = 120
 # Set to `false` to disable division.
@@ -97,8 +95,6 @@ image-format = "webp"
 [io.data]
 # Period (in MCS) with which to save the cell attributes as a parquet file.
 cells-period = 2048
-# Period (in MCS) with which to save the cells' genomes as a JSON file.
-genomes-period = 4096
 # Period (in MCS) with which to save a parquet file containing the cell lattice.
 lattice-period = 4096
 
@@ -136,10 +132,6 @@ chem-max-color = "#ffffff"
 act-min-color = "#ff00ff"
 # With which color to plot the maximum value for the act in the environment.
 act-max-color = "#ffff00"
-# With which color to plot migrating cells.
-migrating-color = "#b30000"
-# With which color to plot dividing cells.
-dividing-color = "#045a8d"
 
 [io.movie]
 # Whether the real-time movie should be shown or not.
