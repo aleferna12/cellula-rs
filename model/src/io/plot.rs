@@ -9,7 +9,7 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::spin::Spin;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
-use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
+use palette::{FromColor, IntoColor, Lchuv, Mix, Srgb, WithAlpha};
 use rand_distr::num_traits::AsPrimitive;
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -20,9 +20,9 @@ pub trait Plot {
 }
 
 pub trait ContinuousPlot: Plot {
-    fn min_color(&self) -> Luv;
-    fn max_color(&self) -> Luv;
-    fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Luv, LerpError> {
+    fn min_color(&self) -> Lchuv;
+    fn max_color(&self) -> Lchuv;
+    fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Lchuv, LerpError> {
         if max < min {
             return Err(LerpError::NegativeRange);
         }
@@ -160,8 +160,8 @@ pub struct CellTypePlot {
 }
 
 pub struct AreaPlot {
-    pub min_color: Luv,
-    pub max_color: Luv
+    pub min_color: Lchuv,
+    pub max_color: Lchuv
 }
 
 impl Plot for AreaPlot {
@@ -202,17 +202,17 @@ impl Plot for AreaPlot {
 }
 
 impl ContinuousPlot for AreaPlot {
-    fn min_color(&self) -> Luv {
+    fn min_color(&self) -> Lchuv {
         self.min_color
     }
-    fn max_color(&self) -> Luv {
+    fn max_color(&self) -> Lchuv {
         self.max_color
     }
 }
 
 pub struct ChemPlot {
-    pub min_color: Luv,
-    pub max_color: Luv
+    pub min_color: Lchuv,
+    pub max_color: Lchuv
 }
 
 impl Plot for ChemPlot {
@@ -238,18 +238,18 @@ impl Plot for ChemPlot {
 }
 
 impl ContinuousPlot for ChemPlot {
-    fn min_color(&self) -> Luv {
+    fn min_color(&self) -> Lchuv {
         self.min_color
     }
 
-    fn max_color(&self) -> Luv {
+    fn max_color(&self) -> Lchuv {
         self.max_color
     }
 }
 
 pub struct ActPlot {
-    pub min_color: Luv,
-    pub max_color: Luv
+    pub min_color: Lchuv,
+    pub max_color: Lchuv
 }
 
 impl Plot for ActPlot {
@@ -278,11 +278,11 @@ impl Plot for ActPlot {
 }
 
 impl ContinuousPlot for ActPlot {
-    fn min_color(&self) -> Luv {
+    fn min_color(&self) -> Lchuv {
         self.min_color
     }
 
-    fn max_color(&self) -> Luv {
+    fn max_color(&self) -> Lchuv {
         self.max_color
     }
 }
@@ -334,8 +334,8 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
     }
 }
 
-pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {
-    Luv::from_color(srgb.into_linear::<f32>())
+pub fn srgb_to_luv(srgb: Srgb<u8>) -> Lchuv {
+    Lchuv::from_color(srgb.into_linear::<f32>())
 }
 
 pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, HexError> {
