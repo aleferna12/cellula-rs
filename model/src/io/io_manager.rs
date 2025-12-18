@@ -257,7 +257,7 @@ impl IoManager {
         let time_str = time_step.to_string();
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
-        if time_step % self.cells_period == 0 {
+        if time_step.is_multiple_of(self.cells_period) {
             let mut celldf = env.cells.to_dataframe()?;
             let file_path = self.outdir
                 .join(CELLS_PATH)
@@ -273,7 +273,7 @@ impl IoManager {
             }
         }
 
-        if time_step % self.lattices_period == 0 {
+        if time_step.is_multiple_of(self.lattices_period) {
             let cell_lat_file_path = self.outdir
                 .join(CELL_LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
@@ -338,7 +338,7 @@ impl IoManager {
         // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
         let movie_update = if let Some(mm) = &self.movie_maker {
-            time_step % mm.frame_period == 0 && mm.window_works()
+            time_step.is_multiple_of(mm.frame_period) && mm.window_works()
         } else {
             false
         };
@@ -354,7 +354,7 @@ impl IoManager {
             mm.update(&resized)?
         }
 
-        if time_step % self.image_period == 0 {
+        if time_step.is_multiple_of(self.image_period) {
             if frame.is_none() {
                 frame = Some(self.make_simulation_image(env));
             }
