@@ -28,9 +28,9 @@ impl AdhesionSystem for BitAdhesion {
                 } else {
                     let gen1 = &context.cells.get_cell(c1).genome;
                     let gen2 = &context.cells.get_cell(c2).genome;
-                    let energy = Self::contact_energy(gen1.ligands(), gen2.receptors()) as f32
-                        + Self::contact_energy(gen2.ligands(), gen1.receptors()) as f32;
-                    2. * self.static_adhesion.cell_energy + energy
+                    let energy = Self::contact_energy(gen1.ligands(), gen2.receptors())
+                        + Self::contact_energy(gen2.ligands(), gen1.receptors());
+                    2. * self.static_adhesion.cell_energy + energy as f32
                 }
             }
             (Spin::Some(_), Spin::Medium) | (Spin::Medium, Spin::Some(_)) => self.static_adhesion.medium_energy,
