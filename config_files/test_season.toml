@@ -16,9 +16,8 @@ reproduction-steps = 50
 starting-cells = 100
 max-cells = 1024
 search-radius = 4.0
-starting-area = 64
+starting-area = 200
 target-area = 200
-div-area = 128
 target-perimeter = 180
 divide = true
 
