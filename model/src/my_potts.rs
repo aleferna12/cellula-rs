@@ -27,8 +27,11 @@ pub struct MyPotts {
 }
 
 impl MyPotts {
-    /// This includes the combined copy biases for Act and chem-polarisation.
+    /// This includes the combined copy biases for Act and chem-polarization.
     fn contact_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
+        #[cfg(not(feature = "chem-polarization"))]
+        return 0.0;
+
         let act_source = self.mean_act(pos_source, env);
         let act_target = self.mean_act(pos_target, env);
         // There is an error in Niculescu where the source and targets are switched

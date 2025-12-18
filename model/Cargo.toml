@@ -5,9 +5,10 @@ edition = "2024"
 description = "A very fast, extensible CPM implementation."
 
 [features]
-default = ["fixed_boundary"]
+default = ["fixed_boundary", "chem-polarization"]
 fixed_boundary = []
 static_adhesion = []
+chem-polarization = []
 
 [[bench]]
 name = "main"

@@ -17,10 +17,9 @@ impl AdhesionSystem for BitAdhesion {
     type Context = MyEnvironment;
 
     fn adhesion_energy(&self, spin1: Spin, spin2: Spin, context: &Self::Context) -> f32 {
-        // This is a feature because it quite heavily affects performance
-        if cfg!(feature = "static_adhesion") {
-            return self.static_adhesion.adhesion_energy(spin1, spin2, &());
-        }
+        #[cfg(feature = "static_adhesion")]
+        return self.static_adhesion.adhesion_energy(spin1, spin2, &());
+
         match (spin1, spin2) {
             (Spin::Some(c1), Spin::Some(c2)) => {
                 if c1 == c2 {
