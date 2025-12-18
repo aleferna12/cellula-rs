@@ -133,7 +133,6 @@ pub struct CellParameters {
     pub search_radius: f32,
     pub starting_area: u32,
     pub target_area: u32,
-    pub div_area: u32,
     pub target_perimeter: u32,
     #[serde(default = "param_defaults::true_flag")]
     pub divide: bool,
