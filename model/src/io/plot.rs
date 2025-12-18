@@ -313,19 +313,19 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                     color: hex_to_srgb(&params.chem_center_color)?
                 }),
                 PlotType::Area => Box::new(AreaPlot{
-                    min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
+                    min_color: srgb_to_lchuv(hex_to_srgb(&params.area_min_color)?),
+                    max_color: srgb_to_lchuv(hex_to_srgb(&params.area_max_color)?),
                 }),
                 PlotType::Border => Box::new(BorderPlot {
                     color: hex_to_srgb(&params.border_color)?
                 }),
                 PlotType::Chem => Box::new(ChemPlot {
-                    min_color: srgb_to_luv(hex_to_srgb(&params.chem_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.chem_max_color)?)
+                    min_color: srgb_to_lchuv(hex_to_srgb(&params.chem_min_color)?),
+                    max_color: srgb_to_lchuv(hex_to_srgb(&params.chem_max_color)?)
                 }),
                 PlotType::Act => Box::new(ActPlot {
-                    min_color: srgb_to_luv(hex_to_srgb(&params.act_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.act_max_color)?)
+                    min_color: srgb_to_lchuv(hex_to_srgb(&params.act_min_color)?),
+                    max_color: srgb_to_lchuv(hex_to_srgb(&params.act_max_color)?)
                 })
             };
             plots.push(plot);
@@ -334,7 +334,7 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
     }
 }
 
-pub fn srgb_to_luv(srgb: Srgb<u8>) -> Lchuv {
+pub fn srgb_to_lchuv(srgb: Srgb<u8>) -> Lchuv {
     Lchuv::from_color(srgb.into_linear::<f32>())
 }
 
