@@ -9,17 +9,10 @@ use strum_macros::EnumIter;
 static RUN_NOTES: &str = "\
     Model parameters are loaded from a TOML file specified by CONFIG.\n\
     You can also override any parameter from the CONFIG file with environmental variables \
-    (use `CPM` as a prefix and `__` as a separator for the parameter section, e.g. `CPM__GENERAL__TIME_STEPS`).\n\
+    (use `CPM` as a prefix and `__` as a separator for the parameter section, e.g. `CPM__GENERAL__TIME_STEPS=100`).\n\
     Use commas to pass parameters that expect lists (e.g. `CPM__IO__PLOT__ORDER=spin,center`).
     \n\
     Documentation for parameters can be found in `model/examples/64_cells.toml`.\n\
-";
-
-static RESUME_NOTES: &str = "\
-    Model parameters can be specified via CONFIG, or by setting environmental variables \
-    (see help of the `run` subcommand).\n\
-    If CONFIG is not specified and no environmental variables are set, \
-    the simulation runs with its original parameters.
 ";
 
 /// CLI tool that executes [Commands].
@@ -40,14 +33,14 @@ pub enum Commands {
         config: String
     },
     /// Resume a previous run
-    #[command(after_help = RESUME_NOTES)]
     Resume {
         /// Path to the directory of the simulation to be resumed
         directory: String,
-        // TODO!: make optional and find last time_step
-        /// Time step from which to restore the data from
-        time_step: u32,
-        /// Path to a TOML file with parameters
+        /// Time step from which to restore the data from (if omitted, the last time-step will be used)
+        #[arg(short, long)]
+        time_step: Option<u32>,
+        #[arg(short, long)]
+        /// Path to a TOML file with parameters (if omitted, will read parameters from the run's `config.toml` file)
         config: Option<String>
     }
 }

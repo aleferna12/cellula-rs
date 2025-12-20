@@ -1,5 +1,6 @@
 //! Contains logic related to [IoManager].
 
+use std::collections::HashSet;
 use crate::cell::{Cell, CellType};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
@@ -320,6 +321,34 @@ impl IoManager {
         }
         flip_vertical_in_place(&mut image);
         image
+    }
+
+    pub fn find_last_time_step(dir: impl AsRef<Path>) -> anyhow::Result<u32> {
+        let dir = dir.as_ref();
+        let paths = [CELLS_PATH, LATTICES_PATH];
+        let mut intersection = HashSet::new();
+        for path in paths {
+            let full_path = dir.join(path);
+            let file_steps = std::fs::read_dir(full_path)?
+                .filter_map(|maybe_file| {
+                    let file = maybe_file.ok()?;
+                    let file_name = file.file_name();
+                    let number_str = file_name.to_str()?.strip_suffix(".parquet")?;
+                    number_str.parse::<u32>().ok()
+                })
+                .collect();
+
+            if intersection.is_empty() {
+                intersection = file_steps;
+            } else {
+                intersection = intersection.intersection(&file_steps).copied().collect();
+            }
+        }
+
+        intersection
+            .into_iter()
+            .max()
+            .ok_or(anyhow::anyhow!("directory `{dir:?}` does not contain a valid back-up"))
     }
 }
 
