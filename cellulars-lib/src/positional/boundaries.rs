@@ -1,6 +1,5 @@
 //! Contains logic associated with boundary conditions and position validation.
 
-// TODO! remove inlines in this mod and benchmark
 use crate::positional::pos::Pos;
 use crate::positional::rect::{Rect, RectConversionError};
 use num::traits::Euclid;

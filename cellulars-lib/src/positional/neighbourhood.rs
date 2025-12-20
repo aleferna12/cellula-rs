@@ -1,7 +1,6 @@
 //! Contains logic associated with neighbourhoods for a discrete lattice.
 
 use crate::positional::pos::Pos;
-// TODO! test dynamic allocation instead of the const arrays
 
 const MAX_NEIGH_R: u8 = 16;
 const MOORE_SIZE: usize = 4 * MAX_NEIGH_R as usize * (MAX_NEIGH_R as usize + 1);
@@ -147,20 +146,7 @@ impl Neighbourhood for VonNeumannNeighbourhood {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::positional::edge::Edge;
     use std::collections::HashSet;
-
-    #[test]
-    fn test_neighbours_are_edges() {
-        let p1 = Pos::from((100, 100));
-        for r in 1..9 {
-            let neigh = MooreNeighbourhood::new(r);
-            for p2 in neigh.neighbours(p1) {
-                assert!(Edge::new_if_neighbour(p1.to_usize(), p2.to_usize(), r).is_ok());
-            }
-        }
-    }
-
     #[test]
     fn test_moore() {
         let first_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];

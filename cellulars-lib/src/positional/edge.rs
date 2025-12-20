@@ -29,21 +29,6 @@ impl Edge {
         Self { p1, p2 }
     }
 
-    // TODO: does this account for different neighbourhoods?
-    /// Makes a new edge while checking if `pos1` and `pos2` are neighbours.
-    pub fn new_if_neighbour(p1: Pos<usize>, p2: Pos<usize>, neigh_r: u8) -> Result<Self, EdgeError> {
-        let cx = p1.x.abs_diff(p2.x);
-        let cy = p1.y.abs_diff(p2.y);
-        let sum = cx + cy;
-        if sum == 0 {
-            return Err(EdgeError::SamePosition);
-        }
-        if sum > (neigh_r * 2) as usize {
-            return Err(EdgeError::NotNeighbours);
-        }
-        Ok(Self { p1, p2 })
-    }
-
     fn hash_u64(&self) -> u64 {
         let mut u1 = self.p1.pack_u32();
         let mut u2 = self.p2.pack_u32();

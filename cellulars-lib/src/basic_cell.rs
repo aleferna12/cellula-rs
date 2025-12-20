@@ -121,7 +121,6 @@ pub trait Cellular {
     fn area(&self) -> u32;
     /// Returns the center of mass of the cell.
     fn center(&self) -> Pos<f32>;
-    // TODO: we should code this property into an enum type
     /// Returns whether the cell is still valid or not.
     /// 
     /// Invalid cells cannot recover from this state, and can effectively be ignored by the simulation algorithm. 
