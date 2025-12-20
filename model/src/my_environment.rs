@@ -1,14 +1,14 @@
 //! Contains logic associated with [MyEnvironment].
 
 use crate::cell::Cell;
-use crate::constants::{BoundaryType, EPSILON};
+use crate::constants::{BoundaryType, NeighbourhoodType, EPSILON};
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment};
 use cellulars_lib::habitable::Habitable;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::boundaries::{Boundary, ToLatticeBoundary};
-use cellulars_lib::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
+use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
@@ -17,7 +17,7 @@ use rand::Rng;
 /// An environment that contains a chemical gradient and limits cell growth to [MyEnvironment::max_cells].
 #[derive(Clone)]
 pub struct MyEnvironment {
-    env: Environment<Cell, MooreNeighbourhood, BoundaryType>,
+    env: Environment<Cell, NeighbourhoodType, BoundaryType>,
     /// Lattice containing the chemical gradient.
     pub chem_lattice: Lattice<u32>,
     /// Scaler used to determine the radius of search for cell positions starting from its center.
@@ -30,7 +30,7 @@ pub struct MyEnvironment {
 impl MyEnvironment {
     /// Make a new [MyEnvironment] from an existing [Environment].
     pub fn new(
-        env: Environment<Cell, MooreNeighbourhood, BoundaryType>, 
+        env: Environment<Cell, NeighbourhoodType, BoundaryType>,
         max_cells: CellIndex,
         cell_search_scaler: f32
     ) -> Self {
@@ -46,12 +46,12 @@ impl MyEnvironment {
     }
 
     /// Returns a reference to the inner [cellulars_lib::environment::Environment](Environment).
-    pub fn env(&self) -> &Environment<Cell, MooreNeighbourhood, BoundaryType> {
+    pub fn env(&self) -> &Environment<Cell, NeighbourhoodType, BoundaryType> {
         &self.env
     }
 
     /// Returns a mutable reference to the inner [cellulars_lib::environment::Environment](Environment).
-    pub fn env_mut(&mut self) -> &mut Environment<Cell, MooreNeighbourhood, BoundaryType> {
+    pub fn env_mut(&mut self) -> &mut Environment<Cell, NeighbourhoodType, BoundaryType> {
         &mut self.env
     }
 
