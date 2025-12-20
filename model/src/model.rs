@@ -3,11 +3,12 @@
 use crate::cell::{Cell, CellType};
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::io::io_manager::IoManager;
-use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
 use crate::pond::Pond;
+#[cfg(feature = "movie")]
+use crate::io::movie_maker::MovieMaker;
 use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
@@ -84,32 +85,46 @@ impl Model {
     }
 
     fn setup_io(parameters: &Parameters, new_seed: u64) -> anyhow::Result<IoManager> {
-        let movie_maker = if parameters.io.movie.show {
-            match MovieMaker::new(
-                parameters.io.movie.width,
-                parameters.io.movie.height,
-                parameters.io.movie.frame_period
-            ) {
-                Ok(mm) => {
-                    log::info!("Creating window for real-time movie display");
-                    Some(mm)
-                },
-                Err(e) => {
-                    log::warn!("Failed to initialise movie maker with error `{e}`");
-                    None
+        #[cfg(feature = "movie")]
+        let movie_maker = if let Some(movie_params) = &parameters.io.movie {
+            if movie_params.show {
+                match MovieMaker::new(
+                    movie_params.width,
+                    movie_params.height,
+                    movie_params.frame_period
+                ) {
+                    Ok(mm) => {
+                        log::info!("Creating window for real-time movie display");
+                        Some(mm)
+                    },
+                    Err(e) => {
+                        log::warn!("Failed to initialise movie window with error `{e}`");
+                        None
+                    }
                 }
+            } else {
+                None
             }
-        } else { None };
+        } else {
+            log::info!("Not displaying movie since movie parameters were omitted");
+            None
+        };
+        #[cfg(not(feature = "movie"))]
+        if parameters.io.movie.is_some() {
+            log::info!("Not displaying movie since feature flag `movie` was not set");
+        }
 
-        let io = IoManager::builder()
+        let io_builder = IoManager::builder()
             .outdir(parameters.io.outdir.clone().into())
             .image_format(parameters.io.image_format.clone())
             .image_period(parameters.io.image_period)
             .cells_period(parameters.io.data.cells_period)
             .lattice_period(parameters.io.data.lattice_period)
-            .plots(parameters.io.plot.clone().try_into()?)
-            .maybe_movie_maker(movie_maker)
-            .build();
+            .plots(parameters.io.plot.clone().try_into()?);
+        #[cfg(feature = "movie")]
+        let io = io_builder.maybe_movie_maker(movie_maker).build();
+        #[cfg(not(feature = "movie"))]
+        let io = io_builder.build();
 
         log::info!("Creating output directories and copy of parameter file");
         if parameters.io.replace_outdir {

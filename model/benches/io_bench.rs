@@ -13,7 +13,10 @@ fn make_model(params: Parameters) -> Model {
 fn bench_io(c: &mut Criterion) {
     let mut params = Parameters::parse("examples/64_cells.toml").unwrap();
     params.io.image_period = 1000000;
-    params.io.movie.show = false;
+    #[cfg(feature = "movie")]
+    if let Some(movie_params) = &mut params.io.movie {
+        movie_params.show = false;
+    }
     for plot in PlotType::iter() {
         c.bench_with_input(
             BenchmarkId::new("plot", format!("{plot:?}")),

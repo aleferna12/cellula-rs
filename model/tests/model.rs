@@ -9,7 +9,10 @@ fn test_run() -> anyhow::Result<()> {
         params.io.outdir = format!("tests/{plot:?}");
         params.io.plot.order = vec![PT::Chem, PT::Spin, plot, PT::Border].into();
         params.io.image_period = 64;
-        params.io.movie.show = false;
+        #[cfg(feature = "movie")]
+        if let Some(movie_params) = &mut params.io.movie {
+            movie_params.show = false;
+        }
         params.cell.update_period = 1;
         let mut model = Model::new_from_parameters(params.clone())?;
         model.run_for(512);

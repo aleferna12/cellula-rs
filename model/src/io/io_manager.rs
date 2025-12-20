@@ -2,10 +2,11 @@
 
 use std::collections::HashSet;
 use crate::cell::{Cell, CellType};
-use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::io::plot::Plot;
 use crate::my_environment::MyEnvironment;
+#[cfg(feature = "movie")]
+use crate::io::movie_maker::MovieMaker;
 use anyhow::{bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
@@ -37,6 +38,7 @@ pub struct IoManager {
     /// Image format with which to save simulation images.
     pub image_format: String,
     /// Used to update the simulation video when it's time.
+    #[cfg(feature = "movie")]
     pub movie_maker: Option<MovieMaker>,
     plots: Box<[Box<dyn Plot>]>,
     image_period: u32,
@@ -277,11 +279,14 @@ impl IoManager {
     ) -> anyhow::Result<()> {
         // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
+
+        #[cfg(feature = "movie")]
         let movie_update = if let Some(mm) = &self.movie_maker {
             time_step.is_multiple_of(mm.frame_period) && mm.window_works()
         } else {
             false
         };
+        #[cfg(feature = "movie")]
         if movie_update {
             frame = Some(self.make_simulation_image(env));
             let mm = self.movie_maker.as_mut().unwrap();

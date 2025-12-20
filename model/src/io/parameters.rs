@@ -167,8 +167,8 @@ pub struct IoParameters {
     pub image_format: String,
     pub info_period: u32,
     pub data: DataParameters,
-    pub movie: MovieParameters,
-    pub plot: PlotParameters
+    pub plot: PlotParameters,
+    pub movie: Option<MovieParameters>,
 }
 
 /// Parameters used to determine how and when to save data (see [io_manager](crate::io::io_manager)).
@@ -180,6 +180,9 @@ pub struct DataParameters {
 }
 
 /// Parameters used to display the real-time movie of the simulation (see [movie_maker](crate::io::movie_maker)).
+///
+/// Omitting these from the configuration file disables the movie window (same as setting `show` = False).
+/// The `movie` feature flag must be on for the movie to be displayed.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct MovieParameters {
