@@ -34,9 +34,11 @@ act-max = 20
 act-lambda = 200.0
 
 [potts.adhesion]
-cell-energy = 24.0
-medium-energy = 28.0
-solid-energy = 28.0
+cell-energy = 20.0
+medium-energy = 20.0
+solid-energy = 20.0
+# Max gamma = 16.
+gene-energy = 32.0
 
 [io]
 outdir = "runs/"

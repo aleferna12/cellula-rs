@@ -163,7 +163,8 @@ pub struct PottsParameters {
 pub struct AdhesionParameters {
     pub cell_energy: f32,
     pub medium_energy: f32,
-    pub solid_energy: f32
+    pub solid_energy: f32,
+    pub gene_energy: f32
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -184,12 +184,12 @@ impl Potts for MyPotts {
             energy -= self.adhesion.adhesion_energy(
                 spin_target,
                 neigh,
-                env
+                &env.cells
             );
             energy += self.adhesion.adhesion_energy(
                 spin_source,
                 neigh,
-                env
+                &env.cells
             );
         }
         energy

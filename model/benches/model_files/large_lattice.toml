@@ -38,6 +38,7 @@ act-lambda = 20.0
 cell-energy = 16
 medium-energy = 16
 solid-energy = 16
+gene-energy = 16
 
 [io]
 outdir = "benches/model_outputs/large_lattice"

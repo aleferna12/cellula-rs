@@ -71,11 +71,13 @@ act-lambda = 20.0
 
 [potts.adhesion]
 # Minimum adhesion energy at cell-cell interfaces (summed to adhesion from adh. proteins).
-cell-energy = 12.0
+cell-energy = 16.0
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16.0
 # Adhesion energy at cell-solid interfaces.
 solid-energy = 16.0
+# Adhesion energy contribution from the cells' adhesion genes.
+gene-energy = 16.0
 
 [io]
 # Output directory for files.
