@@ -8,7 +8,8 @@ height = 500
 enclose = true
 neigh-r = 1
 season-duration = 2_500_000
-half-fitness = 250
+# 250 lattice-lengths away from center of gradient
+half-fitness = 457
 reproduction-steps = 50
 
 [cell]
@@ -33,9 +34,9 @@ act-max = 20
 act-lambda = 200.0
 
 [potts.adhesion]
-cell-energy = 12.0
-medium-energy = 16.0
-solid-energy = 16.0
+cell-energy = 24.0
+medium-energy = 28.0
+solid-energy = 28.0
 
 [io]
 outdir = "runs/"
