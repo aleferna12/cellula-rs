@@ -306,6 +306,9 @@ impl MyEnvironment {
         self.spawn_solid(border_positions.into_iter());
     }
 
+    /// Updates the perimeter to be shifted on the cell corresponding to `cell_index` on the next call to [MyEnvironment::grant_position()].
+    /// 
+    /// This function should be called exactly once on the source and the target of the site copy, before the call to [MyEnvironment::grant_position()].   
     pub fn update_delta_perimeter(
         &mut self,
         source: bool,
@@ -363,6 +366,7 @@ impl Habitable for MyEnvironment {
             let to_cell = self.env.cells.get_cell_mut(index);
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
+            to_cell.delta_perimeter = None;
             self.act_lattice[pos] = self.act_max;
         } else {
             self.act_lattice[pos] = 0;
@@ -371,6 +375,7 @@ impl Habitable for MyEnvironment {
             let from_cell = self.env.cells.get_cell_mut(index);
             from_cell.shift_position(pos, false, &self.env.bounds.boundary);
             from_cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
+            from_cell.delta_perimeter = None;
             // If the copy kills the cell
             if from_cell.area() == 0 {
                 from_cell.apoptosis();
