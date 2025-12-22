@@ -67,6 +67,7 @@ impl Genome for BitGenome {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -86,9 +87,18 @@ mod tests {
     }
 
     #[test]
-    fn test_mut_bit() {
+    fn test_flip_bit() {
         let ligand = 0b1101u64;
         assert_eq!(0b1100, BitGenome::flip_bit(ligand, 0));
         assert_eq!(0b1111, BitGenome::flip_bit(ligand, 1));
+    }
+
+    #[test]
+    fn test_mut() {
+        let mut rng = rand::rng();
+        let mut bit_genome = BitGenome::new_random(0.1, 4, &mut rng).unwrap();
+        let mutated = (0..100000).reduce(|i, _| i + bit_genome.attempt_mutate(&mut rng)).unwrap();
+        // 10% acceptable error
+        assert!(mutated > 9000 * 8 && mutated < 11000 * 8);
     }
 }
