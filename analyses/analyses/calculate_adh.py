@@ -9,23 +9,17 @@ def dec_to_bitarray(num, width=None):
     return np.array(list(np.binary_repr(num, width)), dtype=int)
 
 
-def contact_energy_table(weights: np.ndarray):
-    max_i = 2 ** len(weights) - 1
-    table = np.empty((max_i + 1, max_i + 1))
-    for i in range(max_i + 1):
-        ia = dec_to_bitarray(i, len(weights))
-        for j in range(max_i + 1):
-            ja = dec_to_bitarray(j, len(weights))
-            table[i, j] = np.sum((ia == ja).astype(int) * weights)
-    return table
+def calculate_complimentarity(key, lock):
+    return (key ^ lock).bit_count()
 
 
-def cell_contact_energy(k1: int, l1: int, k2: int, l2: int, table):
-    return table[k1, l2] + table[k2, l1]
+def cell_contact_energy(k1: int, l1: int, k2: int, l2: int, cell_energy, gene_energy, genome_length):
+    comp = calculate_complimentarity(k1, l2) + calculate_complimentarity(k2, l1)
+    return 2 * (cell_energy + gene_energy * (0.5 - comp / (2 * genome_length)))
 
 
-def calculate_gamma(jmed, jalpha, contact_energy):
-    return jmed - (jalpha + contact_energy) / 2
+def calculate_gamma(med_energy, contact_energy):
+    return med_energy - contact_energy / 2
 
 
 def min_width(bitdec):
