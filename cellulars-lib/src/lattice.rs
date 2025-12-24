@@ -7,6 +7,7 @@ use crate::positional::rect::Rect;
 use rand::Rng;
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
+use num::ToPrimitive;
 
 /// A 2D rectangular lattice containing some objects of type `T`.
 #[derive(Debug, Clone)]
@@ -100,10 +101,7 @@ impl<T: PartialEq> Lattice<T> {
         box_side: usize,
         bound: &impl Boundary<Coord = isize>
     ) -> impl Iterator<Item = Pos<usize>> {
-        let center_isize = Pos::new(
-            center_pos.x as isize,
-            center_pos.y as isize
-        );
+        let center_isize = center_pos.to_isize().expect(CONV_ERROR);
         let radius = (box_side / 2) as isize;
         let rect = Rect::new(
             (center_isize.x - radius, center_isize.y - radius).into(),
@@ -176,7 +174,10 @@ impl<T: PartialEq> Lattice<T> {
             box_side,
             bound
         ).find_map(|pos| {
-            if let Some(neigh) = bound.valid_pos(Pos::new(pos.x as isize - 1, pos.y as isize))
+            if let Some(neigh) = bound.valid_pos(Pos::new(
+                pos.x.to_isize().expect(CONV_ERROR) - 1,
+                pos.y.to_isize().expect(CONV_ERROR)
+            ))
                 && &self[neigh.to_usize().expect(CONV_ERROR)] != value {
                 Some(neigh)
             } else {
@@ -192,7 +193,7 @@ impl<T: PartialEq> Lattice<T> {
         visited[border_pos.to_usize().expect(CONV_ERROR)] = true;
 
         while let Some(pos) = queue.pop_front() {
-            let mut diff_spin_neighs = Vec::with_capacity(neighbourhood.n_neighs() as usize);
+            let mut diff_spin_neighs = Vec::with_capacity(neighbourhood.n_neighs().into());
             let mut has_value_neighbour = false;
             for neigh in bound.valid_positions(neighbourhood.neighbours(pos)) {
                 let neigh_pos = neigh.to_usize().expect(CONV_ERROR);
