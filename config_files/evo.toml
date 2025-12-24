@@ -1,6 +1,6 @@
 # This is a copy of the parameters used in the simulation
 [general]
-time-steps = 100_000_000
+time-steps = 500_000_000
 
 [pond]
 width = 500
@@ -45,11 +45,11 @@ outdir = "runs/"
 replace-outdir = false
 image-period = 50_000
 image-format = "webp"
-info-period = 50_000
+info-period = 100_000
 
 [io.data]
-cells-period = 50_000
-lattice-period = 50_000
+cells-period = 100_000
+lattice-period = 5_000_000
 
 [io.movie]
 show = false
