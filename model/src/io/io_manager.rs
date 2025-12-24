@@ -1,12 +1,11 @@
 //! Contains logic related to [IoManager].
 
-use std::collections::HashSet;
 use crate::cell::{Cell, CellType};
+#[cfg(feature = "movie")]
+use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::io::plot::Plot;
 use crate::my_environment::MyEnvironment;
-#[cfg(feature = "movie")]
-use crate::io::movie_maker::MovieMaker;
 use anyhow::{bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
@@ -22,6 +21,7 @@ use num_traits::NumCast;
 use polars::frame::row::Row;
 use polars::polars_utils::float::IsFloat;
 use polars::prelude::*;
+use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
 

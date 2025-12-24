@@ -1,13 +1,13 @@
 //! Contains constants that are set at compile-time with feature flags.
 
+#[cfg(feature = "fixed-boundary")]
+use cellulars_lib::positional::boundaries::FixedBoundary;
+#[cfg(not(feature = "fixed-boundary"))]
+use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
 #[cfg(not(feature = "von-neumann"))]
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 #[cfg(feature = "von-neumann")]
 use cellulars_lib::positional::neighbourhood::VonNeumannNeighbourhood;
-#[cfg(not(feature = "fixed-boundary"))]
-use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
-#[cfg(feature = "fixed-boundary")]
-use cellulars_lib::positional::boundaries::FixedBoundary;
 
 /// Boundary type of the environment.
 ///

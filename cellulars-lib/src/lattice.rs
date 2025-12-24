@@ -4,10 +4,10 @@ use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::{Pos, CONV_ERROR};
 use crate::positional::rect::Rect;
+use num::ToPrimitive;
 use rand::Rng;
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
-use num::ToPrimitive;
 
 /// A 2D rectangular lattice containing some objects of type `T`.
 #[derive(Debug, Clone)]

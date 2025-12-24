@@ -3,12 +3,12 @@
 use crate::cell::{Cell, CellType};
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::io::io_manager::IoManager;
+#[cfg(feature = "movie")]
+use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::my_environment::MyEnvironment;
 use crate::my_potts::MyPotts;
 use crate::pond::Pond;
-#[cfg(feature = "movie")]
-use crate::io::movie_maker::MovieMaker;
 use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
