@@ -116,8 +116,8 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
     /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
     ///
-    /// Is considerably slower than [Environment::search_cell_box()] and may fail if the cell is not contiguous
-    /// or if the cell centre is not a cell position.
+    /// Is considerably slower than [Environment::search_cell_box()] and may not return all positions
+    /// if the cell is not contiguous or if the cell centre is not a cell position.
     pub fn search_cell_contiguous(
         &self,
         cell: &RelCell<impl Cellular>,
@@ -225,7 +225,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
         let spin = self.cell_lattice[pos];
         let valid_neighs = valid_neighbours(
             &self.bounds.lattice_boundary,
-            &self.neighbourhood, 
+            &self.neighbourhood,
             pos
         );
         for neigh in valid_neighs {
@@ -435,14 +435,17 @@ pub mod tests {
     #[test]
     fn test_contiguous_cell_positions_discontiguous() {
         let positions = [
+            Pos::new(4, 5),
+            Pos::new(5, 4),
             Pos::new(5, 5),
+            Pos::new(6, 5),
             Pos::new(5, 6),
             Pos::new(7, 7), // discontiguous point
         ];
         let mut env = make_test_env();
         let cell = add_cell(&positions, &mut env);
         let result = env.search_cell_contiguous(&cell);
-        assert_eq!(result.len(), 2);
+        assert_eq!(result.len(), 5);
     }
 
     #[test]

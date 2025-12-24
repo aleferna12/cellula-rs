@@ -133,9 +133,7 @@ impl<T: PartialEq> Lattice<T> {
         neighbourhood: &impl Neighbourhood
     ) -> Box<[Pos<usize>]> {
         let mut found = vec![];
-        let mut queue = VecDeque::from([
-            start_pos.to_isize().expect(CONV_ERROR)
-        ]);
+        let mut queue = VecDeque::from([start_pos.to_isize().expect(CONV_ERROR)]);
         let mut visited = Lattice::<bool>::new(self.rect.clone());
         visited[start_pos] = true;
 
