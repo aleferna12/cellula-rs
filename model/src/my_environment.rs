@@ -88,7 +88,12 @@ impl MyEnvironment {
         cell_area: u32,
         rng: &mut impl Rng,
     ) -> &RelCell<Cell> {
-        let pos_isize = self.env.cell_lattice.random_pos(rng).to_isize();
+        let pos_isize = self
+            .env
+            .cell_lattice
+            .random_pos(rng)
+            .to_isize()
+            .expect("failed to convert position to isize");
         let cell_side = ((cell_area as f32).sqrt() / 2.) as isize;
         let rect = Rect::new(
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
@@ -97,7 +102,7 @@ impl MyEnvironment {
         let positions: Box<_> = rect
             .iter_positions()
             .filter_map(|pos| self.env.bounds.lattice_boundary.valid_pos(pos))
-            .map(|pos| pos.to_usize())
+            .map(|pos| pos.to_usize().expect("failed to convert position to usize"))
             .collect();
         self.spawn_cell(
             empty_cell,
@@ -174,7 +179,10 @@ impl MyEnvironment {
         let mut sum_xy = 0.0;
 
         for p in &self.env.search_cell_box(cell, search_scaler) {
-            let (dx, dy) = self.env.bounds.boundary.displacement(p.to_f32(), cell.center());
+            let (dx, dy) = self.env.bounds.boundary.displacement(
+                p.to_f32().expect("failed to convert position to f32"),
+                cell.center()
+            );
             sum_xx += dx * dx;
             sum_yy += dy * dy;
             sum_xy += dx * dy;

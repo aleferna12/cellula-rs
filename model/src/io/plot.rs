@@ -7,7 +7,6 @@ use crate::my_environment::MyEnvironment;
 use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
-use cellulars_lib::positional::neighbourhood::Neighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::spin::Spin;
 use image::{Rgba, RgbaImage};
@@ -157,11 +156,9 @@ impl Plot for BorderPlot {
 
             let is_border = env
                 .env()
-                .bounds
-                .lattice_boundary
-                .valid_positions(env.env().neighbourhood.neighbours(pos.to_isize()))
+                .valid_neighbours(pos)
                 .any(|neigh| {
-                    let neigh_spin = env.env().cell_lattice[neigh.to_usize()];
+                    let neigh_spin = env.env().cell_lattice[neigh];
                     match neigh_spin {
                         Spin::Some(neigh_index) => cell_index < neigh_index,
                         _ => true

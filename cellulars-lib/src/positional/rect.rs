@@ -1,9 +1,8 @@
 //! Contains logic associated with [Rect].
 
 use crate::positional::pos::Pos;
-use num::{Integer, Num, ToPrimitive};
+use num::{Integer, Num};
 use std::ops::AddAssign;
-use thiserror::Error;
 
 /// A rectangle defined by two corners.
 #[derive(Clone, Debug)]
@@ -51,6 +50,77 @@ where
     }
 }
 
+impl Rect<f32> {
+    /// Rounds the rectangle's coordinates to their nearest integer value.
+    pub fn round(&self) -> Rect<f32> {
+        Rect::new(self.min.round(), self.max.round())
+    }
+
+    /// Converts the rect's coordinate type to [isize] (by truncating).
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_isize(&self) -> Option<Rect<isize>> {
+        Some(Rect::new(
+            self.min.to_isize()?,
+            self.max.to_isize()?,
+        ))
+    }
+
+    /// Converts the rect's coordinate type to [usize] (by truncating).
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_usize(&self) -> Option<Rect<usize>> {
+        Some(Rect::new(
+            self.min.to_usize()?,
+            self.max.to_usize()?,
+        ))
+    }
+}
+
+impl Rect<usize> {
+    /// Converts the rect's coordinate type to [isize].
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_isize(&self) -> Option<Rect<isize>> {
+        Some(Rect::new(
+            self.min.to_isize()?,
+            self.max.to_isize()?,
+        ))
+    }
+
+    /// Converts the rect's coordinate type to [f32].
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_f32(&self) -> Option<Rect<f32>> {
+        Some(Rect::new(
+            self.min.to_f32()?,
+            self.max.to_f32()?,
+        ))
+    }
+}
+
+impl Rect<isize> {
+    /// Converts the rect's coordinate type to [usize].
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_usize(&self) -> Option<Rect<usize>> {
+        Some(Rect::new(
+            self.min.to_usize()?,
+            self.max.to_usize()?,
+        ))
+    }
+
+    /// Converts the rect's coordinate type to [f32].
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_f32(&self) -> Option<Rect<f32>> {
+        Some(Rect::new(
+            self.min.to_f32()?,
+            self.max.to_f32()?,
+        ))
+    }
+}
+
 /// Iterator over all discrete positions contained in a [Rect].
 ///
 /// The iterator range is inclusive on both ends (position \[width, height\] is included for example).
@@ -89,46 +159,6 @@ where
         Some(ret_pos)
     }
 }
-
-// TODO: make these explicit (like in Pos)
-impl TryFrom<Rect<f32>> for Rect<isize> {
-    type Error = RectConversionError;
-
-    fn try_from(value: Rect<f32>) -> Result<Self, Self::Error> {
-        Ok(Rect::new(
-            Pos::new(
-                value.min.x.to_isize().ok_or(Self::Error {})?,
-                value.min.y.to_isize().ok_or(Self::Error {})?,
-            ),
-            Pos::new(
-                value.max.x.to_isize().ok_or(Self::Error {})?,
-                value.max.y.to_isize().ok_or(Self::Error {})?,
-            )
-        ))
-    }
-}
-
-impl TryFrom<Rect<f32>> for Rect<usize> {
-    type Error = RectConversionError;
-
-    fn try_from(value: Rect<f32>) -> Result<Self, Self::Error> {
-        Ok(Rect::new(
-            Pos::new(
-                value.min.x.to_usize().ok_or(Self::Error {})?,
-                value.min.y.to_usize().ok_or(Self::Error {})?,
-            ),
-            Pos::new(
-                value.max.x.to_usize().ok_or(Self::Error {})?,
-                value.max.y.to_usize().ok_or(Self::Error {})?,
-            )
-        ))
-    }
-}
-
-/// Error raised when the coordinate type of [Rect] cannot be converted.
-#[derive(Error, Debug)]
-#[error("failed to convert `Rect`")]
-pub struct RectConversionError {}
 
 #[cfg(test)]
 mod tests {

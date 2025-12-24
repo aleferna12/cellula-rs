@@ -1,5 +1,10 @@
 //! Contains logic associated with [Pos].
 
+use num::ToPrimitive;
+
+/// We use this everytime we expect a position conversion to work.
+pub(crate) const CONV_ERROR: &str = "failed to convert between positional coordinates";
+
 /// A 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[derive(Hash)]
@@ -28,37 +33,54 @@ impl Pos<usize> {
     }
 
     /// Converts the position's coordinate type to [isize].
-    pub fn to_isize(self) -> Pos<isize> {
-        Pos::new(self.x as isize, self.y as isize)
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_isize(self) -> Option<Pos<isize>> {
+        Some(Pos::new(self.x.to_isize()?, self.y.to_isize()?))
     }
 
     /// Converts the position's coordinate type to [f32].
-    pub fn to_f32(self) -> Pos<f32> {
-        Pos::new(self.x as f32, self.y as f32)
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_f32(self) -> Option<Pos<f32>> {
+        Some(Pos::new(self.x.to_f32()?, self.y.to_f32()?))
     }
 }
 
 impl Pos<f32> {
-    /// Converts the position's coordinate type to [isize].
-    pub fn to_isize(self) -> Pos<isize> {
-        Pos::new(self.x as isize, self.y as isize)
+    /// Rounds the position's coordinates to their nearest integer value.
+    pub fn round(self) -> Pos<f32> {
+        Pos::new(self.x.round(), self.y.round())
     }
 
-    /// Converts the position's coordinate type to [usize].
-    pub fn to_usize(self) -> Pos<usize> {
-        Pos::new(self.x as usize, self.y as usize)
+    /// Converts the position's coordinate type to [isize] (by truncating).
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_isize(self) -> Option<Pos<isize>> {
+        Some(Pos::new(self.x.to_isize()?, self.y.to_isize()?))
+    }
+
+    /// Converts the position's coordinate type to [usize] (by truncating).
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_usize(self) -> Option<Pos<usize>> {
+        Some(Pos::new(self.x.to_usize()?, self.y.to_usize()?))
     }
 }
 
 impl Pos<isize> {
     /// Converts the position's coordinate type to [f32].
-    pub fn to_f32(self) -> Pos<f32> {
-        Pos::new(self.x as f32, self.y as f32)
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_f32(self) -> Option<Pos<f32>> {
+        Some(Pos::new(self.x.to_f32()?, self.y.to_f32()?))
     }
 
     /// Converts the position's coordinate type to [usize].
-    pub fn to_usize(self) -> Pos<usize> {
-        Pos::new(self.x as usize, self.y as usize)
+    ///
+    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    pub fn to_usize(self) -> Option<Pos<usize>> {
+        Some(Pos::new(self.x.to_usize()?, self.y.to_usize()?))
     }
 }
 

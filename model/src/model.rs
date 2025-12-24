@@ -12,7 +12,7 @@ use crate::io::movie_maker::MovieMaker;
 use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
-use cellulars_lib::positional::boundaries::Boundaries;
+use cellulars_lib::positional::boundaries::{Boundaries, RectConversionError};
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::step::Step;
 use rand::{Rng, RngCore, SeedableRng};
@@ -237,7 +237,7 @@ impl Model {
         );
         let lattice = IoManager::read_lattice(
             IoManager::resolve_lattice_path(sim_path, time_step),
-            rect.clone().try_into()?,
+            rect.to_usize().ok_or(RectConversionError {})?,
         )?;
 
         let mut env = MyEnvironment::new(

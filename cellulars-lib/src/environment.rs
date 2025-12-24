@@ -5,12 +5,11 @@ use crate::cell_container::CellContainer;
 use crate::constants::CellIndex;
 use crate::habitable::Habitable;
 use crate::lattice::Lattice;
-use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
+use crate::positional::boundaries::{Boundaries, Boundary, RectConversionError, ToLatticeBoundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::Pos;
-use crate::positional::rect::RectConversionError;
+use crate::positional::pos::{Pos, CONV_ERROR};
 use crate::spin::Spin;
 use rustworkx_core::petgraph::prelude::UnGraph;
 use std::cmp::max;
@@ -40,7 +39,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
         bounds: Boundaries<B>,
     ) -> Result<Self, RectConversionError> {
         Ok(Self {
-            cell_lattice: Lattice::new(bounds.boundary.rect().clone().try_into()?),
+            cell_lattice: Lattice::new(bounds.boundary.rect().to_usize().ok_or(RectConversionError {})?),
             edge_book: EdgeBook::new(),
             cells: CellContainer::new(),
             bounds,
@@ -79,9 +78,7 @@ impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
     /// Returns an iterator over all sites in the neighbourhood of `pos` that are within lattice boundaries.
     pub fn valid_neighbours(&self, pos: Pos<usize>) -> impl Iterator<Item = Pos<usize>>
     where N: Neighbourhood {
-        self.bounds.lattice_boundary.valid_positions(
-            self.neighbourhood.neighbours(pos.to_isize())
-        ).map(|pos| pos.to_usize())
+        valid_neighbours(&self.bounds.lattice_boundary, &self.neighbourhood, pos)
     }
 }
 
@@ -100,7 +97,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
         let found: Box<_> = self.cell_lattice.search_box(
             &Spin::Some(cell.index),
-            cell.center().to_usize(),
+            cell.center().round().to_usize().expect(CONV_ERROR),
             search_diam,
             &self.bounds.lattice_boundary,
         ).collect();
@@ -127,7 +124,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
             &Spin::Some(cell.index),
-            cell.center().to_usize(),
+            cell.center().round().to_usize().expect(CONV_ERROR),
             &self.bounds.lattice_boundary,
             &self.neighbourhood
         );
@@ -159,7 +156,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
         self.cell_lattice.search_outline(
             &Spin::Some(cell.index),
-            cell.center().to_usize(),
+            cell.center().round().to_usize().expect(CONV_ERROR),
             search_diam,
             &self.bounds.lattice_boundary,
             &self.neighbourhood
@@ -226,11 +223,11 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
         let mut removed = 0;
         let mut added = 0;
         let spin = self.cell_lattice[pos];
-        let valid_neighs = self
-            .bounds
-            .lattice_boundary
-            .valid_positions(self.neighbourhood.neighbours(pos.to_isize()))
-            .map(|neigh| neigh.to_usize());
+        let valid_neighs = valid_neighbours(
+            &self.bounds.lattice_boundary,
+            &self.neighbourhood, 
+            pos
+        );
         for neigh in valid_neighs {
             let edge = Edge::new(pos, neigh);
             let spin_neigh = self.cell_lattice[neigh];
@@ -307,6 +304,19 @@ pub struct EdgesUpdate {
     pub added: u16,
     /// Number of cell-cell edges removed by granting the position.
     pub removed: u16
+}
+
+/// Helper function used in [Environment::valid_neighbours].
+fn valid_neighbours(
+    lattice_boundary: &impl Boundary<Coord = isize>,
+    neighbourhood: &impl Neighbourhood,
+    pos: Pos<usize>
+) -> impl Iterator<Item = Pos<usize>> {
+    lattice_boundary.valid_positions(
+        neighbourhood.neighbours(
+            pos.to_isize().expect(CONV_ERROR)
+        )
+    ).map(|pos| pos.to_usize().expect(CONV_ERROR))
 }
 
 #[cfg(test)]

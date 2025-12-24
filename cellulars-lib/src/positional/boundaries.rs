@@ -1,11 +1,12 @@
 //! Contains logic associated with boundary conditions and position validation.
 
 use crate::positional::pos::Pos;
-use crate::positional::rect::{Rect, RectConversionError};
+use crate::positional::rect::Rect;
 use num::traits::Euclid;
 use num::Num;
 use std::error::Error;
 use std::ops::Sub;
+use thiserror::Error;
 
 /// A conjugate pair of continuous/discrete boundaries that have the same boundary conditions.
 #[derive(Clone)]
@@ -132,7 +133,7 @@ impl ToLatticeBoundary for FixedBoundary<f32> {
     type Error = RectConversionError;
 
     fn to_lattice_boundary(&self) -> Result<FixedBoundary<isize>, Self::Error> {
-        Ok(FixedBoundary::new(Rect::try_from(self.rect.clone())?))
+        Ok(FixedBoundary::new(self.rect.to_isize().ok_or(Self::Error {})?))
     }
 }
 
@@ -183,7 +184,7 @@ impl ToLatticeBoundary for SafePeriodicBoundary<f32> {
     type Error = RectConversionError;
 
     fn to_lattice_boundary(&self) -> Result<SafePeriodicBoundary<isize>, Self::Error> {
-        Ok(SafePeriodicBoundary::new(Rect::try_from(self.rect.clone())?))
+        Ok(SafePeriodicBoundary::new(self.rect.to_isize().ok_or(Self::Error {})?))
     }
 }
 
@@ -244,9 +245,14 @@ impl ToLatticeBoundary for UnsafePeriodicBoundary<f32> {
     type Error = RectConversionError;
 
     fn to_lattice_boundary(&self) -> Result<UnsafePeriodicBoundary<isize>, Self::Error> {
-        Ok(UnsafePeriodicBoundary::new(Rect::try_from(self.rect.clone())?))
+        Ok(UnsafePeriodicBoundary::new(self.rect.to_isize().ok_or(Self::Error {})?))
     }
 }
+
+/// Error raised when the coordinate type of [Rect] cannot be converted.
+#[derive(Error, Debug)]
+#[error("failed to convert `Rect`")]
+pub struct RectConversionError {}
 
 #[cfg(test)]
 mod tests {
