@@ -85,7 +85,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
         let found: Vec<_> = self.cell_lattice.search_box(
             &Spin::Some(cell.index),
-            cell.center().to_usize(),
+            cell.center().round().to_usize(),
             search_diam,
             &self.bounds.lattice_boundary,
         ).collect();
@@ -112,7 +112,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
             &Spin::Some(cell.index),
-            cell.center().to_usize(),
+            cell.center().round().to_usize(),
             &self.bounds.lattice_boundary,
             &self.neighbourhood
         );
@@ -143,7 +143,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
         self.cell_lattice.search_outline(
             &Spin::Some(cell.index),
-            cell.center().to_usize(),
+            cell.center().round().to_usize(),
             search_diam,
             &self.bounds.lattice_boundary,
             &self.neighbourhood
@@ -401,14 +401,17 @@ pub mod tests {
     #[test]
     fn test_contiguous_cell_positions_discontiguous() {
         let positions = [
+            Pos::new(4, 5),
+            Pos::new(5, 4),
             Pos::new(5, 5),
+            Pos::new(6, 5),
             Pos::new(5, 6),
             Pos::new(7, 7), // discontiguous point
         ];
         let mut env = make_test_env();
         let cell = add_cell(&positions, &mut env);
         let result = env.search_cell_contiguous(&cell);
-        assert_eq!(result.len(), 2);
+        assert_eq!(result.len(), 5);
     }
 
     #[test]

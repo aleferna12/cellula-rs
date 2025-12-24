@@ -31,6 +31,10 @@ impl Pos<usize> {
 }
 
 impl Pos<f32> {
+    pub fn round(self) -> Self {
+        Pos::new(self.x.round(), self.y.round())
+    }
+    
     pub fn to_isize(self) -> Pos<isize> {
         Pos::new(self.x as isize, self.y as isize)
     }
