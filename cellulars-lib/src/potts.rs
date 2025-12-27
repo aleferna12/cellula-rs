@@ -1,6 +1,6 @@
 //! Contains logic associated with the [Potts] trait.
 
-use crate::basic_cell::Cellular;
+use crate::cellular::Cellular;
 use crate::habitable::Habitable;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;

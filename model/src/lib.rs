@@ -5,7 +5,7 @@
 
 pub mod model;
 pub mod io;
-pub mod pond;
+pub mod my_pond;
 pub mod my_potts;
 pub mod constants;
 pub mod cell;

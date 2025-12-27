@@ -34,14 +34,14 @@ impl Pos<usize> {
 
     /// Converts the position's coordinate type to [isize].
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_isize(self) -> Option<Pos<isize>> {
         Some(Pos::new(self.x.to_isize()?, self.y.to_isize()?))
     }
 
     /// Converts the position's coordinate type to [f32].
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_f32(self) -> Option<Pos<f32>> {
         Some(Pos::new(self.x.to_f32()?, self.y.to_f32()?))
     }
@@ -55,14 +55,14 @@ impl Pos<f32> {
 
     /// Converts the position's coordinate type to [isize] (by truncating).
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_isize(self) -> Option<Pos<isize>> {
         Some(Pos::new(self.x.to_isize()?, self.y.to_isize()?))
     }
 
     /// Converts the position's coordinate type to [usize] (by truncating).
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_usize(self) -> Option<Pos<usize>> {
         Some(Pos::new(self.x.to_usize()?, self.y.to_usize()?))
     }
@@ -71,14 +71,14 @@ impl Pos<f32> {
 impl Pos<isize> {
     /// Converts the position's coordinate type to [f32].
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_f32(self) -> Option<Pos<f32>> {
         Some(Pos::new(self.x.to_f32()?, self.y.to_f32()?))
     }
 
     /// Converts the position's coordinate type to [usize].
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_usize(self) -> Option<Pos<usize>> {
         Some(Pos::new(self.x.to_usize()?, self.y.to_usize()?))
     }

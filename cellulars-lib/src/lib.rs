@@ -15,3 +15,5 @@ pub mod spin;
 pub mod potts;
 pub mod step;
 pub mod habitable;
+pub mod pond;
+pub mod cellular;

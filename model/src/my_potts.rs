@@ -4,7 +4,7 @@ use crate::cell::CellType;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
 use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
-use cellulars_lib::basic_cell::Cellular;
+use cellulars_lib::cellular::Cellular;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::potts::Potts;
@@ -43,19 +43,19 @@ impl Potts for MyPotts {
         if !self.enable_migration {
             return 0.
         }
-        let Spin::Some(cell_index) = env.env().cell_lattice[pos_source] else {
+        let Spin::Some(cell_index) = env.env.cell_lattice[pos_source] else {
             return 0.;
         };
-        let cell = env.env().cells.get_cell(cell_index);
+        let cell = env.env.cells.get_cell(cell_index);
         if let CellType::Dividing = cell.cell_type {
             return 0.;
         }
 
-        let (dx1, dy1) = env.env().bounds.boundary.displacement(
+        let (dx1, dy1) = env.env.bounds.boundary.displacement(
             cell.center(),
             Pos::new(pos_target.x as f32, pos_target.y as f32)
         );
-        let (dx2, dy2) = env.env().bounds.boundary.displacement(
+        let (dx2, dy2) = env.env.bounds.boundary.displacement(
             cell.center(),
             cell.chem_center()
         );

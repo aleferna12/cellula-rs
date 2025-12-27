@@ -1,6 +1,6 @@
 //! Contains logic associated
 
-use crate::basic_cell::{Cellular, RelCell};
+use crate::cellular::{Cellular, RelCell};
 use crate::environment::{EdgesUpdate, Environment};
 use crate::positional::boundaries::ToLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;

@@ -1,7 +1,8 @@
 //! Contains logic associated with [Cell].
 
 use bon::Builder;
-use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular};
+use cellulars_lib::basic_cell::{shifted_com, BasicCell};
+use cellulars_lib::cellular::{Alive, Cellular};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use strum_macros::{Display, EnumString};
@@ -36,12 +37,12 @@ impl Cell {
         }
     }
 
-    /// Returns a reference to this cell's inner [cellulars_lib::basic_cell::BasicCell](BasicCell).
+    /// Returns a reference to this cell's inner [cellulars_lib::basic_cell::BasicCell].
     pub fn basic_cell(&self) -> &BasicCell {
         &self.basic_cell
     }
 
-    /// Returns a mutable reference to this cell's inner [cellulars_lib::basic_cell::BasicCell](BasicCell).
+    /// Returns a mutable reference to this cell's inner [cellulars_lib::basic_cell::BasicCell].
     pub fn basic_cell_mut(&mut self) -> &mut BasicCell {
         &mut self.basic_cell
     }

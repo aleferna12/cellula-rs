@@ -58,7 +58,7 @@ impl Rect<f32> {
 
     /// Converts the rect's coordinate type to [isize] (by truncating).
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_isize(&self) -> Option<Rect<isize>> {
         Some(Rect::new(
             self.min.to_isize()?,
@@ -68,7 +68,7 @@ impl Rect<f32> {
 
     /// Converts the rect's coordinate type to [usize] (by truncating).
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_usize(&self) -> Option<Rect<usize>> {
         Some(Rect::new(
             self.min.to_usize()?,
@@ -80,7 +80,7 @@ impl Rect<f32> {
 impl Rect<usize> {
     /// Converts the rect's coordinate type to [isize].
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_isize(&self) -> Option<Rect<isize>> {
         Some(Rect::new(
             self.min.to_isize()?,
@@ -90,7 +90,7 @@ impl Rect<usize> {
 
     /// Converts the rect's coordinate type to [f32].
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_f32(&self) -> Option<Rect<f32>> {
         Some(Rect::new(
             self.min.to_f32()?,
@@ -102,7 +102,7 @@ impl Rect<usize> {
 impl Rect<isize> {
     /// Converts the rect's coordinate type to [usize].
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_usize(&self) -> Option<Rect<usize>> {
         Some(Rect::new(
             self.min.to_usize()?,
@@ -112,7 +112,7 @@ impl Rect<isize> {
 
     /// Converts the rect's coordinate type to [f32].
     ///
-    /// Fails under the same conditions that make [num::ToPrimitive](ToPrimitive) fail.
+    /// Fails under the same conditions that make [num::ToPrimitive] fail.
     pub fn to_f32(&self) -> Option<Rect<f32>> {
         Some(Rect::new(
             self.min.to_f32()?,

@@ -1,7 +1,8 @@
 //! Contains logic associated with [Environment].
 
-use crate::basic_cell::{Alive, BasicCell, Cellular, RelCell};
+use crate::basic_cell::BasicCell;
 use crate::cell_container::CellContainer;
+use crate::cellular::{Alive, Cellular, RelCell};
 use crate::constants::CellIndex;
 use crate::habitable::Habitable;
 use crate::lattice::Lattice;

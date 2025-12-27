@@ -2,7 +2,7 @@
 
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, NeighbourhoodType, EPSILON};
-use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
+use cellulars_lib::cellular::{Alive, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment};
 use cellulars_lib::habitable::Habitable;
@@ -17,7 +17,8 @@ use rand::Rng;
 /// An environment that contains a chemical gradient and limits cell growth to [MyEnvironment::max_cells].
 #[derive(Clone)]
 pub struct MyEnvironment {
-    env: Environment<Cell, NeighbourhoodType, BoundaryType>,
+    /// Inner [Environment].
+    pub env: Environment<Cell, NeighbourhoodType, BoundaryType>,
     /// Lattice containing the chemical gradient.
     pub chem_lattice: Lattice<u32>,
     /// Scaler used to determine the radius of search for cell positions starting from its center.
@@ -43,16 +44,6 @@ impl MyEnvironment {
         };
         env_.make_chem_gradient();
         env_
-    }
-
-    /// Returns a reference to the inner [cellulars_lib::environment::Environment](Environment).
-    pub fn env(&self) -> &Environment<Cell, NeighbourhoodType, BoundaryType> {
-        &self.env
-    }
-
-    /// Returns a mutable reference to the inner [cellulars_lib::environment::Environment](Environment).
-    pub fn env_mut(&mut self) -> &mut Environment<Cell, NeighbourhoodType, BoundaryType> {
-        &mut self.env
     }
 
     /// Creates a chemical gradient spanning from the top to the bottom of the environment.

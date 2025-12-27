@@ -7,11 +7,12 @@ use crate::io::io_manager::IoManager;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::my_environment::MyEnvironment;
+use crate::my_pond::MyPond;
 use crate::my_potts::MyPotts;
-use crate::pond::Pond;
 use anyhow::Context;
 use cellulars_lib::adhesion::StaticAdhesion;
 use cellulars_lib::environment::Environment;
+use cellulars_lib::pond::Pond;
 use cellulars_lib::positional::boundaries::{Boundaries, RectConversionError};
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::step::Step;
@@ -19,10 +20,10 @@ use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
 
-/// This is the master struct that runs the simulation in a [Pond] and manages IO through an [IoManager].
+/// This is the master struct that runs the simulation in a [MyPond] and manages IO through an [IoManager].
 pub struct Model {
     /// Pond containing all cells and the model Potts algorithm.
-    pub pond: Pond,
+    pub pond: MyPond,
     /// Instance responsible for managing IO for the model.
     pub io: IoManager,
     /// Unique random number generator of this model.
@@ -164,22 +165,24 @@ impl Model {
         ca: MyPotts,
         rng: &mut Xoshiro256StarStar,
         time_step: u32,
-    ) -> Pond {
-        Pond::builder()
-            .env(env)
-            .potts(ca)
-            .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
-            .update_period(parameters.cell.update_period)
-            .division_enabled(parameters.cell.divide)
-            .time_step(time_step)
-            .build()
+    ) -> MyPond {
+        MyPond::new(
+            Pond::new(
+                env,
+                ca,
+                Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
+                time_step
+            ),
+            parameters.cell.update_period,
+            parameters.cell.divide
+        )
     }
 
     fn make_new_pond(
         parameters: &Parameters,
         ca: MyPotts,
         rng: &mut Xoshiro256StarStar
-    ) -> anyhow::Result<Pond> {
+    ) -> anyhow::Result<MyPond> {
         let env = MyEnvironment::new(
             Environment::new_empty(
                 NeighbourhoodType::new(parameters.pond.neigh_r),
@@ -200,20 +203,20 @@ impl Model {
                 parameters.cell.div_area,
                 if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
             );
-            pond.env.spawn_cell_random(
+            pond.pond.env.spawn_cell_random(
                 cell,
                 parameters.cell.starting_area,
-                &mut pond.rng
+                &mut pond.pond.rng
             );
         }
         log::info!(
                 "Created {} out of the {} cells requested",
-                pond.env.env().cells.n_valid(),
+                pond.pond.env.env.cells.n_valid(),
                 parameters.cell.starting_cells
             );
 
         if parameters.pond.enclose {
-            pond.env.make_border(true, true, true, true);
+            pond.pond.env.make_border(true, true, true, true);
         }
         Ok(pond)
     }
@@ -223,7 +226,7 @@ impl Model {
         rng: &mut Xoshiro256StarStar,
         sim_path: impl AsRef<Path>,
         time_step: u32
-    ) -> anyhow::Result<Pond> {
+    ) -> anyhow::Result<MyPond> {
         let sim_path = sim_path.as_ref();
 
         log::info!("Reading pond");
@@ -250,8 +253,8 @@ impl Model {
             parameters.cell.max_cells,
             parameters.cell.search_radius
         );
-        for pos in env.env().cell_lattice.iter_positions() {
-            env.env_mut().update_edges(pos);
+        for pos in env.env.cell_lattice.iter_positions() {
+            env.env.update_edges(pos);
         }
 
         let pond = Self::make_empty_pond(
@@ -276,7 +279,7 @@ impl Model {
 
     fn log_info(&self) {
         log::info!("Time step {}:", self.pond.time_step());
-        let valid = self.pond.env.env().cells.n_valid();
+        let valid = self.pond.pond.env.env.cells.n_valid();
         log::info!("\t{valid} cells");
     }
 }
@@ -289,7 +292,7 @@ impl Step for Model {
 
         let saved = self.io.write_if_time(
             self.pond.time_step(),
-            &self.pond.env
+            &self.pond.pond.env
         );
         if let Err(e) = saved {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())

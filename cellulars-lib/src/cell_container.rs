@@ -1,6 +1,6 @@
 //! Contains logic associated with [CellContainer].
 
-use crate::basic_cell::{Alive, Cellular, RelCell};
+use crate::cellular::{Alive, Cellular, RelCell};
 use crate::constants::CellIndex;
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.

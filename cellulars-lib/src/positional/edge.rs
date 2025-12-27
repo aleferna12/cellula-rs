@@ -4,15 +4,6 @@ use crate::positional::pos::Pos;
 use std::hash::{Hash, Hasher};
 use std::mem;
 
-/// Error thrown when an edge cannot be created between two positions using [Edge::new_if_neighbour()].
-#[derive(Debug)]
-pub enum EdgeError {
-    /// Positions are the same.
-    SamePosition,
-    /// Positions are not neighbours (too far apart).
-    NotNeighbours
-}
-
 /// A symmetrical edge between two positions (such that `Edge(p1, p2) == Edge(p2, p1)`).
 #[derive(Eq, Clone)]
 #[derive(Debug)]

@@ -8,8 +8,9 @@ use crate::io::plot::Plot;
 use crate::my_environment::MyEnvironment;
 use anyhow::{bail, Context};
 use bon::Builder;
-use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
+use cellulars_lib::basic_cell::BasicCell;
 use cellulars_lib::cell_container::CellContainer;
+use cellulars_lib::cellular::{Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
@@ -230,7 +231,7 @@ impl IoManager {
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step.is_multiple_of(self.cells_period) {
-            let mut celldf = env.env().cells.to_dataframe()?;
+            let mut celldf = env.env.cells.to_dataframe()?;
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
@@ -242,7 +243,7 @@ impl IoManager {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            Self::write_lattice(file_path.as_path(), &env.env().cell_lattice)?;
+            Self::write_lattice(file_path.as_path(), &env.env.cell_lattice)?;
         }
         Ok(())
     }
@@ -318,8 +319,8 @@ impl IoManager {
         env: &MyEnvironment
     ) -> RgbaImage {
         let mut image = RgbaImage::new(
-            env.env().width() as u32,
-            env.env().height() as u32 
+            env.env.width() as u32,
+            env.env.height() as u32
         );
         for plot in &self.plots {
             plot.plot(env, &mut image);
@@ -328,6 +329,7 @@ impl IoManager {
         image
     }
 
+    /// Returns the last time step in a simulation directory from which a backup can be restored.
     pub fn find_last_time_step(dir: impl AsRef<Path>) -> anyhow::Result<u32> {
         let dir = dir.as_ref();
         let paths = [CELLS_PATH, LATTICES_PATH];

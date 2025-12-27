@@ -1,4 +1,4 @@
-use cellulars_lib::basic_cell::{BasicCell, Cellular};
+use cellulars_lib::basic_cell::BasicCell;
 use cellulars_lib::environment::Environment;
 use cellulars_lib::habitable::Habitable;
 use cellulars_lib::positional::boundaries::{Boundaries, Boundary, UnsafePeriodicBoundary};
