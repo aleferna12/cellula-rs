@@ -39,7 +39,7 @@ impl MyPotts {
         self.act_lambda / env.act_max as f32 * (act_target - act_source)
     }
 
-    fn contact_chemotaxis(&self, cell_index: CellIndex, env: &MyEnvironment) -> f32 {
+    fn chem_polarazation(&self, cell_index: CellIndex, env: &MyEnvironment) -> f32 {
         let cell = env.cells.get_cell(cell_index);
         cell.chem_mass as f32
             / cell.area as f32
@@ -68,7 +68,7 @@ impl MyPotts {
                     (count + 1, product * act as f64)
                 }
             );
-        product.pow(1. / count as f64) as f32 * self.contact_chemotaxis(cell_index, env)
+        product.pow(1. / count as f64) as f32 * self.chem_polarazation(cell_index, env)
     }
 
     fn perimeter_energy_diff(&self, delta_perimeter: i32, perimeter: u32, target_perimeter: u32) -> f32 {
