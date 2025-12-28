@@ -22,9 +22,9 @@ pub trait Plot {
 
 /// [Plot]s that can display continuous variables.
 pub trait ContinuousPlot: Plot {
-    /// Color for when `value` == `min`.
+    /// Color for when `value == min`.
     fn min_color(&self) -> Lchuv;
-    /// Color for when `value` == `max`.
+    /// Color for when `value == max`.
     fn max_color(&self) -> Lchuv;
     /// Linearly interpolates `value` between `min` and `max`.
     fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Lchuv, LerpError> {
