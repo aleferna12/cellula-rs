@@ -2,7 +2,6 @@
 
 use crate::base::base_cell::BaseCell;
 use crate::cell_container::{CellContainer, RelCell};
-use crate::constants::CellIndex;
 use crate::lattice::Lattice;
 use crate::positional::boundaries::{Boundaries, Boundary, RectConversionError, ToLatticeBoundary};
 use crate::positional::edge::Edge;
@@ -13,9 +12,8 @@ use crate::spin::Spin;
 use crate::traits::cellular::{Alive, Cellular};
 use crate::traits::habitable::Habitable;
 use core::fmt;
-use rustworkx_core::petgraph::prelude::UnGraph;
 use std::cmp::max;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::f32::consts::PI;
 
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
@@ -178,37 +176,6 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
             .into_iter()
             .map(|pos| self.cell_lattice[pos]);
         HashSet::from_iter(outline)
-    }
-
-    /// Builds an undirected graph of cell-cell neighbours (cells that are adjacent).
-    pub fn build_neighbours_graph(&self, search_scaler: f32) -> UnGraph<CellIndex, ()> {
-        let mut graph = UnGraph::new_undirected();
-        let mut node_map = HashMap::new();
-
-        for rel_cell in self.cells.iter() {
-            if !rel_cell.cell.is_valid() {
-                continue;
-            }
-
-            // Add or retrieve the node for this cell's index
-            let cell_idx = *node_map.entry(rel_cell.index)
-                .or_insert_with(|| graph.add_node(rel_cell.index));
-
-            let neighs = self.cell_neighbours(rel_cell, search_scaler);
-
-            for neigh_spin in neighs {
-                let neigh_index = match neigh_spin {
-                    Spin::Some(cell_index) => cell_index,
-                    _ => continue,
-                };
-                // Add or retrieve the node for the neighbor index
-                let neigh_idx = *node_map.entry(neigh_index)
-                    .or_insert_with(|| graph.add_node(neigh_index));
-
-                graph.update_edge(cell_idx, neigh_idx, ());
-            }
-        }
-        graph
     }
 
     /// Removes all cells from the environment and returns it to a clean state.
