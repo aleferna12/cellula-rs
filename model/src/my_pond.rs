@@ -2,7 +2,6 @@
 
 use crate::my_potts::MyPotts;
 use cellulars_lib::pond::Pond;
-use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -22,8 +21,8 @@ pub struct MyPond {
 impl MyPond {
     /// Makes a new [MyPond] from an existing [Pond].
     pub fn new(
-        pond: Pond<MyPotts, Xoshiro256StarStar>, 
-        update_period: u32, 
+        pond: Pond<MyPotts, Xoshiro256StarStar>,
+        update_period: u32,
         division_enabled: bool
     ) -> Self {
         Self {
@@ -48,13 +47,12 @@ impl MyPond {
 
 impl Step for MyPond {
     fn step(&mut self) {
-        self.pond.potts.step(&mut self.pond.env, &mut self.pond.rng);
         if self.pond.time_step.is_multiple_of(self.update_period) {
             self.pond.env.env.cells.iter_mut().for_each(|cell| cell.update());
             if self.division_enabled {
                 self.pond.env.reproduce();
             }
         }
-        self.pond.time_step += 1;
+        self.pond.step();
     }
 }
