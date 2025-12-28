@@ -1,6 +1,5 @@
 //! Contains logic associated with [BaseEnvironment].
 
-use core::fmt;
 use crate::base::base_cell::BaseCell;
 use crate::cell_container::{CellContainer, RelCell};
 use crate::constants::CellIndex;
@@ -13,6 +12,7 @@ use crate::positional::pos::{Pos, CONV_ERROR};
 use crate::spin::Spin;
 use crate::traits::cellular::{Alive, Cellular};
 use crate::traits::habitable::Habitable;
+use core::fmt;
 use rustworkx_core::petgraph::prelude::UnGraph;
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
