@@ -104,15 +104,15 @@ impl Environment {
 
     /// Forces a cell to execute cell division.
     pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<Cell> {
-        let mom = self
+        let rel_mom = self
             .base_env
             .cells
             .get_cell(mom_index);
         // TODO!: This searches cell positions twice (once to find div axis).
-        let div_axis = self.find_division_axis(mom, self.cell_search_scaler);
+        let div_axis = self.find_division_axis(rel_mom, self.cell_search_scaler);
         let new_positions: Box<_> = self
             .base_env
-            .search_cell_box(mom, self.cell_search_scaler)
+            .search_cell_box(rel_mom, self.cell_search_scaler)
             .into_iter()
             .filter(|pos| {
                 let y = div_axis.slope * pos.x as f32 + div_axis.intercept;
@@ -120,8 +120,8 @@ impl Environment {
             })
             .collect();
         
-        let newborn = mom.birth();
-        let newborn_ta = mom.newborn_target_area;
+        let newborn = rel_mom.cell.birth();
+        let newborn_ta = rel_mom.cell.newborn_target_area;
         let new_index = self.base_env.cells.add(newborn).index;
         for pos in new_positions {
             self.grant_position(
@@ -129,7 +129,7 @@ impl Environment {
                 Spin::Some(new_index),
             );
         }
-        self.base_env.cells.get_cell_mut(mom_index).base_cell.target_area = newborn_ta;
+        self.base_env.cells.get_cell_mut(mom_index).cell.base_cell.target_area = newborn_ta;
         self.base_env.cells.get_cell(new_index)
     }
 
@@ -140,13 +140,13 @@ impl Environment {
     /// Checks which cells should divide and executes cell divisions.
     pub fn reproduce(&mut self) {
         let mut divide = vec![];
-        for cell in self.base_env.cells.iter() {
-            if !cell.is_alive() {
+        for rel_cell in self.base_env.cells.iter() {
+            if !rel_cell.cell.is_alive() {
                 continue;
             }
             // Currently cells don't need to express the dividing type to divide, they just need to be big enough
-            if cell.area() >= cell.divide_area {
-                divide.push(cell.index);
+            if rel_cell.cell.area() >= rel_cell.cell.divide_area {
+                divide.push(rel_cell.index);
             }
         }
         for cell_index in divide {
@@ -164,23 +164,23 @@ impl Environment {
 
     // TODO!: add plot to make sure this is right
     /// Finds the minor axis along which to split the cell.
-    pub fn find_division_axis(&self, cell: &RelCell<Cell>, search_scaler: f32) -> SplitLine {
+    pub fn find_division_axis(&self, rel_cell: &RelCell<Cell>, search_scaler: f32) -> SplitLine {
         // Compute covariance elements relative to centroid
         let mut sum_xx = 0.0;
         let mut sum_yy = 0.0;
         let mut sum_xy = 0.0;
 
-        for p in &self.base_env.search_cell_box(cell, search_scaler) {
+        for p in &self.base_env.search_cell_box(rel_cell, search_scaler) {
             let (dx, dy) = self.base_env.bounds.boundary.displacement(
                 p.to_f32().expect("failed to convert position to f32"),
-                cell.center()
+                rel_cell.cell.center()
             );
             sum_xx += dx * dx;
             sum_yy += dy * dy;
             sum_xy += dx * dy;
         }
 
-        let n = cell.area() as f32;
+        let n = rel_cell.cell.area() as f32;
         let cov_xx = sum_xx / n;
         let cov_yy = sum_yy / n;
         let cov_xy = sum_xy / n;
@@ -216,7 +216,7 @@ impl Environment {
         } else {
             f32::INFINITY // vertical line
         };
-        let intercept = cell.center().y - slope * cell.center().x;
+        let intercept = rel_cell.cell.center().y - slope * rel_cell.cell.center().x;
 
         SplitLine { slope, intercept }
     }
@@ -278,17 +278,17 @@ impl Habitable for Environment {
     ) -> EdgesUpdate {
         let chem_at_pos = self.chem_lattice[pos];
         if let Spin::Some(index) = to {
-            let to_cell = self.base_env.cells.get_cell_mut(index);
-            to_cell.shift_position(pos, true, &self.base_env.bounds.boundary);
-            to_cell.shift_chem(pos, chem_at_pos, true, &self.base_env.bounds.boundary);
+            let to_rel_cell = self.base_env.cells.get_cell_mut(index);
+            to_rel_cell.cell.shift_position(pos, true, &self.base_env.bounds.boundary);
+            to_rel_cell.cell.shift_chem(pos, chem_at_pos, true, &self.base_env.bounds.boundary);
         }
         if let Spin::Some(index) = self.base_env.cell_lattice[pos] {
-            let from_cell = self.base_env.cells.get_cell_mut(index);
-            from_cell.shift_position(pos, false, &self.base_env.bounds.boundary);
-            from_cell.shift_chem(pos, chem_at_pos, false, &self.base_env.bounds.boundary);
+            let from_rel_cell = self.base_env.cells.get_cell_mut(index);
+            from_rel_cell.cell.shift_position(pos, false, &self.base_env.bounds.boundary);
+            from_rel_cell.cell.shift_chem(pos, chem_at_pos, false, &self.base_env.bounds.boundary);
             // If the copy kills the cell
-            if from_cell.area() == 0 {
-                from_cell.apoptosis();
+            if from_rel_cell.cell.area() == 0 {
+                from_rel_cell.cell.apoptosis();
             }
         }
         // Executes the copy

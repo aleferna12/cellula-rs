@@ -48,7 +48,9 @@ impl Pond {
 impl Step for Pond {
     fn step(&mut self) {
         if self.base_pond.time_step.is_multiple_of(self.update_period) {
-            self.base_pond.env.base_env.cells.iter_mut().for_each(|cell| cell.update());
+            self.base_pond.env.base_env.cells
+                .iter_mut()
+                .for_each(|rel_cell| rel_cell.cell.update());
             if self.division_enabled {
                 self.base_pond.env.reproduce();
             }

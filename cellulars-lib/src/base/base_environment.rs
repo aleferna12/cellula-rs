@@ -88,28 +88,28 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
     /// May fail if `radius_scaler` is too small, in which case logs a warning.
-    pub fn search_cell_box(&self, cell: &RelCell<impl Cellular>, search_scaler: f32) -> Box<[Pos<usize>]> {
+    pub fn search_cell_box(&self, rel_cell: &RelCell<impl Cellular>, search_scaler: f32) -> Box<[Pos<usize>]> {
         let search_diam = (
             search_scaler
                 * 2.
-                * (max(cell.target_area(), cell.area()) as f32 / PI)
+                * (max(rel_cell.cell.target_area(), rel_cell.cell.area()) as f32 / PI)
                 .sqrt()
         ) as usize;
 
         let found: Box<_> = self.cell_lattice.search_box(
-            &Spin::Some(cell.index),
-            cell.center().round().to_usize().expect(CONV_ERROR),
+            &Spin::Some(rel_cell.index),
+            rel_cell.cell.center().round().to_usize().expect(CONV_ERROR),
             search_diam,
             &self.bounds.lattice_boundary,
         ).collect();
 
-        if found.len() != cell.area() as usize {
+        if found.len() != rel_cell.cell.area() as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with index {} \
                 (try to increase `search-radius`)",
                 found.len(),
-                cell.area(),
-                cell.index
+                rel_cell.cell.area(),
+                rel_cell.index
             )
         }
         found
@@ -121,22 +121,22 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     /// if the cell is not contiguous or if the cell centre is not a cell position.
     pub fn search_cell_contiguous(
         &self,
-        cell: &RelCell<impl Cellular>,
+        rel_cell: &RelCell<impl Cellular>,
     ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
-            &Spin::Some(cell.index),
-            cell.center().round().to_usize().expect(CONV_ERROR),
+            &Spin::Some(rel_cell.index),
+            rel_cell.cell.center().round().to_usize().expect(CONV_ERROR),
             &self.bounds.lattice_boundary,
             &self.neighbourhood
         );
 
-        if found.len() != cell.area() as usize {
+        if found.len() != rel_cell.cell.area() as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with index {} \
                 (cell might be discontiguous)",
                 found.len(),
-                cell.area(),
-                cell.index
+                rel_cell.cell.area(),
+                rel_cell.index
             )
         }
         found
@@ -145,19 +145,19 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     /// Searches for all cell positions that interface a different spin.
     pub fn search_cell_outline(
         &self,
-        cell: &RelCell<impl Cellular>,
+        rel_cell: &RelCell<impl Cellular>,
         search_scaler: f32
     ) -> Box<[Pos<usize>]> {
         let search_diam = (
             search_scaler
                 * 2.
-                * (max(cell.target_area(), cell.area()) as f32 / PI)
+                * (max(rel_cell.cell.target_area(), rel_cell.cell.area()) as f32 / PI)
                 .sqrt()
         ) as usize;
 
         self.cell_lattice.search_outline(
-            &Spin::Some(cell.index),
-            cell.center().round().to_usize().expect(CONV_ERROR),
+            &Spin::Some(rel_cell.index),
+            rel_cell.cell.center().round().to_usize().expect(CONV_ERROR),
             search_diam,
             &self.bounds.lattice_boundary,
             &self.neighbourhood
@@ -182,16 +182,16 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
         let mut graph = UnGraph::new_undirected();
         let mut node_map = HashMap::new();
 
-        for cell in self.cells.iter() {
-            if !cell.is_valid() {
+        for rel_cell in self.cells.iter() {
+            if !rel_cell.cell.is_valid() {
                 continue;
             }
 
             // Add or retrieve the node for this cell's index
-            let cell_idx = *node_map.entry(cell.index)
-                .or_insert_with(|| graph.add_node(cell.index));
+            let cell_idx = *node_map.entry(rel_cell.index)
+                .or_insert_with(|| graph.add_node(rel_cell.index));
 
-            let neighs = self.cell_neighbours(cell, search_scaler);
+            let neighs = self.cell_neighbours(rel_cell, search_scaler);
 
             for neigh_spin in neighs {
                 let neigh_index = match neigh_spin {
@@ -266,13 +266,13 @@ impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for BaseEnvi
         to: Spin
     ) -> EdgesUpdate {
         if let Spin::Some(index) = to {
-            self.cells.get_cell_mut(index).shift_position(pos, true, &self.bounds.boundary);
+            self.cells.get_cell_mut(index).cell.shift_position(pos, true, &self.bounds.boundary);
         }
         if let Spin::Some(index) = self.cell_lattice[pos] {
-            let from_cell = self.cells.get_cell_mut(index);
-            from_cell.shift_position(pos, false, &self.bounds.boundary);
-            if from_cell.area() == 0 {
-                from_cell.apoptosis();
+            let from_rel_cell = self.cells.get_cell_mut(index);
+            from_rel_cell.cell.shift_position(pos, false, &self.bounds.boundary);
+            if from_rel_cell.cell.area() == 0 {
+                from_rel_cell.cell.apoptosis();
             }
         }
         // Executes the copy
@@ -345,12 +345,12 @@ pub mod tests {
         positions: &[Pos<usize>],
         env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>
     ) -> RelCell<BaseCell> {
-        let mut cell = RelCell::mock(BaseCell::new_empty(2));
+        let mut rel_cell = RelCell::mock(BaseCell::new_empty(2));
         for &pos in positions {
-            cell.shift_position(pos, true, &env.bounds.boundary);
-            env.cell_lattice[pos] = Spin::Some(cell.index);
+            rel_cell.cell.shift_position(pos, true, &env.bounds.boundary);
+            env.cell_lattice[pos] = Spin::Some(rel_cell.index);
         }
-        cell
+        rel_cell
     }
 
     #[test]
@@ -457,17 +457,17 @@ pub mod tests {
             Pos::new(2, 1),
         ];
         let mut env = make_test_env();
-        let cell = add_cell(&positions, &mut env);
+        let rel_cell = add_cell(&positions, &mut env);
 
-        let neighbour_spins = [Spin::Some(cell.index + 1), Spin::Some(cell.index + 2)];
+        let neighbour_spins = [Spin::Some(rel_cell.index + 1), Spin::Some(rel_cell.index + 2)];
         env.cell_lattice[Pos::new(1, 2)] = neighbour_spins[0];
         env.cell_lattice[Pos::new(2, 0)] = neighbour_spins[1];
 
-        let neighs = env.cell_neighbours(&cell, 2.);
+        let neighs = env.cell_neighbours(&rel_cell, 2.);
 
         assert!(neighs.contains(&neighbour_spins[0]));
         assert!(neighs.contains(&neighbour_spins[1]));
-        assert!(!neighs.contains(&Spin::Some(cell.index)));
+        assert!(!neighs.contains(&Spin::Some(rel_cell.index)));
     }
 }
 

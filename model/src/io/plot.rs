@@ -5,8 +5,6 @@ use crate::environment::Environment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use cellulars_lib::constants::CellIndex;
-use cellulars_lib::positional::boundaries::Boundary;
-use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
 use image::{Rgba, RgbaImage};
@@ -102,17 +100,15 @@ pub struct CenterPlot {
 
 impl Plot for CenterPlot {
     fn plot(&self, env: &Environment, image: &mut RgbaImage) {
-        for cell in env.base_env.cells.iter() {
-            if !cell.is_valid() {
+        for rel_cell in env.base_env.cells.iter() {
+            if !rel_cell.cell.is_valid() {
                 continue;
             }
-            let center = env.base_env.bounds.lattice_boundary.valid_pos(Pos::new(
-                cell.center().x as isize,
-                cell.center().y as isize,
-            ));
-            if let Some(pos) = center {
-                draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
-            }
+            let center = rel_cell
+                .cell
+                .center()
+                .round();
+            draw_cross_mut(image, srgb_to_rgba(self.color), center.x as i32, center.y as i32);
         }
     }
 }
@@ -125,17 +121,15 @@ pub struct ChemCenterPlot {
 
 impl Plot for ChemCenterPlot {
     fn plot(&self, env: &Environment, image: &mut RgbaImage) {
-        for cell in env.base_env.cells.iter() {
-            if !cell.is_valid() {
+        for rel_cell in env.base_env.cells.iter() {
+            if !rel_cell.cell.is_valid() {
                 continue;
             }
-            let center = env.base_env.bounds.lattice_boundary.valid_pos(Pos::new(
-                cell.chem_center().x as isize,
-                cell.chem_center().y as isize,
-            ));
-            if let Some(pos) = center {
-                draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
-            }
+            let center = rel_cell
+                .cell
+                .chem_center()
+                .round();
+            draw_cross_mut(image, srgb_to_rgba(self.color), center.x as i32, center.y as i32);
         }
     }
 }
@@ -184,8 +178,8 @@ impl Plot for CellTypePlot {
         for pos in env.base_env.cell_lattice.iter_positions() {
             let spin = env.base_env.cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
-                let cell = env.base_env.cells.get_cell(cell_index);
-                let color = match cell.cell_type {
+                let rel_cell = env.base_env.cells.get_cell(cell_index);
+                let color = match rel_cell.cell.cell_type {
                     CellType::Migrating => self.mig_color,
                     CellType::Dividing => self.div_color
                 };
@@ -211,23 +205,23 @@ impl Plot for AreaPlot {
     fn plot(&self, env: &Environment, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
-        for cell in env.base_env.cells.iter() {
-            if !cell.is_valid() {
+        for rel_cell in env.base_env.cells.iter() {
+            if !rel_cell.cell.is_valid() {
                 continue;
             }
-            if cell.area() < min {
-                min = cell.area()
+            if rel_cell.cell.area() < min {
+                min = rel_cell.cell.area()
             }
-            if cell.area() > max {
-                max = cell.area()
+            if rel_cell.cell.area() > max {
+                max = rel_cell.cell.area()
             }
         }
 
         for pos in env.base_env.cell_lattice.iter_positions() {
             if let Spin::Some(cell_index) = env.base_env.cell_lattice[pos] {
-                let cell = env.base_env.cells.get_cell(cell_index);
+                let rel_cell = env.base_env.cells.get_cell(cell_index);
                 let color = self.lerp(
-                    cell.area() as f32,
+                    rel_cell.cell.area() as f32,
                     min as f32,
                     max as f32
                 );

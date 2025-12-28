@@ -2,7 +2,6 @@
 
 use crate::constants::CellIndex;
 use crate::traits::cellular::{Alive, Cellular};
-use std::ops::{Deref, DerefMut};
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
 #[derive(Clone, Debug)]
@@ -23,9 +22,9 @@ impl<C> CellContainer<C> {
         self.vec.len().try_into().expect("there are more cells than supported by the type `CellIndex`")
     }
     
-    /// Replaces the cell at `cell.index` with `cell`.
-    pub fn replace(&mut self, cell: RelCell<C>) -> RelCell<C> {
-        std::mem::replace(&mut self.vec[cell.index as usize], cell)
+    /// Replaces the cell at `rel_cell.index` with `rel_cell`.
+    pub fn replace(&mut self, rel_cell: RelCell<C>) -> RelCell<C> {
+        std::mem::replace(&mut self.vec[rel_cell.index as usize], rel_cell)
     }
 
     /// Returns a reference to a cell using its unique cell index.
@@ -63,7 +62,7 @@ impl<C: Cellular> CellContainer<C> {
     pub fn n_valid(&self) -> CellIndex {
         self.vec
             .iter()
-            .filter(|cell| cell.is_valid())
+            .filter(|rel_cell| rel_cell.cell.is_valid())
             .count() as CellIndex
     }
     
@@ -72,15 +71,15 @@ impl<C: Cellular> CellContainer<C> {
     where C: Alive {
         self.vec
             .iter()
-            .filter(|cell| cell.is_alive())
+            .filter(|rel_cell| rel_cell.cell.is_alive())
             .count() as CellIndex
     }
 
     fn next_index(&self) -> CellIndex {
         self.vec
             .iter()
-            .find(|cell| !cell.is_valid())
-            .map(|cell| cell.index)
+            .find(|rel_cell| !rel_cell.cell.is_valid())
+            .map(|rel_cell| rel_cell.index)
             .unwrap_or(self.n_cells())
     }
 
@@ -140,20 +139,5 @@ impl<C> RelCell<C> {
             index: 0,
             cell
         }
-    }
-}
-
-// TODO!: I dont think these should be implemented...
-impl<C> Deref for RelCell<C> {
-    type Target = C;
-
-    fn deref(&self) -> &Self::Target {
-        &self.cell
-    }
-}
-
-impl<C> DerefMut for RelCell<C> {
-    fn deref_mut(&mut self) -> &mut <Self as Deref>::Target {
-        &mut self.cell
     }
 }

@@ -365,19 +365,19 @@ trait ToDataFrame {
 
 impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
+        let valid = self.iter().filter(|rel_cell| rel_cell.cell.is_valid()).collect::<Box<_>>();
         df!(
-            "index" => valid.iter().map(|cell| cell.index).collect::<Box<_>>(),
-            "area" => valid.iter().map(|cell| cell.area()).collect::<Box<_>>(),
-            "target_area" => valid.iter().map(|cell| cell.target_area()).collect::<Box<_>>(),
-            "newborn_target_area" => valid.iter().map(|cell| cell.newborn_target_area).collect::<Box<_>>(),
-            "divide_area" => valid.iter().map(|cell| cell.divide_area).collect::<Box<_>>(),
-            "center_x" => valid.iter().map(|cell| cell.center().x).collect::<Box<_>>(),
-            "center_y" => valid.iter().map(|cell| cell.center().y).collect::<Box<_>>(),
-            "chem_center_x" => valid.iter().map(|cell| cell.chem_center().x).collect::<Box<_>>(),
-            "chem_center_y" => valid.iter().map(|cell| cell.chem_center().y).collect::<Box<_>>(),
-            "chem_mass" => valid.iter().map(|cell| cell.chem_mass()).collect::<Box<_>>(),
-            "cell_type" => valid.iter().map(|cell| cell.cell_type.to_string()).collect::<Box<[String]>>()
+            "index" => valid.iter().map(|rel_cell| rel_cell.index).collect::<Box<_>>(),
+            "area" => valid.iter().map(|rel_cell| rel_cell.cell.area()).collect::<Box<_>>(),
+            "target_area" => valid.iter().map(|rel_cell| rel_cell.cell.target_area()).collect::<Box<_>>(),
+            "newborn_target_area" => valid.iter().map(|rel_cell| rel_cell.cell.newborn_target_area).collect::<Box<_>>(),
+            "divide_area" => valid.iter().map(|rel_cell| rel_cell.cell.divide_area).collect::<Box<_>>(),
+            "center_x" => valid.iter().map(|rel_cell| rel_cell.cell.center().x).collect::<Box<_>>(),
+            "center_y" => valid.iter().map(|rel_cell| rel_cell.cell.center().y).collect::<Box<_>>(),
+            "chem_center_x" => valid.iter().map(|rel_cell| rel_cell.cell.chem_center().x).collect::<Box<_>>(),
+            "chem_center_y" => valid.iter().map(|rel_cell| rel_cell.cell.chem_center().y).collect::<Box<_>>(),
+            "chem_mass" => valid.iter().map(|rel_cell| rel_cell.cell.chem_mass()).collect::<Box<_>>(),
+            "cell_type" => valid.iter().map(|rel_cell| rel_cell.cell.cell_type.to_string()).collect::<Box<[String]>>()
         )
     }
 }

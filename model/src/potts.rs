@@ -47,18 +47,18 @@ impl PottsAlgorithm for Potts {
         let Spin::Some(cell_index) = env.base_env.cell_lattice[pos_source] else {
             return 0.;
         };
-        let cell = env.base_env.cells.get_cell(cell_index);
-        if let CellType::Dividing = cell.cell_type {
+        let rel_cell = env.base_env.cells.get_cell(cell_index);
+        if let CellType::Dividing = rel_cell.cell.cell_type {
             return 0.;
         }
 
         let (dx1, dy1) = env.base_env.bounds.boundary.displacement(
-            cell.center(),
+            rel_cell.cell.center(),
             Pos::new(pos_target.x as f32, pos_target.y as f32)
         );
         let (dx2, dy2) = env.base_env.bounds.boundary.displacement(
-            cell.center(),
-            cell.chem_center()
+            rel_cell.cell.center(),
+            rel_cell.cell.chem_center()
         );
 
         let dot = dx1 * dx2 + dy1 * dy2;

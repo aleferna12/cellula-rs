@@ -40,12 +40,12 @@ pub trait PottsAlgorithm {
     ) -> f32 {
         let mut delta_h = 0.;
         if let Spin::Some(cell_index) = spin_source {
-            let cell = env.env().cells.get_cell(cell_index);
-            delta_h += self.size_energy_diff(true, cell.area(), cell.target_area());
+            let rel_cell = env.env().cells.get_cell(cell_index);
+            delta_h += self.size_energy_diff(true, rel_cell.cell.area(), rel_cell.cell.target_area());
         }
         if let Spin::Some(cell_index) = spin_target {
-            let cell = env.env().cells.get_cell(cell_index);
-            delta_h += self.size_energy_diff(false, cell.area(), cell.target_area());
+            let rel_cell = env.env().cells.get_cell(cell_index);
+            delta_h += self.size_energy_diff(false, rel_cell.cell.area(), rel_cell.cell.target_area());
         }
         delta_h
     }
