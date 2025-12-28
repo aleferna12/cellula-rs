@@ -3,7 +3,7 @@
 use std::ops::{Index, IndexMut};
 
 /// A symmetric table where indexes (x, y) and (y, x) map to the same value.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SymmetricTable<T> {
     array: Box<[T]>,
     length: usize,

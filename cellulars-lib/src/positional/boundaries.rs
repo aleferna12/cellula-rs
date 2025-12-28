@@ -9,7 +9,7 @@ use std::ops::Sub;
 use thiserror::Error;
 
 /// A conjugate pair of continuous/discrete boundaries that have the same boundary conditions.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Boundaries<B: ToLatticeBoundary> {
     /// The conjugate continuous boundary type.
     pub boundary: B,
@@ -79,7 +79,7 @@ where
     fn wrap_scalar(val: Self::Coord, min: Self::Coord, max: Self::Coord) -> Self::Coord;
 }
 
-/// This trait is used to define conjugate continuous, discrete boundary conditions used to make [Boundaries].
+/// This trait is used to define conjugate (continuous, discrete) boundary conditions used to make [Boundaries].
 pub trait ToLatticeBoundary: Boundary {
     /// Conjugate discrete boundary type of this continuous boundary type.
     type LatticeBoundary: Boundary<Coord = isize>;
@@ -90,7 +90,7 @@ pub trait ToLatticeBoundary: Boundary {
 }
 
 /// Implementation of fixed (truncated) boundary conditions.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FixedBoundary<T> {
     rect: Rect<T>
 }
@@ -138,7 +138,7 @@ impl ToLatticeBoundary for FixedBoundary<f32> {
 }
 
 /// Mathematically sound (albeit slow) implementation of periodic boundary conditions.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SafePeriodicBoundary<T> {
     rect: Rect<T>
 }
@@ -188,7 +188,7 @@ impl ToLatticeBoundary for SafePeriodicBoundary<f32> {
     }
 }
 
-/// This struct can only validate positions that are at most one [UnsafePeriodicBoundary::rect]
+/// This type can only validate positions that are at most one [UnsafePeriodicBoundary::rect]
 /// away from the boundaries (in either x or y direction).
 ///
 /// <div class="warning">
@@ -196,7 +196,7 @@ impl ToLatticeBoundary for SafePeriodicBoundary<f32> {
 /// Only use when you are confident that all input positions are close to the boundary.
 ///
 /// </div>
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UnsafePeriodicBoundary<T> {
     rect: Rect<T>
 }
@@ -250,7 +250,7 @@ impl ToLatticeBoundary for UnsafePeriodicBoundary<f32> {
 }
 
 /// Error raised when the coordinate type of [Rect] cannot be converted.
-#[derive(Error, Debug)]
+#[derive(Error, Clone, Debug, PartialEq)]
 #[error("failed to convert `Rect`")]
 pub struct RectConversionError {}
 

@@ -4,7 +4,7 @@ use crate::spin::Spin;
 use crate::traits::adhesion_system::AdhesionSystem;
 
 /// An adhesion system that only considers [Spin]s to determine adhesion energies.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StaticAdhesion {
     /// Energy at a cell-cell interface.
     pub cell_energy: f32,

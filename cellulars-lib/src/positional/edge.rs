@@ -5,8 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::mem;
 
 /// A symmetrical edge between two positions (such that `Edge(p1, p2) == Edge(p2, p1)`).
-#[derive(Eq, Clone)]
-#[derive(Debug)]
+#[derive(Eq, Clone, Debug)]
 pub struct Edge {
     /// Position at one end of the edge.
     pub p1: Pos<usize>,

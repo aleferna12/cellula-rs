@@ -86,7 +86,7 @@ pub trait Neighbourhood {
 }
 
 /// Moore neighbourhood with variable radius.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MooreNeighbourhood {
     radius: u8
 }
@@ -115,7 +115,7 @@ impl Neighbourhood for MooreNeighbourhood {
 }
 
 /// VonNeumann neighbourhood with variable radius.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct VonNeumannNeighbourhood {
     radius: u8,
 }

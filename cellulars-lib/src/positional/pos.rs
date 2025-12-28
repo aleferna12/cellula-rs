@@ -6,8 +6,7 @@ use num::ToPrimitive;
 pub(crate) const CONV_ERROR: &str = "failed to convert between positional coordinates";
 
 /// A 2D position in space.
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-#[derive(Hash)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 pub struct Pos<T> {
     /// X component of the position.
     pub x: T,

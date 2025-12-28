@@ -1,5 +1,6 @@
 //! Contains logic associated with [BaseEnvironment].
 
+use core::fmt;
 use crate::base::base_cell::BaseCell;
 use crate::cell_container::{CellContainer, RelCell};
 use crate::constants::CellIndex;
@@ -17,6 +18,8 @@ use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::f32::consts::PI;
 
+// Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
+// If adding fields, remember to also change those!!!
 /// An environment where cells are spatially and relationally localised.
 pub struct BaseEnvironment<C, N, B: ToLatticeBoundary> {
     /// Boundaries of the environment.
@@ -283,11 +286,10 @@ impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for BaseEnvi
 
 impl<C, N, B: ToLatticeBoundary> Clone for BaseEnvironment<C, N, B>
 where
-    B: Clone,
-    B::LatticeBoundary: Clone,
-    CellContainer<C>: Clone,
+    C: Clone,
     N: Clone,
-{
+    B: Clone,
+    B::LatticeBoundary: Clone {
     fn clone(&self) -> Self {
         BaseEnvironment {
             bounds: self.bounds.clone(),
@@ -299,7 +301,40 @@ where
     }
 }
 
+impl<C, N, B:ToLatticeBoundary> fmt::Debug for BaseEnvironment<C, N, B>
+where
+    C: fmt::Debug,
+    N: fmt::Debug,
+    B: fmt::Debug,
+    B::LatticeBoundary: fmt::Debug {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BaseEnvironment")
+            .field("bounds", &self.bounds)
+            .field("cells", &self.cells)
+            .field("cell", &self.cell_lattice)
+            .field("edge_book", &self.edge_book)
+            .field("neighbourhood", &self.neighbourhood)
+            .finish()
+    }
+}
+
+impl<C, N, B:ToLatticeBoundary> PartialEq for BaseEnvironment<C, N, B>
+where
+    C: PartialEq,
+    N: PartialEq,
+    B: PartialEq,
+    B::LatticeBoundary: PartialEq {
+    fn eq(&self, other: &Self) -> bool {
+        // Assume correctness: no need to check edge_books
+        self.cells == other.cells
+            && self.cell_lattice == other.cell_lattice
+            && self.neighbourhood == other.neighbourhood
+            && self.bounds == other.bounds
+    }
+}
+
 /// Counts the number of changed cell-cell edges after modifying the environment with [Habitable::grant_position()].
+#[derive(Clone, Debug, PartialEq)]
 pub struct EdgesUpdate {
     /// Number of cell-cell edges added by granting the position.
     pub added: u16,

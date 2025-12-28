@@ -5,7 +5,7 @@ use num::{Integer, Num};
 use std::ops::AddAssign;
 
 /// A rectangle defined by two corners.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Rect<T> {
     /// Bottom-left corner.
     pub min: Pos<T>,
@@ -124,6 +124,7 @@ impl Rect<isize> {
 /// Iterator over all discrete positions contained in a [Rect].
 ///
 /// The iterator range is inclusive on both ends (position \[width, height\] is included for example).
+#[derive(Clone, Debug, PartialEq)]
 pub struct RectAreaIt<T> {
     curr: Pos<T>,
     rect: Rect<T>

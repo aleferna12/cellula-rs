@@ -6,7 +6,7 @@ use crate::traits::cellular::{Alive, Cellular};
 use thiserror::Error;
 
 /// Minimum components required to simulate a cell.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BaseCell {
     /// Cell's current target area.
     pub target_area: u32,
@@ -138,7 +138,7 @@ pub fn shifted_com<B: Boundary<Coord = f32>>(
     bound.valid_pos(new_com).ok_or(ShiftError::OutOfBounds(new_com))
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Clone, Debug, PartialEq)]
 /// Error thrown when a [shifted_com()] operation fails.
 pub enum ShiftError {
     /// Shifting resulted in a negative mass.

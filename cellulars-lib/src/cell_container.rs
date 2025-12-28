@@ -4,7 +4,7 @@ use crate::constants::CellIndex;
 use crate::traits::cellular::{Alive, Cellular};
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CellContainer<C> {
     vec: Vec<RelCell<C>>
 }
@@ -123,7 +123,7 @@ impl<C> Default for CellContainer<C> {
 /// the inner cell type `C` directly.
 ///
 /// Implements [Deref<Target = C>].
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct RelCell<C> {
     /// Relational cell index that is unique to this cell in its
     /// [Environment](crate::base::base_environment::BaseEnvironment).

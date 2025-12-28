@@ -10,7 +10,7 @@ use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 
 /// A 2D rectangular lattice containing some objects of type `T`.
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Lattice<T> {
     array: Box<[T]>,
     /// The lattice dimensions.

@@ -1,8 +1,9 @@
 //! This crate contains library functions for the [Cellulars](https://github.com/aleferna12/cellulars) project.
 
+extern crate core;
+
 // TODO!:
 //  - Implement EnvNeighbours, which tracks neighbours
-//  - Implement basic traits like Debug and Clone for all types
 pub mod lattice;
 pub mod positional;
 pub mod static_adhesion;
