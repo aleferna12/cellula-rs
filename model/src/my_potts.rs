@@ -3,12 +3,13 @@
 use crate::cell::CellType;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
-use cellulars_lib::adhesion::{AdhesionSystem, StaticAdhesion};
-use cellulars_lib::cellular::Cellular;
+use cellulars_lib::static_adhesion::StaticAdhesion;
+use cellulars_lib::traits::cellular::Cellular;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::potts::Potts;
+use cellulars_lib::traits::potts_algorithm::PottsAlgorithm;
 use cellulars_lib::spin::Spin;
+use cellulars_lib::traits::adhesion_system::AdhesionSystem;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -28,7 +29,7 @@ pub struct MyPotts {
     pub adhesion: StaticAdhesion
 }
 
-impl Potts for MyPotts {
+impl PottsAlgorithm for MyPotts {
     type Environment = MyEnvironment;
 
     fn boltz_t(&self) -> f32 {

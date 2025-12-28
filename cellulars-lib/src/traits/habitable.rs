@@ -1,11 +1,12 @@
-//! Contains logic associated
+//! Contains logic associated with [Habitable].
 
-use crate::cellular::{Cellular, RelCell};
+use crate::cell_container::RelCell;
 use crate::environment::{EdgesUpdate, Environment};
 use crate::positional::boundaries::ToLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
+use crate::traits::cellular::Cellular;
 
 /// This trait asserts that an [Environment] is habitable,
 /// which is to say that it can contain active cells.

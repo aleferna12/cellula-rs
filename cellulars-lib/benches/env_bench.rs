@@ -1,6 +1,6 @@
-use cellulars_lib::basic_cell::BasicCell;
+use cellulars_lib::base_cell::BaseCell;
 use cellulars_lib::environment::Environment;
-use cellulars_lib::habitable::Habitable;
+use cellulars_lib::traits::habitable::Habitable;
 use cellulars_lib::positional::boundaries::{Boundaries, Boundary, UnsafePeriodicBoundary};
 use cellulars_lib::positional::edge::Edge;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
@@ -14,7 +14,7 @@ use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
 
-fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
+fn empty_env(width: f32, height: f32) -> Environment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
     Environment::new_empty(
         MooreNeighbourhood::new(1),
         Boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
@@ -25,7 +25,7 @@ fn empty_env(width: f32, height: f32) -> Environment<BasicCell, MooreNeighbourho
 }
 
 fn random_neighbour(
-    env: &Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
+    env: &Environment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl Rng
@@ -45,7 +45,7 @@ fn random_neighbour(
 }
 
 fn add_random_edge(
-    env: &mut Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
+    env: &mut Environment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
     rng: &mut impl Rng
 ) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
@@ -55,7 +55,7 @@ fn add_random_edge(
 
 fn replace_random_edges(
     n_edges: usize,
-    env: &mut Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
+    env: &mut Environment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
     rng: &mut impl Rng
 ) {
     for _ in 0..n_edges {
@@ -109,7 +109,7 @@ fn bench_env(c: &mut Criterion) {
 
     let mut env = empty_env(100., 100.);
     env.spawn_cell(
-        BasicCell::new_empty(100),
+        BaseCell::new_empty(100),
         Rect::new((10, 10).into(), (20, 20).into()).iter_positions(),
     );
 

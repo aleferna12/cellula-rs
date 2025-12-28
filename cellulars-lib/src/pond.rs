@@ -1,12 +1,12 @@
-//! Contains logic associated to [Pond].
+//! Contains logic associated with [Pond].
 
-use crate::potts::Potts;
-use crate::step::Step;
+use crate::traits::potts_algorithm::PottsAlgorithm;
+use crate::traits::step::Step;
 use rand::Rng;
 
 /// A pond is responsible for updating a [Habitable](crate::habitable::Habitable) using a [Potts] algorithm.
 #[derive(Clone)]
-pub struct Pond<P: Potts, R> {
+pub struct Pond<P: PottsAlgorithm, R> {
     /// Environment containing the cells.
     pub env: P::Environment,
     /// Potts algorithm with which to update the CA.
@@ -17,7 +17,7 @@ pub struct Pond<P: Potts, R> {
     pub time_step: u32,
 }
 
-impl<P: Potts, R> Pond<P, R> {
+impl<P: PottsAlgorithm, R> Pond<P, R> {
     /// Makes a new pond from its constituent parts.
     pub fn new(env: P::Environment, potts: P, rng: R, time_step: u32) -> Self {
         Self {
@@ -29,7 +29,7 @@ impl<P: Potts, R> Pond<P, R> {
     }
 }
 
-impl<P: Potts, R: Rng> Step for Pond<P, R> {
+impl<P: PottsAlgorithm, R: Rng> Step for Pond<P, R> {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
         self.time_step += 1;

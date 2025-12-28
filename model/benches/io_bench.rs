@@ -1,4 +1,4 @@
-use cellulars_lib::step::Step;
+use cellulars_lib::traits::step::Step;
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use model::io::parameters::{Parameters, PlotType};
 use model::model::Model;

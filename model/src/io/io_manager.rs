@@ -8,14 +8,14 @@ use crate::io::plot::Plot;
 use crate::my_environment::MyEnvironment;
 use anyhow::{bail, Context};
 use bon::Builder;
-use cellulars_lib::basic_cell::BasicCell;
-use cellulars_lib::cell_container::CellContainer;
-use cellulars_lib::cellular::{Cellular, RelCell};
+use cellulars_lib::base_cell::BaseCell;
+use cellulars_lib::cell_container::{CellContainer, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
+use cellulars_lib::traits::cellular::Cellular;
 use image::imageops::flip_vertical_in_place;
 use image::RgbaImage;
 use num_traits::NumCast;
@@ -97,7 +97,7 @@ impl IoManager {
 
         for row_i in 0..celldf.height() {
             let row = celldf.get_row(row_i)?;
-            let basic_cell = BasicCell::new_ready(
+            let basic_cell = BaseCell::new_ready(
                 Self::get_col_num(&row, "area", &celldf)?,
                 Pos::new(
                     Self::get_col_num(&row, "center_x", &celldf)?,

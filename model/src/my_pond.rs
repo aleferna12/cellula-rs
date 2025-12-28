@@ -2,7 +2,7 @@
 
 use crate::my_potts::MyPotts;
 use cellulars_lib::pond::Pond;
-use cellulars_lib::step::Step;
+use cellulars_lib::traits::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
 
 /// A pond is responsible for updating a [MyEnvironment] using the [MyPotts] algorithm.

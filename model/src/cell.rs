@@ -1,8 +1,8 @@
 //! Contains logic associated with [Cell].
 
 use bon::Builder;
-use cellulars_lib::basic_cell::{shifted_com, BasicCell};
-use cellulars_lib::cellular::{Alive, Cellular};
+use cellulars_lib::base_cell::{shifted_com, BaseCell};
+use cellulars_lib::traits::cellular::{Alive, Cellular};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use strum_macros::{Display, EnumString};
@@ -17,7 +17,7 @@ pub struct Cell {
     /// Current type of the cell.
     pub cell_type: CellType,
     /// Underlying basic cell.
-    basic_cell: BasicCell,
+    basic_cell: BaseCell,
     /// Center of the cell weighted by the chemical concentration at each cell position.
     chem_center: Pos<f32>,
     /// Total concentration of the chemical perceived by the cell.
@@ -28,7 +28,7 @@ impl Cell {
     /// Initialises an empty [Cell] to be filled progressively with [Cell::shift_position()].
     pub fn new_empty(target_area: u32, divide_area: u32, cell_type: CellType) -> Self {
         Self {
-            basic_cell: BasicCell::new_empty(target_area),
+            basic_cell: BaseCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
             newborn_target_area: target_area,
@@ -37,13 +37,13 @@ impl Cell {
         }
     }
 
-    /// Returns a reference to this cell's inner [cellulars_lib::basic_cell::BasicCell].
-    pub fn basic_cell(&self) -> &BasicCell {
+    /// Returns a reference to this cell's inner [cellulars_lib::base_cell::BaseCell].
+    pub fn basic_cell(&self) -> &BaseCell {
         &self.basic_cell
     }
 
-    /// Returns a mutable reference to this cell's inner [cellulars_lib::basic_cell::BasicCell].
-    pub fn basic_cell_mut(&mut self) -> &mut BasicCell {
+    /// Returns a mutable reference to this cell's inner [cellulars_lib::base_cell::BaseCell].
+    pub fn basic_cell_mut(&mut self) -> &mut BaseCell {
         &mut self.basic_cell
     }
     

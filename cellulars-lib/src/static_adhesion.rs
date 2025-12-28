@@ -1,14 +1,7 @@
-//! Contains logic associated with adhesion systems.
+//! Contains logic associated with [StaticAdhesion].
 
 use crate::spin::Spin;
-
-/// Trait defining a way to calculate adhesion at the interface between two spins.
-pub trait AdhesionSystem {
-    /// Context required to calculate the adhesion energy.
-    type Context;
-    /// Returns the energy at the interface between `spin1` and `spin2`, given a context.
-    fn adhesion_energy(&self, spin1: Spin, spin2: Spin, context: &Self::Context) -> f32;
-}
+use crate::traits::adhesion_system::AdhesionSystem;
 
 /// An adhesion system that only considers [Spin]s to determine adhesion energies.
 #[derive(Clone)]

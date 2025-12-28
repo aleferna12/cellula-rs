@@ -1,10 +1,10 @@
 //! Contains logic associated with [Environment].
 
-use crate::basic_cell::BasicCell;
-use crate::cell_container::CellContainer;
-use crate::cellular::{Alive, Cellular, RelCell};
+use crate::base_cell::BaseCell;
+use crate::cell_container::{CellContainer, RelCell};
+use crate::traits::cellular::{Alive, Cellular};
 use crate::constants::CellIndex;
-use crate::habitable::Habitable;
+use crate::traits::habitable::Habitable;
 use crate::lattice::Lattice;
 use crate::positional::boundaries::{Boundaries, Boundary, RectConversionError, ToLatticeBoundary};
 use crate::positional::edge::Edge;
@@ -249,8 +249,8 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environment<BasicCell, N, B> {
-    type Cell = BasicCell;
+impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environment<BaseCell, N, B> {
+    type Cell = BaseCell;
 
     fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
         self
@@ -323,13 +323,14 @@ fn valid_neighbours(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::basic_cell::BasicCell;
+    use crate::base_cell::BaseCell;
+    use crate::cell_container::RelCell;
     use crate::positional::boundaries::UnsafePeriodicBoundary;
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
-    fn make_test_env() -> Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
+    fn make_test_env() -> Environment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
         let rect = Rect::new(
             (0., 0.,).into(),
             (10., 10.).into()
@@ -342,9 +343,9 @@ pub mod tests {
 
     fn add_cell(
         positions: &[Pos<usize>],
-        env: &mut Environment<BasicCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>
-    ) -> RelCell<BasicCell> {
-        let mut cell = RelCell::mock(BasicCell::new_empty(2));
+        env: &mut Environment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>
+    ) -> RelCell<BaseCell> {
+        let mut cell = RelCell::mock(BaseCell::new_empty(2));
         for &pos in positions {
             cell.shift_position(pos, true, &env.bounds.boundary);
             env.cell_lattice[pos] = Spin::Some(cell.index);

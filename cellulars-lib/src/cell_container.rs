@@ -1,6 +1,7 @@
 //! Contains logic associated with [CellContainer].
 
-use crate::cellular::{Alive, Cellular, RelCell};
+use std::ops::{Deref, DerefMut};
+use crate::traits::cellular::{Alive, Cellular};
 use crate::constants::CellIndex;
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
@@ -114,5 +115,45 @@ impl<C: Cellular> CellContainer<C> {
 impl<C> Default for CellContainer<C> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Represents a cell that is bound to an [Environment](crate::environment::Environment).
+///
+/// Functions that do not need information about the cell's `index` relational operators should take 
+/// the inner cell type `C` directly.
+///
+/// Implements [Deref<Target = C>].
+#[derive(Debug, Clone)]
+pub struct RelCell<C> {
+    /// Relational cell index that is unique to this cell in its 
+    /// [Environment](crate::environment::Environment).
+    pub index: CellIndex,
+    /// Inner cell instance.
+    pub cell: C
+}
+
+impl<C> RelCell<C> {
+    /// Creates a mock cell with index and mom = 0 for testing.
+    pub fn mock(cell: C) -> Self {
+        RelCell {
+            index: 0,
+            cell
+        }
+    }
+}
+
+// TODO!: I dont think these should be implemented...
+impl<C> Deref for RelCell<C> {
+    type Target = C;
+
+    fn deref(&self) -> &Self::Target {
+        &self.cell
+    }
+}
+
+impl<C> DerefMut for RelCell<C> {
+    fn deref_mut(&mut self) -> &mut <Self as Deref>::Target {
+        &mut self.cell
     }
 }

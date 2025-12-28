@@ -2,10 +2,10 @@
 
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, NeighbourhoodType, EPSILON};
-use cellulars_lib::cellular::{Alive, Cellular, RelCell};
+use cellulars_lib::traits::cellular::{Alive, Cellular};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment};
-use cellulars_lib::habitable::Habitable;
+use cellulars_lib::traits::habitable::Habitable;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::boundaries::{Boundary, ToLatticeBoundary};
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
@@ -13,6 +13,7 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
+use cellulars_lib::cell_container::RelCell;
 
 /// An environment that contains a chemical gradient and limits cell growth to [MyEnvironment::max_cells].
 #[derive(Clone)]

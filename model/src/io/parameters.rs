@@ -146,7 +146,7 @@ pub struct PottsParameters {
     pub adhesion: AdhesionParameters
 }
 
-/// Parameters used in cell adhesion (see [cellulars_lib::adhesion]).
+/// Parameters used in cell adhesion (see [cellulars_lib::static_adhesion]).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct AdhesionParameters {

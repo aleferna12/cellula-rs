@@ -1,13 +1,13 @@
-//! Contains logic related to [BasicCell].
+//! Contains logic associated with [BaseCell].
 
-use crate::cellular::{Alive, Cellular};
 use crate::positional::boundaries::Boundary;
 use crate::positional::pos::Pos;
 use thiserror::Error;
+use crate::traits::cellular::{Alive, Cellular};
 
 /// Minimum components required to simulate a cell.
 #[derive(Clone, Debug)]
-pub struct BasicCell {
+pub struct BaseCell {
     /// Cell's current target area.
     pub target_area: u32,
     /// Cell's area.
@@ -16,7 +16,7 @@ pub struct BasicCell {
     center: Pos<f32>,
 }
 
-impl BasicCell {
+impl BaseCell {
     /// Returns an empty cell to be filled by methods like 
     /// [Habitable::spawn_cell()](crate::habitable::Habitable::spawn_cell())
     pub fn new_empty(target_area: u32) -> Self {
@@ -30,7 +30,7 @@ impl BasicCell {
     /// Makes a new, ready-to-go cell from a pre-existing state.
     ///
     /// Useful to initialize a cell from a backup.
-    /// For most use cases, use [BasicCell::new_empty()] instead.
+    /// For most use cases, use [BaseCell::new_empty()] instead.
     pub fn new_ready(
         area: u32,
         center: Pos<f32>,
@@ -54,7 +54,7 @@ impl BasicCell {
     }
 }
 
-impl Cellular for BasicCell {
+impl Cellular for BaseCell {
     fn target_area(&self) -> u32 {
         self.target_area
     }
@@ -96,7 +96,7 @@ impl Cellular for BasicCell {
     }
 }
 
-impl Alive for BasicCell {
+impl Alive for BaseCell {
     fn is_alive(&self) -> bool {
         self.is_valid() && self.target_area() > 0
     }
