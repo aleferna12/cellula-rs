@@ -57,7 +57,19 @@ impl AdhesionSystem for BitAdhesion {
 #[cfg(test)]
 mod tests {
     use crate::evolution::bit_genome::BitGenome;
+    use rand::SeedableRng;
     use super::*;
+    
+    fn bit_adhesion() -> BitAdhesion {
+        BitAdhesion {
+            static_adhesion: StaticAdhesion {
+                cell_energy: 16.,
+                medium_energy: 16.,
+                solid_energy: 16.,
+            },
+            gene_energy: 16.,
+        }
+    }
 
     #[test]
     fn test_complementarity() {
@@ -69,14 +81,7 @@ mod tests {
 
     #[test]
     fn test_adhesion_energy() {
-        let bit_adh = BitAdhesion {
-            static_adhesion: StaticAdhesion {
-                cell_energy: 16.,
-                medium_energy: 16.,
-                solid_energy: 16.,
-            },
-            gene_energy: 16.,
-        };
+        let bit_adh = bit_adhesion();
 
         let recep_gamma = [
             (0b11110000, 0.),
@@ -94,7 +99,8 @@ mod tests {
                     recep,
                     0.,
                     8
-                ).unwrap());
+                ).unwrap()
+            );
             let index1 = cells.push(cell.clone()).index;
             let index2 = cells.push(cell).index;
             let calc_gamma = bit_adh.static_adhesion.medium_energy - bit_adh.adhesion_energy(
@@ -104,5 +110,39 @@ mod tests {
             ) / 2.;
             assert_eq!(gamma, calc_gamma);
         }
+    }
+    
+    #[test]
+    fn test_adhesion_random_genomes() {
+        let bit_adh = bit_adhesion();
+      
+        let mut gammas = vec![];
+        let mut rng = rand::rngs::StdRng::seed_from_u64(132415);
+        for _ in 0..1_000 {
+            let mut cells = CellContainer::new();
+            let cell1 = Cell::new_empty(
+                0,
+                0,
+                BitGenome::new_random(0., 8, &mut rng).unwrap()
+            );
+            let cell2 = Cell::new_empty(
+                0,
+                0,
+                BitGenome::new_random(0., 8, &mut rng).unwrap()
+            );
+            let index1 = cells.push(cell1).index;
+            let index2 = cells.push(cell2).index;
+            let gamma = bit_adh.static_adhesion.medium_energy - bit_adh.adhesion_energy(
+                Spin::Some(index1),
+                Spin::Some(index2),
+                &cells
+            ) / 2.;
+            gammas.push(gamma);
+        }
+        let sum: f32 = gammas.iter().sum();
+        let mean = sum / gammas.len() as f32;
+        assert!(mean < 0.05 && mean > -0.05);
+        assert_eq!(8., gammas.iter().copied().fold(f32::NEG_INFINITY, f32::max));
+        assert_eq!(-8., gammas.iter().copied().fold(f32::INFINITY, f32::min));
     }
 }
