@@ -13,9 +13,9 @@ pub trait Cellular {
     fn center(&self) -> Pos<f32>;
     /// Returns whether the cell is still valid or not.
     ///
-    /// Invalid cells cannot recover from this state, and can effectively be ignored by the simulation algorithm. 
+    /// Invalid cells cannot recover from this state, and can effectively be ignored by the simulation algorithm.
     fn is_valid(&self) -> bool;
-    /// Shifts the center and area of the cell by granting (`add == true`) 
+    /// Shifts the center and area of the cell by granting (`add == true`)
     /// or stealing (`add == false`) a position from it.
     fn shift_position(
         &mut self,
@@ -31,7 +31,7 @@ pub trait Alive: Cellular {
     fn is_alive(&self) -> bool;
     /// Kills the cell.
     fn apoptosis(&mut self);
-    /// Returns a new cell that inherits properties from `self` but is empty and can be filled with 
-    /// [Habitable::grant_position()](crate::habitable::Habitable::grant_position).
+    /// Returns a new cell that inherits properties from `self` but is empty and can be filled with
+    /// [Habitable::grant_position()](crate::traits::habitable::Habitable::grant_position).
     fn birth(&self) -> Self;
 }

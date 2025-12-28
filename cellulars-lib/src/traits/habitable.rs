@@ -1,14 +1,14 @@
 //! Contains logic associated with [Habitable].
 
+use crate::base::base_environment::{BaseEnvironment, EdgesUpdate};
 use crate::cell_container::RelCell;
-use crate::environment::{EdgesUpdate, Environment};
 use crate::positional::boundaries::ToLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
 use crate::traits::cellular::Cellular;
 
-/// This trait asserts that an [Environment] is habitable,
+/// This trait asserts that an [BaseEnvironment] is habitable,
 /// which is to say that it can contain active cells.
 ///
 /// Overriding methods of this trait (especially [Habitable::grant_position()])
@@ -18,10 +18,10 @@ pub trait Habitable {
     type Cell: Cellular;
 
     /// Returns a reference to the environment that we have made habitable by implementing this trait.
-    fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
+    fn env(&self) -> &BaseEnvironment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
 
     /// Returns a mutable reference to the environment that we have made habitable by implementing this trait.
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
+    fn env_mut(&mut self) -> &mut BaseEnvironment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
 
     /// Grants position `pos` to the entity represented by spin `to`.
     ///

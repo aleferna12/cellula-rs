@@ -1,10 +1,10 @@
 //! Contains logic associated with [Cell].
 
 use bon::Builder;
-use cellulars_lib::base_cell::{shifted_com, BaseCell};
-use cellulars_lib::traits::cellular::{Alive, Cellular};
+use cellulars_lib::base::base_cell::{shifted_com, BaseCell};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
+use cellulars_lib::traits::cellular::{Alive, Cellular};
 use strum_macros::{Display, EnumString};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
@@ -16,8 +16,8 @@ pub struct Cell {
     pub newborn_target_area: u32,
     /// Current type of the cell.
     pub cell_type: CellType,
-    /// Underlying basic cell.
-    basic_cell: BaseCell,
+    /// Inner base cell.
+    pub base_cell: BaseCell,
     /// Center of the cell weighted by the chemical concentration at each cell position.
     chem_center: Pos<f32>,
     /// Total concentration of the chemical perceived by the cell.
@@ -28,23 +28,13 @@ impl Cell {
     /// Initialises an empty [Cell] to be filled progressively with [Cell::shift_position()].
     pub fn new_empty(target_area: u32, divide_area: u32, cell_type: CellType) -> Self {
         Self {
-            basic_cell: BaseCell::new_empty(target_area),
+            base_cell: BaseCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
             newborn_target_area: target_area,
             divide_area,
             cell_type,
         }
-    }
-
-    /// Returns a reference to this cell's inner [cellulars_lib::base_cell::BaseCell].
-    pub fn basic_cell(&self) -> &BaseCell {
-        &self.basic_cell
-    }
-
-    /// Returns a mutable reference to this cell's inner [cellulars_lib::base_cell::BaseCell].
-    pub fn basic_cell_mut(&mut self) -> &mut BaseCell {
-        &mut self.basic_cell
     }
     
     /// Returns the total concentration of the chemical perceived by the cell.
@@ -58,7 +48,7 @@ impl Cell {
     }
 
     /// Sets the area at which the cell divides when
-    /// [MyEnvironment::reproduce()](crate::my_environment::MyEnvironment::reproduce()) is called.
+    /// [Environment::reproduce()](crate::environment::Environment::reproduce()) is called.
     pub fn set_divide_area(&mut self, value: u32) {
         self.divide_area = value;
     }
@@ -86,51 +76,51 @@ impl Cell {
             .expect("overflow in `shift_chem`");
     }
 
-    /// Updates parameters of the cell (called by [Pond::step()](cellulars_lib::step::Step::step())).
+    /// Updates parameters of the cell (called by [Pond::step()](cellulars_lib::traits::step::Step::step())).
     pub fn update(&mut self) {
         if let CellType::Dividing = self.cell_type && self.target_area() < self.divide_area {
             let new_target_area = self.target_area() + 1;
-            self.basic_cell.target_area = new_target_area;
+            self.base_cell.target_area = new_target_area;
         }
     }
 }
 
 impl Cellular for Cell {
     fn target_area(&self) -> u32 {
-        self.basic_cell.target_area()
+        self.base_cell.target_area()
     }
 
     fn area(&self) -> u32 {
-        self.basic_cell.area()
+        self.base_cell.area()
     }
 
     fn center(&self) -> Pos<f32> {
-        self.basic_cell.center()
+        self.base_cell.center()
     }
 
     fn is_valid(&self) -> bool {
-        self.basic_cell.is_valid()
+        self.base_cell.is_valid()
     }
 
     fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
-        self.basic_cell.shift_position(pos, add, bound)
+        self.base_cell.shift_position(pos, add, bound)
     }
 }
 
 impl Alive for Cell {
     fn is_alive(&self) -> bool {
-        self.basic_cell.is_alive()
+        self.base_cell.is_alive()
     }
 
     fn apoptosis(&mut self) {
-        self.basic_cell.apoptosis()
+        self.base_cell.apoptosis()
     }
 
     fn birth(&self) -> Self {
-        let mut basic_cell = self.basic_cell.birth();
+        let mut basic_cell = self.base_cell.birth();
         basic_cell.target_area = self.newborn_target_area;
-        Self { 
-            basic_cell,
+        Self {
+            base_cell: basic_cell,
             chem_mass: 0,
             ..self.clone()
         }

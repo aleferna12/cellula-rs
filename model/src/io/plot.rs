@@ -1,9 +1,9 @@
 //! Contains logic for plotting data about the simulation.
 
 use crate::cell::CellType;
+use crate::environment::Environment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
-use crate::my_environment::MyEnvironment;
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
@@ -19,7 +19,7 @@ use thiserror::Error;
 /// A trait to plot information about the environment.
 pub trait Plot {
     /// Plots the information in `env` by drawing on `image`.
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage);
+    fn plot(&self, env: &Environment, image: &mut RgbaImage);
 }
 
 /// [Plot]s that can display continuous variables.
@@ -79,9 +79,9 @@ impl SpinPlot {
 }
 
 impl Plot for SpinPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.env.cell_lattice.iter_positions() {
-            let spin = env.env.cell_lattice[pos];
+    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+        for pos in env.base_env.cell_lattice.iter_positions() {
+            let spin = env.base_env.cell_lattice[pos];
             let rgb = match spin {
                 Spin::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
                 Spin::Solid => Some(self.solid_color),
@@ -101,12 +101,12 @@ pub struct CenterPlot {
 }
 
 impl Plot for CenterPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for cell in env.env.cells.iter() {
+    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+        for cell in env.base_env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
-            let center = env.env.bounds.lattice_boundary.valid_pos(Pos::new(
+            let center = env.base_env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.center().x as isize,
                 cell.center().y as isize,
             ));
@@ -124,12 +124,12 @@ pub struct ChemCenterPlot {
 }
 
 impl Plot for ChemCenterPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for cell in env.env.cells.iter() {
+    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+        for cell in env.base_env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
-            let center = env.env.bounds.lattice_boundary.valid_pos(Pos::new(
+            let center = env.base_env.bounds.lattice_boundary.valid_pos(Pos::new(
                 cell.chem_center().x as isize,
                 cell.chem_center().y as isize,
             ));
@@ -147,18 +147,18 @@ pub struct BorderPlot {
 }
 
 impl Plot for BorderPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.env.cell_lattice.iter_positions() {
-            let spin = env.env.cell_lattice[pos];
+    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+        for pos in env.base_env.cell_lattice.iter_positions() {
+            let spin = env.base_env.cell_lattice[pos];
             let Spin::Some(cell_index) = spin else {
                 continue;
             };
 
             let is_border = env
-                .env
+                .base_env
                 .valid_neighbours(pos)
                 .any(|neigh| {
-                    let neigh_spin = env.env.cell_lattice[neigh];
+                    let neigh_spin = env.base_env.cell_lattice[neigh];
                     match neigh_spin {
                         Spin::Some(neigh_index) => cell_index < neigh_index,
                         _ => true
@@ -180,11 +180,11 @@ pub struct CellTypePlot {
 }
 
 impl Plot for CellTypePlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.env.cell_lattice.iter_positions() {
-            let spin = env.env.cell_lattice[pos];
+    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+        for pos in env.base_env.cell_lattice.iter_positions() {
+            let spin = env.base_env.cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
-                let cell = env.env.cells.get_cell(cell_index);
+                let cell = env.base_env.cells.get_cell(cell_index);
                 let color = match cell.cell_type {
                     CellType::Migrating => self.mig_color,
                     CellType::Dividing => self.div_color
@@ -208,10 +208,10 @@ pub struct AreaPlot {
 }
 
 impl Plot for AreaPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
-        for cell in env.env.cells.iter() {
+        for cell in env.base_env.cells.iter() {
             if !cell.is_valid() {
                 continue;
             }
@@ -223,9 +223,9 @@ impl Plot for AreaPlot {
             }
         }
 
-        for pos in env.env.cell_lattice.iter_positions() {
-            if let Spin::Some(cell_index) = env.env.cell_lattice[pos] {
-                let cell = env.env.cells.get_cell(cell_index);
+        for pos in env.base_env.cell_lattice.iter_positions() {
+            if let Spin::Some(cell_index) = env.base_env.cell_lattice[pos] {
+                let cell = env.base_env.cells.get_cell(cell_index);
                 let color = self.lerp(
                     cell.area() as f32,
                     min as f32,
@@ -262,7 +262,7 @@ pub struct ChemPlot {
 }
 
 impl Plot for ChemPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
         let lat = &env.chem_lattice;
         for pos in lat.iter_positions() {
             let chem = lat[pos];

@@ -1,10 +1,8 @@
-//! Contains logic associated with [Environment].
+//! Contains logic associated with [BaseEnvironment].
 
-use crate::base_cell::BaseCell;
+use crate::base::base_cell::BaseCell;
 use crate::cell_container::{CellContainer, RelCell};
-use crate::traits::cellular::{Alive, Cellular};
 use crate::constants::CellIndex;
-use crate::traits::habitable::Habitable;
 use crate::lattice::Lattice;
 use crate::positional::boundaries::{Boundaries, Boundary, RectConversionError, ToLatticeBoundary};
 use crate::positional::edge::Edge;
@@ -12,20 +10,22 @@ use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::{Pos, CONV_ERROR};
 use crate::spin::Spin;
+use crate::traits::cellular::{Alive, Cellular};
+use crate::traits::habitable::Habitable;
 use rustworkx_core::petgraph::prelude::UnGraph;
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::f32::consts::PI;
 
 /// An environment where cells are spatially and relationally localised.
-pub struct Environment<C, N, B: ToLatticeBoundary> {
+pub struct BaseEnvironment<C, N, B: ToLatticeBoundary> {
     /// Boundaries of the environment.
     ///
     /// These are used to validate that a position can be used to access information in the environment.
     pub bounds: Boundaries<B>,
-    /// Cell container with spins matching those in [Environment::cell_lattice].
+    /// Cell container with spins matching those in [BaseEnvironment::cell_lattice].
     pub cells: CellContainer<C>,
-    /// Cell lattice with spins matching those in [Environment::cells].
+    /// Cell lattice with spins matching those in [BaseEnvironment::cells].
     pub cell_lattice: Lattice<Spin>,
     /// Edge book containing all positions at cell-cell interfaces.
     pub edge_book: EdgeBook,
@@ -33,7 +33,7 @@ pub struct Environment<C, N, B: ToLatticeBoundary> {
     pub neighbourhood: N
 }
 
-impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
+impl<C, N, B: ToLatticeBoundary<Coord = f32>> BaseEnvironment<C, N, B> {
     /// Makes a new empty environment with no cells.
     pub fn new_empty(
         neighbourhood: N,
@@ -49,7 +49,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> Environment<C, N, B> {
     }
 }
 
-impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
+impl<C, N, B: ToLatticeBoundary> BaseEnvironment<C, N, B> {
     /// Makes a new environment from its components.
     pub fn new(
         cells: CellContainer<C>,
@@ -83,7 +83,7 @@ impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
+impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, B> {
     // This function returns a Vec so that we can check that the site number matches
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
@@ -117,7 +117,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
     /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
     ///
-    /// Is considerably slower than [Environment::search_cell_box()] and may not return all positions
+    /// Is considerably slower than [BaseEnvironment::search_cell_box()] and may not return all positions
     /// if the cell is not contiguous or if the cell centre is not a cell position.
     pub fn search_cell_contiguous(
         &self,
@@ -249,14 +249,14 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environment<BaseCell, N, B> {
+impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for BaseEnvironment<BaseCell, N, B> {
     type Cell = BaseCell;
 
-    fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+    fn env(&self) -> &BaseEnvironment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
         self
     }
 
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+    fn env_mut(&mut self) -> &mut BaseEnvironment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
         self
     }
 
@@ -281,7 +281,7 @@ impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for Environm
     }
 }
 
-impl<C, N, B: ToLatticeBoundary> Clone for Environment<C, N, B>
+impl<C, N, B: ToLatticeBoundary> Clone for BaseEnvironment<C, N, B>
 where
     B: Clone,
     B::LatticeBoundary: Clone,
@@ -289,7 +289,7 @@ where
     N: Clone,
 {
     fn clone(&self) -> Self {
-        Environment {
+        BaseEnvironment {
             bounds: self.bounds.clone(),
             cells: self.cells.clone(),
             cell_lattice: self.cell_lattice.clone(),
@@ -307,7 +307,7 @@ pub struct EdgesUpdate {
     pub removed: u16
 }
 
-/// Helper function used in [Environment::valid_neighbours].
+/// Helper function used in [BaseEnvironment::valid_neighbours].
 fn valid_neighbours(
     lattice_boundary: &impl Boundary<Coord = isize>,
     neighbourhood: &impl Neighbourhood,
@@ -323,19 +323,19 @@ fn valid_neighbours(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::base_cell::BaseCell;
+    use crate::base::base_cell::BaseCell;
     use crate::cell_container::RelCell;
     use crate::positional::boundaries::UnsafePeriodicBoundary;
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
-    fn make_test_env() -> Environment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
+    fn make_test_env() -> BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
         let rect = Rect::new(
             (0., 0.,).into(),
             (10., 10.).into()
         );
-        Environment::new_empty(
+        BaseEnvironment::new_empty(
             MooreNeighbourhood::new(1),
             Boundaries::new(UnsafePeriodicBoundary::new(rect.clone())).expect("failed to make boundaries"),
         ).expect("failed to make test environment")
@@ -343,7 +343,7 @@ pub mod tests {
 
     fn add_cell(
         positions: &[Pos<usize>],
-        env: &mut Environment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>
+        env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>
     ) -> RelCell<BaseCell> {
         let mut cell = RelCell::mock(BaseCell::new_empty(2));
         for &pos in positions {

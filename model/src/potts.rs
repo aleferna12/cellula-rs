@@ -1,22 +1,22 @@
-//! Contains logic associated with [MyPotts].
+//! Contains logic associated with [Potts].
 
 use crate::cell::CellType;
-use crate::my_environment::MyEnvironment;
+use crate::environment::Environment;
 use bon::Builder;
-use cellulars_lib::static_adhesion::StaticAdhesion;
-use cellulars_lib::traits::cellular::Cellular;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::traits::potts_algorithm::PottsAlgorithm;
 use cellulars_lib::spin::Spin;
+use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::adhesion_system::AdhesionSystem;
+use cellulars_lib::traits::cellular::Cellular;
+use cellulars_lib::traits::potts_algorithm::PottsAlgorithm;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
 // that just implements `step()`
 /// A Potts model that implements cell migration.
 #[derive(Clone, Builder)]
-pub struct MyPotts {
+pub struct Potts {
     /// Boltz temperature of the model.
     pub boltz_t: f32,
     /// Scaler constant associated with the penalty for size deviations.
@@ -25,12 +25,12 @@ pub struct MyPotts {
     pub chemotaxis_mu: f32,
     /// Whether we allow cell migration.
     pub enable_migration: bool,
-    /// Adhesion system used in [MyPotts::delta_hamiltonian_adhesion()](Potts::delta_hamiltonian_adhesion)
+    /// Adhesion system used in [Potts::delta_hamiltonian_adhesion()].
     pub adhesion: StaticAdhesion
 }
 
-impl PottsAlgorithm for MyPotts {
-    type Environment = MyEnvironment;
+impl PottsAlgorithm for Potts {
+    type Environment = Environment;
 
     fn boltz_t(&self) -> f32 {
         self.boltz_t
@@ -44,19 +44,19 @@ impl PottsAlgorithm for MyPotts {
         if !self.enable_migration {
             return 0.
         }
-        let Spin::Some(cell_index) = env.env.cell_lattice[pos_source] else {
+        let Spin::Some(cell_index) = env.base_env.cell_lattice[pos_source] else {
             return 0.;
         };
-        let cell = env.env.cells.get_cell(cell_index);
+        let cell = env.base_env.cells.get_cell(cell_index);
         if let CellType::Dividing = cell.cell_type {
             return 0.;
         }
 
-        let (dx1, dy1) = env.env.bounds.boundary.displacement(
+        let (dx1, dy1) = env.base_env.bounds.boundary.displacement(
             cell.center(),
             Pos::new(pos_target.x as f32, pos_target.y as f32)
         );
-        let (dx2, dy2) = env.env.bounds.boundary.displacement(
+        let (dx2, dy2) = env.base_env.bounds.boundary.displacement(
             cell.center(),
             cell.chem_center()
         );

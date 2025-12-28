@@ -2,8 +2,8 @@
 
 use crate::positional::boundaries::Boundary;
 use crate::positional::pos::Pos;
-use thiserror::Error;
 use crate::traits::cellular::{Alive, Cellular};
+use thiserror::Error;
 
 /// Minimum components required to simulate a cell.
 #[derive(Clone, Debug)]
@@ -18,7 +18,7 @@ pub struct BaseCell {
 
 impl BaseCell {
     /// Returns an empty cell to be filled by methods like 
-    /// [Habitable::spawn_cell()](crate::habitable::Habitable::spawn_cell())
+    /// [Habitable::spawn_cell()](crate::traits::habitable::Habitable::spawn_cell())
     pub fn new_empty(target_area: u32) -> Self {
         Self {
             target_area,

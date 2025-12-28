@@ -3,10 +3,10 @@
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
-use rand::Rng;
-use std::f32::consts::E;
 use crate::traits::cellular::Cellular;
 use crate::traits::habitable::Habitable;
+use rand::Rng;
+use std::f32::consts::E;
 
 /// This trait defines how a Monte Carlo [PottsAlgorithm::step()] of the model should modify a
 /// [Habitable] environment.

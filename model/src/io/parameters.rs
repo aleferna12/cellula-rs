@@ -108,7 +108,7 @@ pub struct GeneralParameters {
     pub seed: Option<u64>
 }
 
-/// Parameters determining how a pond is created (see [my_pond](crate::my_pond));
+/// Parameters determining how a pond is created (see [pond](crate::pond));
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PondParameters {
@@ -136,7 +136,7 @@ pub struct CellParameters {
     pub update_period: u32,
 }
 
-/// Parameters for the cellular automata update algorithm (see [my_potts](crate::my_potts)).
+/// Parameters for the cellular automata update algorithm (see [potts](crate::potts)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PottsParameters {

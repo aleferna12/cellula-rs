@@ -17,7 +17,7 @@ fn test_run() -> anyhow::Result<()> {
         let mut model = Model::new_from_parameters(params.clone())?;
         model.run_for(512);
         // For now we resort to lying abt the time to trick IoManager into writing info
-        model.io.write_if_time(4096, &model.pond.pond.env)?;
+        model.io.write_if_time(4096, &model.pond.base_pond.env)?;
         
         let sim_dir = params.io.outdir.clone();
         params.io.outdir += "/resumed/";

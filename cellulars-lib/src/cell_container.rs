@@ -1,8 +1,8 @@
 //! Contains logic associated with [CellContainer].
 
-use std::ops::{Deref, DerefMut};
-use crate::traits::cellular::{Alive, Cellular};
 use crate::constants::CellIndex;
+use crate::traits::cellular::{Alive, Cellular};
+use std::ops::{Deref, DerefMut};
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
 #[derive(Clone, Debug)]
@@ -118,16 +118,16 @@ impl<C> Default for CellContainer<C> {
     }
 }
 
-/// Represents a cell that is bound to an [Environment](crate::environment::Environment).
+/// Represents a cell that is bound to an [Environment](crate::base::base_environment::BaseEnvironment).
 ///
-/// Functions that do not need information about the cell's `index` relational operators should take 
+/// Functions that do not need information about the cell's `index` relational operators should take
 /// the inner cell type `C` directly.
 ///
 /// Implements [Deref<Target = C>].
 #[derive(Debug, Clone)]
 pub struct RelCell<C> {
-    /// Relational cell index that is unique to this cell in its 
-    /// [Environment](crate::environment::Environment).
+    /// Relational cell index that is unique to this cell in its
+    /// [Environment](crate::base::base_environment::BaseEnvironment).
     pub index: CellIndex,
     /// Inner cell instance.
     pub cell: C

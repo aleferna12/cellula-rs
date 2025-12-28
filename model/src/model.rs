@@ -2,28 +2,28 @@
 
 use crate::cell::{Cell, CellType};
 use crate::constants::{BoundaryType, NeighbourhoodType};
+use crate::environment::Environment;
 use crate::io::io_manager::IoManager;
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
-use crate::my_environment::MyEnvironment;
-use crate::my_pond::MyPond;
-use crate::my_potts::MyPotts;
+use crate::pond::Pond;
+use crate::potts::Potts;
 use anyhow::Context;
-use cellulars_lib::static_adhesion::StaticAdhesion;
-use cellulars_lib::environment::Environment;
-use cellulars_lib::pond::Pond;
+use cellulars_lib::base::base_environment::BaseEnvironment;
+use cellulars_lib::base::base_pond::BasePond;
 use cellulars_lib::positional::boundaries::{Boundaries, RectConversionError};
 use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::step::Step;
 use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::Path;
 
-/// This is the master struct that runs the simulation in a [MyPond] and manages IO through an [IoManager].
+/// This is the master struct that runs the simulation in a [Pond] and manages IO through an [IoManager].
 pub struct Model {
     /// Pond containing all cells and the model Potts algorithm.
-    pub pond: MyPond,
+    pub pond: Pond,
     /// Instance responsible for managing IO for the model.
     pub io: IoManager,
     /// Unique random number generator of this model.
@@ -138,8 +138,8 @@ impl Model {
         Ok(io)
     }
 
-    fn make_potts(parameters: &Parameters) -> MyPotts {
-        MyPotts::builder()
+    fn make_potts(parameters: &Parameters) -> Potts {
+        Potts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
@@ -161,13 +161,13 @@ impl Model {
 
     fn make_empty_pond(
         parameters: &Parameters,
-        env: MyEnvironment,
-        ca: MyPotts,
+        env: Environment,
+        ca: Potts,
         rng: &mut Xoshiro256StarStar,
         time_step: u32,
-    ) -> MyPond {
-        MyPond::new(
-            Pond::new(
+    ) -> Pond {
+        Pond::new(
+            BasePond::new(
                 env,
                 ca,
                 Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
@@ -180,11 +180,11 @@ impl Model {
 
     fn make_new_pond(
         parameters: &Parameters,
-        ca: MyPotts,
+        ca: Potts,
         rng: &mut Xoshiro256StarStar
-    ) -> anyhow::Result<MyPond> {
-        let env = MyEnvironment::new(
-            Environment::new_empty(
+    ) -> anyhow::Result<Pond> {
+        let env = Environment::new(
+            BaseEnvironment::new_empty(
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(Rect::new(
                     (0., 0.).into(),
@@ -203,20 +203,20 @@ impl Model {
                 parameters.cell.div_area,
                 if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
             );
-            pond.pond.env.spawn_cell_random(
+            pond.base_pond.env.spawn_cell_random(
                 cell,
                 parameters.cell.starting_area,
-                &mut pond.pond.rng
+                &mut pond.base_pond.rng
             );
         }
         log::info!(
                 "Created {} out of the {} cells requested",
-                pond.pond.env.env.cells.n_valid(),
+                pond.base_pond.env.base_env.cells.n_valid(),
                 parameters.cell.starting_cells
             );
 
         if parameters.pond.enclose {
-            pond.pond.env.make_border(true, true, true, true);
+            pond.base_pond.env.make_border(true, true, true, true);
         }
         Ok(pond)
     }
@@ -226,7 +226,7 @@ impl Model {
         rng: &mut Xoshiro256StarStar,
         sim_path: impl AsRef<Path>,
         time_step: u32
-    ) -> anyhow::Result<MyPond> {
+    ) -> anyhow::Result<Pond> {
         let sim_path = sim_path.as_ref();
 
         log::info!("Reading pond");
@@ -243,8 +243,8 @@ impl Model {
             rect.to_usize().ok_or(RectConversionError {})?,
         )?;
 
-        let mut env = MyEnvironment::new(
-            Environment::new(
+        let mut env = Environment::new(
+            BaseEnvironment::new(
                 cells,
                 lattice,
                 NeighbourhoodType::new(parameters.pond.neigh_r),
@@ -253,8 +253,8 @@ impl Model {
             parameters.cell.max_cells,
             parameters.cell.search_radius
         );
-        for pos in env.env.cell_lattice.iter_positions() {
-            env.env.update_edges(pos);
+        for pos in env.base_env.cell_lattice.iter_positions() {
+            env.base_env.update_edges(pos);
         }
 
         let pond = Self::make_empty_pond(
@@ -279,7 +279,7 @@ impl Model {
 
     fn log_info(&self) {
         log::info!("Time step {}:", self.pond.time_step());
-        let valid = self.pond.pond.env.env.cells.n_valid();
+        let valid = self.pond.base_pond.env.base_env.cells.n_valid();
         log::info!("\t{valid} cells");
     }
 }
@@ -292,7 +292,7 @@ impl Step for Model {
 
         let saved = self.io.write_if_time(
             self.pond.time_step(),
-            &self.pond.pond.env
+            &self.pond.base_pond.env
         );
         if let Err(e) = saved {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())
