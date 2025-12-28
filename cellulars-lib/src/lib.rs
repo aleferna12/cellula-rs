@@ -4,6 +4,7 @@
 TODO!:
  - Implement EnvNeighbours, which tracks neighbours
  - Make a BasePotts, BaseIoManager, BaseModel etc such that we can move the crate fully to cellulars-lib
+ - Add a command to parse a grayscale PNG into a simulation
  */
 
 pub mod lattice;
