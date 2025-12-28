@@ -1,8 +1,9 @@
 //! This crate contains library functions for the [Cellulars](https://github.com/aleferna12/cellulars) project.
 
-/* 
+/*
 TODO!:
  - Implement EnvNeighbours, which tracks neighbours
+ - Make a BasePotts, BaseIoManager, BaseModel etc such that we can move the crate fully to cellulars-lib
  */
 
 pub mod lattice;
