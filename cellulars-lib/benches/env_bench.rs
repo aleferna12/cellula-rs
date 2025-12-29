@@ -20,8 +20,8 @@ fn empty_env(width: f32, height: f32) -> BaseEnvironment<BaseCell, MooreNeighbou
         Boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
             (0., 0.).into(),
             (width, height).into()
-        ))).unwrap()
-    ).unwrap()
+        )))
+    )
 }
 
 fn random_neighbour(

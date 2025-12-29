@@ -3,11 +3,11 @@
 use crate::base::base_cell::BaseCell;
 use crate::cell_container::{CellContainer, RelCell};
 use crate::lattice::Lattice;
-use crate::positional::boundaries::{Boundaries, Boundary, RectConversionError, ToLatticeBoundary};
+use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::{Pos, CONV_ERROR};
+use crate::positional::pos::Pos;
 use crate::spin::Spin;
 use crate::traits::cellular::{Alive, Cellular};
 use crate::traits::habitable::Habitable;
@@ -39,14 +39,14 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> BaseEnvironment<C, N, B> {
     pub fn new_empty(
         neighbourhood: N,
         bounds: Boundaries<B>,
-    ) -> Result<Self, RectConversionError> {
-        Ok(Self {
-            cell_lattice: Lattice::new(bounds.boundary.rect().to_usize().ok_or(RectConversionError {})?),
+    ) -> Self {
+        Self {
+            cell_lattice: Lattice::new(bounds.boundary.rect().to_usize()),
             edge_book: EdgeBook::new(),
             cells: CellContainer::new(),
             bounds,
             neighbourhood
-        })
+        }
     }
 }
 
@@ -101,7 +101,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
 
         let found: Box<_> = self.cell_lattice.search_box(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().to_usize().expect(CONV_ERROR),
+            rel_cell.cell.center().round().to_usize(),
             search_diam,
             &self.bounds.lattice_boundary,
         ).collect();
@@ -128,7 +128,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().to_usize().expect(CONV_ERROR),
+            rel_cell.cell.center().round().to_usize(),
             &self.bounds.lattice_boundary,
             &self.neighbourhood
         );
@@ -160,7 +160,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
 
         self.cell_lattice.search_outline(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().to_usize().expect(CONV_ERROR),
+            rel_cell.cell.center().round().to_usize(),
             search_diam,
             &self.bounds.lattice_boundary,
             &self.neighbourhood
@@ -319,9 +319,9 @@ fn valid_neighbours(
 ) -> impl Iterator<Item = Pos<usize>> {
     lattice_boundary.valid_positions(
         neighbourhood.neighbours(
-            pos.to_isize().expect(CONV_ERROR)
+            pos.to_isize()
         )
-    ).map(|pos| pos.to_usize().expect(CONV_ERROR))
+    ).map(|pos| pos.to_usize())
 }
 
 #[cfg(test)]
@@ -341,8 +341,8 @@ pub mod tests {
         );
         BaseEnvironment::new_empty(
             MooreNeighbourhood::new(1),
-            Boundaries::new(UnsafePeriodicBoundary::new(rect.clone())).expect("failed to make boundaries"),
-        ).expect("failed to make test environment")
+            Boundaries::new(UnsafePeriodicBoundary::new(rect.clone()))
+        )
     }
 
     fn add_cell(

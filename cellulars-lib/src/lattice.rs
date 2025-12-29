@@ -2,9 +2,8 @@
 
 use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::{Pos, CONV_ERROR};
+use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
-use num::ToPrimitive;
 use rand::Rng;
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
@@ -101,7 +100,7 @@ impl<T: PartialEq> Lattice<T> {
         box_side: usize,
         bound: &impl Boundary<Coord = isize>
     ) -> impl Iterator<Item = Pos<usize>> {
-        let center_isize = center_pos.to_isize().expect(CONV_ERROR);
+        let center_isize = center_pos.to_isize();
         let radius = (box_side / 2) as isize;
         let rect = Rect::new(
             (center_isize.x - radius, center_isize.y - radius).into(),
@@ -110,9 +109,7 @@ impl<T: PartialEq> Lattice<T> {
         bound
             .valid_positions(rect.iter_positions())
             .filter_map(|pos| {
-                let lat_pos = pos
-                    .to_usize()
-                    .expect(CONV_ERROR);
+                let lat_pos = pos.to_usize();
                 if self[lat_pos].eq(value) {
                     return Some(lat_pos);
                 }
@@ -131,21 +128,19 @@ impl<T: PartialEq> Lattice<T> {
         neighbourhood: &impl Neighbourhood
     ) -> Box<[Pos<usize>]> {
         let mut found = vec![];
-        let mut queue = VecDeque::from([start_pos.to_isize().expect(CONV_ERROR)]);
+        let mut queue = VecDeque::from([start_pos.to_isize()]);
         let mut visited = Lattice::<bool>::new(self.rect.clone());
         visited[start_pos] = true;
 
         while let Some(pos) = queue.pop_front() {
-            let lat_pos = pos.to_usize().expect(CONV_ERROR);
+            let lat_pos = pos.to_usize();
             if !self[lat_pos].eq(value) {
                 continue;
             }
             bound
                 .valid_positions(neighbourhood.neighbours(pos))
                 .for_each(|neigh| {
-                    let lat_neigh = neigh
-                        .to_usize()
-                        .expect(CONV_ERROR);
+                    let lat_neigh = neigh.to_usize();
                     if !visited[lat_neigh] {
                         visited[lat_neigh] = true;
                         queue.push_back(neigh);
@@ -175,10 +170,10 @@ impl<T: PartialEq> Lattice<T> {
             bound
         ).find_map(|pos| {
             if let Some(neigh) = bound.valid_pos(Pos::new(
-                pos.x.to_isize().expect(CONV_ERROR) - 1,
-                pos.y.to_isize().expect(CONV_ERROR)
+                pos.x as isize - 1,
+                pos.y as isize
             ))
-                && &self[neigh.to_usize().expect(CONV_ERROR)] != value {
+                && &self[neigh.to_usize()] != value {
                 Some(neigh)
             } else {
                 None
@@ -190,13 +185,13 @@ impl<T: PartialEq> Lattice<T> {
 
         let mut queue = VecDeque::from([border_pos]);
         let mut visited = Lattice::<bool>::new(self.rect.clone());
-        visited[border_pos.to_usize().expect(CONV_ERROR)] = true;
+        visited[border_pos.to_usize()] = true;
 
         while let Some(pos) = queue.pop_front() {
             let mut diff_spin_neighs = Vec::with_capacity(neighbourhood.n_neighs().into());
             let mut has_value_neighbour = false;
             for neigh in bound.valid_positions(neighbourhood.neighbours(pos)) {
-                let neigh_pos = neigh.to_usize().expect(CONV_ERROR);
+                let neigh_pos = neigh.to_usize();
                 if visited[neigh_pos] {
                     continue;
                 }
@@ -210,9 +205,9 @@ impl<T: PartialEq> Lattice<T> {
             }
 
             if has_value_neighbour {
-                found.push(pos.to_usize().expect(CONV_ERROR));
+                found.push(pos.to_usize());
                 for neigh in diff_spin_neighs {
-                    visited[neigh.to_usize().expect(CONV_ERROR)] = true;
+                    visited[neigh.to_usize()] = true;
                     queue.push_back(neigh)
                 }
             }
@@ -269,7 +264,7 @@ mod tests {
     #[test]
     fn test_search_box() {
         let rect = Rect::new((0., 0.).into(), (10., 10.).into());
-        let mut lattice: Lattice<u8> = Lattice::new(rect.to_usize().unwrap());
+        let mut lattice: Lattice<u8> = Lattice::new(rect.to_usize());
         lattice[(5, 5).into()] = 1;
         lattice[(5, 6).into()] = 1;
         lattice[(4, 5).into()] = 1;
@@ -277,7 +272,7 @@ mod tests {
             &1,
             Pos::new(5, 5),
             5,
-            &UnsafePeriodicBoundary::new(rect).to_lattice_boundary().unwrap()
+            &UnsafePeriodicBoundary::new(rect).to_lattice_boundary()
         ).collect::<Vec<_>>();
         assert_eq!(outline.len(), 3);
     }
@@ -285,7 +280,7 @@ mod tests {
     #[test]
     fn test_search_outline() {
         let rect = Rect::new((0., 0.).into(), (10., 10.).into());
-        let mut lattice: Lattice<u8> = Lattice::new(rect.to_usize().unwrap());
+        let mut lattice: Lattice<u8> = Lattice::new(rect.to_usize());
         lattice[(5, 5).into()] = 1;
         lattice[(5, 6).into()] = 1;
         lattice[(4, 5).into()] = 1;
@@ -293,7 +288,7 @@ mod tests {
             &1,
             Pos::new(5, 5),
             5,
-            &UnsafePeriodicBoundary::new(rect).to_lattice_boundary().unwrap(),
+            &UnsafePeriodicBoundary::new(rect).to_lattice_boundary(),
             &MooreNeighbourhood::new(1)
         );
         assert_eq!(outline.len(), 12);

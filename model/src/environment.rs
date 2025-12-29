@@ -84,8 +84,7 @@ impl Environment {
             .base_env
             .cell_lattice
             .random_pos(rng)
-            .to_isize()
-            .expect("failed to convert position to isize");
+            .to_isize();
         let cell_side = ((cell_area as f32).sqrt() / 2.) as isize;
         let rect = Rect::new(
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
@@ -94,7 +93,7 @@ impl Environment {
         let positions: Box<_> = rect
             .iter_positions()
             .filter_map(|pos| self.base_env.bounds.lattice_boundary.valid_pos(pos))
-            .map(|pos| pos.to_usize().expect("failed to convert position to usize"))
+            .map(|pos| pos.to_usize())
             .collect();
         self.spawn_cell(
             empty_cell,
@@ -172,7 +171,7 @@ impl Environment {
 
         for p in &self.base_env.search_cell_box(rel_cell, search_scaler) {
             let (dx, dy) = self.base_env.bounds.boundary.displacement(
-                p.to_f32().expect("failed to convert position to f32"),
+                p.to_f32(),
                 rel_cell.cell.center()
             );
             sum_xx += dx * dx;

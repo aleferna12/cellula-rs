@@ -56,68 +56,56 @@ impl Rect<f32> {
         Rect::new(self.min.round(), self.max.round())
     }
 
-    /// Converts the rect's coordinate type to [isize] (by truncating).
-    ///
-    /// Fails under the same conditions that make [num::ToPrimitive] fail.
-    pub fn to_isize(&self) -> Option<Rect<isize>> {
-        Some(Rect::new(
-            self.min.to_isize()?,
-            self.max.to_isize()?,
-        ))
+    /// Casts the rect's coordinate type to [isize] (by truncating).
+    pub fn to_isize(&self) -> Rect<isize> {
+        Rect::new(
+            self.min.to_isize(),
+            self.max.to_isize(),
+        )
     }
 
-    /// Converts the rect's coordinate type to [usize] (by truncating).
-    ///
-    /// Fails under the same conditions that make [num::ToPrimitive] fail.
-    pub fn to_usize(&self) -> Option<Rect<usize>> {
-        Some(Rect::new(
-            self.min.to_usize()?,
-            self.max.to_usize()?,
-        ))
+    /// Casts the rect's coordinate type to [usize] (by truncating).
+    pub fn to_usize(&self) -> Rect<usize> {
+        Rect::new(
+            self.min.to_usize(),
+            self.max.to_usize(),
+        )
     }
 }
 
 impl Rect<usize> {
-    /// Converts the rect's coordinate type to [isize].
-    ///
-    /// Fails under the same conditions that make [num::ToPrimitive] fail.
-    pub fn to_isize(&self) -> Option<Rect<isize>> {
-        Some(Rect::new(
-            self.min.to_isize()?,
-            self.max.to_isize()?,
-        ))
+    /// Casts the rect's coordinate type to [isize].
+    pub fn to_isize(&self) -> Rect<isize> {
+        Rect::new(
+            self.min.to_isize(),
+            self.max.to_isize(),
+        )
     }
 
-    /// Converts the rect's coordinate type to [f32].
-    ///
-    /// Fails under the same conditions that make [num::ToPrimitive] fail.
-    pub fn to_f32(&self) -> Option<Rect<f32>> {
-        Some(Rect::new(
-            self.min.to_f32()?,
-            self.max.to_f32()?,
-        ))
+    /// Casts the rect's coordinate type to [f32].
+    pub fn to_f32(&self) -> Rect<f32> {
+        Rect::new(
+            self.min.to_f32(),
+            self.max.to_f32(),
+        )
     }
 }
 
 impl Rect<isize> {
-    /// Converts the rect's coordinate type to [usize].
-    ///
-    /// Fails under the same conditions that make [num::ToPrimitive] fail.
-    pub fn to_usize(&self) -> Option<Rect<usize>> {
-        Some(Rect::new(
-            self.min.to_usize()?,
-            self.max.to_usize()?,
-        ))
+    /// Casts the rect's coordinate type to [usize].
+    pub fn to_usize(&self) -> Rect<usize> {
+        Rect::new(
+            self.min.to_usize(),
+            self.max.to_usize(),
+        )
     }
 
-    /// Converts the rect's coordinate type to [f32].
-    ///
-    /// Fails under the same conditions that make [num::ToPrimitive] fail.
-    pub fn to_f32(&self) -> Option<Rect<f32>> {
-        Some(Rect::new(
-            self.min.to_f32()?,
-            self.max.to_f32()?,
-        ))
+    /// Casts the rect's coordinate type to [f32].
+    pub fn to_f32(&self) -> Rect<f32> {
+        Rect::new(
+            self.min.to_f32(),
+            self.max.to_f32(),
+        )
     }
 }
 

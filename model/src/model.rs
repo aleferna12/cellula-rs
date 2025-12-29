@@ -9,10 +9,9 @@ use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::pond::Pond;
 use crate::potts::Potts;
-use anyhow::Context;
 use cellulars_lib::base::base_environment::BaseEnvironment;
 use cellulars_lib::base::base_pond::BasePond;
-use cellulars_lib::positional::boundaries::{Boundaries, RectConversionError};
+use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::step::Step;
@@ -189,8 +188,8 @@ impl Model {
                 Boundaries::new(BoundaryType::new(Rect::new(
                     (0., 0.).into(),
                     (parameters.pond.width as f32, parameters.pond.height as f32).into(),
-                ))).context("lattice size is too big")?
-            ).context("lattice size is too big")?,
+                )))
+            ),
             parameters.cell.max_cells,
             parameters.cell.search_radius
         );
@@ -240,7 +239,7 @@ impl Model {
         );
         let lattice = IoManager::read_lattice(
             IoManager::resolve_lattice_path(sim_path, time_step),
-            rect.to_usize().ok_or(RectConversionError {})?,
+            rect.to_usize(),
         )?;
 
         let mut env = Environment::new(
@@ -248,7 +247,7 @@ impl Model {
                 cells,
                 lattice,
                 NeighbourhoodType::new(parameters.pond.neigh_r),
-                Boundaries::new(BoundaryType::new(rect))?,
+                Boundaries::new(BoundaryType::new(rect)),
             ),
             parameters.cell.max_cells,
             parameters.cell.search_radius
