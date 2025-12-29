@@ -17,16 +17,17 @@ static RUN_NOTES: &str = "\
     Additionally, the image will be resized to match the width and height given in the simulation parameters.
     \n\
     If `TEMPLATE` is provided but `LAYOUT` is not provided, \
-    an approximatedly equal number of cells will be initialized at random positions using each template.\n\
+    an approximatedly equal number of cells will be initialized at random positions using each template.\
     If both `LAYOUT` and `TEMPLATES` are provided, each color in `LAYOUT` is ordered by their value and assigned \
-    to the template at the corresponding index in `TEMPLATES`.
+    to the template at the corresponding index in `TEMPLATES` \
+    (there must be at least as many templates as there are colors in the layout).
     \n\
-    Model parameters are loaded from a TOML file specified by `CONFIG`.\n\
+    Model parameters are loaded from a TOML file specified by `CONFIG`.\
     You can also override any parameter from the CONFIG file with environmental variables \
-    (use `CPM` as a prefix and `__` as a separator for the parameter section, e.g. `CPM__GENERAL__TIME_STEPS=100`).\n\
+    (use `CPM` as a prefix and `__` as a separator for the parameter section, e.g. `CPM__GENERAL__TIME_STEPS=100`).\
     Use commas to pass parameters that expect lists (e.g. `CPM__IO__PLOT__ORDER=spin,center`).
     \n\
-    Documentation for parameters can be found in `model/examples/64_cells.toml`.\n\
+    Documentation for parameters can be found in `model/examples/64_cells.toml`.\
 ";
 
 /// CLI tool that executes [Commands].

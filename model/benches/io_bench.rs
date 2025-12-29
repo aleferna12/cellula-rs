@@ -5,7 +5,7 @@ use model::model::Model;
 use strum::IntoEnumIterator;
 
 fn make_model(params: Parameters) -> Model {
-    let mut model = Model::new_from_parameters(params).unwrap();
+    let mut model = Model::new_from_parameters(params, None).unwrap();
     model.run_for(100);
     model
 }

@@ -74,6 +74,8 @@ impl Environment {
 
     // TODO: make spawn as a circle with center at pos
     /// Spawns a square cell centered at a random position with area = `cell_area`.
+    ///
+    /// Uses [Environment::spawn_cell_checked()] to restrict spawns to medium.
     pub fn spawn_cell_random(
         &mut self,
         empty_cell: Cell,
@@ -90,14 +92,9 @@ impl Environment {
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
             Pos::new(pos_isize.x + cell_side, pos_isize.y + cell_side)
         );
-        let positions: Box<_> = rect
-            .iter_positions()
-            .filter_map(|pos| self.base_env.bounds.lattice_boundary.valid_pos(pos))
-            .map(|pos| pos.to_usize())
-            .collect();
-        self.spawn_cell(
+        self.spawn_cell_checked(
             empty_cell,
-            positions
+            rect.iter_positions()
         )
     }
 
@@ -256,6 +253,24 @@ impl Environment {
         }
 
         self.spawn_solid(border_positions.into_iter());
+    }
+
+    /// Spawns an `empty_cell` on valid `positions` that belong to the medium,
+    /// while ignoring positions owned by solids or other cells.
+    pub fn spawn_cell_checked(
+        &mut self,
+        empty_cell: Cell,
+        positions: impl IntoIterator<Item = Pos<isize>>
+    ) -> &RelCell<Cell> {
+        let med_positions = positions.into_iter().filter_map(|pos| {
+            let valid_pos = self.base_env.bounds.lattice_boundary.valid_pos(pos)?;
+            let lat_pos = valid_pos.to_usize();
+            if !matches!(self.base_env.cell_lattice[lat_pos], Spin::Medium) {
+                return None;
+            }
+            Some(lat_pos)
+        }).collect::<Box<[_]>>();
+        self.spawn_cell(empty_cell, med_positions)
     }
 }
 

@@ -16,8 +16,8 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
-use image::imageops::flip_vertical_in_place;
-use image::RgbaImage;
+use image::imageops::{flip_vertical_in_place, FilterType};
+use image::{ColorType, GrayImage, ImageReader, RgbaImage};
 use num_traits::NumCast;
 use polars::frame::row::Row;
 use polars::polars_utils::float::IsFloat;
@@ -147,6 +147,22 @@ impl IoManager {
         Self::make_cells_from_data(
             celldf
         )
+    }
+
+    pub fn read_layout(
+        layout_path: impl AsRef<Path>,
+        pond_width: usize,
+        pond_height: usize
+    ) -> anyhow::Result<GrayImage> {
+        let layout_path = layout_path.as_ref();
+        let layout = ImageReader::open(layout_path)?
+            .with_guessed_format()
+            .with_context(|| format!("failed to open layout file \"{layout_path:?}\" as PNG"))?
+            .decode()?;
+        if !matches!(layout.color(), ColorType::L8 | ColorType::L16 | ColorType::La8 | ColorType::La16) {
+            log::warn!("Layout file \"{layout_path:?}\" is not encoded in grayscale but will be converted");
+        }
+        Ok(layout.resize_exact(pond_width as u32, pond_height as u32, FilterType::Nearest).into_luma8())
     }
 
     /// Given a path to the main folder of a simulation, resolve the path to the file

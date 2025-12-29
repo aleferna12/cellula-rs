@@ -55,7 +55,7 @@ fn bench_param_files(
                         if let Some(movie_params) = &mut params.io.movie {
                             movie_params.show = false;
                         }
-                        let mut model = Model::new_from_parameters(params).unwrap();
+                        let mut model = Model::new_from_parameters(params, None).unwrap();
                         model.run_for(100);
                         model
                     },
@@ -89,7 +89,7 @@ fn bench_slow(c: &mut Criterion) {
                 if let Some(movie_params) = &mut params.io.movie {
                     movie_params.show = false;
                 }
-                let mut model = Model::new_from_parameters(params).unwrap();
+                let mut model = Model::new_from_parameters(params, None).unwrap();
                 model.run_for(50_000);
                 model
             },
@@ -111,7 +111,7 @@ fn bench_slow(c: &mut Criterion) {
                 if let Some(movie_params) = &mut params.io.movie {
                     movie_params.show = false;
                 }
-                let mut model = Model::new_from_parameters(params).unwrap();
+                let mut model = Model::new_from_parameters(params, None).unwrap();
                 model.run_for(100);
                 model
             },

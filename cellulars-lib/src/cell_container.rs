@@ -41,13 +41,13 @@ impl<C> CellContainer<C> {
         &mut self.vec[index as usize]
     }
 
-    /// Removes all cells from the ccell container, returning it to a clean-slate state.
+    /// Removes all cells from the cell container, returning it to a clean-slate state.
     pub fn wipe_out(&mut self) {
         self.vec.clear()
     }
 
-    /// Returns an iterator to references of all cells (including invalid).
-    pub fn iter(&self) -> impl Iterator<Item=&RelCell<C>> {
+    /// Returns an iterator of references to all cells (including invalid).
+    pub fn iter(&self) -> impl Iterator<Item = &RelCell<C>> {
         self.vec.iter()
     }
 
@@ -114,6 +114,15 @@ impl<C: Cellular> CellContainer<C> {
 impl<C> Default for CellContainer<C> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<C> IntoIterator for CellContainer<C> {
+    type Item = RelCell<C>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.vec.into_iter()
     }
 }
 

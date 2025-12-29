@@ -9,16 +9,13 @@ use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::pond::Pond;
 use crate::potts::Potts;
-use anyhow::Context;
 use cellulars_lib::base::base_environment::BaseEnvironment;
 use cellulars_lib::base::base_pond::BasePond;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::prelude::{CellIndex, Habitable, Pos};
+use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos};
 use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::step::Step;
-use image::imageops::FilterType;
-use image::{ColorType, ImageReader};
 use polars::polars_utils::itertools::Itertools;
 use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
@@ -41,16 +38,18 @@ pub struct Model {
 impl Model {
     /// Initialises a brand-new model from some `parameters`.
     pub fn new_from_parameters(
-        parameters: Parameters
+        parameters: Parameters,
+        maybe_templates_path: Option<String>,
     ) -> anyhow::Result<Self> {
-        log::info!("Initialising model");
+        log::info!("Initializing model");
 
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         Ok(Self {
             pond: Self::make_new_pond(
                 &parameters,
-                &mut rng
+                &mut rng,
+                maybe_templates_path
             )?,
             io: Self::setup_io(&parameters, seed)?,
             rng,
@@ -64,14 +63,15 @@ impl Model {
     /// Layout specifications are documented in the CLI.
     pub fn new_from_layout(
         parameters: Parameters,
-        layout_path: impl AsRef<Path>
+        layout_path: impl AsRef<Path>,
+        maybe_templates_path: Option<String>
     ) -> anyhow::Result<Self> {
         let layout_path = layout_path.as_ref();
-        log::info!("Initialising model with layout \"{}\"", layout_path.display());
+        log::info!("Initializing model with layout \"{}\"", layout_path.display());
 
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
-        let pond = Self::read_layout_pond(&parameters, layout_path, &mut rng)?;
+        let pond = Self::read_layout_pond(&parameters, layout_path, &mut rng, maybe_templates_path)?;
         Ok(Self {
             pond,
             io: Self::setup_io(&parameters, seed)?,
@@ -109,80 +109,6 @@ impl Model {
             pond,
             rng,
         })
-    }
-
-    fn read_layout_pond(
-        parameters: &Parameters,
-        layout_path: impl AsRef<Path>,
-        rng: &mut Xoshiro256StarStar
-    ) -> anyhow::Result<Pond> {
-        let layout_path = layout_path.as_ref();
-
-        let layout = ImageReader::open(layout_path)?
-            .with_guessed_format()
-            .with_context(|| format!("failed to open layout file \"{layout_path:?}\" as PNG"))?
-            .decode()?;
-        if !matches!(layout.color(), ColorType::L8 | ColorType::L16 | ColorType::La8 | ColorType::La16) {
-            log::warn!("Layout file \"{layout_path:?}\" is not encoded in grayscale but will be converted");
-        }
-        let layout_luma = layout
-            .resize_exact(parameters.pond.width as u32, parameters.pond.height as u32, FilterType::Nearest)
-            .into_luma8();
-
-        // Using floor bc thats what we use in spawn_cell_random
-        let cell_side = parameters.cell.starting_area.isqrt() as usize;
-        let mut solid_positions = vec![];
-        // luma values -> (grid_indexes -> positions)
-        let mut luma_cell_positions = HashMap::new();
-        for j in 0..parameters.pond.height {
-            for i in 0..parameters.pond.width {
-                let luma = layout_luma[(i as u32, j as u32)].0[0];
-                if luma == 255 {
-                    continue;
-                }
-
-                let pos = Pos::new(i, j);
-                if luma == 0 {
-                    solid_positions.push(pos);
-                    continue;
-                }
-
-                let grid_index = Pos::new(
-                    i / cell_side,
-                    j / cell_side
-                ).col_major(parameters.pond.height) as CellIndex;
-                let cell_positions = luma_cell_positions
-                    .entry(luma)
-                    .or_insert(HashMap::new());
-                let positions = cell_positions
-                    .entry(grid_index)
-                    .or_insert_with(Vec::new);
-                positions.push(pos);
-            }
-        }
-
-        let mut sorted_luma = luma_cell_positions.keys().copied().collect_vec();
-        sorted_luma.sort();
-
-        let mut pond = Self::make_empty_pond(parameters, rng);
-        for (group_index, luma) in sorted_luma.into_iter().enumerate() {
-            let cell_positions = luma_cell_positions
-                .remove(&luma)
-                .expect("missing luma key");
-            for positions in cell_positions.values() {
-                let empty_cell = Cell::new_empty(
-                    parameters.cell.target_area,
-                    parameters.cell.div_area,
-                    if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
-                );
-                pond.base_pond.env.spawn_cell(empty_cell, positions.iter().copied());
-            }
-        }
-        pond.base_pond.env.spawn_solid(solid_positions.into_iter());
-        if parameters.pond.enclose {
-            pond.base_pond.env.make_border(true, true, true, true);
-        }
-        Ok(pond)
     }
 
     fn setup_io(parameters: &Parameters, new_seed: u64) -> anyhow::Result<IoManager> {
@@ -286,30 +212,138 @@ impl Model {
         )
     }
 
+    fn templates_path_to_box(
+        maybe_templates_path: Option<String>
+    ) -> anyhow::Result<Option<Box<[Cell]>>> {
+        maybe_templates_path.map(|path| {
+            // This is required to obtain a clonable iterator that we can cycle over
+            let templates_cells = IoManager::read_cells(path)?
+                .into_iter()
+                .map(|rel_cell| rel_cell.cell)
+                .collect::<Box<[_]>>();
+            anyhow::Ok(templates_cells)
+        }).transpose()
+    }
+
+    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl Rng) -> Cell {
+        Cell::new_empty(
+            parameters.cell.target_area,
+            parameters.cell.div_area,
+            if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
+        )
+    }
+
     fn make_new_pond(
         parameters: &Parameters,
-        rng: &mut Xoshiro256StarStar
+        rng: &mut Xoshiro256StarStar,
+        maybe_templates_path: Option<String>,
     ) -> anyhow::Result<Pond> {
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, rng);
-        for _ in 0..parameters.cell.starting_cells {
-            let cell = Cell::new_empty(
-                parameters.cell.target_area,
-                parameters.cell.div_area,
-                if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
-            );
+
+        // Obtains an iterator over cell templates if a templates_path is present
+        let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
+        let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
+        let mut spawn_attempts = 0;
+        while pond.base_pond.env.base_env.cells.n_valid() < parameters.cell.starting_cells {
+            let cell = match &mut maybe_templates_it {
+                None => Ok(Self::empty_cell_from_parameters(parameters, rng)),
+                Some(templates_it) => templates_it
+                    .next()
+                    .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))
+            }?;
+            let cell_area = if cell.area() == 0 { parameters.cell.starting_area } else { cell.area() };
             pond.base_pond.env.spawn_cell_random(
-                cell,
-                parameters.cell.starting_area,
+                cell.birth(),
+                cell_area,
                 &mut pond.base_pond.rng
             );
-        }
-        log::info!(
-                "Created {} out of the {} cells requested",
-                pond.base_pond.env.base_env.cells.n_valid(),
-                parameters.cell.starting_cells
-            );
+            spawn_attempts += 1;
 
+            if spawn_attempts == parameters.cell.starting_cells * 2 {
+                log::warn!("Parameters have led to high cell density and difficulties placing cells in the simulation");
+                log::warn!("Consider decreasing `cell.starting_cells` or increasing the pond area");
+            } else if spawn_attempts > parameters.cell.starting_cells * 20 {
+                log::error!(
+                    "Only {} cells were initialized out of {} cells requested",
+                    pond.base_pond.env.base_env.cells.n_valid(),
+                    parameters.cell.starting_cells);
+                break;
+            }
+        }
+        if parameters.pond.enclose {
+            pond.base_pond.env.make_border(true, true, true, true);
+        }
+        Ok(pond)
+    }
+
+    fn read_layout_pond(
+        parameters: &Parameters,
+        layout_path: impl AsRef<Path>,
+        rng: &mut Xoshiro256StarStar,
+        maybe_templates_path: Option<String>
+    ) -> anyhow::Result<Pond> {
+        let layout_path = layout_path.as_ref();
+
+        let layout = IoManager::read_layout(
+            layout_path,
+            parameters.pond.width,
+            parameters.pond.height
+        )?;
+
+        // Using floor bc thats what we use in spawn_cell_random
+        let cell_side = parameters.cell.starting_area.isqrt() as usize;
+        let mut solid_positions = vec![];
+        // luma values -> (grid_indexes -> positions)
+        let mut luma_cell_positions = HashMap::new();
+        for j in 0..parameters.pond.height {
+            for i in 0..parameters.pond.width {
+                let luma = layout[(i as u32, j as u32)].0[0];
+                if luma == 255 {
+                    continue;
+                }
+
+                let pos = Pos::new(i, j);
+                if luma == 0 {
+                    solid_positions.push(pos);
+                    continue;
+                }
+
+                let grid_index = Pos::new(
+                    i / cell_side,
+                    j / cell_side
+                ).col_major(parameters.pond.height) as CellIndex;
+                let cell_positions = luma_cell_positions
+                    .entry(luma)
+                    .or_insert(HashMap::new());
+                let positions = cell_positions
+                    .entry(grid_index)
+                    .or_insert_with(Vec::new);
+                positions.push(pos);
+            }
+        }
+
+        let mut sorted_luma = luma_cell_positions.keys().copied().collect_vec();
+        sorted_luma.sort();
+
+        let mut pond = Self::make_empty_pond(parameters, rng);
+        let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
+        for (group_index, luma) in sorted_luma.into_iter().enumerate() {
+            let cell_positions = luma_cell_positions
+                .remove(&luma)
+                .expect("missing luma key");
+            for positions in cell_positions.values() {
+                let cell = match &maybe_templates_box {
+                    None => Self::empty_cell_from_parameters(parameters, rng),
+                    Some(templates_box) => templates_box
+                        .get(group_index)
+                        .ok_or(anyhow::anyhow!("there were more groups in the layout than in the template"))?
+                        .clone()
+                };
+                pond.base_pond.env.spawn_cell(cell.birth(), positions.iter().copied());
+            }
+        }
+        pond.base_pond.env.spawn_solid(solid_positions.into_iter());
         if parameters.pond.enclose {
             pond.base_pond.env.make_border(true, true, true, true);
         }
@@ -355,7 +389,7 @@ impl Model {
         let pond = Pond::new(
             BasePond::new(
                 env,
-                Self::make_potts(&parameters),
+                Self::make_potts(parameters),
                 Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
                 time_step
             ),
