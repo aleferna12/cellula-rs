@@ -26,11 +26,15 @@ pub trait Habitable {
     /// Grants position `pos` to the entity represented by spin `to`.
     ///
     /// This method should be used whenever a position on the environment changes ownership.
+    ///
+    /// Assumes that `pos` has already been validated by the lattice's boundary checker.
     fn grant_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate;
 
     /// Spawns a cell by progressively granting `empty_cell` a series of `positions` with [Habitable::grant_position()].
     ///
     /// Panics if `empty_cell` has area > 0.
+    ///
+    /// Assumes that the `positions` have already been validated by the lattice's boundary checker.
     fn spawn_cell(
         &mut self,
         empty_cell: Self::Cell,
@@ -48,6 +52,8 @@ pub trait Habitable {
     }
 
     /// Spawns a [Spin::Solid] at each position in `positions`.
+    ///
+    /// Assumes that the `positions` have already been validated by the lattice's boundary checker.
     fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {
         for pos in positions {
             self.grant_position(pos, Spin::Solid);

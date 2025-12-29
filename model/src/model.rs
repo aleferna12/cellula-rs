@@ -9,14 +9,20 @@ use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::pond::Pond;
 use crate::potts::Potts;
+use anyhow::Context;
 use cellulars_lib::base::base_environment::BaseEnvironment;
 use cellulars_lib::base::base_pond::BasePond;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::prelude::{CellIndex, Habitable, Pos};
 use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::step::Step;
+use image::imageops::FilterType;
+use image::{ColorType, ImageReader};
+use polars::polars_utils::itertools::Itertools;
 use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
+use std::collections::HashMap;
 use std::path::Path;
 
 /// This is the master struct that runs the simulation in a [Pond] and manages IO through an [IoManager].
@@ -44,9 +50,30 @@ impl Model {
         Ok(Self {
             pond: Self::make_new_pond(
                 &parameters,
-                Self::make_potts(&parameters),
                 &mut rng
             )?,
+            io: Self::setup_io(&parameters, seed)?,
+            rng,
+            info_period: parameters.io.info_period,
+            time_steps: parameters.general.time_steps
+        })
+    }
+
+    /// Makes a new model from a layout file.
+    ///
+    /// Layout specifications are documented in the CLI.
+    pub fn new_from_layout(
+        parameters: Parameters,
+        layout_path: impl AsRef<Path>
+    ) -> anyhow::Result<Self> {
+        let layout_path = layout_path.as_ref();
+        log::info!("Initialising model with layout \"{}\"", layout_path.display());
+
+        let seed = Self::determine_seed(parameters.general.seed);
+        let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
+        let pond = Self::read_layout_pond(&parameters, layout_path, &mut rng)?;
+        Ok(Self {
+            pond,
             io: Self::setup_io(&parameters, seed)?,
             rng,
             info_period: parameters.io.info_period,
@@ -64,7 +91,7 @@ impl Model {
         time_step: u32
     ) -> anyhow::Result<Self> {
         let sim_path = sim_path.as_ref();
-        log::info!("Resuming simulation at {}", sim_path.display());
+        log::info!("Resuming simulation at \"{}\"", sim_path.display());
         log::info!("Starting from time step {time_step}");
 
         let seed = Self::determine_seed(parameters.general.seed);
@@ -82,6 +109,80 @@ impl Model {
             pond,
             rng,
         })
+    }
+
+    fn read_layout_pond(
+        parameters: &Parameters,
+        layout_path: impl AsRef<Path>,
+        rng: &mut Xoshiro256StarStar
+    ) -> anyhow::Result<Pond> {
+        let layout_path = layout_path.as_ref();
+
+        let layout = ImageReader::open(layout_path)?
+            .with_guessed_format()
+            .with_context(|| format!("failed to open layout file \"{layout_path:?}\" as PNG"))?
+            .decode()?;
+        if !matches!(layout.color(), ColorType::L8 | ColorType::L16 | ColorType::La8 | ColorType::La16) {
+            log::warn!("Layout file \"{layout_path:?}\" is not encoded in grayscale but will be converted");
+        }
+        let layout_luma = layout
+            .resize_exact(parameters.pond.width as u32, parameters.pond.height as u32, FilterType::Nearest)
+            .into_luma8();
+
+        // Using floor bc thats what we use in spawn_cell_random
+        let cell_side = parameters.cell.starting_area.isqrt() as usize;
+        let mut solid_positions = vec![];
+        // luma values -> (grid_indexes -> positions)
+        let mut luma_cell_positions = HashMap::new();
+        for j in 0..parameters.pond.height {
+            for i in 0..parameters.pond.width {
+                let luma = layout_luma[(i as u32, j as u32)].0[0];
+                if luma == 255 {
+                    continue;
+                }
+
+                let pos = Pos::new(i, j);
+                if luma == 0 {
+                    solid_positions.push(pos);
+                    continue;
+                }
+
+                let grid_index = Pos::new(
+                    i / cell_side,
+                    j / cell_side
+                ).col_major(parameters.pond.height) as CellIndex;
+                let cell_positions = luma_cell_positions
+                    .entry(luma)
+                    .or_insert(HashMap::new());
+                let positions = cell_positions
+                    .entry(grid_index)
+                    .or_insert_with(Vec::new);
+                positions.push(pos);
+            }
+        }
+
+        let mut sorted_luma = luma_cell_positions.keys().copied().collect_vec();
+        sorted_luma.sort();
+
+        let mut pond = Self::make_empty_pond(parameters, rng);
+        for (group_index, luma) in sorted_luma.into_iter().enumerate() {
+            let cell_positions = luma_cell_positions
+                .remove(&luma)
+                .expect("missing luma key");
+            for positions in cell_positions.values() {
+                let empty_cell = Cell::new_empty(
+                    parameters.cell.target_area,
+                    parameters.cell.div_area,
+                    if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
+                );
+                pond.base_pond.env.spawn_cell(empty_cell, positions.iter().copied());
+            }
+        }
+        pond.base_pond.env.spawn_solid(solid_positions.into_iter());
+        if parameters.pond.enclose {
+            pond.base_pond.env.make_border(true, true, true, true);
+        }
+        Ok(pond)
     }
 
     fn setup_io(parameters: &Parameters, new_seed: u64) -> anyhow::Result<IoManager> {
@@ -153,36 +254,8 @@ impl Model {
             .build()
     }
 
-    fn determine_seed(seed_param: Option<u64>) -> u64 {
-        // TOML doesnt support large u64s so we use a u32 seed
-        seed_param.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64)
-    }
-
-    fn make_empty_pond(
-        parameters: &Parameters,
-        env: Environment,
-        ca: Potts,
-        rng: &mut Xoshiro256StarStar,
-        time_step: u32,
-    ) -> Pond {
-        Pond::new(
-            BasePond::new(
-                env,
-                ca,
-                Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
-                time_step
-            ),
-            parameters.cell.update_period,
-            parameters.cell.divide
-        )
-    }
-
-    fn make_new_pond(
-        parameters: &Parameters,
-        ca: Potts,
-        rng: &mut Xoshiro256StarStar
-    ) -> anyhow::Result<Pond> {
-        let env = Environment::new(
+    fn make_env(parameters: &Parameters) -> Environment {
+        Environment::new(
             BaseEnvironment::new_empty(
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(Rect::new(
@@ -192,10 +265,33 @@ impl Model {
             ),
             parameters.cell.max_cells,
             parameters.cell.search_radius
-        );
+        )
+    }
 
+    fn determine_seed(seed_param: Option<u64>) -> u64 {
+        // TOML doesnt support large u64s so we use a u32 seed
+        seed_param.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64)
+    }
+
+    fn make_empty_pond(parameters: &Parameters, rng: &mut Xoshiro256StarStar) -> Pond {
+        Pond::new(
+            BasePond::new(
+                Self::make_env(parameters),
+                Self::make_potts(parameters),
+                Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
+                0
+            ),
+            parameters.cell.update_period,
+            parameters.cell.divide
+        )
+    }
+
+    fn make_new_pond(
+        parameters: &Parameters,
+        rng: &mut Xoshiro256StarStar
+    ) -> anyhow::Result<Pond> {
         log::info!("Making pond");
-        let mut pond = Self::make_empty_pond(parameters, env.clone(), ca.clone(), rng, 0);
+        let mut pond = Self::make_empty_pond(parameters, rng);
         for _ in 0..parameters.cell.starting_cells {
             let cell = Cell::new_empty(
                 parameters.cell.target_area,
@@ -256,12 +352,15 @@ impl Model {
             env.base_env.update_edges(pos);
         }
 
-        let pond = Self::make_empty_pond(
-            parameters,
-            env,
-            Self::make_potts(parameters),
-            rng,
-            time_step,
+        let pond = Pond::new(
+            BasePond::new(
+                env,
+                Self::make_potts(&parameters),
+                Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
+                time_step
+            ),
+            parameters.cell.update_period,
+            parameters.cell.divide
         );
         Ok(pond)
     }

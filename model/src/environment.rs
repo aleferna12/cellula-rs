@@ -85,7 +85,7 @@ impl Environment {
             .cell_lattice
             .random_pos(rng)
             .to_isize();
-        let cell_side = ((cell_area as f32).sqrt() / 2.) as isize;
+        let cell_side = ((cell_area as f32).sqrt() / 2.).floor() as isize;
         let rect = Rect::new(
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
             Pos::new(pos_isize.x + cell_side, pos_isize.y + cell_side)

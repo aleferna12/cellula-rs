@@ -7,7 +7,21 @@ use std::path::Path;
 use strum_macros::EnumIter;
 
 static RUN_NOTES: &str = "\
-    Model parameters are loaded from a TOML file specified by CONFIG.\n\
+    If `LAYOUT` is provided, these specifications are to be followed:\n\t\
+        1. Only grayscale images are allowed.\n\t\
+        2. Black pixels represent solid objects.\n\t\
+        3. White pixels represent the medium.\n\t\
+        4. Pixels of any other color are aggregated into square cells, \
+           with their area given by the `cell.starting_area` simulation parameter.
+    \n\
+    Additionally, the image will be resized to match the width and height given in the simulation parameters.
+    \n\
+    If `TEMPLATE` is provided but `LAYOUT` is not provided, \
+    an approximatedly equal number of cells will be initialized at random positions using each template.\n\
+    If both `LAYOUT` and `TEMPLATES` are provided, each color in `LAYOUT` is ordered by their value and assigned \
+    to the template at the corresponding index in `TEMPLATES`.
+    \n\
+    Model parameters are loaded from a TOML file specified by `CONFIG`.\n\
     You can also override any parameter from the CONFIG file with environmental variables \
     (use `CPM` as a prefix and `__` as a separator for the parameter section, e.g. `CPM__GENERAL__TIME_STEPS=100`).\n\
     Use commas to pass parameters that expect lists (e.g. `CPM__IO__PLOT__ORDER=spin,center`).
@@ -29,8 +43,17 @@ pub enum Commands {
     /// Start a new run
     #[command(after_long_help = RUN_NOTES)]
     Run {
-        /// Path to a TOML file with parameters
-        config: String
+        /// Path to a TOML file with the simulation parameters
+        config: String,
+        /// Path to a grayscale PNG file containing the layout of cells to be initialized
+        /// (if omitted, cells will be initialized at a random positions)
+        #[arg(short, long)]
+        layout: Option<String>,
+        /// Path to PARQUET file containing cell templates used to initialize cells in the simulation
+        /// (if omitted, cells are initialized using the simulation parameters)
+        #[arg(short, long)]
+        templates: Option<String>
+
     },
     /// Resume a previous run
     Resume {
@@ -42,7 +65,8 @@ pub enum Commands {
         #[arg(short, long)]
         /// Path to a TOML file with parameters (if omitted, will read parameters from the run's `config.toml` file)
         config: Option<String>
-    }
+    },
+
 }
 
 // When you add parameters, dont forget to document them (and their defaults)
