@@ -10,6 +10,9 @@ use std::f32::consts::E;
 
 /// This trait defines how a Monte Carlo [PottsAlgorithm::step()] of the model should modify a
 /// [Habitable] environment.
+///
+/// The default methods for this trait restrict lattice updates to cell borders following
+/// [van Steijn, 2022](https://doi.org/10.1371/journal.pcbi.1009156) to improve computational efficiency.
 pub trait PottsAlgorithm {
     /// Type of environment that is going to be modified each [PottsAlgorithm::step()].
     type Environment: Habitable;
@@ -86,9 +89,8 @@ pub trait PottsAlgorithm {
 
     /// Attempts to execute the selected site copy from `pos_source` into `pos_target`.
     ///
-    /// # Returns:
-    ///
-    /// The number of extra updates that the copy attempt should incur based on how many cell edges it modified.
+    /// Returns the number of extra updates that the copy attempt should incur
+    /// based on how many cell edges it modified.
     fn attempt_site_copy(
         &self,
         pos_source: Pos<usize>,

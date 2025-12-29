@@ -15,12 +15,11 @@ pub struct StaticAdhesion {
 }
 
 impl AdhesionSystem for StaticAdhesion {
-    type Context = ();
     fn adhesion_energy(
         &self,
         spin1: Spin,
         spin2: Spin,
-        _: &Self::Context,
+        _: &(),
     ) -> f32 {
         match (spin1, spin2) {
             (Spin::Some(c1), Spin::Some(c2)) => {
