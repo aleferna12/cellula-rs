@@ -19,7 +19,7 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
 fn test_run() -> anyhow::Result<()> {
     for plot in [PT::CellType, PT::Area, PT::Center, PT::ChemCenter] {
         let mut params = make_test_parameters()?;
-        params.io.outdir = format!("tests/{plot:?}");
+        params.io.outdir = format!("tests/plots/{plot:?}");
         params.io.plot.order = vec![PT::Chem, PT::Spin, plot, PT::Border].into();
 
         let mut model = Model::new_from_parameters(params.clone(), None)?;
