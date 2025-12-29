@@ -23,6 +23,7 @@ fn main() -> anyhow::Result<()> {
             templates: maybe_templates
         } => {
             let params = Parameters::parse(config)?;
+            // TODO!: implement templates
             match maybe_layout {
                 None => Model::new_from_parameters(params)?,
                 Some(layout) => Model::new_from_layout(params, layout)?
