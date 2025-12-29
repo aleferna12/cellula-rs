@@ -8,7 +8,7 @@ use crate::positional::pos::Pos;
 use crate::spin::Spin;
 use crate::traits::cellular::Cellular;
 
-/// This trait asserts that an [BaseEnvironment] is habitable,
+/// This trait asserts that an environment is habitable,
 /// which is to say that it can contain active cells.
 ///
 /// Overriding methods of this trait (especially [Habitable::grant_position()])
