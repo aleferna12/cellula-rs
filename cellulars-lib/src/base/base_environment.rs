@@ -85,10 +85,12 @@ impl<C, N, B: ToLatticeBoundary> BaseEnvironment<C, N, B> {
 }
 
 impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, B> {
-    // This function returns a Vec so that we can check that the site number matches
+    // This function returns a Box (not an Iter) so that we can check that the site number matches
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
-    /// May fail if `radius_scaler` is too small, in which case logs a warning.
+    /// `search_scaler` multiplies the expected radius of `rel_cell` (which is calculated from its area).
+    ///
+    /// May fail to find all cell positions if `search_scaler` is too small, in which case logs a warning.
     pub fn search_cell_box(&self, rel_cell: &RelCell<impl Cellular>, search_scaler: f32) -> Box<[Pos<usize>]> {
         let search_diam = (
             search_scaler
