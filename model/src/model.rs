@@ -247,11 +247,11 @@ impl Model {
         let mut spawn_attempts = 0;
         while pond.base_pond.env.base_env.cells.n_valid() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
-                None => Ok(Self::empty_cell_from_parameters(parameters, rng)),
+                None => Self::empty_cell_from_parameters(parameters, rng),
                 Some(templates_it) => templates_it
                     .next()
-                    .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))
-            }?;
+                    .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))?
+            };
             let cell_area = if cell.area() == 0 { parameters.cell.starting_area } else { cell.area() };
             pond.base_pond.env.spawn_cell_random(
                 cell.birth(),
