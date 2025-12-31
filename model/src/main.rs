@@ -13,15 +13,27 @@ fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
     let mut model = match cli.command {
-        Run { config } => {
+        Run {
+            config,
+            layout: maybe_layout,
+            templates: maybe_templates
+        } => {
             let params = Parameters::parse(config)?;
-            Model::new_from_parameters(params)?
+            match maybe_layout {
+                None => Model::new_from_parameters(params, maybe_templates)?,
+                Some(layout) => Model::new_from_layout(params, layout, maybe_templates)?
+            }
         },
-        Resume { directory, config, time_step } => {
-            let params = match config {
-                Some(config_) => Parameters::parse(config_),
+        Resume {
+            directory,
+            config: maybe_config,
+            time_step: maybe_time_step
+        } => {
+            let params = match maybe_config {
+                Some(config) => Parameters::parse(config),
                 None => Parameters::parse(IoManager::resolve_parameters_path(&directory))
             }?;
+            let time_step = maybe_time_step.unwrap_or(IoManager::find_last_time_step(&directory)?);
             Model::new_from_backup(params, directory, time_step)?
         }
     };

@@ -13,10 +13,10 @@ use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
-use image::imageops::flip_vertical_in_place;
-use image::RgbaImage;
+use image::imageops::{flip_vertical_in_place, FilterType};
+use image::{ColorType, GrayImage, ImageReader, RgbaImage};
 use polars::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -70,6 +70,51 @@ impl IoManager {
             )
         )?;
         Ok(())
+    }
+
+    /// Returns the last time step in a simulation directory from which a backup can be restored.
+    pub fn find_last_time_step(dir: impl AsRef<Path>) -> anyhow::Result<u32> {
+        let dir = dir.as_ref();
+        let paths = [CELLS_PATH, ACT_LATTICES_PATH, CELL_LATTICES_PATH, CHEM_LATTICES_PATH];
+        let mut intersection = HashSet::new();
+        for path in paths {
+            let full_path = dir.join(path);
+            let file_steps = std::fs::read_dir(full_path)?
+                .filter_map(|maybe_file| {
+                    let file = maybe_file.ok()?;
+                    let file_name = file.file_name();
+                    let number_str = file_name.to_str()?.strip_suffix(".parquet")?;
+                    number_str.parse::<u32>().ok()
+                })
+                .collect();
+
+            if intersection.is_empty() {
+                intersection = file_steps;
+            } else {
+                intersection = intersection.intersection(&file_steps).copied().collect();
+            }
+        }
+
+        intersection
+            .into_iter()
+            .max()
+            .ok_or(anyhow::anyhow!("directory `{dir:?}` does not contain a valid back-up"))
+    }
+
+    pub fn read_layout(
+        layout_path: impl AsRef<Path>,
+        pond_width: usize,
+        pond_height: usize
+    ) -> anyhow::Result<GrayImage> {
+        let layout_path = layout_path.as_ref();
+        let layout = ImageReader::open(layout_path)?
+            .with_guessed_format()
+            .with_context(|| format!("failed to open layout file \"{layout_path:?}\" as PNG"))?
+            .decode()?;
+        if !matches!(layout.color(), ColorType::L8 | ColorType::L16 | ColorType::La8 | ColorType::La16) {
+            log::warn!("Layout file \"{layout_path:?}\" is not encoded in grayscale but will be converted");
+        }
+        Ok(layout.resize_exact(pond_width as u32, pond_height as u32, FilterType::Nearest).into_luma8())
     }
 
     fn make_cells_from_data(

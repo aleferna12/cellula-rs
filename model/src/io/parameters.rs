@@ -13,13 +13,7 @@ static RUN_NOTES: &str = "\
     Documentation for parameters can be found in `model/examples/64_cells.toml`.\n\
 ";
 
-static RESUME_NOTES: &str = "\
-    Model parameters can be specified via CONFIG, or by setting environmental variables \
-    (see help of the `run` subcommand).\n\
-    If CONFIG is not specified and no environmental variables are set, \
-    the simulation runs with its original parameters.
-";
-
+/// CLI tool that executes [Commands].
 #[derive(Parser)]
 #[command(version, about)]
 pub struct Cli {
@@ -27,26 +21,38 @@ pub struct Cli {
     pub command: Commands,
 }
 
+/// Commands available to the [Cli].
 #[derive(Subcommand)]
 pub enum Commands {
     /// Start a new run
     #[command(after_long_help = RUN_NOTES)]
     Run {
-        /// Path to a TOML file with parameters
-        config: String
+        /// Path to a TOML file with the simulation parameters
+        config: String,
+        /// Path to a grayscale PNG file containing the layout of cells to be initialized
+        /// (if omitted, cells will be initialized at a random positions)
+        #[arg(short, long)]
+        layout: Option<String>,
+        /// Path to PARQUET file containing cell templates used to initialize cells in the simulation
+        /// (if omitted, cells are initialized using the simulation parameters)
+        #[arg(short, long)]
+        templates: Option<String>
+
     },
     /// Resume a previous run
-    #[command(after_help = RESUME_NOTES)]
     Resume {
         /// Path to the directory of the simulation to be resumed
         directory: String,
-        // TODO!: make optional and find last time_step
-        /// Time step from which to restore the data from
-        time_step: u32,
-        /// Path to a TOML file with parameters
+        /// Time step from which to restore the data from (if omitted, the last time-step will be used)
+        #[arg(short, long)]
+        time_step: Option<u32>,
+        #[arg(short, long)]
+        /// Path to a TOML file with parameters (if omitted, will read parameters from the run's `config.toml` file)
         config: Option<String>
-    }
+    },
+
 }
+
 
 // When you add parameters, dont forget to document them (and their defaults)
 /// Parameters for the model.

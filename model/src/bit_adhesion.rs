@@ -118,7 +118,7 @@ mod tests {
       
         let mut gammas = vec![];
         let mut rng = rand::rngs::StdRng::seed_from_u64(132415);
-        for _ in 0..1_000 {
+        for _ in 0..100_000 {
             let mut cells = CellContainer::new();
             let cell1 = Cell::new_empty(
                 0,

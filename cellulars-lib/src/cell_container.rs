@@ -98,3 +98,12 @@ impl<C> Default for CellContainer<C> {
         Self::new()
     }
 }
+
+impl<C> IntoIterator for CellContainer<C> {
+    type Item = RelCell<C>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.vec.into_iter()
+    }
+}
