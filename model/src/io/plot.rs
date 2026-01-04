@@ -1,3 +1,5 @@
+// TODO!: plot chem-polarization to check if floating point errors are messing up chemotaxis
+
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use crate::my_environment::MyEnvironment;
