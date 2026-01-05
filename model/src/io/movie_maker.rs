@@ -2,7 +2,7 @@
 
 use image::{EncodableLayout, RgbaImage};
 
-/// This struct manages a [minifb::Window] to display simulation frames.
+/// This struct manages a[`minifb::Window`] to display simulation frames.
 pub struct MovieMaker {
     /// Width of the screen in pixels.
     pub width: u32,

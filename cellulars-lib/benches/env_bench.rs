@@ -116,7 +116,7 @@ fn bench_env(c: &mut Criterion) {
     let mut group = c.benchmark_group("cell_positions");
     group.bench_function("contiguous_cell_positions", |b| {
         b.iter(|| {
-            let rel_cell = env.cells.get_cell(0);
+            let rel_cell = &env.cells[0];
             assert_eq!(
                 env.search_cell_contiguous(rel_cell).len(),
                 rel_cell.cell.area() as usize
@@ -125,7 +125,7 @@ fn bench_env(c: &mut Criterion) {
     });
     group.bench_function("box_cell_positions", |b| {
         b.iter(|| {
-            let rel_cell = env.cells.get_cell(0);
+            let rel_cell = &env.cells[0];
             assert_eq!(
                 env.search_cell_box(rel_cell, 2.).len(),
                 rel_cell.cell.area() as usize

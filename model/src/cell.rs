@@ -1,10 +1,10 @@
-//! Contains logic associated with [Cell].
+//! Contains logic associated with[`Cell`].
 
 use bon::Builder;
 use cellulars_lib::base::base_cell::{shifted_com, BaseCell};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::traits::cellular::{Alive, Cellular};
+use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell};
 use strum_macros::{Display, EnumString};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
@@ -12,7 +12,7 @@ use strum_macros::{Display, EnumString};
 pub struct Cell {
     /// Area at which the cell divides.
     pub divide_area: u32,
-    /// Target area for newborns of this cell (see [Alive::birth()]).
+    /// Target area for newborns of this cell (see[`Alive::birth()`]).
     pub newborn_target_area: u32,
     /// Current type of the cell.
     pub cell_type: CellType,
@@ -25,16 +25,16 @@ pub struct Cell {
 }
 
 impl Cell {
-    /// Initialises an empty [Cell] to be filled progressively with [Cell::shift_position()].
-    pub fn new_empty(target_area: u32, divide_area: u32, cell_type: CellType) -> Self {
-        Self {
-            base_cell: BaseCell::new_empty(target_area),
+    /// Initialises an empty[`Cell`] to be filled progressively with[`Cell::shift_position()`].
+    pub fn new_empty(target_area: u32, divide_area: u32, cell_type: CellType) -> EmptyCell<Self> {
+        EmptyCell::new(Self {
+            base_cell: BaseCell::new_empty(target_area).into_cell(),
             chem_center: Pos::new(0., 0.),
             chem_mass: 0,
             newborn_target_area: target_area,
             divide_area,
             cell_type,
-        }
+        }).expect("cell was not empty")
     }
     
     /// Returns the total concentration of the chemical perceived by the cell.
@@ -48,7 +48,7 @@ impl Cell {
     }
 
     /// Sets the area at which the cell divides when
-    /// [Environment::reproduce()](crate::environment::Environment::reproduce()) is called.
+    ///[`Environment::reproduce()`](crate::environment::Environment::reproduce()) is called.
     pub fn set_divide_area(&mut self, value: u32) {
         self.divide_area = value;
     }
@@ -76,7 +76,7 @@ impl Cell {
             .expect("overflow in `shift_chem`");
     }
 
-    /// Updates parameters of the cell (called by [Pond::step()](cellulars_lib::traits::step::Step::step())).
+    /// Updates parameters of the cell (called by[`Pond::step()`](cellulars_lib::traits::step::Step::step())).
     pub fn update(&mut self) {
         if let CellType::Dividing = self.cell_type && self.target_area() < self.divide_area {
             let new_target_area = self.target_area() + 1;
@@ -98,8 +98,8 @@ impl Cellular for Cell {
         self.base_cell.center()
     }
 
-    fn is_valid(&self) -> bool {
-        self.base_cell.is_valid()
+    fn is_empty(&self) -> bool {
+        self.base_cell.is_empty()
     }
 
     fn shift_position(&mut self, pos: Pos<usize>, add: bool, bound: &impl Boundary<Coord=f32>) {
@@ -116,14 +116,14 @@ impl Alive for Cell {
         self.base_cell.apoptosis()
     }
 
-    fn birth(&self) -> Self {
-        let mut basic_cell = self.base_cell.birth();
+    fn birth(&self) -> EmptyCell<Self> {
+        let mut basic_cell = self.base_cell.birth().into_cell();
         basic_cell.target_area = self.newborn_target_area;
-        Self {
+        EmptyCell::new(Self {
             base_cell: basic_cell,
             chem_mass: 0,
             ..self.clone()
-        }
+        }).expect("failed to create empty cell")
     }
 }
 
@@ -152,7 +152,7 @@ mod tests {
             100,
             200,
             CellType::Migrating,
-        )
+        ).into_cell()
     }
 
     #[test]

@@ -1,8 +1,8 @@
-//! Contains logic associated with [BaseCell].
+//! Contains logic associated with [`BaseCell`].
 
 use crate::positional::boundaries::Boundary;
 use crate::positional::pos::Pos;
-use crate::traits::cellular::{Alive, Cellular};
+use crate::traits::cellular::{Alive, Cellular, EmptyCell};
 use thiserror::Error;
 
 /// Minimum components required to simulate a cell.
@@ -18,19 +18,19 @@ pub struct BaseCell {
 
 impl BaseCell {
     /// Returns an empty cell to be filled by methods like 
-    /// [Habitable::spawn_cell()](crate::traits::habitable::Habitable::spawn_cell())
-    pub fn new_empty(target_area: u32) -> Self {
-        Self {
+    /// [`Habitable::spawn_cell()`](crate::traits::habitable::Habitable::spawn_cell()).
+    pub fn new_empty(target_area: u32) -> EmptyCell<Self> {
+        EmptyCell::new(Self {
             target_area,
             area: 0,
             center: Pos::new(0., 0.,)
-        }
+        }).unwrap()
     }
 
     /// Makes a new, ready-to-go cell from a pre-existing state.
     ///
     /// Useful to initialize a cell from a backup.
-    /// For most use cases, use [BaseCell::new_empty()] instead.
+    /// For most use cases, use [`BaseCell::new_empty()`] instead.
     pub fn new_ready(
         area: u32,
         center: Pos<f32>,
@@ -68,7 +68,7 @@ impl Cellular for BaseCell {
     }
 
     // Experimented with encoding this using typestate pattern but it was not helpful nor ergonomic
-    fn is_valid(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.area > 0
     }
 
@@ -98,17 +98,17 @@ impl Cellular for BaseCell {
 
 impl Alive for BaseCell {
     fn is_alive(&self) -> bool {
-        self.is_valid() && self.target_area() > 0
+        self.is_empty() && self.target_area() > 0
     }
 
     fn apoptosis(&mut self) {
         self.target_area = 0
     }
 
-    fn birth(&self) -> Self {
+    fn birth(&self) -> EmptyCell<BaseCell> {
         let mut newborn = self.clone();
         newborn.area = 0;
-        newborn
+        EmptyCell::new(newborn).expect("cell is not empty")
     }
 }
 
@@ -139,7 +139,7 @@ pub fn shifted_com<B: Boundary<Coord = f32>>(
 }
 
 #[derive(Error, Clone, Debug, PartialEq)]
-/// Error thrown when a [shifted_com()] operation fails.
+/// Error thrown when a [`shifted_com()`] operation fails.
 pub enum ShiftError {
     /// Shifting resulted in a negative mass.
     #[error("shifted COM has negative mass {0}")]

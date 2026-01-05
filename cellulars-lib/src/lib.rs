@@ -1,4 +1,4 @@
-//! This crate contains library functions for the [Cellulars](https://github.com/aleferna12/cellulars) project.
+//! This crate contains library functions for the [`Cellulars`](https://github.com/aleferna12/cellulars) project.
 
 /*
 TODO!:

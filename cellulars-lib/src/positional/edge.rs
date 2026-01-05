@@ -1,4 +1,4 @@
-//! Contains logic associated with [Edge].
+//! Contains logic associated with[`Edge`].
 
 use crate::positional::pos::Pos;
 use std::hash::{Hash, Hasher};

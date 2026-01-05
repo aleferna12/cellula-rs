@@ -1,4 +1,4 @@
-//! Contains logic associated with [AdhesionSystem].
+//! Contains logic associated with [`AdhesionSystem`].
 
 use crate::spin::Spin;
 

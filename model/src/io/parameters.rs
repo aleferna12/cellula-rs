@@ -30,7 +30,7 @@ static RUN_NOTES: &str = "\
     Documentation for parameters can be found in `model/examples/64_cells.toml`.\
 ";
 
-/// CLI tool that executes [Commands].
+/// CLI tool that executes [`Commands`].
 #[derive(Parser)]
 #[command(version, about)]
 pub struct Cli {
@@ -38,7 +38,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
-/// Commands available to the [Cli].
+/// Commands available to the [`Cli`].
 #[derive(Subcommand)]
 pub enum Commands {
     /// Start a new run
@@ -133,7 +133,7 @@ pub struct GeneralParameters {
     pub seed: Option<u64>
 }
 
-/// Parameters determining how a pond is created (see [pond](crate::pond));
+/// Parameters determining how a pond is created (see [`pond`](crate::pond));
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PondParameters {
@@ -144,7 +144,7 @@ pub struct PondParameters {
     pub neigh_r: u8,
 }
 
-/// Parameters specifying how cells are created and behave (see [cell](crate::cell)).
+/// Parameters specifying how cells are created and behave (see [`cell`](crate::cell)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct CellParameters {
@@ -161,7 +161,7 @@ pub struct CellParameters {
     pub update_period: u32,
 }
 
-/// Parameters for the cellular automata update algorithm (see [potts](crate::potts)).
+/// Parameters for the cellular automata update algorithm (see [`potts`](crate::potts)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PottsParameters {
@@ -171,7 +171,7 @@ pub struct PottsParameters {
     pub adhesion: AdhesionParameters
 }
 
-/// Parameters used in cell adhesion (see [cellulars_lib::static_adhesion]).
+/// Parameters used in cell adhesion (see [`cellulars_lib::static_adhesion`]).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct AdhesionParameters {
@@ -180,7 +180,7 @@ pub struct AdhesionParameters {
     pub solid_energy: f32,
 }
 
-/// Parameters used to control IO operations (see [io_manager](crate::io::io_manager)).
+/// Parameters used to control IO operations (see [`io_manager`](crate::io::io_manager)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct IoParameters {
@@ -196,7 +196,7 @@ pub struct IoParameters {
     pub movie: Option<MovieParameters>,
 }
 
-/// Parameters used to determine how and when to save data (see [io_manager](crate::io::io_manager)).
+/// Parameters used to determine how and when to save data (see [`io_manager`](crate::io::io_manager)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct DataParameters {
@@ -204,7 +204,7 @@ pub struct DataParameters {
     pub lattice_period: u32
 }
 
-/// Parameters used to display the real-time movie of the simulation (see [movie_maker](crate::io::movie_maker)).
+/// Parameters used to display the real-time movie of the simulation (see [`movie_maker`](crate::io::movie_maker)).
 ///
 /// Omitting these from the configuration file disables the movie window (same as setting `show` = False).
 /// The `movie` feature flag must be on for the movie to be displayed.
@@ -218,7 +218,7 @@ pub struct MovieParameters {
     pub frame_period: u32
 }
 
-/// Parameters using for plotting (see [plot](crate::io::plot)).
+/// Parameters using for plotting (see[`plot`](crate::io::plot)).
 // We flatten the parameters here to allow order to be an env variable
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]

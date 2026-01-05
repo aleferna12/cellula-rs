@@ -1,4 +1,4 @@
-//! Contains logic associated with [Habitable].
+//! Contains logic associated with[`Habitable`].
 
 use crate::base::base_environment::{BaseEnvironment, EdgesUpdate};
 use crate::cell_container::RelCell;
@@ -6,7 +6,7 @@ use crate::positional::boundaries::ToLatticeBoundary;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
-use crate::traits::cellular::Cellular;
+use crate::traits::cellular::{Cellular, EmptyCell};
 
 /// This trait asserts that an environment is habitable,
 /// which is to say that it can contain active cells.
@@ -27,33 +27,28 @@ pub trait Habitable {
     ///
     /// This method should be used whenever a position on the environment changes ownership.
     ///
-    /// Assumes that `pos` has already been validated by the lattice's boundary checker.
+    /// Assumes that `pos` is a valid position in the environment's lattice.
     fn grant_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate;
 
     /// Spawns a cell by progressively granting `empty_cell` a series of `positions` with [Habitable::grant_position()].
     ///
-    /// Panics if `empty_cell` has area > 0.
-    ///
-    /// Assumes that the `positions` have already been validated by the lattice's boundary checker.
+    /// Assumes that all `positions` are valid.
     fn spawn_cell(
         &mut self,
-        empty_cell: Self::Cell,
+        empty_cell: EmptyCell<Self::Cell>,
         positions: impl IntoIterator<Item = Pos<usize>>
     ) -> &RelCell<Self::Cell> {
-        if empty_cell.area() > 0 {
-            panic!("`empty_cell` must be empty.")
-        }
         let cell_index = self.env_mut().cells.add(empty_cell).index;
         let new_spin = Spin::Some(cell_index);
         for pos in positions {
             self.grant_position(pos, new_spin);
         }
-        self.env().cells.get_cell(cell_index)
+        &self.env().cells[cell_index]
     }
 
     /// Spawns a [Spin::Solid] at each position in `positions`.
     ///
-    /// Assumes that the `positions` have already been validated by the lattice's boundary checker.
+    /// Assumes that all `positions` are valid.
     fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {
         for pos in positions {
             self.grant_position(pos, Spin::Solid);

@@ -1,4 +1,4 @@
-//! Bundle of traits that implement complex behaviour on composite types containing [base](crate::base) types.
+//! Bundle of traits that implement complex behaviour on composite types containing[`base`](crate::base) types.
 
 pub mod adhesion_system;
 pub mod cellular;

@@ -1,7 +1,8 @@
 //! Contains logic associated with [CellContainer].
 
+use std::ops::{Index, IndexMut};
 use crate::constants::CellIndex;
-use crate::traits::cellular::{Alive, Cellular};
+use crate::traits::cellular::{Alive, Cellular, EmptyCell};
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
 #[derive(Clone, Debug, PartialEq)]
@@ -17,7 +18,7 @@ impl<C> CellContainer<C> {
         }
     }
     
-    /// Returns the total number of cells in the cell container, including invalid cells (see [Cellular::is_valid()]).
+    /// Returns the total number of cells in the cell container, including empty cells (see [Cellular::is_empty()]).
     pub fn n_cells(&self) -> CellIndex {
         self.vec.len().try_into().expect("there are more cells than supported by the type `CellIndex`")
     }
@@ -27,42 +28,28 @@ impl<C> CellContainer<C> {
         std::mem::replace(&mut self.vec[rel_cell.index as usize], rel_cell)
     }
 
-    /// Returns a reference to a cell using its unique cell index.
-    /// 
-    /// The cell might be invalid (see [Cellular::is_valid()]).
-    pub fn get_cell(&self, index: CellIndex) -> &RelCell<C> {
-        &self.vec[index as usize]
-    }
-
-    /// Returns a mutable reference to a cell using its unique cell index.
-    ///
-    /// The cell might be invalid (see [Cellular::is_valid()]).
-    pub fn get_cell_mut(&mut self, index: CellIndex) -> &mut RelCell<C> {
-        &mut self.vec[index as usize]
-    }
-
     /// Removes all cells from the cell container, returning it to a clean-slate state.
     pub fn wipe_out(&mut self) {
         self.vec.clear()
     }
 
-    /// Returns an iterator of references to all cells (including invalid).
+    /// Returns an iterator of all cells (including empty cells).
     pub fn iter(&self) -> impl Iterator<Item = &RelCell<C>> {
         self.vec.iter()
     }
 
-    /// Returns an iterator to mutable references of all cells (including invalid).
+    /// Returns an iterator of mutable references to all cells (including empty cells).
     pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut RelCell<C>> {
         self.vec.iter_mut()
     }
 }
 
 impl<C: Cellular> CellContainer<C> {
-    /// Returns the number of cells that are in a valid state (see [Cellular::is_valid()]).
-    pub fn n_valid(&self) -> CellIndex {
+    /// Returns the number of cells that are not empty (see [Cellular::is_empty()]).
+    pub fn n_non_empty(&self) -> CellIndex {
         self.vec
             .iter()
-            .filter(|rel_cell| rel_cell.cell.is_valid())
+            .filter(|rel_cell| rel_cell.cell.is_empty())
             .count() as CellIndex
     }
     
@@ -78,17 +65,17 @@ impl<C: Cellular> CellContainer<C> {
     fn next_index(&self) -> CellIndex {
         self.vec
             .iter()
-            .find(|rel_cell| !rel_cell.cell.is_valid())
+            .find(|rel_cell| !rel_cell.cell.is_empty())
             .map(|rel_cell| rel_cell.index)
             .unwrap_or(self.n_cells())
     }
 
-    /// Add a cell by replacing the first invalid cell (see [Cellular::is_valid()]).
-    pub fn add(&mut self, cell: C) -> &mut RelCell<C> {
+    /// Add a cell by replacing the first empty cell (see [Cellular::is_empty()]).
+    pub fn add(&mut self, cell: EmptyCell<C>) -> &mut RelCell<C> {
         let new_index = self.next_index();
         let rel_cell = RelCell {
             index: new_index,
-            cell
+            cell: cell.into_cell()
         };
 
         if new_index == self.n_cells() {
@@ -99,15 +86,39 @@ impl<C: Cellular> CellContainer<C> {
         &mut self.vec[new_index as usize]
     }
 
-    /// Add a cell to the end of the cell container without replacing any invalid cells. 
-    pub fn push(&mut self, cell: C) -> &mut RelCell<C> {
+    /// Add a cell to the end of the cell container without replacing any empty cells.
+    pub fn push(&mut self, cell: EmptyCell<C>) -> &mut RelCell<C> {
         let new_index = self.n_cells();
         let rel_cell = RelCell {
             index: new_index,
-            cell
+            cell: cell.into_cell()
         };
         self.vec.push(rel_cell);
         &mut self.vec[new_index as usize]
+    }
+
+    /// Returns an iterator of non-empty cells.
+    pub fn iter_non_empty(&self) -> impl Iterator<Item = &RelCell<C>> {
+        self.iter().filter(|rel_cell| !rel_cell.cell.is_empty())
+    }
+
+    /// Returns an iterator of mutable references to non-empty cells.
+    pub fn iter_non_empty_mut(&mut self) -> impl Iterator<Item = &mut RelCell<C>> {
+        self.iter_mut().filter(|rel_cell| !rel_cell.cell.is_empty())
+    }
+
+    /// Gets a reference to a cell using its unique cell index.
+    ///
+    /// Returns [None] if the index does not point to a non-empty cell.
+    pub fn get(&self, index: CellIndex) -> Option<&RelCell<C>> {
+        self.vec.get(index as usize).filter(|rel_cell| !rel_cell.cell.is_empty())
+    }
+
+    /// Gets a mutable reference to a cell using its unique cell index.
+    ///
+    /// Returns [None] if the index does not point to a non-empty cell.
+    pub fn get_mut(&mut self, index: CellIndex) -> Option<&mut RelCell<C>> {
+        self.vec.get_mut(index as usize).filter(|rel_cell| !rel_cell.cell.is_empty())
     }
 }
 
@@ -126,6 +137,20 @@ impl<C> IntoIterator for CellContainer<C> {
     }
 }
 
+impl<C> Index<CellIndex> for CellContainer<C> {
+    type Output = RelCell<C>;
+
+    fn index(&self, index: CellIndex) -> &Self::Output {
+        &self.vec[index as usize]
+    }
+}
+
+impl<C> IndexMut<CellIndex> for CellContainer<C> {
+    fn index_mut(&mut self, index: CellIndex) -> &mut Self::Output {
+        &mut self.vec[index as usize]
+    }
+}
+
 /// Represents a cell that is bound to an [Environment](crate::base::base_environment::BaseEnvironment).
 ///
 /// Functions that do not need information about the cell's `index` relational operators should take
@@ -139,14 +164,4 @@ pub struct RelCell<C> {
     pub index: CellIndex,
     /// Inner cell instance.
     pub cell: C
-}
-
-impl<C> RelCell<C> {
-    /// Creates a mock cell with index and mom = 0 for testing.
-    pub fn mock(cell: C) -> Self {
-        RelCell {
-            index: 0,
-            cell
-        }
-    }
 }

@@ -1,4 +1,4 @@
-//! Contains logic associated with [Pos].
+//! Contains logic associated with[`Pos`].
 
 /// A 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
@@ -26,7 +26,7 @@ impl Pos<usize> {
         self.x * height + self.y
     }
 
-    /// Casts the position's coordinate type to [isize].
+    /// Casts the position's coordinate type to[`isize`].
     pub fn to_isize(self) -> Pos<isize> {
         Pos::new(self.x as isize, self.y as isize)
     }

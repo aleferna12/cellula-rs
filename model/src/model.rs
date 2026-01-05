@@ -1,4 +1,4 @@
-//! Contains logic for creating and running the master [Model] struct.
+//! Contains logic for creating and running the master[`Model`] struct.
 
 use crate::cell::{Cell, CellType};
 use crate::constants::{BoundaryType, NeighbourhoodType};
@@ -21,8 +21,9 @@ use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
+use cellulars_lib::traits::cellular::EmptyCell;
 
-/// This is the master struct that runs the simulation in a [Pond] and manages IO through an [IoManager].
+/// This is the master struct that runs the simulation in a[`Pond`] and manages IO through an[`IoManager`].
 pub struct Model {
     /// Pond containing all cells and the model Potts algorithm.
     pub pond: Pond,
@@ -225,7 +226,7 @@ impl Model {
         }).transpose()
     }
 
-    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl Rng) -> Cell {
+    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl Rng) -> EmptyCell<Cell> {
         Cell::new_empty(
             parameters.cell.target_area,
             parameters.cell.div_area,
@@ -245,9 +246,9 @@ impl Model {
         let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
-        while pond.base_pond.env.base_env.cells.n_valid() < parameters.cell.starting_cells {
+        while pond.base_pond.env.base_env.cells.n_non_empty() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
-                None => Ok(Self::empty_cell_from_parameters(parameters, rng)),
+                None => Ok(Self::empty_cell_from_parameters(parameters, rng).into_cell()),
                 Some(templates_it) => templates_it
                     .next()
                     .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))
@@ -266,7 +267,7 @@ impl Model {
             } else if spawn_attempts > parameters.cell.starting_cells * 20 {
                 log::error!(
                     "Only {} cells were initialized out of {} cells requested",
-                    pond.base_pond.env.base_env.cells.n_valid(),
+                    pond.base_pond.env.base_env.cells.n_non_empty(),
                     parameters.cell.starting_cells);
                 break;
             }
@@ -334,7 +335,7 @@ impl Model {
                 .expect("missing luma key");
             for positions in cell_positions.values() {
                 let cell = match &maybe_templates_box {
-                    None => Self::empty_cell_from_parameters(parameters, rng),
+                    None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
                     Some(templates_box) => templates_box
                         .get(group_index)
                         .ok_or(anyhow::anyhow!("there were more groups in the layout than in the template"))?
@@ -411,8 +412,8 @@ impl Model {
 
     fn log_info(&self) {
         log::info!("Time step {}:", self.pond.time_step());
-        let valid = self.pond.base_pond.env.base_env.cells.n_valid();
-        log::info!("\t{valid} cells");
+        let non_empty = self.pond.base_pond.env.base_env.cells.n_non_empty();
+        log::info!("\t{non_empty} cells");
     }
 }
 

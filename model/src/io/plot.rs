@@ -20,7 +20,7 @@ pub trait Plot {
     fn plot(&self, env: &Environment, image: &mut RgbaImage);
 }
 
-/// [Plot]s that can display continuous variables.
+///[`Plot`]s that can display continuous variables.
 pub trait ContinuousPlot: Plot {
     /// Color for when `value == min`.
     fn min_color(&self) -> Lchuv;
@@ -57,9 +57,9 @@ pub enum LerpError {
 
 /// Plots the spin of cells in random colors (except for the solid and medium spin colors, which can be chosen).
 pub struct SpinPlot {
-    /// Color used for [Spin::Solid].
+    /// Color used for[`Spin::Solid`].
     pub solid_color: Srgb<u8>,
-    /// Color used for [Spin::Medium].
+    /// Color used for[`Spin::Medium`].
     pub medium_color: Option<Srgb<u8>>
 }
 
@@ -101,7 +101,7 @@ pub struct CenterPlot {
 impl Plot for CenterPlot {
     fn plot(&self, env: &Environment, image: &mut RgbaImage) {
         for rel_cell in env.base_env.cells.iter() {
-            if !rel_cell.cell.is_valid() {
+            if !rel_cell.cell.is_empty() {
                 continue;
             }
             let center = rel_cell
@@ -122,7 +122,7 @@ pub struct ChemCenterPlot {
 impl Plot for ChemCenterPlot {
     fn plot(&self, env: &Environment, image: &mut RgbaImage) {
         for rel_cell in env.base_env.cells.iter() {
-            if !rel_cell.cell.is_valid() {
+            if !rel_cell.cell.is_empty() {
                 continue;
             }
             let center = rel_cell
@@ -178,7 +178,7 @@ impl Plot for CellTypePlot {
         for pos in env.base_env.cell_lattice.iter_positions() {
             let spin = env.base_env.cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
-                let rel_cell = env.base_env.cells.get_cell(cell_index);
+                let rel_cell = &env.base_env.cells[cell_index];
                 let color = match rel_cell.cell.cell_type {
                     CellType::Migrating => self.mig_color,
                     CellType::Dividing => self.div_color
@@ -206,7 +206,7 @@ impl Plot for AreaPlot {
         let mut min = u32::MAX;
         let mut max = 0;
         for rel_cell in env.base_env.cells.iter() {
-            if !rel_cell.cell.is_valid() {
+            if !rel_cell.cell.is_empty() {
                 continue;
             }
             if rel_cell.cell.area() < min {
@@ -219,7 +219,7 @@ impl Plot for AreaPlot {
 
         for pos in env.base_env.cell_lattice.iter_positions() {
             if let Spin::Some(cell_index) = env.base_env.cell_lattice[pos] {
-                let rel_cell = env.base_env.cells.get_cell(cell_index);
+                let rel_cell = &env.base_env.cells[cell_index];
                 let color = self.lerp(
                     rel_cell.cell.area() as f32,
                     min as f32,

@@ -1,4 +1,4 @@
-//! Contains logic related to [IoManager].
+//! Contains logic related to[`IoManager`].
 
 use crate::cell::{Cell, CellType};
 use crate::environment::Environment;
@@ -69,7 +69,7 @@ impl IoManager {
         std::fs::create_dir(self.outdir.join(LATTICES_PATH))
     }
 
-    /// Creates a parameter file at \"[IoManager::outdir]/config.toml\".
+    /// Creates a parameter file at \[`IoManager::outdir`]/config.toml\".
     pub fn create_parameters_file(&self, parameters: &Parameters) -> anyhow::Result<()> {
         let params_copy = self.outdir.join(CONFIG_COPY_PATH);
         std::fs::write(
@@ -137,7 +137,7 @@ impl IoManager {
         row.0[col_index].try_extract::<T>().context("could not extract `{col_name}`")
     }
 
-    /// Reads a cell data file into a [CellContainer].
+    /// Reads a cell data file into a[`CellContainer`].
     pub fn read_cells(
         cells_path: impl AsRef<Path>
     ) -> anyhow::Result<CellContainer<Cell>> {
@@ -329,7 +329,7 @@ impl IoManager {
         Ok(())
     }
 
-    /// Makes a new frame of the simulation by drawing a succession of plots (see [io::plot](crate::io::plot)).
+    /// Makes a new frame of the simulation by drawing a succession of plots (see[`io::plot`](crate::io::plot)).
     pub fn make_simulation_image(
         &self, 
         env: &Environment
@@ -381,19 +381,19 @@ trait ToDataFrame {
 
 impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let valid = self.iter().filter(|rel_cell| rel_cell.cell.is_valid()).collect::<Box<_>>();
+        let non_empty = self.iter().filter(|rel_cell| rel_cell.cell.is_empty()).collect::<Box<_>>();
         df!(
-            "index" => valid.iter().map(|rel_cell| rel_cell.index).collect::<Box<_>>(),
-            "area" => valid.iter().map(|rel_cell| rel_cell.cell.area()).collect::<Box<_>>(),
-            "target_area" => valid.iter().map(|rel_cell| rel_cell.cell.target_area()).collect::<Box<_>>(),
-            "newborn_target_area" => valid.iter().map(|rel_cell| rel_cell.cell.newborn_target_area).collect::<Box<_>>(),
-            "divide_area" => valid.iter().map(|rel_cell| rel_cell.cell.divide_area).collect::<Box<_>>(),
-            "center_x" => valid.iter().map(|rel_cell| rel_cell.cell.center().x).collect::<Box<_>>(),
-            "center_y" => valid.iter().map(|rel_cell| rel_cell.cell.center().y).collect::<Box<_>>(),
-            "chem_center_x" => valid.iter().map(|rel_cell| rel_cell.cell.chem_center().x).collect::<Box<_>>(),
-            "chem_center_y" => valid.iter().map(|rel_cell| rel_cell.cell.chem_center().y).collect::<Box<_>>(),
-            "chem_mass" => valid.iter().map(|rel_cell| rel_cell.cell.chem_mass()).collect::<Box<_>>(),
-            "cell_type" => valid.iter().map(|rel_cell| rel_cell.cell.cell_type.to_string()).collect::<Box<[String]>>()
+            "index" => non_empty.iter().map(|rel_cell| rel_cell.index).collect::<Box<_>>(),
+            "area" => non_empty.iter().map(|rel_cell| rel_cell.cell.area()).collect::<Box<_>>(),
+            "target_area" => non_empty.iter().map(|rel_cell| rel_cell.cell.target_area()).collect::<Box<_>>(),
+            "newborn_target_area" => non_empty.iter().map(|rel_cell| rel_cell.cell.newborn_target_area).collect::<Box<_>>(),
+            "divide_area" => non_empty.iter().map(|rel_cell| rel_cell.cell.divide_area).collect::<Box<_>>(),
+            "center_x" => non_empty.iter().map(|rel_cell| rel_cell.cell.center().x).collect::<Box<_>>(),
+            "center_y" => non_empty.iter().map(|rel_cell| rel_cell.cell.center().y).collect::<Box<_>>(),
+            "chem_center_x" => non_empty.iter().map(|rel_cell| rel_cell.cell.chem_center().x).collect::<Box<_>>(),
+            "chem_center_y" => non_empty.iter().map(|rel_cell| rel_cell.cell.chem_center().y).collect::<Box<_>>(),
+            "chem_mass" => non_empty.iter().map(|rel_cell| rel_cell.cell.chem_mass()).collect::<Box<_>>(),
+            "cell_type" => non_empty.iter().map(|rel_cell| rel_cell.cell.cell_type.to_string()).collect::<Box<[String]>>()
         )
     }
 }

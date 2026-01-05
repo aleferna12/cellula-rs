@@ -1,4 +1,4 @@
-//! Contains logic associated with [Potts].
+//! Contains logic associated with[`Potts`].
 
 use crate::cell::CellType;
 use crate::environment::Environment;
@@ -25,7 +25,7 @@ pub struct Potts {
     pub chemotaxis_mu: f32,
     /// Whether we allow cell migration.
     pub enable_migration: bool,
-    /// Adhesion system used in [Potts::delta_hamiltonian_adhesion()].
+    /// Adhesion system used in[`Potts::delta_hamiltonian_adhesion()`].
     pub adhesion: StaticAdhesion
 }
 
@@ -47,7 +47,7 @@ impl PottsAlgorithm for Potts {
         let Spin::Some(cell_index) = env.base_env.cell_lattice[pos_source] else {
             return 0.;
         };
-        let rel_cell = env.base_env.cells.get_cell(cell_index);
+        let rel_cell = &env.base_env.cells[cell_index];
         if let CellType::Dividing = rel_cell.cell.cell_type {
             return 0.;
         }

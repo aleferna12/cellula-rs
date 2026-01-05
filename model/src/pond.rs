@@ -1,25 +1,25 @@
-//! Contains logic required to run an instance of a simulation in a [Pond].
+//! Contains logic required to run an instance of a simulation in a [`Pond`].
 
 use crate::potts::Potts;
 use cellulars_lib::base::base_pond::BasePond;
 use cellulars_lib::traits::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
 
-/// A pond is responsible for updating an [Environment](crate::environment::Environment) using the [Potts] algorithm.
+/// A pond is responsible for updating an [`Environment`](crate::environment::Environment) using the [`Potts`] algorithm.
 ///
-/// All simulation logic is contained here, while [Model](crate::model::Model) is responsible for IO.
+/// All simulation logic is contained here, while [`Model`](crate::model::Model) is responsible for IO.
 #[derive(Clone)]
 pub struct Pond {
-    /// Inner [BasePond].
+    /// Inner [`BasePond`].
     pub base_pond: BasePond<Potts, Xoshiro256StarStar>,
-    /// Period with which the cells' [Cell::update()](crate::cell::Cell::update()) method should be called.
+    /// Period with which the cells' [`Cell::update()`](crate::cell::Cell::update()) method should be called.
     pub update_period: u32,
     /// Whether cell division is enabled.
     pub division_enabled: bool
 }
 
 impl Pond {
-    /// Makes a new [Pond] from an existing [BasePond].
+    /// Makes a new [`Pond`] from an existing [`BasePond`].
     pub fn new(
         pond: BasePond<Potts, Xoshiro256StarStar>,
         update_period: u32,
@@ -39,7 +39,7 @@ impl Pond {
 
     /// Returns the current time-step of the pond.
     ///
-    /// Updated by [Pond::step()].
+    /// Updated by [`Pond::step()`].
     pub fn time_step(&self) -> u32 {
         self.base_pond.time_step
     }

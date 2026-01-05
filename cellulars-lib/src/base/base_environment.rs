@@ -1,4 +1,4 @@
-//! Contains logic associated with [BaseEnvironment].
+//! Contains logic associated with [`BaseEnvironment`].
 
 use crate::base::base_cell::BaseCell;
 use crate::cell_container::{CellContainer, RelCell};
@@ -24,9 +24,9 @@ pub struct BaseEnvironment<C, N, B: ToLatticeBoundary> {
     ///
     /// These are used to validate that a position can be used to access information in the environment.
     pub bounds: Boundaries<B>,
-    /// Cell container with spins matching those in [BaseEnvironment::cell_lattice].
+    /// Cell container with spins matching those in [`BaseEnvironment::cell_lattice`].
     pub cells: CellContainer<C>,
-    /// Cell lattice with spins matching those in [BaseEnvironment::cells].
+    /// Cell lattice with spins matching those in [`BaseEnvironment::cells`].
     pub cell_lattice: Lattice<Spin>,
     /// Edge book containing all positions at cell-cell interfaces.
     pub edge_book: EdgeBook,
@@ -120,7 +120,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
 
     /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
     ///
-    /// Is considerably slower than [BaseEnvironment::search_cell_box()] and may not return all positions
+    /// Is considerably slower than [`BaseEnvironment::search_cell_box()`] and may not return all positions
     /// if the cell is not contiguous or if the cell centre is not a cell position.
     pub fn search_cell_contiguous(
         &self,
@@ -238,10 +238,10 @@ impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for BaseEnvi
         to: Spin
     ) -> EdgesUpdate {
         if let Spin::Some(index) = to {
-            self.cells.get_cell_mut(index).cell.shift_position(pos, true, &self.bounds.boundary);
+            self.cells[index].cell.shift_position(pos, true, &self.bounds.boundary);
         }
         if let Spin::Some(index) = self.cell_lattice[pos] {
-            let from_rel_cell = self.cells.get_cell_mut(index);
+            let from_rel_cell = &mut self.cells[index];
             from_rel_cell.cell.shift_position(pos, false, &self.bounds.boundary);
             if from_rel_cell.cell.area() == 0 {
                 from_rel_cell.cell.apoptosis();
@@ -349,7 +349,7 @@ pub mod tests {
         positions: &[Pos<usize>],
         env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>
     ) -> RelCell<BaseCell> {
-        let mut rel_cell = RelCell::mock(BaseCell::new_empty(2));
+        let mut rel_cell = RelCell{ index: 0, cell: BaseCell::new_empty(2).into_cell() };
         for &pos in positions {
             rel_cell.cell.shift_position(pos, true, &env.bounds.boundary);
             env.cell_lattice[pos] = Spin::Some(rel_cell.index);
