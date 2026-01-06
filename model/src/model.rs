@@ -22,6 +22,7 @@ use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
+use cellulars_lib::positional::pos::CastCoords;
 
 /// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
 pub struct Model {
@@ -370,7 +371,7 @@ impl Model {
         );
         let lattice = IoManager::read_lattice(
             IoManager::resolve_lattice_path(sim_path, time_step),
-            rect.to_usize(),
+            rect.cast_coords(),
         )?;
 
         let mut env = Environment::new(

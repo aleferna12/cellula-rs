@@ -55,7 +55,7 @@ impl Cell {
     /// Adds or removes the chemical concentration `chem_at` at position `pos` from the cell.
     pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, adding: bool, boundary: &B) {
         let shifted = self.chem_com.shift(
-            Com { pos: pos.to_f32(), mass: chem_at },
+            Com { pos: pos.cast_as(), mass: chem_at },
             adding,
             boundary
         );

@@ -1,8 +1,9 @@
 //! Contains logic associated with [`Rect`].
 
-use crate::positional::pos::Pos;
+use crate::positional::pos::{CastCoords, Pos};
 use num::{Integer, Num};
 use std::ops::AddAssign;
+use num::cast::AsPrimitive;
 
 /// A rectangle defined by two corners.
 #[derive(Clone, Debug, PartialEq)]
@@ -13,14 +14,16 @@ pub struct Rect<T> {
     pub max: Pos<T>
 }
 
-impl<T> Rect<T>
-where
-    T: Num + Copy {
+impl<T> Rect<T> {
     /// Makes a new rectangle spanning from positions `min` to `max`.
     pub fn new(min: Pos<T>, max: Pos<T>) -> Self {
         Self{ min, max }
     }
+}
 
+impl<T> Rect<T>
+where
+    T: Num + Copy {
     /// Returns the width of the rectangle.
     pub fn width(&self) -> T {
         self.max.x - self.min.x
@@ -55,57 +58,13 @@ impl Rect<f32> {
     pub fn round(&self) -> Rect<f32> {
         Rect::new(self.min.round(), self.max.round())
     }
-
-    /// Casts the rect's coordinate type to [isize] (by truncating).
-    pub fn to_isize(&self) -> Rect<isize> {
-        Rect::new(
-            self.min.to_isize(),
-            self.max.to_isize(),
-        )
-    }
-
-    /// Casts the rect's coordinate type to [usize] (by truncating).
-    pub fn to_usize(&self) -> Rect<usize> {
-        Rect::new(
-            self.min.to_usize(),
-            self.max.to_usize(),
-        )
-    }
 }
 
-impl Rect<usize> {
-    /// Casts the rect's coordinate type to [isize].
-    pub fn to_isize(&self) -> Rect<isize> {
-        Rect::new(
-            self.min.to_isize(),
-            self.max.to_isize(),
-        )
-    }
+impl<F: AsPrimitive<T> + Num, T: Copy + 'static> CastCoords<T> for Rect<F> {
+    type Outer<U> = Rect<U>;
 
-    /// Casts the rect's coordinate type to [f32].
-    pub fn to_f32(&self) -> Rect<f32> {
-        Rect::new(
-            self.min.to_f32(),
-            self.max.to_f32(),
-        )
-    }
-}
-
-impl Rect<isize> {
-    /// Casts the rect's coordinate type to [usize].
-    pub fn to_usize(&self) -> Rect<usize> {
-        Rect::new(
-            self.min.to_usize(),
-            self.max.to_usize(),
-        )
-    }
-
-    /// Casts the rect's coordinate type to [f32].
-    pub fn to_f32(&self) -> Rect<f32> {
-        Rect::new(
-            self.min.to_f32(),
-            self.max.to_f32(),
-        )
+    fn cast_coords(&self) -> Self::Outer<T> {
+        Self::Outer::new(self.min.cast_as(), self.max.cast_as())
     }
 }
 

@@ -100,7 +100,7 @@ impl<T: PartialEq> Lattice<T> {
         box_side: usize,
         bound: &impl Boundary<Coord = isize>
     ) -> impl Iterator<Item = Pos<usize>> {
-        let center_isize = center_pos.to_isize();
+        let center_isize = center_pos.cast_as::<isize>();
         let radius = (box_side / 2) as isize;
         let rect = Rect::new(
             (center_isize.x - radius, center_isize.y - radius).into(),
@@ -109,7 +109,7 @@ impl<T: PartialEq> Lattice<T> {
         bound
             .valid_positions(rect.iter_positions())
             .filter_map(|pos| {
-                let lat_pos = pos.to_usize();
+                let lat_pos = pos.cast_as();
                 if self[lat_pos].eq(value) {
                     return Some(lat_pos);
                 }
@@ -128,19 +128,19 @@ impl<T: PartialEq> Lattice<T> {
         neighbourhood: &impl Neighbourhood
     ) -> Box<[Pos<usize>]> {
         let mut found = vec![];
-        let mut queue = VecDeque::from([start_pos.to_isize()]);
+        let mut queue = VecDeque::from([start_pos.cast_as()]);
         let mut visited = Lattice::<bool>::new(self.rect.clone());
         visited[start_pos] = true;
 
         while let Some(pos) = queue.pop_front() {
-            let lat_pos = pos.to_usize();
+            let lat_pos = pos.cast_as();
             if !self[lat_pos].eq(value) {
                 continue;
             }
             bound
                 .valid_positions(neighbourhood.neighbours(pos))
                 .for_each(|neigh| {
-                    let lat_neigh = neigh.to_usize();
+                    let lat_neigh = neigh.cast_as();
                     if !visited[lat_neigh] {
                         visited[lat_neigh] = true;
                         queue.push_back(neigh);
@@ -173,7 +173,7 @@ impl<T: PartialEq> Lattice<T> {
                 pos.x as isize - 1,
                 pos.y as isize
             ))
-                && &self[neigh.to_usize()] != value {
+                && &self[neigh.cast_as()] != value {
                 Some(neigh)
             } else {
                 None
@@ -185,13 +185,13 @@ impl<T: PartialEq> Lattice<T> {
 
         let mut queue = VecDeque::from([border_pos]);
         let mut visited = Lattice::<bool>::new(self.rect.clone());
-        visited[border_pos.to_usize()] = true;
+        visited[border_pos.cast_as()] = true;
 
         while let Some(pos) = queue.pop_front() {
             let mut diff_spin_neighs = Vec::with_capacity(neighbourhood.n_neighs().into());
             let mut has_value_neighbour = false;
             for neigh in bound.valid_positions(neighbourhood.neighbours(pos)) {
-                let neigh_pos = neigh.to_usize();
+                let neigh_pos = neigh.cast_as();
                 if visited[neigh_pos] {
                     continue;
                 }
@@ -205,9 +205,9 @@ impl<T: PartialEq> Lattice<T> {
             }
 
             if has_value_neighbour {
-                found.push(pos.to_usize());
+                found.push(pos.cast_as());
                 for neigh in diff_spin_neighs {
-                    visited[neigh.to_usize()] = true;
+                    visited[neigh.cast_as()] = true;
                     queue.push_back(neigh)
                 }
             }
@@ -236,7 +236,7 @@ mod tests {
     use super::*;
     use crate::positional::boundaries::{ToLatticeBoundary, UnsafePeriodicBoundary};
     use crate::positional::neighbourhood::MooreNeighbourhood;
-    use crate::positional::pos::Pos;
+    use crate::positional::pos::{CastCoords, Pos};
     use crate::positional::rect::Rect;
     use rand::{rngs::StdRng, SeedableRng};
 
@@ -264,7 +264,7 @@ mod tests {
     #[test]
     fn test_search_box() {
         let rect = Rect::new((0., 0.).into(), (10., 10.).into());
-        let mut lattice: Lattice<u8> = Lattice::new(rect.to_usize());
+        let mut lattice: Lattice<u8> = Lattice::new(rect.cast_coords());
         lattice[(5, 5).into()] = 1;
         lattice[(5, 6).into()] = 1;
         lattice[(4, 5).into()] = 1;
@@ -280,7 +280,7 @@ mod tests {
     #[test]
     fn test_search_outline() {
         let rect = Rect::new((0., 0.).into(), (10., 10.).into());
-        let mut lattice: Lattice<u8> = Lattice::new(rect.to_usize());
+        let mut lattice: Lattice<u8> = Lattice::new(rect.cast_coords());
         lattice[(5, 5).into()] = 1;
         lattice[(5, 6).into()] = 1;
         lattice[(4, 5).into()] = 1;

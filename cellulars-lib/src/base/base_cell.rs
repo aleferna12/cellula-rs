@@ -66,7 +66,7 @@ impl Cellular for BaseCell {
     ) {
         // The order here matters (area is last), be careful
         let shifted = self.com.shift(
-            Com { pos: pos.to_f32(), mass: 1 },
+            Com { pos: pos.cast_as(), mass: 1 },
             adding,
             boundary
         );

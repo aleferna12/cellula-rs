@@ -86,7 +86,7 @@ impl Environment {
             .base_env
             .cell_lattice
             .random_pos(rng)
-            .to_isize();
+            .cast_as::<isize>();
         let cell_side = ((cell_area as f32).sqrt() / 2.).floor() as isize;
         let rect = Rect::new(
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
@@ -162,7 +162,7 @@ impl Environment {
 
         for p in &self.base_env.search_cell_box(rel_cell, search_scaler) {
             let (dx, dy) = self.base_env.bounds.boundary.displacement(
-                p.to_f32(),
+                p.cast_as(),
                 rel_cell.cell.center()
             );
             sum_xx += dx * dx;
@@ -258,7 +258,7 @@ impl Environment {
     ) -> &RelCell<Cell> {
         let med_positions = positions.into_iter().filter_map(|pos| {
             let valid_pos = self.base_env.bounds.lattice_boundary.valid_pos(pos)?;
-            let lat_pos = valid_pos.to_usize();
+            let lat_pos = valid_pos.cast_as();
             if !matches!(self.base_env.cell_lattice[lat_pos], Spin::Medium) {
                 return None;
             }

@@ -1,5 +1,7 @@
 //! Contains logic associated with [`Pos`].
 
+use num::cast::AsPrimitive;
+
 /// A 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 pub struct Pos<T> {
@@ -14,6 +16,34 @@ impl<T> Pos<T> {
     pub fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
+
+    /// Casts the position to another coordinate type using the `as` operator.
+    pub fn cast_as<U>(self) -> Pos<U>
+    where
+        T: AsPrimitive<U>,
+        U: Copy + 'static {
+        Pos::new(
+            self.x.as_(),
+            self.y.as_(),
+        )
+    }
+}
+
+impl<F: AsPrimitive<T>, T: Copy + 'static> CastCoords<T> for Pos<F> {
+    type Outer<U> = Pos<U>;
+
+    fn cast_coords(&self) -> Self::Outer<T> {
+        Pos::new(
+            self.x.as_(),
+            self.y.as_(),
+        )
+    }
+}
+
+impl<T> From<(T, T)> for Pos<T> {
+    fn from(value: (T, T)) -> Self {
+        Pos::<T>::new(value.0, value.1)
+    }
 }
 
 impl Pos<usize> {
@@ -25,16 +55,6 @@ impl Pos<usize> {
     pub fn col_major(self, height: usize) -> usize {
         self.x * height + self.y
     }
-
-    /// Casts the position's coordinate type to [`isize`].
-    pub fn to_isize(self) -> Pos<isize> {
-        Pos::new(self.x as isize, self.y as isize)
-    }
-
-    /// Casts the position's coordinate type to [f32].
-    pub fn to_f32(self) -> Pos<f32> {
-        Pos::new(self.x as f32, self.y as f32)
-    }
 }
 
 impl Pos<f32> {
@@ -42,34 +62,25 @@ impl Pos<f32> {
     pub fn round(self) -> Pos<f32> {
         Pos::new(self.x.round(), self.y.round())
     }
+}
 
-    /// Casts the position's coordinate type to [isize] (by truncating).
-    pub fn to_isize(self) -> Pos<isize> {
-        Pos::new(self.x as isize, self.y as isize)
-    }
-
-    /// Casts the position's coordinate type to [usize] (by truncating).
-    pub fn to_usize(self) -> Pos<usize> {
-        Pos::new(self.x as usize, self.y as usize)
+impl Pos<f64> {
+    /// Rounds the position's coordinates to their nearest integer value.
+    pub fn round(self) -> Pos<f64> {
+        Pos::new(self.x.round(), self.y.round())
     }
 }
 
-impl Pos<isize> {
-    /// Casts the position's coordinate type to [f32].
-    pub fn to_f32(self) -> Pos<f32> {
-        Pos::new(self.x as f32, self.y as f32)
-    }
+/// Indicates that the coordinate type of a structure can be converted to `T`. 
+pub trait CastCoords<T: Copy + 'static> {
+    /// Outer type, which should match the implementor.
+    type Outer<U>;
 
-    /// Casts the position's coordinate type to [usize].
-    pub fn to_usize(self) -> Pos<usize> {
-        Pos::new(self.x as usize, self.y as usize)
-    }
-}
-
-impl<T> From<(T, T)> for Pos<T> {
-    fn from(value: (T, T)) -> Self {
-        Pos::<T>::new(value.0, value.1)
-    }
+    /// Converts the coordinates system of `self` to type `T`.
+    ///
+    /// This conversion is performed using the `as` operator, which can lead to narrowing and loss of precision
+    /// (see [`num::traits::AsPrimitive`](AsPrimitive)).
+    fn cast_coords(&self) -> Self::Outer<T>;
 }
 
 #[cfg(test)]

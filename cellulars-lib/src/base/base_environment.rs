@@ -7,7 +7,7 @@ use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighbourhood::Neighbourhood;
-use crate::positional::pos::Pos;
+use crate::positional::pos::{CastCoords, Pos};
 use crate::spin::Spin;
 use crate::traits::cellular::{Alive, Cellular};
 use crate::traits::habitable::Habitable;
@@ -41,7 +41,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = f32>> BaseEnvironment<C, N, B> {
         bounds: Boundaries<B>,
     ) -> Self {
         Self {
-            cell_lattice: Lattice::new(bounds.boundary.rect().to_usize()),
+            cell_lattice: Lattice::new(bounds.boundary.rect().cast_coords()),
             edge_book: EdgeBook::new(),
             cells: CellContainer::new(),
             bounds,
@@ -101,7 +101,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
 
         let found: Box<_> = self.cell_lattice.search_box(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().to_usize(),
+            rel_cell.cell.center().round().cast_as(),
             search_diam,
             &self.bounds.lattice_boundary,
         ).collect();
@@ -128,7 +128,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().to_usize(),
+            rel_cell.cell.center().round().cast_as(),
             &self.bounds.lattice_boundary,
             &self.neighbourhood
         );
@@ -160,7 +160,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
 
         self.cell_lattice.search_outline(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().to_usize(),
+            rel_cell.cell.center().round().cast_as(),
             search_diam,
             &self.bounds.lattice_boundary,
             &self.neighbourhood
@@ -319,9 +319,9 @@ fn valid_neighbours(
 ) -> impl Iterator<Item = Pos<usize>> {
     lattice_boundary.valid_positions(
         neighbourhood.neighbours(
-            pos.to_isize()
+            pos.cast_as()
         )
-    ).map(|pos| pos.to_usize())
+    ).map(|pos| pos.cast_as())
 }
 
 #[cfg(test)]
