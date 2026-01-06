@@ -38,7 +38,7 @@ pub trait Alive: Cellular + Sized {
     fn birth(&self) -> EmptyCell<Self>;
 }
 
-/// A cell who is guaranteed to be empty (see[`Cellular::is_empty()`]).
+/// A cell who is guaranteed to be empty (see [`Cellular::is_empty()`]).
 pub struct EmptyCell<C>(C);
 
 impl<C> EmptyCell<C>

@@ -11,7 +11,7 @@ use cellulars_lib::positional::neighbourhood::VonNeumannNeighbourhood;
 
 /// Boundary type of the environment.
 ///
-///[`FixedBoundary`](cellulars_lib::positional::boundaries::FixedBoundary) is ~18% faster than[`UnsafePeriodicBoundary`]
+///[`FixedBoundary`](cellulars_lib::positional::boundaries::FixedBoundary) is ~18% faster than [`UnsafePeriodicBoundary`]
 /// (in total run time).
 #[cfg(not(feature = "fixed-boundary"))]
 pub type BoundaryType = UnsafePeriodicBoundary<f32>;

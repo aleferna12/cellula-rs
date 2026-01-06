@@ -1,4 +1,4 @@
-//! Contains logic related to[`IoManager`].
+//! Contains logic related to [`IoManager`].
 
 use crate::cell::{Cell, CellType};
 use crate::environment::Environment;
@@ -12,6 +12,7 @@ use cellulars_lib::base::base_cell::BaseCell;
 use cellulars_lib::cell_container::{CellContainer, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::lattice::Lattice;
+use cellulars_lib::positional::com::Com;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
@@ -99,11 +100,11 @@ impl IoManager {
             let row = celldf.get_row(row_i)?;
             let base_cell = BaseCell::new_ready(
                 Self::get_col_num(&row, "area", &celldf)?,
+                Self::get_col_num(&row, "target_area", &celldf)?,
                 Pos::new(
                     Self::get_col_num(&row, "center_x", &celldf)?,
                     Self::get_col_num(&row, "center_y", &celldf)?,
-                ),
-                Self::get_col_num(&row, "target_area", &celldf)?
+                )
             );
             cells.replace(RelCell {
                 index: Self::get_col_num(&row, "index", &celldf)?,
@@ -111,11 +112,13 @@ impl IoManager {
                     .base_cell(base_cell)
                     .divide_area(Self::get_col_num(&row, "divide_area", &celldf)?)
                     .newborn_target_area(Self::get_col_num(&row, "newborn_target_area", &celldf)?)
-                    .chem_center(Pos::new(
-                        Self::get_col_num(&row, "chem_center_x", &celldf)?,
-                        Self::get_col_num(&row, "chem_center_y", &celldf)?,
-                    ))
-                    .chem_mass(Self::get_col_num(&row, "chem_mass", &celldf)?)
+                    .chem_com(Com {
+                        pos: Pos::new(
+                            Self::get_col_num(&row, "chem_center_x", &celldf)?,
+                            Self::get_col_num(&row, "chem_center_y", &celldf)?,
+                        ),
+                        mass: Self::get_col_num(&row, "chem_mass", &celldf)?
+                    })
                     .cell_type(Self::get_col_str(&row, "cell_type", &celldf)?.try_into()?)
                     .build()
             });
@@ -137,7 +140,7 @@ impl IoManager {
         row.0[col_index].try_extract::<T>().context("could not extract `{col_name}`")
     }
 
-    /// Reads a cell data file into a[`CellContainer`].
+    /// Reads a cell data file into a [`CellContainer`].
     pub fn read_cells(
         cells_path: impl AsRef<Path>
     ) -> anyhow::Result<CellContainer<Cell>> {
@@ -329,7 +332,7 @@ impl IoManager {
         Ok(())
     }
 
-    /// Makes a new frame of the simulation by drawing a succession of plots (see[`io::plot`](crate::io::plot)).
+    /// Makes a new frame of the simulation by drawing a succession of plots (see [`io::plot`](crate::io::plot)).
     pub fn make_simulation_image(
         &self, 
         env: &Environment

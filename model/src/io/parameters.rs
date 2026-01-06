@@ -218,7 +218,7 @@ pub struct MovieParameters {
     pub frame_period: u32
 }
 
-/// Parameters using for plotting (see[`plot`](crate::io::plot)).
+/// Parameters using for plotting (see [`plot`](crate::io::plot)).
 // We flatten the parameters here to allow order to be an env variable
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]

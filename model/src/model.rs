@@ -1,4 +1,4 @@
-//! Contains logic for creating and running the master[`Model`] struct.
+//! Contains logic for creating and running the master [`Model`] struct.
 
 use crate::cell::{Cell, CellType};
 use crate::constants::{BoundaryType, NeighbourhoodType};
@@ -15,15 +15,15 @@ use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos};
 use cellulars_lib::static_adhesion::StaticAdhesion;
+use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
 use polars::polars_utils::itertools::Itertools;
 use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
-use cellulars_lib::traits::cellular::EmptyCell;
 
-/// This is the master struct that runs the simulation in a[`Pond`] and manages IO through an[`IoManager`].
+/// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
 pub struct Model {
     /// Pond containing all cells and the model Potts algorithm.
     pub pond: Pond,

@@ -1,4 +1,4 @@
-//! Contains logic associated with[`Habitable`].
+//! Contains logic associated with [`Habitable`].
 
 use crate::base::base_environment::{BaseEnvironment, EdgesUpdate};
 use crate::cell_container::RelCell;

@@ -5,6 +5,7 @@ use cellulars_lib::positional::edge::Edge;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::prelude::Cellular;
 use cellulars_lib::traits::habitable::Habitable;
 use criterion::BatchSize;
 use criterion::{criterion_group, criterion_main, Criterion};

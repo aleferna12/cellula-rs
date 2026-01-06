@@ -1,4 +1,4 @@
-//! Contains logic associated with[`Rect`].
+//! Contains logic associated with [`Rect`].
 
 use crate::positional::pos::Pos;
 use num::{Integer, Num};

@@ -1,4 +1,4 @@
-//! Contains logic associated with[`PottsAlgorithm`].
+//! Contains logic associated with [`PottsAlgorithm`].
 
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
@@ -8,13 +8,13 @@ use crate::traits::habitable::Habitable;
 use rand::Rng;
 use std::f32::consts::E;
 
-/// This trait defines how a Monte Carlo[`PottsAlgorithm::step()`] of the model should modify a
+/// This trait defines how a Monte Carlo [`PottsAlgorithm::step()`] of the model should modify a
 ///[`Habitable`] environment.
 ///
 /// The default methods for this trait restrict lattice updates to cell borders following
 /// [van Steijn, 2022](https://doi.org/10.1371/journal.pcbi.1009156) to improve computational efficiency.
 pub trait PottsAlgorithm {
-    /// Type of environment that is going to be modified each[`PottsAlgorithm::step()`].
+    /// Type of environment that is going to be modified each [`PottsAlgorithm::step()`].
     type Environment: Habitable;
 
     /// Returns the Boltzmann temperature of the system.
@@ -28,7 +28,7 @@ pub trait PottsAlgorithm {
     /// Returns 0 by default.
     ///
     /// Overriding this method allows to easily extend the model's behaviour
-    /// without having to override[`PottsAlgorithm::attempt_site_copy()`].
+    /// without having to override [`PottsAlgorithm::attempt_site_copy()`].
     fn copy_biases(&self, _pos_source: Pos<usize>, _pos_target: Pos<usize>, _env: &Self::Environment) -> f32 {
         0.
     }

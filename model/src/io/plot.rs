@@ -57,9 +57,9 @@ pub enum LerpError {
 
 /// Plots the spin of cells in random colors (except for the solid and medium spin colors, which can be chosen).
 pub struct SpinPlot {
-    /// Color used for[`Spin::Solid`].
+    /// Color used for [`Spin::Solid`].
     pub solid_color: Srgb<u8>,
-    /// Color used for[`Spin::Medium`].
+    /// Color used for [`Spin::Medium`].
     pub medium_color: Option<Srgb<u8>>
 }
 

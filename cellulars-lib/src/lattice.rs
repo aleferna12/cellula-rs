@@ -1,4 +1,4 @@
-//! Contains logic associated with[`Lattice`].
+//! Contains logic associated with [`Lattice`].
 
 use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::Neighbourhood;
@@ -30,7 +30,7 @@ impl<T> Lattice<T> {
         })
     }
 
-    /// Makes a lattice from a pre-existing buffer of values stored in a[`Box`].
+    /// Makes a lattice from a pre-existing buffer of values stored in a [`Box`].
     pub fn from_box(buf: Box<[T]>, rect: Rect<usize>) -> Option<Self> {
         if rect.area() != buf.len() {
             return None;

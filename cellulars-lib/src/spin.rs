@@ -1,4 +1,4 @@
-//! Contains logic associated with[`Spin`].
+//! Contains logic associated with [`Spin`].
 
 use crate::constants::CellIndex;
 use std::fmt::Debug;
@@ -11,6 +11,6 @@ pub enum Spin {
     Medium,
     /// Represents a position owned by a solid, immutable object.
     Solid,
-    /// Represents a position owned by a cell identified by a[`CellIndex`].
+    /// Represents a position owned by a cell identified by a [`CellIndex`].
     Some(CellIndex),
 }

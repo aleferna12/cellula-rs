@@ -1,8 +1,8 @@
 //! Contains logic associated with [CellContainer].
 
-use std::ops::{Index, IndexMut};
 use crate::constants::CellIndex;
 use crate::traits::cellular::{Alive, Cellular, EmptyCell};
+use std::ops::{Index, IndexMut};
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
 #[derive(Clone, Debug, PartialEq)]

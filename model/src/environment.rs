@@ -1,4 +1,4 @@
-//! Contains logic associated with[`Environment`].
+//! Contains logic associated with [`Environment`].
 
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, NeighbourhoodType, EPSILON};
@@ -15,10 +15,10 @@ use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell};
 use cellulars_lib::traits::habitable::Habitable;
 use rand::Rng;
 
-/// An environment that contains a chemical gradient and limits cell growth to[`Environment::max_cells`].
+/// An environment that contains a chemical gradient and limits cell growth to [`Environment::max_cells`].
 #[derive(Clone)]
 pub struct Environment {
-    /// Inner[`BaseEnvironment`].
+    /// Inner [`BaseEnvironment`].
     pub base_env: BaseEnvironment<Cell, NeighbourhoodType, BoundaryType>,
     /// Lattice containing the chemical gradient.
     pub chem_lattice: Lattice<u32>,
@@ -30,7 +30,7 @@ pub struct Environment {
 }
 
 impl Environment {
-    /// Make a new[`Environment`] from an existing[`BaseEnvironment`].
+    /// Make a new [`Environment`] from an existing [`BaseEnvironment`].
     pub fn new(
         env: BaseEnvironment<Cell, NeighbourhoodType, BoundaryType>,
         max_cells: CellIndex,
@@ -56,7 +56,7 @@ impl Environment {
         }
     }
 
-    /// Returns whether the environment supports additional cells based on[`Environment::max_cells`].
+    /// Returns whether the environment supports additional cells based on [`Environment::max_cells`].
     pub fn can_add_cell(&mut self) -> bool {
         if self.base_env.cells.n_non_empty() < self.max_cells {
             return true;
@@ -75,7 +75,7 @@ impl Environment {
     // TODO: make spawn as a circle with center at pos
     /// Spawns a square cell centered at a random position with area = `cell_area`.
     ///
-    /// Uses[`Environment::spawn_cell_checked()`] to restrict spawns to the medium.
+    /// Uses [`Environment::spawn_cell_checked()`] to restrict spawns to the medium.
     pub fn spawn_cell_random(
         &mut self,
         empty_cell: EmptyCell<Cell>,
@@ -216,7 +216,7 @@ impl Environment {
         self.base_env.wipe_out();
     }
 
-    /// Creates a border of[`Spin::Solid`] around the environment.
+    /// Creates a border of [`Spin::Solid`] around the environment.
     pub fn make_border(
         &mut self,
         bottom: bool,

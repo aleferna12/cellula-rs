@@ -1,4 +1,4 @@
-//! Contains logic associated with [EdgeBook].
+//! Contains logic associated with [`EdgeBook`].
 
 use crate::positional::edge::Edge;
 use indexmap::IndexSet;

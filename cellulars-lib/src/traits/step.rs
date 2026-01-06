@@ -1,6 +1,6 @@
-//! Contains logic associated with[`Step`].
+//! Contains logic associated with [`Step`].
 
-/// This trait describes objects that can run a simulation by successively executing[`Step::step()`].
+/// This trait describes objects that can run a simulation by successively executing [`Step::step()`].
 pub trait Step {
     /// Execute one step of the simulation.
     fn step(&mut self);

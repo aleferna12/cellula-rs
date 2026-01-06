@@ -1,4 +1,4 @@
-//! Contains logic associated with[`Potts`].
+//! Contains logic associated with [`Potts`].
 
 use crate::cell::CellType;
 use crate::environment::Environment;
@@ -25,7 +25,7 @@ pub struct Potts {
     pub chemotaxis_mu: f32,
     /// Whether we allow cell migration.
     pub enable_migration: bool,
-    /// Adhesion system used in[`Potts::delta_hamiltonian_adhesion()`].
+    /// Adhesion system used in [`Potts::delta_hamiltonian_adhesion()`].
     pub adhesion: StaticAdhesion
 }
 
