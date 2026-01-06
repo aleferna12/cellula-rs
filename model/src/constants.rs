@@ -1,5 +1,6 @@
 //! Contains constants that are set at compile-time with feature flags.
 
+use cellulars_lib::constants::FloatType;
 #[cfg(feature = "fixed-boundary")]
 use cellulars_lib::positional::boundaries::FixedBoundary;
 #[cfg(not(feature = "fixed-boundary"))]
@@ -14,9 +15,9 @@ use cellulars_lib::positional::neighbourhood::VonNeumannNeighbourhood;
 /// [`FixedBoundary`](cellulars_lib::positional::boundaries::FixedBoundary) is ~18% faster than [`UnsafePeriodicBoundary`]
 /// (in total run time).
 #[cfg(not(feature = "fixed-boundary"))]
-pub type BoundaryType = UnsafePeriodicBoundary<f32>;
+pub type BoundaryType = UnsafePeriodicBoundary<FloatType>;
 #[cfg(feature = "fixed-boundary")]
-pub type BoundaryType = FixedBoundary<f32>;
+pub type BoundaryType = FixedBoundary<FloatType>;
 
 /// Neighbourhood type of the environment.
 #[cfg(not(feature = "von-neumann"))]
@@ -27,4 +28,4 @@ pub type NeighbourhoodType = VonNeumannNeighbourhood;
 /// Small value distinguishable from 0.
 ///
 /// Used to compute cell division axis for example.
-pub const EPSILON: f32 = 1e-6;
+pub const EPSILON: FloatType = 1e-6;

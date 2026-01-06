@@ -2,6 +2,7 @@
 
 use crate::base::base_cell::BaseCell;
 use crate::cell_container::{CellContainer, RelCell};
+use crate::constants::FloatType;
 use crate::lattice::Lattice;
 use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge::Edge;
@@ -14,6 +15,9 @@ use crate::traits::habitable::Habitable;
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;
+#[cfg(feature = "high-precision")]
+use std::f64::consts::PI;
+#[cfg(not(feature = "high-precision"))]
 use std::f32::consts::PI;
 
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
@@ -34,7 +38,7 @@ pub struct BaseEnvironment<C, N, B: ToLatticeBoundary> {
     pub neighbourhood: N
 }
 
-impl<C, N, B: ToLatticeBoundary<Coord = f32>> BaseEnvironment<C, N, B> {
+impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> BaseEnvironment<C, N, B> {
     /// Makes a new empty environment with no cells.
     pub fn new_empty(
         neighbourhood: N,
@@ -91,11 +95,11 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     /// `search_scaler` multiplies the expected radius of `rel_cell` (which is calculated from its area).
     ///
     /// May fail to find all cell positions if `search_scaler` is too small, in which case logs a warning.
-    pub fn search_cell_box(&self, rel_cell: &RelCell<impl Cellular>, search_scaler: f32) -> Box<[Pos<usize>]> {
+    pub fn search_cell_box(&self, rel_cell: &RelCell<impl Cellular>, search_scaler: FloatType) -> Box<[Pos<usize>]> {
         let search_diam = (
             search_scaler
                 * 2.
-                * (max(rel_cell.cell.target_area(), rel_cell.cell.area()) as f32 / PI)
+                * (max(rel_cell.cell.target_area(), rel_cell.cell.area()) as FloatType / PI)
                 .sqrt()
         ) as usize;
 
@@ -149,12 +153,12 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     pub fn search_cell_outline(
         &self,
         rel_cell: &RelCell<impl Cellular>,
-        search_scaler: f32
+        search_scaler: FloatType
     ) -> Box<[Pos<usize>]> {
         let search_diam = (
             search_scaler
                 * 2.
-                * (max(rel_cell.cell.target_area(), rel_cell.cell.area()) as f32 / PI)
+                * (max(rel_cell.cell.target_area(), rel_cell.cell.area()) as FloatType / PI)
                 .sqrt()
         ) as usize;
 
@@ -171,7 +175,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     pub fn cell_neighbours(
         &self,
         cell: &RelCell<impl Cellular>,
-        search_scaler: f32
+        search_scaler: FloatType
     ) -> HashSet<Spin> {
         let outline = self
             .search_cell_outline(cell, search_scaler)
@@ -221,7 +225,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     }
 }
 
-impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = f32>> Habitable for BaseEnvironment<BaseCell, N, B> {
+impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = FloatType>> Habitable for BaseEnvironment<BaseCell, N, B> {
     type Cell = BaseCell;
 
     fn env(&self) -> &BaseEnvironment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
@@ -334,7 +338,7 @@ pub mod tests {
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
-    fn make_test_env() -> BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
+    fn make_test_env() -> BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>> {
         let rect = Rect::new(
             (0., 0.,).into(),
             (10., 10.).into()
@@ -347,7 +351,7 @@ pub mod tests {
 
     fn add_cell(
         positions: &[Pos<usize>],
-        env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>
+        env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>
     ) -> RelCell<BaseCell> {
         let mut rel_cell = RelCell{ index: 0, cell: BaseCell::new_empty(2).into_cell() };
         for &pos in positions {

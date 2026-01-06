@@ -11,7 +11,9 @@ use crate::pond::Pond;
 use crate::potts::Potts;
 use cellulars_lib::base::base_environment::BaseEnvironment;
 use cellulars_lib::base::base_pond::BasePond;
+use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundaries;
+use cellulars_lib::positional::pos::CastCoords;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos};
 use cellulars_lib::static_adhesion::StaticAdhesion;
@@ -22,7 +24,6 @@ use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
-use cellulars_lib::positional::pos::CastCoords;
 
 /// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
 pub struct Model {
@@ -188,7 +189,7 @@ impl Model {
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(Rect::new(
                     (0., 0.).into(),
-                    (parameters.pond.width as f32, parameters.pond.height as f32).into(),
+                    (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
                 )))
             ),
             parameters.cell.max_cells,
@@ -367,7 +368,7 @@ impl Model {
 
         let rect = Rect::new(
             (0., 0.).into(),
-            (parameters.pond.width as f32, parameters.pond.height as f32).into(),
+            (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
         );
         let lattice = IoManager::read_lattice(
             IoManager::resolve_lattice_path(sim_path, time_step),

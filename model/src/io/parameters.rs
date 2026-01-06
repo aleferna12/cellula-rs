@@ -1,6 +1,6 @@
 //! Contains logic related to the simulation parameters.
 
-use cellulars_lib::constants::CellIndex;
+use cellulars_lib::constants::{CellIndex, FloatType};
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -150,7 +150,7 @@ pub struct PondParameters {
 pub struct CellParameters {
     pub starting_cells: CellIndex,
     pub max_cells: CellIndex,
-    pub search_radius: f32,
+    pub search_radius: FloatType,
     pub starting_area: u32,
     pub target_area: u32,
     pub div_area: u32,
@@ -165,9 +165,9 @@ pub struct CellParameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PottsParameters {
-    pub boltz_t: f32,
-    pub size_lambda: f32,
-    pub chemotaxis_mu: f32,
+    pub boltz_t: FloatType,
+    pub size_lambda: FloatType,
+    pub chemotaxis_mu: FloatType,
     pub adhesion: AdhesionParameters
 }
 
@@ -175,9 +175,9 @@ pub struct PottsParameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct AdhesionParameters {
-    pub cell_energy: f32,
-    pub medium_energy: f32,
-    pub solid_energy: f32,
+    pub cell_energy: FloatType,
+    pub medium_energy: FloatType,
+    pub solid_energy: FloatType,
 }
 
 /// Parameters used to control IO operations (see [`io_manager`](crate::io::io_manager)).

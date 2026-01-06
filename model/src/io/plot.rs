@@ -4,7 +4,7 @@ use crate::cell::CellType;
 use crate::environment::Environment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
-use cellulars_lib::constants::CellIndex;
+use cellulars_lib::constants::{CellIndex, FloatType};
 use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
 use image::{Rgba, RgbaImage};
@@ -27,7 +27,7 @@ pub trait ContinuousPlot: Plot {
     /// Color for when `value == max`.
     fn max_color(&self) -> Lchuv;
     /// Linearly interpolates `value` between `min` and `max`.
-    fn lerp(&self, value: f32, min: f32, max: f32) -> Result<Lchuv, LerpError> {
+    fn lerp(&self, value: FloatType, min: FloatType, max: FloatType) -> Result<Lchuv, LerpError> {
         if max < min {
             return Err(LerpError::NegativeRange);
         }
@@ -39,7 +39,7 @@ pub trait ContinuousPlot: Plot {
         }
 
         let p = if min == max { 0.5 } else { (value - min) / (max - min) };
-        let blended = self.min_color().mix(self.max_color(), p);
+        let blended = self.min_color().mix(self.max_color(), p as f32);
         Ok(blended)
     }
 }
@@ -221,9 +221,9 @@ impl Plot for AreaPlot {
             if let Spin::Some(cell_index) = env.base_env.cell_lattice[pos] {
                 let rel_cell = &env.base_env.cells[cell_index];
                 let color = self.lerp(
-                    rel_cell.cell.area() as f32,
-                    min as f32,
-                    max as f32
+                    rel_cell.cell.area() as FloatType,
+                    min as FloatType,
+                    max as FloatType
                 );
                 match color {
                     Ok(c) => image.put_pixel(
@@ -261,9 +261,9 @@ impl Plot for ChemPlot {
         for pos in lat.iter_positions() {
             let chem = lat[pos];
             let color = self.lerp(
-                chem as f32,
+                chem as FloatType,
                 0.,
-                lat.height() as f32
+                lat.height() as FloatType
             );
             match color { 
                 Ok(c) => image.put_pixel(

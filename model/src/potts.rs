@@ -3,6 +3,7 @@
 use crate::cell::CellType;
 use crate::environment::Environment;
 use bon::Builder;
+use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::spin::Spin;
@@ -18,11 +19,11 @@ use cellulars_lib::traits::potts_algorithm::PottsAlgorithm;
 #[derive(Clone, Builder)]
 pub struct Potts {
     /// Boltz temperature of the model.
-    pub boltz_t: f32,
+    pub boltz_t: FloatType,
     /// Scaler constant associated with the penalty for size deviations.
-    pub size_lambda: f32,
+    pub size_lambda: FloatType,
     /// Scaler constant associated with the speed of migration.
-    pub chemotaxis_mu: f32,
+    pub chemotaxis_mu: FloatType,
     /// Whether we allow cell migration.
     pub enable_migration: bool,
     /// Adhesion system used in [`Potts::delta_hamiltonian_adhesion()`].
@@ -32,15 +33,15 @@ pub struct Potts {
 impl PottsAlgorithm for Potts {
     type Environment = Environment;
 
-    fn boltz_t(&self) -> f32 {
+    fn boltz_t(&self) -> FloatType {
         self.boltz_t
     }
 
-    fn size_lambda(&self) -> f32 {
+    fn size_lambda(&self) -> FloatType {
         self.size_lambda
     }
 
-    fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f32 {
+    fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> FloatType {
         if !self.enable_migration {
             return 0.
         }
@@ -54,7 +55,7 @@ impl PottsAlgorithm for Potts {
 
         let (dx1, dy1) = env.base_env.bounds.boundary.displacement(
             rel_cell.cell.center(),
-            Pos::new(pos_target.x as f32, pos_target.y as f32)
+            Pos::new(pos_target.x as FloatType, pos_target.y as FloatType)
         );
         let (dx2, dy2) = env.base_env.bounds.boundary.displacement(
             rel_cell.cell.center(),
@@ -79,7 +80,7 @@ impl PottsAlgorithm for Potts {
         spin_target: Spin,
         neigh_spin: impl IntoIterator<Item = Spin>,
         _env: &Self::Environment
-    ) -> f32 {
+    ) -> FloatType {
         let mut energy = 0.;
         for neigh in neigh_spin {
             energy -= self.adhesion.adhesion_energy(

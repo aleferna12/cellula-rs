@@ -1,5 +1,6 @@
 //! Contains logic associated with [`BaseCell`].
 
+use crate::constants::FloatType;
 use crate::positional::boundaries::Boundary;
 use crate::positional::com::Com;
 use crate::positional::pos::Pos;
@@ -31,7 +32,7 @@ impl BaseCell {
     pub fn new_ready(
         area: u32,
         target_area: u32,
-        center: Pos<f32>
+        center: Pos<FloatType>
     ) -> Self {
         Self {
             com: Com { pos: center, mass: area },
@@ -49,7 +50,7 @@ impl Cellular for BaseCell {
         self.com.mass
     }
 
-    fn center(&self) -> Pos<f32> {
+    fn center(&self) -> Pos<FloatType> {
         self.com.pos
     }
 
@@ -62,7 +63,7 @@ impl Cellular for BaseCell {
         &mut self,
         pos: Pos<usize>,
         adding: bool,
-        boundary: &impl Boundary<Coord = f32>
+        boundary: &impl Boundary<Coord = FloatType>
     ) {
         // The order here matters (area is last), be careful
         let shifted = self.com.shift(

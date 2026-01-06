@@ -1,5 +1,6 @@
 //! Contains logic associated with [`Com`].
 
+use crate::constants::FloatType;
 use crate::positional::boundaries::Boundary;
 use crate::prelude::Pos;
 use thiserror::Error;
@@ -8,7 +9,7 @@ use thiserror::Error;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Com {
     /// Position of the [`Com`].
-    pub pos: Pos<f32>,
+    pub pos: Pos<FloatType>,
     /// Mass of the [`Com`].
     pub mass: u32,
 }
@@ -20,12 +21,11 @@ impl Com {
     /// removing the relative influence of `other` from `self`.
     ///
     /// This operation is prone to accumulating floating-point errors, so be careful with those.
-    // TODO!: does changing this to f64 affect perf?
     pub fn shift(
         self,
         other: Com,
         adding: bool,
-        bound: &impl Boundary<Coord = f32>
+        bound: &impl Boundary<Coord = FloatType>
     ) -> Result<Com, ShiftError> {
         let shift = if adding { 1 } else { -1 };
         let added_mass = shift * other.mass as i32;
@@ -38,8 +38,8 @@ impl Com {
 
         let (dx, dy) = bound.displacement(self.pos, other.pos);
         let new_pos = Pos::new(
-            self.pos.x + dx * added_mass as f32 / new_mass as f32,
-            self.pos.y + dy * added_mass as f32 / new_mass as f32,
+            self.pos.x + dx * added_mass as FloatType / new_mass as FloatType,
+            self.pos.y + dy * added_mass as FloatType / new_mass as FloatType,
         );
         let valid_pos = bound.valid_pos(new_pos);
         match valid_pos {
@@ -57,5 +57,5 @@ pub enum ShiftError {
     NegativeMass(i32),
     /// Shifting resulted in position out of bounds.
     #[error("shifted COM `{0:?}` is out of bounds")]
-    OutOfBounds(Pos<f32>),
+    OutOfBounds(Pos<FloatType>),
 }

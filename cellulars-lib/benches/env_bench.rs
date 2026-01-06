@@ -1,5 +1,6 @@
 use cellulars_lib::base::base_cell::BaseCell;
 use cellulars_lib::base::base_environment::BaseEnvironment;
+use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::{Boundaries, Boundary, UnsafePeriodicBoundary};
 use cellulars_lib::positional::edge::Edge;
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
@@ -15,7 +16,7 @@ use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
 
-fn empty_env(width: f32, height: f32) -> BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>> {
+fn empty_env(width: FloatType, height: FloatType) -> BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>> {
     BaseEnvironment::new_empty(
         MooreNeighbourhood::new(1),
         Boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
@@ -26,7 +27,7 @@ fn empty_env(width: f32, height: f32) -> BaseEnvironment<BaseCell, MooreNeighbou
 }
 
 fn random_neighbour(
-    env: &BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
+    env: &BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl Rng
@@ -46,7 +47,7 @@ fn random_neighbour(
 }
 
 fn add_random_edge(
-    env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
+    env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
     rng: &mut impl Rng
 ) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
@@ -56,7 +57,7 @@ fn add_random_edge(
 
 fn replace_random_edges(
     n_edges: usize,
-    env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<f32>>,
+    env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
     rng: &mut impl Rng
 ) {
     for _ in 0..n_edges {
@@ -98,7 +99,7 @@ fn bench_env(c: &mut Criterion) {
         );
     });
 
-    let pos_usize: [Pos<f32>; 2] = [Pos::new(20., 20.), Pos::new(-20., -20.)];
+    let pos_usize: [Pos<FloatType>; 2] = [Pos::new(20., 20.), Pos::new(-20., -20.)];
     let lat_bound = UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (40., 40.).into()));
     c.bench_function("unsafe_periodic_boundary_f32", |b| {
         b.iter(

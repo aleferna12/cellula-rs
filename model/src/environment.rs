@@ -4,7 +4,7 @@ use crate::cell::Cell;
 use crate::constants::{BoundaryType, NeighbourhoodType, EPSILON};
 use cellulars_lib::base::base_environment::{BaseEnvironment, EdgesUpdate};
 use cellulars_lib::cell_container::RelCell;
-use cellulars_lib::constants::CellIndex;
+use cellulars_lib::constants::{CellIndex, FloatType};
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::boundaries::{Boundary, ToLatticeBoundary};
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
@@ -23,7 +23,7 @@ pub struct Environment {
     /// Lattice containing the chemical gradient.
     pub chem_lattice: Lattice<u32>,
     /// Scaler used to determine the radius of search for cell positions starting from its center.
-    pub cell_search_scaler: f32,
+    pub cell_search_scaler: FloatType,
     /// Maximum number of cells supported in the environment.
     pub max_cells: CellIndex,
     population_exploded: bool
@@ -34,7 +34,7 @@ impl Environment {
     pub fn new(
         env: BaseEnvironment<Cell, NeighbourhoodType, BoundaryType>,
         max_cells: CellIndex,
-        cell_search_scaler: f32
+        cell_search_scaler: FloatType
     ) -> Self {
         let mut env_ = Self {
             chem_lattice: Lattice::new(env.cell_lattice.rect.clone()),
@@ -87,7 +87,7 @@ impl Environment {
             .cell_lattice
             .random_pos(rng)
             .cast_as::<isize>();
-        let cell_side = ((cell_area as f32).sqrt() / 2.).floor() as isize;
+        let cell_side = ((cell_area as FloatType).sqrt() / 2.).floor() as isize;
         let rect = Rect::new(
             Pos::new(pos_isize.x - cell_side, pos_isize.y - cell_side),
             Pos::new(pos_isize.x + cell_side, pos_isize.y + cell_side)
@@ -108,8 +108,8 @@ impl Environment {
             .search_cell_box(rel_mom, self.cell_search_scaler)
             .into_iter()
             .filter(|pos| {
-                let y = div_axis.slope * pos.x as f32 + div_axis.intercept;
-                (pos.y as f32) < y
+                let y = div_axis.slope * pos.x as FloatType + div_axis.intercept;
+                (pos.y as FloatType) < y
             })
             .collect();
         
@@ -154,7 +154,7 @@ impl Environment {
 
     // TODO!: add plot to make sure this is right
     /// Finds the minor axis along which to split the cell.
-    pub fn find_division_axis(&self, rel_cell: &RelCell<Cell>, search_scaler: f32) -> SplitLine {
+    pub fn find_division_axis(&self, rel_cell: &RelCell<Cell>, search_scaler: FloatType) -> SplitLine {
         // Compute covariance elements relative to centroid
         let mut sum_xx = 0.0;
         let mut sum_yy = 0.0;
@@ -170,7 +170,7 @@ impl Environment {
             sum_xy += dx * dy;
         }
 
-        let n = rel_cell.cell.area() as f32;
+        let n = rel_cell.cell.area() as FloatType;
         let cov_xx = sum_xx / n;
         let cov_yy = sum_yy / n;
         let cov_xy = sum_xy / n;
@@ -204,7 +204,7 @@ impl Environment {
         let slope = if vec_x.abs() > EPSILON {
             vec_y / vec_x
         } else {
-            f32::INFINITY // vertical line
+            FloatType::INFINITY // vertical line
         };
         let intercept = rel_cell.cell.center().y - slope * rel_cell.cell.center().x;
 
@@ -309,7 +309,7 @@ impl Habitable for Environment {
 #[derive(Debug)]
 pub struct SplitLine {
     /// Slope of the linear equation.
-    pub slope: f32,
+    pub slope: FloatType,
     /// Intercept of the linear equation.
-    pub intercept: f32,
+    pub intercept: FloatType,
 }

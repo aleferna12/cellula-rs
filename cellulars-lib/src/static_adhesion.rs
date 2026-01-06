@@ -1,5 +1,6 @@
 //! Contains logic associated with [StaticAdhesion].
 
+use crate::constants::FloatType;
 use crate::spin::Spin;
 use crate::traits::adhesion_system::AdhesionSystem;
 
@@ -7,11 +8,11 @@ use crate::traits::adhesion_system::AdhesionSystem;
 #[derive(Clone, Debug, PartialEq)]
 pub struct StaticAdhesion {
     /// Energy at a cell-cell interface.
-    pub cell_energy: f32,
+    pub cell_energy: FloatType,
     /// Energy at a cell-medium interface.
-    pub medium_energy: f32,
+    pub medium_energy: FloatType,
     /// Energy at a cell-solid interface.
-    pub solid_energy: f32
+    pub solid_energy: FloatType
 }
 
 impl AdhesionSystem for StaticAdhesion {
@@ -20,7 +21,7 @@ impl AdhesionSystem for StaticAdhesion {
         spin1: Spin,
         spin2: Spin,
         _: &(),
-    ) -> f32 {
+    ) -> FloatType {
         match (spin1, spin2) {
             (Spin::Some(c1), Spin::Some(c2)) => {
                 if c1 == c2 {

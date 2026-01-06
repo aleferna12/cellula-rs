@@ -2,6 +2,7 @@
 
 use bon::Builder;
 use cellulars_lib::base::base_cell::BaseCell;
+use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::com::Com;
 use cellulars_lib::positional::pos::Pos;
@@ -42,7 +43,7 @@ impl Cell {
     }
 
     /// Returns the center of the cell weighted by the chemical concentration at each cell position.
-    pub fn chem_center(&self) -> Pos<f32> {
+    pub fn chem_center(&self) -> Pos<FloatType> {
         self.chem_com.pos
     }
 
@@ -53,7 +54,7 @@ impl Cell {
     }
 
     /// Adds or removes the chemical concentration `chem_at` at position `pos` from the cell.
-    pub fn shift_chem<B: Boundary<Coord=f32>>(&mut self, pos: Pos<usize>, chem_at: u32, adding: bool, boundary: &B) {
+    pub fn shift_chem<B: Boundary<Coord = FloatType>>(&mut self, pos: Pos<usize>, chem_at: u32, adding: bool, boundary: &B) {
         let shifted = self.chem_com.shift(
             Com { pos: pos.cast_as(), mass: chem_at },
             adding,
@@ -83,7 +84,7 @@ impl Cellular for Cell {
         self.base_cell.area()
     }
 
-    fn center(&self) -> Pos<f32> {
+    fn center(&self) -> Pos<FloatType> {
         self.base_cell.center()
     }
 
@@ -91,7 +92,7 @@ impl Cellular for Cell {
         self.base_cell.is_empty()
     }
 
-    fn shift_position(&mut self, pos: Pos<usize>, adding: bool, bound: &impl Boundary<Coord=f32>) {
+    fn shift_position(&mut self, pos: Pos<usize>, adding: bool, bound: &impl Boundary<Coord = FloatType>) {
         self.base_cell.shift_position(pos, adding, bound)
     }
 }
@@ -132,7 +133,7 @@ mod tests {
     use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
     use cellulars_lib::positional::rect::Rect;
 
-    fn make_unsafe_boundary() -> UnsafePeriodicBoundary<f32> {
+    fn make_unsafe_boundary() -> UnsafePeriodicBoundary<FloatType> {
         UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
     }
     

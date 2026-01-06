@@ -6,6 +6,7 @@ description = "A very fast, extensible CPM implementation."
 
 [features]
 default = ["movie"]
+high-precision = ["cellulars-lib/high-precision"]
 movie = ["dep:minifb"]
 fixed-boundary = []
 von-neumann = []
@@ -23,7 +24,7 @@ name = "io_bench"
 harness = false
 
 [dependencies]
-cellulars-lib = { path = "../cellulars-lib" }
+cellulars-lib = { path = "../cellulars-lib", default-features = false }
 anyhow = "1.0.99"
 bon = "3.7.2"
 clap = { version = "4.5.39", features = ["derive"] }

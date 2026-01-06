@@ -1,5 +1,6 @@
 //! Contains cell traits.
 
+use crate::constants::FloatType;
 use crate::positional::boundaries::Boundary;
 use crate::positional::pos::Pos;
 
@@ -10,7 +11,7 @@ pub trait Cellular {
     /// Returns the area of the cell.
     fn area(&self) -> u32;
     /// Returns the center of mass of the cell.
-    fn center(&self) -> Pos<f32>;
+    fn center(&self) -> Pos<FloatType>;
     /// Returns whether the cell is empty or not.
     ///
     /// Empty cells cannot recover from this state, and can effectively be ignored by the simulation algorithm.
@@ -23,7 +24,7 @@ pub trait Cellular {
         &mut self,
         pos: Pos<usize>,
         add: bool,
-        bound: &impl Boundary<Coord = f32>
+        bound: &impl Boundary<Coord = FloatType>
     );
 }
 

@@ -1,12 +1,16 @@
 //! Contains logic associated with [`PottsAlgorithm`].
 
+use crate::constants::FloatType;
 use crate::positional::neighbourhood::Neighbourhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
 use crate::traits::cellular::Cellular;
 use crate::traits::habitable::Habitable;
 use rand::Rng;
+#[cfg(not(feature = "high-precision"))]
 use std::f32::consts::E;
+#[cfg(feature = "high-precision")]
+use std::f64::consts::E;
 
 /// This trait defines how a Monte Carlo [`PottsAlgorithm::step()`] of the model should modify a
 ///[`Habitable`] environment.
@@ -18,10 +22,10 @@ pub trait PottsAlgorithm {
     type Environment: Habitable;
 
     /// Returns the Boltzmann temperature of the system.
-    fn boltz_t(&self) -> f32;
+    fn boltz_t(&self) -> FloatType;
 
     /// Returns the scaling constant associated with the penalty given to size deviations.
-    fn size_lambda(&self) -> f32;
+    fn size_lambda(&self) -> FloatType;
 
     /// Returns the energy differential associated with copy biases of the model.
     ///
@@ -29,7 +33,7 @@ pub trait PottsAlgorithm {
     ///
     /// Overriding this method allows to easily extend the model's behaviour
     /// without having to override [`PottsAlgorithm::attempt_site_copy()`].
-    fn copy_biases(&self, _pos_source: Pos<usize>, _pos_target: Pos<usize>, _env: &Self::Environment) -> f32 {
+    fn copy_biases(&self, _pos_source: Pos<usize>, _pos_target: Pos<usize>, _env: &Self::Environment) -> FloatType {
         0.
     }
 
@@ -40,7 +44,7 @@ pub trait PottsAlgorithm {
         spin_source: Spin,
         spin_target: Spin,
         env: &Self::Environment,
-    ) -> f32 {
+    ) -> FloatType {
         let mut delta_h = 0.;
         if let Spin::Some(cell_index) = spin_source {
             let rel_cell = &env.env().cells[cell_index];
@@ -55,14 +59,14 @@ pub trait PottsAlgorithm {
 
     /// Returns whether a copy attempt that results in an energy differential `delta_h` should be randomly accepted
     /// by drawing from a Boltzmann distribution.
-    fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: f32) -> bool {
-        delta_h < 0. || rng.random::<f32>() < E.powf(-delta_h / self.boltz_t())
+    fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: FloatType) -> bool {
+        delta_h < 0. || rng.random::<FloatType>() < E.powf(-delta_h / self.boltz_t())
     }
 
     /// Returns the energy differential resulting from an atomic increase or decrease of `area`.
-    fn size_energy_diff(&self, area_increased: bool, area: u32, target_area: u32) -> f32 {
+    fn size_energy_diff(&self, area_increased: bool, area: u32, target_area: u32) -> FloatType {
         let delta_area = if area_increased { 1. } else { -1. };
-        2. * self.size_lambda() * delta_area * (area as f32 - target_area as f32) + self.size_lambda()
+        2. * self.size_lambda() * delta_area * (area as FloatType - target_area as FloatType) + self.size_lambda()
     }
 
     /// Executes a Monte Carlo step of the simulation by updating `env`.
@@ -71,13 +75,13 @@ pub trait PottsAlgorithm {
         env: &mut Self::Environment,
         rng: &mut impl Rng
     ) {
-        let mut to_visit = 2. * env.env().edge_book.len() as f32 / env.env().neighbourhood.n_neighs() as f32;
+        let mut to_visit = 2. * env.env().edge_book.len() as FloatType / env.env().neighbourhood.n_neighs() as FloatType;
         while 0. < to_visit {
             let edge_i = env.env().edge_book.random_index(rng);
             let edge = env.env().edge_book.at(edge_i);
             // This is WAY faster than keeping the symmetric edge in EdgeBook (like 2x as fast!)
             // or at least, this is the case when using IndexSet, I would assume its somewhat implementation-dependent
-            let (pos_source, pos_target) = if rng.random::<f32>() < 0.5 {
+            let (pos_source, pos_target) = if rng.random::<FloatType>() < 0.5 {
                 (edge.p1, edge.p2)
             } else {
                 (edge.p2, edge.p1)
@@ -97,7 +101,7 @@ pub trait PottsAlgorithm {
         pos_target: Pos<usize>,
         env: &mut Self::Environment,
         rng: &mut impl Rng
-    ) -> f32 {
+    ) -> FloatType {
         let spin_target = env.env().cell_lattice[pos_target];
         if spin_target == Spin::Solid {
             return 0.;
@@ -135,7 +139,7 @@ pub trait PottsAlgorithm {
             spin_source
         );
         // Times 2 to represent the symmetric edge
-        2. * (edges_update.added as f32 - edges_update.removed as f32) / env.env().neighbourhood.n_neighs() as f32
+        2. * (edges_update.added as FloatType - edges_update.removed as FloatType) / env.env().neighbourhood.n_neighs() as FloatType
     }
 
     /// Returns the total energy differential of the system if `spin_source` were to be copied into `spin_target`.
@@ -145,7 +149,7 @@ pub trait PottsAlgorithm {
         spin_target: Spin,
         neigh_spins: impl IntoIterator<Item = Spin>,
         env: &Self::Environment,
-    ) -> f32 {
+    ) -> FloatType {
         self.delta_hamiltonian_size(spin_source, spin_target, env)
             + self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env)
     }
@@ -157,5 +161,5 @@ pub trait PottsAlgorithm {
         spin_target: Spin,
         neigh_spin: impl IntoIterator<Item = Spin>,
         env: &Self::Environment,
-    ) -> f32;
+    ) -> FloatType;
 }

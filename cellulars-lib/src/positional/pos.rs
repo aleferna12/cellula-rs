@@ -1,5 +1,6 @@
 //! Contains logic associated with [`Pos`].
 
+use crate::constants::FloatType;
 use num::cast::AsPrimitive;
 
 /// A 2D position in space.
@@ -57,16 +58,9 @@ impl Pos<usize> {
     }
 }
 
-impl Pos<f32> {
+impl Pos<FloatType> {
     /// Rounds the position's coordinates to their nearest integer value.
-    pub fn round(self) -> Pos<f32> {
-        Pos::new(self.x.round(), self.y.round())
-    }
-}
-
-impl Pos<f64> {
-    /// Rounds the position's coordinates to their nearest integer value.
-    pub fn round(self) -> Pos<f64> {
+    pub fn round(self) -> Pos<FloatType> {
         Pos::new(self.x.round(), self.y.round())
     }
 }

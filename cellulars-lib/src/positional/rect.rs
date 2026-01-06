@@ -1,9 +1,10 @@
 //! Contains logic associated with [`Rect`].
 
+use crate::constants::FloatType;
 use crate::positional::pos::{CastCoords, Pos};
+use num::cast::AsPrimitive;
 use num::{Integer, Num};
 use std::ops::AddAssign;
-use num::cast::AsPrimitive;
 
 /// A rectangle defined by two corners.
 #[derive(Clone, Debug, PartialEq)]
@@ -53,9 +54,9 @@ where
     }
 }
 
-impl Rect<f32> {
+impl Rect<FloatType> {
     /// Rounds the rectangle's coordinates to their nearest integer value.
-    pub fn round(&self) -> Rect<f32> {
+    pub fn round(&self) -> Rect<FloatType> {
         Rect::new(self.min.round(), self.max.round())
     }
 }

@@ -1,5 +1,6 @@
 //! Contains logic associated with boundary conditions and position validation.
 
+use crate::constants::FloatType;
 use crate::positional::pos::{CastCoords, Pos};
 use crate::positional::rect::Rect;
 use num::traits::Euclid;
@@ -121,7 +122,7 @@ where
     }
 }
 
-impl ToLatticeBoundary for FixedBoundary<f32> {
+impl ToLatticeBoundary for FixedBoundary<FloatType> {
     type LatticeBoundary = FixedBoundary<isize>;
 
     fn to_lattice_boundary(&self) -> FixedBoundary<isize> {
@@ -171,7 +172,7 @@ where
     }
 }
 
-impl ToLatticeBoundary for SafePeriodicBoundary<f32> {
+impl ToLatticeBoundary for SafePeriodicBoundary<FloatType> {
     type LatticeBoundary = SafePeriodicBoundary<isize>;
 
     fn to_lattice_boundary(&self) -> SafePeriodicBoundary<isize> {
@@ -231,7 +232,7 @@ where
     }
 }
 
-impl ToLatticeBoundary for UnsafePeriodicBoundary<f32> {
+impl ToLatticeBoundary for UnsafePeriodicBoundary<FloatType> {
     type LatticeBoundary = UnsafePeriodicBoundary<isize>;
 
     fn to_lattice_boundary(&self) -> UnsafePeriodicBoundary<isize> {
