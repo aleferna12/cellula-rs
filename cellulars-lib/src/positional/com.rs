@@ -20,6 +20,7 @@ impl Com {
     /// removing the relative influence of `other` from `self`.
     ///
     /// This operation is prone to accumulating floating-point errors, so be careful with those.
+    // TODO!: does changing this to f64 affect perf?
     pub fn shift(
         self,
         other: Com,
