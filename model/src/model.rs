@@ -267,6 +267,8 @@ impl Model {
         sorted_luma.sort();
 
         let mut pond = Self::make_empty_pond(parameters, rng)?;
+        // Gradient has to be initialised before cells are added so that chem center pos are tracked
+        pond.env.make_next_chem_gradient(&mut pond.rng);
         let maybe_templates_box = Self::templates_path_to_box(
             maybe_templates_path,
             parameters.cell.genome.mutation_rate,

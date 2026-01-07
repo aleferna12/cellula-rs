@@ -114,7 +114,13 @@ impl IoManager {
         if !matches!(layout.color(), ColorType::L8 | ColorType::L16 | ColorType::La8 | ColorType::La16) {
             log::warn!("Layout file \"{layout_path:?}\" is not encoded in grayscale but will be converted");
         }
-        Ok(layout.resize_exact(pond_width as u32, pond_height as u32, FilterType::Nearest).into_luma8())
+        let resized = layout.resize_exact(
+            pond_width as u32,
+            pond_height as u32,
+            FilterType::Nearest
+        );
+        let flipped = resized.flipv();
+        Ok(flipped.into_luma8())
     }
 
     fn make_cells_from_data(
