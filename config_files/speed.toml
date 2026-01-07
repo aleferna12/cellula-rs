@@ -7,7 +7,7 @@ width = 500
 height = 500
 enclose = true
 neigh-r = 1
-season-duration = 20_000_000
+season-duration = 0
 # 250 lattice-lengths away from center of gradient
 half-fitness = 457
 reproduction-steps = 50

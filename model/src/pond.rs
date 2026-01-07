@@ -108,7 +108,7 @@ impl Pond {
 impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
-        if self.time_step.is_multiple_of(self.season_duration) {
+        if self.time_step > 0 && self.time_step.is_multiple_of(self.season_duration) {
             if self.enable_division {
                 self.select();
             }
