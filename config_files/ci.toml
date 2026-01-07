@@ -37,8 +37,7 @@ act-lambda = 200.0
 cell-energy = 20.0
 medium-energy = 20.0
 solid-energy = 20.0
-# Max gamma = 16.
-gene-energy = 32.0
+gene-energy = 0.0
 
 [io]
 outdir = "runs/"
