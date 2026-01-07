@@ -1,0 +1,71 @@
+# This is a copy of the parameters used in the simulation
+[general]
+time-steps = 15_000_000
+
+[pond]
+width = 500
+height = 500
+enclose = true
+neigh-r = 1
+season-duration = 20_000_000
+# 250 lattice-lengths away from center of gradient
+half-fitness = 457
+reproduction-steps = 50
+
+[cell]
+starting-cells = 100
+max-cells = 10000
+search-radius = 4.0
+starting-area = 200
+target-area = 200
+target-perimeter = 180
+divide = false
+
+[cell.genome]
+mutation-rate = 0.01
+length = 8
+
+[potts]
+boltz-t = 20.0
+size-lambda = 50.0
+perimeter-lambda = 2.0
+chemotaxis-min = 0.5
+act-max = 20
+act-lambda = 200.0
+
+[potts.adhesion]
+cell-energy = 20.0
+medium-energy = 20.0
+solid-energy = 20.0
+# Max gamma = 16.
+gene-energy = 32.0
+
+[io]
+outdir = "runs/"
+replace-outdir = false
+image-period = 50_000
+image-format = "webp"
+info-period = 100_000
+
+[io.data]
+cells-period = 100_000
+lattice-period = 25_000_000
+
+[io.movie]
+show = false
+width = 320
+height = 320
+frame-period = 1
+
+[io.plot]
+order = ["chem", "spin", "act", "center", "chem-center"]
+solid-color = "#000000"
+center-color = "#0000ff"
+chem-center-color = "#00ff00"
+border-color = "#000000"
+area-min-color = "#ff00ff"
+area-max-color = "#ffff00"
+chem-min-color = "#000000"
+chem-max-color = "#ffffff"
+act-min-color = "#ff00ff"
+act-max-color = "#ffff00"
