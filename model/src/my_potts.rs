@@ -29,10 +29,6 @@ pub struct MyPotts {
 impl MyPotts {
     /// This includes the combined copy biases for Act and chem-polarization.
     fn contact_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> f32 {
-        if !cfg!(feature = "chem-polarization") {
-            return 0.0;
-        }
-
         let act_source = self.mean_act(pos_source, env);
         let act_target = self.mean_act(pos_target, env);
         // There is an error in Niculescu where the source and targets are switched
@@ -68,7 +64,11 @@ impl MyPotts {
                     (count + 1, product * act as f64)
                 }
             );
-        product.pow(1. / count as f64) as f32 * self.chem_polarization(cell_index, env)
+        let act = product.pow(1. / count as f64) as f32;
+        if !cfg!(feature = "chem-polarization") {
+            return act;
+        }
+        act * self.chem_polarization(cell_index, env)
     }
 
     fn perimeter_energy_diff(&self, delta_perimeter: i32, perimeter: u32, target_perimeter: u32) -> f32 {
