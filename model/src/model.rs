@@ -262,6 +262,7 @@ impl Model {
                 positions.push(pos);
             }
         }
+        log::info!("Found {} different groups in the layout", luma_cell_positions.len());
 
         let mut sorted_luma = luma_cell_positions.keys().copied().collect_vec();
         sorted_luma.sort();
