@@ -134,7 +134,7 @@ impl MyEnvironment {
         }
         if !self.population_exploded {
             log::warn!(
-                        "Population exceeded maximum threshold `max-cells={}` during cell division",
+                        "Population exceeded maximum threshold `max-cells={}`, cell is not going to be added",
                         {self.max_cells}
                     );
             log::warn!("This warning will be suppressed from now on");
