@@ -280,6 +280,9 @@ impl Model {
                 .remove(&luma)
                 .expect("missing luma key");
             for positions in cell_positions.values() {
+                if !pond.env.can_add_cell() {
+                    continue;
+                }
                 let cell = match &maybe_templates_box {
                     None => Self::empty_cell_from_parameters(parameters, rng)?,
                     Some(templates_box) => templates_box
@@ -330,7 +333,7 @@ impl Model {
         )?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
-        while pond.env.cells.n_valid() < parameters.cell.starting_cells {
+        while pond.env.cells.n_valid() < parameters.cell.starting_cells && pond.env.can_add_cell() {
             let cell = match &mut maybe_templates_it {
                 None => Self::empty_cell_from_parameters(parameters, rng)?,
                 Some(templates_it) => templates_it
