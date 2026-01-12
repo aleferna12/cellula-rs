@@ -433,7 +433,8 @@ impl Model {
     }
 
     pub fn run(&mut self) {
-        self.run_for(self.time_steps);
+        // + 1 ensures data is saved after the last time step
+        self.run_for(self.time_steps + 1);
     }
 
     pub fn goodbye(&self) {
