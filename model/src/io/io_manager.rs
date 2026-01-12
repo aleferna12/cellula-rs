@@ -35,7 +35,10 @@ pub struct IoManager {
     plots: Box<[Box<dyn Plot>]>,
     image_period: u32,
     cells_period: u32,
-    lattices_period: u32
+    cells_write_period: u32,
+    lattices_period: u32,
+    #[builder(default)]
+    celldfs: Vec<LazyFrame>,
 }
 
 impl IoManager {
@@ -301,19 +304,36 @@ impl IoManager {
     }
 
     fn write_data_if_time(
-        &self,
+        &mut self,
         time_step: u32,
         env: &mut MyEnvironment
     ) -> anyhow::Result<()> {
         let time_str = time_step.to_string();
+
+        if time_step.is_multiple_of(self.cells_period) {
+            let mut celldf = env.cells
+                .to_dataframe()
+                .with_context(|| "failed to make data frame from cells")?;
+            celldf
+                .with_column(Series::new("time".into(), vec![time_step; celldf.height()]))
+                .with_context(|| "failed to add time column to cell data frame")?;
+            self.celldfs.push(celldf.lazy());
+        }
+
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
-        if time_step.is_multiple_of(self.cells_period) {
-            let mut celldf = env.cells.to_dataframe()?;
+        if time_step.is_multiple_of(self.cells_write_period) {
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
             let file = std::fs::File::create(file_path)?;
+
+            let mut newdfs = vec![];
+            std::mem::swap(&mut newdfs, &mut self.celldfs);
+            let mut celldf = concat(newdfs, UnionArgs::default())
+                .and_then(|df| df.collect())
+                .with_context(|| "failed to concatenate cell data frames")?;
+
             ParquetWriter::new(file).finish(&mut celldf)?;
 
             for cell in env.cells.iter_mut() {

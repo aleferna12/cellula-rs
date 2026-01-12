@@ -107,6 +107,10 @@ impl Parameters {
         if self.cell.genome.length < 1 || self.cell.genome.length > 64 {
             anyhow::bail!("`cell.genome.length` must be between 1 and 64")
         }
+
+        if let Some(write_period) = self.io.data.cells_write_period && write_period < self.io.data.cells_period {
+            anyhow::bail!("`io.data.cells_write_period` cannot be smaller than `io.data.cells_period`")
+        }
         Ok(())
     }
 }
@@ -192,6 +196,7 @@ pub struct IoParameters {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct DataParameters {
     pub cells_period: u32,
+    pub cells_write_period: Option<u32>,
     pub lattice_period: u32
 }
 

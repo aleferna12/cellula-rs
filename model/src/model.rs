@@ -131,6 +131,7 @@ impl Model {
             .image_format(parameters.io.image_format.clone())
             .image_period(parameters.io.image_period)
             .cells_period(parameters.io.data.cells_period)
+            .cells_write_period(parameters.io.data.cells_write_period.unwrap_or(parameters.io.data.cells_period))
             .lattices_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone().try_into()?)
             .maybe_movie_maker(movie_maker)
