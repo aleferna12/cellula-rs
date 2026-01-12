@@ -328,11 +328,7 @@ impl IoManager {
                 .join(format!("{time_str}.parquet"));
             let file = std::fs::File::create(file_path)?;
 
-            let n_dfs = self.celldfs.capacity();
-            let newdfs = std::mem::replace(
-                &mut self.celldfs,
-                Vec::with_capacity(n_dfs)
-            );
+            let newdfs = std::mem::take(&mut self.celldfs);
             let mut celldf = concat(newdfs, UnionArgs::default())
                 .and_then(|df| df.collect())
                 .with_context(|| "failed to concatenate cell data frames")?;
