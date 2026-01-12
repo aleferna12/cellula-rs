@@ -1,6 +1,6 @@
 # This is a copy of the parameters used in the simulation
 [general]
-time-steps = 15_000_000
+time-steps = 8_000_000
 
 [pond]
 width = 500
@@ -47,8 +47,9 @@ image-format = "webp"
 info-period = 100_000
 
 [io.data]
-cells-period = 100_000
-lattice-period = 25_000_000
+cells-period = 10
+cells-write-period = 100_000
+lattice-period = 100_000
 
 [io.movie]
 show = false
