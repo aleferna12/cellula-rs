@@ -459,7 +459,11 @@ trait ToDataFrame {
 
 impl ToDataFrame for CellContainer<Cell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
+        // let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
+        let valid = [self.iter()
+            .find(|cell| cell.is_valid())
+            .expect("no valid cells")
+        ];
         df!(
             "index" => valid.iter().map(|cell| cell.index).collect::<Box<_>>(),
             "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Box<_>>(),
