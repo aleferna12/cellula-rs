@@ -49,7 +49,7 @@ info-period = 100_000
 [io.data]
 cells-period = 10
 cells-write-period = 100_000
-lattice-period = 100_000
+lattice-period = 200_000
 
 [io.movie]
 show = false
