@@ -3,6 +3,7 @@ name = "model"
 version = "0.0.1"
 edition = "2024"
 description = "A very fast, extensible CPM implementation."
+build = "build.rs"
 
 [features]
 default = ["movie"]

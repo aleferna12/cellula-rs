@@ -10,3 +10,4 @@ pub mod potts;
 pub mod constants;
 pub mod cell;
 pub mod environment;
+pub mod kinect;
