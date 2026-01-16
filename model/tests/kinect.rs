@@ -1,6 +1,6 @@
 use image::Luma;
 use imageproc::definitions::Image;
-use model::kinect::{kinect_create, kinect_destroy, kinect_next_depth, kinect_release_frame};
+use model::kinect::*;
 
 #[test]
 fn test_kinect() {

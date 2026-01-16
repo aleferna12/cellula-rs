@@ -26,6 +26,7 @@ use polars::prelude::*;
 use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
+use crate::io::kinect_listener::KinectListener;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -42,6 +43,7 @@ pub struct IoManager {
     /// Used to update the simulation video when it's time.
     #[cfg(feature = "movie")]
     pub movie_maker: Option<MovieMaker>,
+    pub kinect_listener: Option<KinectListener>,
     plots: Box<[Box<dyn Plot>]>,
     image_period: u32,
     cells_period: u32,

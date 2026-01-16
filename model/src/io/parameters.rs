@@ -194,6 +194,7 @@ pub struct IoParameters {
     pub data: DataParameters,
     pub plot: PlotParameters,
     pub movie: Option<MovieParameters>,
+    pub kinect: Option<KinectParameters>
 }
 
 /// Parameters used to determine how and when to save data (see [`io_manager`](crate::io::io_manager)).
@@ -216,6 +217,16 @@ pub struct MovieParameters {
     pub width: u32,
     pub height: u32,
     pub frame_period: u32
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct KinectParameters {
+    #[serde(default = "param_defaults::false_flag")]
+    pub allow: bool,
+    pub frame_period: u32,
+    pub min_depth: f32,
+    pub max_depth: f32
 }
 
 /// Parameters using for plotting (see [`plot`](crate::io::plot)).

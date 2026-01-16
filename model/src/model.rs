@@ -6,7 +6,7 @@ use crate::environment::Environment;
 use crate::io::io_manager::IoManager;
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
-use crate::io::parameters::Parameters;
+use crate::io::parameters::{KinectParameters, Parameters};
 use crate::pond::Pond;
 use crate::potts::Potts;
 use cellulars_lib::base::base_environment::BaseEnvironment;
@@ -24,6 +24,7 @@ use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
+use crate::io::kinect_listener::KinectListener;
 
 /// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
 pub struct Model {
@@ -110,7 +111,7 @@ impl Model {
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             pond,
-            rng,
+            rng
         })
     }
 
@@ -143,6 +144,24 @@ impl Model {
         if parameters.io.movie.is_some() {
             log::info!("Not displaying movie since feature flag `movie` was not set");
         }
+        
+        let kinect_listener = match &parameters.io.kinect {
+            None => {
+                log::info!("Not displaying movie since movie parameters were omitted");
+                None
+            }
+            Some(params) => {
+                if !params.allow {
+                    None
+                } else {
+                    KinectListener::new(
+                        params.min_depth,
+                        params.max_depth,
+                        params.frame_period
+                    )
+                }
+            }
+        };
 
         let io_builder = IoManager::builder()
             .outdir(parameters.io.outdir.clone().into())
@@ -150,7 +169,8 @@ impl Model {
             .image_period(parameters.io.image_period)
             .cells_period(parameters.io.data.cells_period)
             .lattice_period(parameters.io.data.lattice_period)
-            .plots(parameters.io.plot.clone().try_into()?);
+            .plots(parameters.io.plot.clone().try_into()?)
+            .maybe_kinect_listener(kinect_listener);
         #[cfg(feature = "movie")]
         let io = io_builder.maybe_movie_maker(movie_maker).build();
         #[cfg(not(feature = "movie"))]
@@ -417,6 +437,8 @@ impl Model {
         let non_empty = self.pond.env().base_env.cells.n_non_empty();
         log::info!("\t{non_empty} cells");
     }
+
+    
 }
 
 impl Step for Model {
@@ -432,6 +454,13 @@ impl Step for Model {
         if let Err(e) = saved {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())
         }
+        
+        if let Some(kinect) = &mut self.io.kinect_listener
+            && self.pond.time_step().is_multiple_of(kinect.frame_period) {
+            kinect.draw_silhouette(self.pond.env_mut())
+                .expect("failed to draw silhouette from kinect");
+        }
+
         self.pond.step();
     }
 }
