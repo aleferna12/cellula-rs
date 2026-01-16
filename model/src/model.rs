@@ -248,7 +248,7 @@ impl Model {
         let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
-        while pond.base_pond.env.base_env.cells.n_non_empty() < parameters.cell.starting_cells {
+        while pond.env().base_env.cells.n_non_empty() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
                 None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
                 Some(templates_it) => templates_it
@@ -269,13 +269,13 @@ impl Model {
             } else if spawn_attempts > parameters.cell.starting_cells * 20 {
                 log::error!(
                     "Only {} cells were initialized out of {} cells requested",
-                    pond.base_pond.env.base_env.cells.n_non_empty(),
+                    pond.env().base_env.cells.n_non_empty(),
                     parameters.cell.starting_cells);
                 break;
             }
         }
         if parameters.pond.enclose {
-            pond.base_pond.env.make_border(true, true, true, true);
+            pond.env_mut().make_border(true, true, true, true);
         }
         Ok(pond)
     }
@@ -343,12 +343,12 @@ impl Model {
                         .ok_or(anyhow::anyhow!("there were more groups in the layout than in the template"))?
                         .clone()
                 };
-                pond.base_pond.env.spawn_cell(cell.birth(), positions.iter().copied());
+                pond.env_mut().spawn_cell(cell.birth(), positions.iter().copied());
             }
         }
-        pond.base_pond.env.spawn_solid(solid_positions.into_iter());
+        pond.env_mut().spawn_solid(solid_positions.into_iter());
         if parameters.pond.enclose {
-            pond.base_pond.env.make_border(true, true, true, true);
+            pond.env_mut().make_border(true, true, true, true);
         }
         Ok(pond)
     }
@@ -414,7 +414,7 @@ impl Model {
 
     fn log_info(&self) {
         log::info!("Time step {}:", self.pond.time_step());
-        let non_empty = self.pond.base_pond.env.base_env.cells.n_non_empty();
+        let non_empty = self.pond.env().base_env.cells.n_non_empty();
         log::info!("\t{non_empty} cells");
     }
 }
@@ -427,7 +427,7 @@ impl Step for Model {
 
         let saved = self.io.write_if_time(
             self.pond.time_step(),
-            &self.pond.base_pond.env
+            self.pond.env()
         );
         if let Err(e) = saved {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())

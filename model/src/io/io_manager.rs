@@ -152,6 +152,8 @@ impl IoManager {
         )
     }
 
+    /// Reads a layout file at `layout_path` for a pond with dimensions
+    /// `pond_width` and `pond_height` into a gray scale image.
     pub fn read_layout(
         layout_path: impl AsRef<Path>,
         pond_width: usize,
