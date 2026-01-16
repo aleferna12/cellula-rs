@@ -31,7 +31,8 @@ size-lambda = 50.0
 perimeter-lambda = 2.0
 chemotaxis-min = 0.5
 act-max = 20
-act-lambda = 200.0
+# Simulate chem = 0 for whole cluster
+act-lambda = 100.0
 
 [potts.adhesion]
 cell-energy = 20.0
