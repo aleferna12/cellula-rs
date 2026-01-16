@@ -6,7 +6,7 @@ description = "A very fast, extensible CPM implementation."
 build = "build.rs"
 
 [features]
-default = ["movie"]
+default = ["movie", "high-precision"]
 high-precision = ["cellulars-lib/high-precision"]
 movie = ["dep:minifb"]
 fixed-boundary = []
