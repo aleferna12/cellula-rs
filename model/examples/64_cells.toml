@@ -1,15 +1,15 @@
 [general]
 # How many MCS the simulation will run for.
-time-steps = 8192
+time-steps = 100_000
 # Seed for the RNG.
 # Omit to pick a random seed.
 seed = 1241254152
 
 [pond]
 # Width of the lattice.
-width = 128
+width = 512
 # Height of the lattice.
-height = 128
+height = 424
 # Whether to create a solid border around the cell lattice.
 # Should not be used with `neigh_r` > 1.
 # [default = false]
@@ -35,10 +35,10 @@ target-area = 64
 div-area = 128
 # Set to `false` to disable division.
 # [default = true]
-divide = true
+divide = false
 # Set to `false` to disable migration.
 # [default = true]
-migrate = true
+migrate = false
 # Period (in MCS) with which the cell is updated.
 update-period = 32
 
@@ -121,8 +121,14 @@ dividing-color = "#045a8d"
 # [default = false]
 show = true
 # Width of the movie window.
-width = 320
+width = 512
 # Height of the movie window.
-height = 320
+height = 424
 # How many MCS to skip between the displayed frames.
+frame-period = 100
+
+[io.kinect]
+allow = true
+min-depth = 300
+max-depth = 1200
 frame-period = 100

@@ -34,17 +34,23 @@ impl KinectListener {
             let data = kinect_next_depth(self.handle, 10_000);
             std::ptr::read(data as *const [f32; 512 * 424])
         };
+
+        for spin in env.base_env.cell_lattice.iter_values_mut() {
+            if matches!(spin, Spin::Solid) {
+                *spin = Spin::Medium;
+            }
+        }
+
         let mut count = 0;
         for j in 0..424 {
             for i in 0..512 {
-                let lat_pos = Pos::new(i, j);
-                let index = lat_pos.col_major(424);
+                let index = Pos::new(j, i).col_major(512);
                 let depth = data_arr[index];
                 if depth < self.min_depth || depth > self.max_depth {
                     continue;
                 }
 
-                env.grant_position(lat_pos, Spin::Solid);
+                env.grant_position(Pos::new(i, 423 - j), Spin::Solid);
                 count += 1;
             }
         }

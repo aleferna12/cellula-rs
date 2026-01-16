@@ -4,9 +4,10 @@ use crate::cell::{Cell, CellType};
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::environment::Environment;
 use crate::io::io_manager::IoManager;
+use crate::io::kinect_listener::KinectListener;
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
-use crate::io::parameters::{KinectParameters, Parameters};
+use crate::io::parameters::Parameters;
 use crate::pond::Pond;
 use crate::potts::Potts;
 use cellulars_lib::base::base_environment::BaseEnvironment;
@@ -20,11 +21,10 @@ use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
 use polars::polars_utils::itertools::Itertools;
-use rand::{Rng, RngCore, SeedableRng};
+use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
-use crate::io::kinect_listener::KinectListener;
 
 /// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
 pub struct Model {
@@ -144,7 +144,7 @@ impl Model {
         if parameters.io.movie.is_some() {
             log::info!("Not displaying movie since feature flag `movie` was not set");
         }
-        
+
         let kinect_listener = match &parameters.io.kinect {
             None => {
                 log::info!("Not displaying movie since movie parameters were omitted");
@@ -248,11 +248,11 @@ impl Model {
         }).transpose()
     }
 
-    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl Rng) -> EmptyCell<Cell> {
+    fn empty_cell_from_parameters(parameters: &Parameters) -> EmptyCell<Cell> {
         Cell::new_empty(
             parameters.cell.target_area,
             parameters.cell.div_area,
-            if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
+            CellType::Migrating
         )
     }
 
@@ -270,7 +270,7 @@ impl Model {
         let mut spawn_attempts = 0;
         while pond.env().base_env.cells.n_non_empty() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
-                None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
+                None => Self::empty_cell_from_parameters(parameters).into_cell(),
                 Some(templates_it) => templates_it
                     .next()
                     .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))?
@@ -357,7 +357,7 @@ impl Model {
                 .expect("missing luma key");
             for positions in cell_positions.values() {
                 let cell = match &maybe_templates_box {
-                    None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
+                    None => Self::empty_cell_from_parameters(parameters).into_cell(),
                     Some(templates_box) => templates_box
                         .get(group_index)
                         .ok_or(anyhow::anyhow!("there were more groups in the layout than in the template"))?
@@ -438,7 +438,7 @@ impl Model {
         log::info!("\t{non_empty} cells");
     }
 
-    
+
 }
 
 impl Step for Model {
@@ -454,7 +454,7 @@ impl Step for Model {
         if let Err(e) = saved {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())
         }
-        
+
         if let Some(kinect) = &mut self.io.kinect_listener
             && self.pond.time_step().is_multiple_of(kinect.frame_period) {
             kinect.draw_silhouette(self.pond.env_mut())
