@@ -350,6 +350,7 @@ impl Model {
         let mut sorted_luma = luma_cell_positions.keys().copied().collect_vec();
         sorted_luma.sort();
 
+        let mut not_spawned = 0;
         let mut pond = Self::make_empty_pond(parameters, rng);
         let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
         for (group_index, luma) in sorted_luma.into_iter().enumerate() {
@@ -357,6 +358,10 @@ impl Model {
                 .remove(&luma)
                 .expect("missing luma key");
             for positions in cell_positions.values() {
+                if pond.env().base_env.cells.n_non_empty() >= parameters.cell.starting_cells {
+                    not_spawned += 1;
+                    continue;
+                }
                 let cell = match &maybe_templates_box {
                     None => Self::empty_cell_from_parameters(parameters).into_cell(),
                     Some(templates_box) => templates_box
@@ -367,6 +372,9 @@ impl Model {
                 pond.env_mut().spawn_cell(cell.birth(), positions.iter().copied());
             }
         }
+        log::warn!("Number of cells spawned was limited by `cell.starting-cells` parameter \
+                    (layout had space for {not_spawned} additional cells)");
+
         pond.env_mut().spawn_solid(solid_positions.into_iter());
         if parameters.pond.enclose {
             pond.env_mut().make_border(true, true, true, true);
