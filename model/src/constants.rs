@@ -5,7 +5,6 @@ use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::FixedBoundary;
 #[cfg(not(feature = "fixed-boundary"))]
 use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
-#[cfg(not(feature = "von-neumann"))]
 use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
 #[cfg(feature = "von-neumann")]
 use cellulars_lib::positional::neighbourhood::VonNeumannNeighbourhood;
@@ -24,6 +23,9 @@ pub type BoundaryType = FixedBoundary<FloatType>;
 pub type NeighbourhoodType = MooreNeighbourhood;
 #[cfg(feature = "von-neumann")]
 pub type NeighbourhoodType = VonNeumannNeighbourhood;
+
+/// Neighbourhood type to filter noise from the kinect.
+pub type KinectNeighbourhoodType = MooreNeighbourhood;
 
 /// Small value distinguishable from 0.
 ///

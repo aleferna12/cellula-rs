@@ -1,7 +1,7 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
 use crate::cell::{Cell, CellType};
-use crate::constants::{BoundaryType, NeighbourhoodType};
+use crate::constants::{BoundaryType, KinectNeighbourhoodType, NeighbourhoodType};
 use crate::environment::Environment;
 use crate::io::io_manager::IoManager;
 use crate::io::kinect_listener::KinectListener;
@@ -157,7 +157,8 @@ impl Model {
                     KinectListener::new(
                         params.min_depth,
                         params.max_depth,
-                        params.frame_period
+                        params.frame_period,
+                        KinectNeighbourhoodType::new(1)
                     )
                 }
             }
