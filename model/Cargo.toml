@@ -5,7 +5,7 @@ edition = "2024"
 description = "A very fast, extensible CPM implementation."
 
 [features]
-default = ["movie"]
+default = ["movie", "high-precision"]
 high-precision = ["cellulars-lib/high-precision"]
 movie = ["dep:minifb"]
 fixed-boundary = []
