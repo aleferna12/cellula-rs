@@ -1,5 +1,7 @@
 //! Contains logic related to [`IoManager`].
 
+// TODO!: file names should have leading zeros (account for max size of time_steps)
+
 use crate::cell::{Cell, CellType};
 use crate::environment::Environment;
 #[cfg(feature = "movie")]
