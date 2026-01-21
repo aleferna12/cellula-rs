@@ -11,7 +11,7 @@ use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
-use palette::{FromColor, IntoColor, Lchuv, Mix, Srgb, WithAlpha};
+use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
@@ -22,14 +22,14 @@ pub trait Plot {
     fn plot(&self, env: &Environment, image: &mut RgbaImage);
 }
 
-///[`Plot`]s that can display continuous variables.
+/// [`Plot`]s that can display continuous variables.
 pub trait ContinuousPlot: Plot {
     /// Color for when `value == min`.
-    fn min_color(&self) -> Lchuv;
+    fn min_color(&self) -> Luv;
     /// Color for when `value == max`.
-    fn max_color(&self) -> Lchuv;
+    fn max_color(&self) -> Luv;
     /// Linearly interpolates `value` between `min` and `max`.
-    fn lerp(&self, value: FloatType, min: FloatType, max: FloatType) -> Result<Lchuv, LerpError> {
+    fn lerp(&self, value: FloatType, min: FloatType, max: FloatType) -> Result<Luv, LerpError> {
         if max < min {
             return Err(LerpError::NegativeRange);
         }
@@ -225,9 +225,9 @@ impl Plot for TargetPlot {
 /// Plots cell area.
 pub struct AreaPlot {
     /// Color used to display the smallest value of the plot.
-    pub min_color: Lchuv,
+    pub min_color: Luv,
     /// Color used to display the largest value of the plot.
-    pub max_color: Lchuv
+    pub max_color: Luv
 }
 
 impl Plot for AreaPlot {
@@ -268,10 +268,10 @@ impl Plot for AreaPlot {
 }
 
 impl ContinuousPlot for AreaPlot {
-    fn min_color(&self) -> Lchuv {
+    fn min_color(&self) -> Luv {
         self.min_color
     }
-    fn max_color(&self) -> Lchuv {
+    fn max_color(&self) -> Luv {
         self.max_color
     }
 }
@@ -279,9 +279,9 @@ impl ContinuousPlot for AreaPlot {
 /// Plots the chemical lattice.
 pub struct ChemPlot {
     /// Color used to display the smallest value of the plot.
-    pub min_color: Lchuv,
+    pub min_color: Luv,
     /// Color used to display the largest value of the plot.
-    pub max_color: Lchuv
+    pub max_color: Luv
 }
 
 impl Plot for ChemPlot {
@@ -318,11 +318,11 @@ impl Plot for ChemPlot {
 }
 
 impl ContinuousPlot for ChemPlot {
-    fn min_color(&self) -> Lchuv {
+    fn min_color(&self) -> Luv {
         self.min_color
     }
 
-    fn max_color(&self) -> Lchuv {
+    fn max_color(&self) -> Luv {
         self.max_color
     }
 }
@@ -354,15 +354,15 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                     color: hex_to_srgb(&params.chem_center_color)?
                 }),
                 PlotType::Area => Box::new(AreaPlot{
-                    min_color: srgb_to_lchuv(hex_to_srgb(&params.area_min_color)?),
-                    max_color: srgb_to_lchuv(hex_to_srgb(&params.area_max_color)?),
+                    min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
+                    max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
                 }),
                 PlotType::Border => Box::new(BorderPlot {
                     color: hex_to_srgb(&params.border_color)?
                 }),
                 PlotType::Chem => Box::new(ChemPlot {
-                    min_color: srgb_to_lchuv(hex_to_srgb(&params.chem_min_color)?),
-                    max_color: srgb_to_lchuv(hex_to_srgb(&params.chem_max_color)?)
+                    min_color: srgb_to_luv(hex_to_srgb(&params.chem_min_color)?),
+                    max_color: srgb_to_luv(hex_to_srgb(&params.chem_max_color)?)
                 }),
                 PlotType::CellType => Box::new(CellTypePlot {
                     mig_color: hex_to_srgb(&params.migrating_color)?,
@@ -376,9 +376,9 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
     }
 }
 
-/// Converts [`Srgb<u8>`] to [Lchuv].
-pub fn srgb_to_lchuv(srgb: Srgb<u8>) -> Lchuv {
-    Lchuv::from_color(srgb.into_linear::<f32>())
+/// Converts [`Srgb<u8>`] to [`Luv`].
+pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {
+    Luv::from_color(srgb.into_linear::<f32>())
 }
 
 /// Parses a hex string as an [`Srgb<u8>`].

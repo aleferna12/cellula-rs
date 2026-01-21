@@ -18,6 +18,8 @@ enclose = false
 neigh-r = 1
 target-x = 256
 target-y = 212
+# Zero disables
+target-move-period = 0
 
 [cell]
 # Number of starting cells in the environment.
@@ -110,9 +112,9 @@ area-min-color = "#ff00ff"
 # With which color to plot the maximum area in the cell population.
 area-max-color = "#ffff00"
 # With which color to plot the minimum value for the chem in the environment.
-chem-min-color = "#000000"
+chem-min-color = "#ffffff"
 # With which color to plot the maximum value for the chem in the environment.
-chem-max-color = "#ffffff"
+chem-max-color = "#88ddfc"
 # With which color to plot migrating cells.
 migrating-color = "#b30000"
 # With which color to plot dividing cells.

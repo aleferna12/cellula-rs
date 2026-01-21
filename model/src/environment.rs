@@ -78,9 +78,7 @@ impl Environment {
             let new_chem = self.chem_signal(pos, self.target_center);
             if let Spin::Some(cell_index) = self.base_env.cell_lattice[pos] {
                 let prev_chem = self.chem_lattice[pos];
-                let Some(rel_cell) = self.base_env.cells.get_mut(cell_index) else {
-                    continue;
-                };
+                let rel_cell = &mut self.base_env.cells[cell_index];
                 // Remove position from center_chem/chem_mass
                 rel_cell.cell.shift_chem(
                     pos,

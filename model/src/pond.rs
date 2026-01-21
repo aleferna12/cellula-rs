@@ -4,6 +4,8 @@ use crate::potts::Potts;
 use cellulars_lib::base::base_pond::BasePond;
 use cellulars_lib::traits::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
+use cellulars_lib::positional::boundaries::Boundary;
+use cellulars_lib::prelude::Pos;
 use crate::environment::Environment;
 
 /// A pond is responsible for updating an [`Environment`](crate::environment::Environment) using the [`Potts`] algorithm.
@@ -16,7 +18,8 @@ pub struct Pond {
     /// Period with which the cells' [`Cell::update()`](crate::cell::Cell::update()) method should be called.
     pub update_period: u32,
     /// Whether cell division is enabled.
-    pub division_enabled: bool
+    pub division_enabled: bool,
+    pub target_move_period: u32,
 }
 
 impl Pond {
@@ -24,12 +27,14 @@ impl Pond {
     pub fn new(
         pond: BasePond<Potts, Xoshiro256StarStar>,
         update_period: u32,
-        division_enabled: bool
+        division_enabled: bool,
+        target_move_period: u32,
     ) -> Self {
         Self {
             base_pond: pond,
             update_period,
-            division_enabled
+            division_enabled,
+            target_move_period,
         }
     }
 
@@ -65,6 +70,15 @@ impl Step for Pond {
             if self.division_enabled {
                 self.env_mut().reproduce();
             }
+        }
+        // TODO!: parameterize
+        if self.base_pond.time_step.is_multiple_of(self.target_move_period) {
+            let center = self.env().target_center.cast_as();
+            self.env_mut().target_center = self.env().base_env.bounds.lattice_boundary.valid_pos(Pos::new(
+                  center.x + 1,
+                  center.y,
+            )).unwrap().cast_as();
+            self.env_mut().update_chem_gradient();
         }
         self.base_pond.step();
     }

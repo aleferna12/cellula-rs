@@ -144,6 +144,7 @@ pub struct PondParameters {
     pub neigh_r: u8,
     pub target_x: usize,
     pub target_y: usize,
+    pub target_move_period: u32
 }
 
 /// Parameters specifying how cells are created and behave (see [`cell`](crate::cell)).

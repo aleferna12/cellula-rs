@@ -248,7 +248,8 @@ impl Model {
                 0
             ),
             parameters.cell.update_period,
-            parameters.cell.divide
+            parameters.cell.divide,
+            parameters.pond.target_move_period
         )
     }
 
@@ -448,7 +449,8 @@ impl Model {
                 time_step
             ),
             parameters.cell.update_period,
-            parameters.cell.divide
+            parameters.cell.divide,
+            parameters.pond.target_move_period
         );
         Ok(pond)
     }
@@ -499,7 +501,6 @@ impl Step for Model {
             kinect.draw_silhouette(self.pond.env_mut())
                 .expect("failed to draw silhouette from kinect");
             self.pond.env_mut().draw_solid_target();
-            self.pond.env_mut().update_chem_gradient();
         }
 
         self.pond.step();
