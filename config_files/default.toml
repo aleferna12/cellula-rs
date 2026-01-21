@@ -1,6 +1,6 @@
 [general]
 # How many MCS the simulation will run for.
-time-steps = 100_000
+time-steps = 1_000_000
 # Seed for the RNG.
 # Omit to pick a random seed.
 seed = 1241254152
@@ -16,10 +16,12 @@ height = 424
 enclose = false
 # Radius of the neighbourhood.
 neigh-r = 1
+target-x = 256
+target-y = 212
 
 [cell]
 # Number of starting cells in the environment.
-starting-cells = 256
+starting-cells = 100
 # Maximum number of cells allowed in the environment.
 # Cell division is prevented if it would cause the cell population to exceed this threshold.
 max-cells = 1024
@@ -28,9 +30,9 @@ max-cells = 1024
 # all cell postitions could be found.
 search-radius = 3.0
 # Starting cell area.
-starting-area = 200
+starting-area = 100
 # Target cell area.
-target-area = 200
+target-area = 100
 # Cell area before division.
 div-area = 128
 # Set to `false` to disable division.
@@ -38,7 +40,7 @@ div-area = 128
 divide = false
 # Set to `false` to disable migration.
 # [default = true]
-migrate = false
+migrate = true
 # Period (in MCS) with which the cell is updated.
 update-period = 32
 
@@ -49,7 +51,7 @@ boltz-t = 16.0
 # Scaler constant for area deviation penalties.
 size-lambda = 1.0
 # Scaler constant for chemotaxis bias.
-chemotaxis-mu = 4.0
+chemotaxis-mu = 2.0
 
 [potts.adhesion]
 # Adhesion energy at cell-cell interfaces.
@@ -61,7 +63,8 @@ solid-energy = 16.0
 
 [io]
 # Output directory for files.
-outdir = "model/examples/64_cells"
+outdir = "runs/default"
+target-png = "carrot.png"
 # Flag used to delete contents of `outdir` if it exists.
 # [default = false]
 replace-outdir = true
@@ -90,12 +93,12 @@ lattice-period = 4096
 #   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "area":         Plots the relative area of cells.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["chem", "spin", "cell-type", "border"]
+order = ["chem", "spin", "target", "cell-type", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
 # Ommit to make the medium transparent.
-medium-color = "#ffffff"
+# medium-color = "#ffffff"
 # With which color to plot the centers of cells.
 center-color = "#00ff00"
 # With which color to plot the perceived center of chem of cells.
@@ -129,6 +132,6 @@ frame-period = 50
 
 [io.kinect]
 allow = true
-min-depth = 300
-max-depth = 1200
+min-depth = 1000
+max-depth = 2500
 frame-period = 100

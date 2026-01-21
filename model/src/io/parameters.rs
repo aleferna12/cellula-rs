@@ -142,6 +142,8 @@ pub struct PondParameters {
     #[serde(default = "param_defaults::false_flag")]
     pub enclose: bool,
     pub neigh_r: u8,
+    pub target_x: usize,
+    pub target_y: usize,
 }
 
 /// Parameters specifying how cells are created and behave (see [`cell`](crate::cell)).
@@ -185,6 +187,7 @@ pub struct AdhesionParameters {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct IoParameters {
     pub outdir: String,
+    pub target_png: String,
     #[serde(default = "param_defaults::false_flag")]
     pub replace_outdir: bool,
     pub image_period: u32,
@@ -266,7 +269,8 @@ pub enum PlotType {
     /// Cell area.
     Area,
     /// Background chemical.
-    Chem
+    Chem,
+    Target
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

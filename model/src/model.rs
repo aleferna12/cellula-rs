@@ -16,7 +16,7 @@ use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::pos::CastCoords;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos};
+use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos, Spin};
 use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
@@ -25,6 +25,8 @@ use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
+use image::{ImageReader, RgbaImage};
+use image::imageops::flip_vertical_in_place;
 
 /// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
 pub struct Model {
@@ -214,8 +216,22 @@ impl Model {
                 )))
             ),
             parameters.cell.max_cells,
-            parameters.cell.search_radius
+            parameters.cell.search_radius,
+            Self::read_target_image(&parameters.io.target_png),
+            Pos::new(
+                parameters.pond.target_x,
+                parameters.pond.target_y
+            )
         )
+    }
+
+    fn read_target_image(path: &str) -> RgbaImage {
+        let mut img = ImageReader::open(path).expect(&format!(
+            "failed to open {}",
+            path
+        )).decode().expect("failed to decode target image").into_rgba8();
+        flip_vertical_in_place(&mut img);
+        img
     }
 
     fn determine_seed(seed_param: Option<u64>) -> u64 {
@@ -264,6 +280,7 @@ impl Model {
     ) -> anyhow::Result<Pond> {
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, rng);
+        pond.env_mut().update_chem_gradient();
 
         // Obtains an iterator over cell templates if a templates_path is present
         let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
@@ -412,7 +429,12 @@ impl Model {
                 Boundaries::new(BoundaryType::new(rect)),
             ),
             parameters.cell.max_cells,
-            parameters.cell.search_radius
+            parameters.cell.search_radius,
+            Self::read_target_image(&parameters.io.target_png),
+            Pos::new(
+                parameters.pond.target_x,
+                parameters.pond.target_y
+            )
         );
         for pos in env.base_env.cell_lattice.iter_positions() {
             env.base_env.update_edges(pos);
@@ -464,10 +486,20 @@ impl Step for Model {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())
         }
 
+        // Draw silhouette
         if let Some(kinect) = &mut self.io.kinect_listener
             && self.pond.time_step().is_multiple_of(kinect.frame_period) {
+            // Clear solids
+            for spin in self.pond.env_mut().base_env.cell_lattice.iter_values_mut() {
+                if matches!(spin, Spin::Solid) {
+                    *spin = Spin::Medium;
+                }
+            }
+
             kinect.draw_silhouette(self.pond.env_mut())
                 .expect("failed to draw silhouette from kinect");
+            self.pond.env_mut().draw_solid_target();
+            self.pond.env_mut().update_chem_gradient();
         }
 
         self.pond.step();

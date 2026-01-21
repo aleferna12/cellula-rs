@@ -13,6 +13,7 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell};
 use cellulars_lib::traits::habitable::Habitable;
+use image::RgbaImage;
 use rand::Rng;
 
 /// An environment that contains a chemical gradient and limits cell growth to [`Environment::max_cells`].
@@ -26,6 +27,9 @@ pub struct Environment {
     pub cell_search_scaler: FloatType,
     /// Maximum number of cells supported in the environment.
     pub max_cells: CellIndex,
+    pub target_mask: RgbaImage,
+    pub target_center: Pos<usize>,
+    pub max_chem: u32,
     population_exploded: bool
 }
 
@@ -34,25 +38,65 @@ impl Environment {
     pub fn new(
         env: BaseEnvironment<Cell, NeighbourhoodType, BoundaryType>,
         max_cells: CellIndex,
-        cell_search_scaler: FloatType
+        cell_search_scaler: FloatType,
+        target_mask: RgbaImage,
+        target_center: Pos<usize>,
     ) -> Self {
-        let mut env_ = Self {
+        Self {
             chem_lattice: Lattice::new(env.cell_lattice.rect.clone()),
-            base_env: env,
             cell_search_scaler,
             max_cells,
-            population_exploded: false
-        };
-        env_.make_chem_gradient();
-        env_
+            target_mask,
+            target_center,
+            max_chem: Self::distance(
+                Pos::new(
+                    env.width(),
+                    env.height()
+                ),
+                Pos::new(0, 0)
+            ).round() as u32 + 1,
+            population_exploded: false,
+            base_env: env,
+        }
     }
 
-    /// Creates a chemical gradient spanning from the top to the bottom of the environment.
-    pub fn make_chem_gradient(&mut self) {
-        for i in 0..self.base_env.width() {
-            for j in 0..self.base_env.height() {
-                self.chem_lattice[(i, j).into()] = j.try_into().expect("lattice is too big");
+    fn distance2(pos1: Pos<usize>, pos2: Pos<usize>) -> usize {
+        (pos1.x as isize - pos2.x as isize).pow(2) as usize
+            + (pos1.y as isize - pos2.y as isize).pow(2) as usize
+    }
+
+    pub fn distance(pos1: Pos<usize>, pos2: Pos<usize>) -> f32 {
+        (Self::distance2(pos1, pos2) as f32).sqrt()
+    }
+
+    pub fn chem_signal(&self, pos: Pos<usize>, chem_center: Pos<usize>) -> u32 {
+        self.max_chem - Self::distance(pos, chem_center).round() as u32
+    }
+
+    pub fn update_chem_gradient(&mut self) {
+        for pos in self.chem_lattice.iter_positions() {
+            let new_chem = self.chem_signal(pos, self.target_center);
+            if let Spin::Some(cell_index) = self.base_env.cell_lattice[pos] {
+                let prev_chem = self.chem_lattice[pos];
+                let Some(rel_cell) = self.base_env.cells.get_mut(cell_index) else {
+                    continue;
+                };
+                // Remove position from center_chem/chem_mass
+                rel_cell.cell.shift_chem(
+                    pos,
+                    prev_chem,
+                    false,
+                    &self.base_env.bounds.boundary
+                );
+                // Add position to center_chem/chem_mass
+                rel_cell.cell.shift_chem(
+                    pos,
+                    new_chem,
+                    true,
+                    &self.base_env.bounds.boundary
+                );
             }
+            self.chem_lattice[pos] = new_chem;
         }
     }
 
@@ -70,6 +114,30 @@ impl Environment {
             self.population_exploded = true;
         }
         false
+    }
+
+    pub fn draw_solid_target(&mut self) {
+        let twidth = self.target_mask.width();
+        let theight = self.target_mask.height();
+
+        for j in 0..theight {
+            for i in 0..twidth {
+                let pixel = self.target_mask[(i, j)];
+                if pixel.0[3] == 0 {
+                    continue;
+                }
+
+                let trans_pos = Pos::new(
+                    self.target_center.x as isize - twidth as isize / 2 + i as isize,
+                    self.target_center.y as isize - theight as isize / 2 + j as isize,
+                );
+                let Some(valid_pos) = self.base_env.bounds.lattice_boundary.valid_pos(trans_pos) else {
+                    continue;
+                };
+                let lat_pos = valid_pos.cast_as();
+                self.grant_position(lat_pos, Spin::Solid);
+            }
+        }
     }
 
     // TODO: make spawn as a circle with center at pos

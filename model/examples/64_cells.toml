@@ -35,10 +35,10 @@ target-area = 200
 div-area = 128
 # Set to `false` to disable division.
 # [default = true]
-divide = false
+divide = true
 # Set to `false` to disable migration.
 # [default = true]
-migrate = false
+migrate = true
 # Period (in MCS) with which the cell is updated.
 update-period = 32
 

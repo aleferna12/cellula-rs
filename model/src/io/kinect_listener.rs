@@ -38,12 +38,6 @@ impl KinectListener {
             anyhow::bail!("kinect can only be used if pond's width is 512 and height is 424");
         }
 
-        for spin in env.base_env.cell_lattice.iter_values_mut() {
-            if matches!(spin, Spin::Solid) {
-                *spin = Spin::Medium;
-            }
-        }
-
         // Experimented with this being async but the thread spawn cost is not worth it
         // unless we rewrite the C part to also be async, which would prob be painful due to FFI
         let data_arr = unsafe { Self::fetch_depth(self.handle)? };

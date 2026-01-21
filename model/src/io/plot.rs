@@ -5,6 +5,8 @@ use crate::environment::Environment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use cellulars_lib::constants::{CellIndex, FloatType};
+use cellulars_lib::positional::boundaries::Boundary;
+use cellulars_lib::prelude::Pos;
 use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
 use image::{Rgba, RgbaImage};
@@ -193,6 +195,33 @@ impl Plot for CellTypePlot {
     }
 }
 
+pub struct TargetPlot;
+
+impl Plot for TargetPlot {
+    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+        let twidth = env.target_mask.width();
+        let theight = env.target_mask.height();
+
+        for j in 0..theight {
+            for i in 0..twidth {
+                let pixel = env.target_mask[(i, j)];
+                if pixel.0[3] == 0 {
+                    continue;
+                }
+
+                let trans_pos = Pos::new(
+                    env.target_center.x as isize - twidth as isize / 2 + i as isize,
+                    env.target_center.y as isize - theight as isize / 2 + j as isize,
+                );
+                let Some(valid_pos) = env.base_env.bounds.lattice_boundary.valid_pos(trans_pos) else {
+                    continue;
+                };
+                image[(valid_pos.x as u32, valid_pos.y as u32)] = pixel;
+            }
+        }
+    }
+}
+
 /// Plots cell area.
 pub struct AreaPlot {
     /// Color used to display the smallest value of the plot.
@@ -257,13 +286,24 @@ pub struct ChemPlot {
 
 impl Plot for ChemPlot {
     fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+        let corners = [
+            (0, 0).into(), (env.base_env.width() - 1, 0).into(),
+            (0, env.base_env.height() - 1).into(),
+            (env.base_env.width() - 1, env.base_env.height() - 1).into()
+        ];
+        let chem_min = corners
+            .map(|corner| env.chem_signal(corner, env.target_center))
+            .iter()
+            .copied()
+            .min()
+            .unwrap();
         let lat = &env.chem_lattice;
         for pos in lat.iter_positions() {
             let chem = lat[pos];
             let color = self.lerp(
                 chem as FloatType,
-                0.,
-                lat.height() as FloatType
+                chem_min as FloatType,
+                env.max_chem as FloatType
             );
             match color { 
                 Ok(c) => image.put_pixel(
@@ -327,7 +367,8 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                 PlotType::CellType => Box::new(CellTypePlot {
                     mig_color: hex_to_srgb(&params.migrating_color)?,
                     div_color: hex_to_srgb(&params.dividing_color)?,
-                })
+                }),
+                PlotType::Target => Box::new(TargetPlot {})
             };
             plots.push(plot);
         }
