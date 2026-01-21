@@ -7,7 +7,8 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
     let mut params = Parameters::parse("examples/64_cells.toml")?;
     params.io.image_period = 64;
     params.io.data.cells_period = 512;
-    params.io.data.lattice_period = 512;
+    params.io.data.cells_write_period = Some(params.io.data.cells_period);
+    params.io.data.lattice_period = params.io.data.cells_period;
     params.io.movie.show = false;
     Ok(params)
 }
