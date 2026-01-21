@@ -35,7 +35,7 @@ pub trait Alive: Cellular + Sized {
     /// Kills the cell.
     fn apoptosis(&mut self);
     /// Returns a new cell that inherits properties from `self` but is empty and can be filled with
-    ///[`Habitable::grant_position()`](crate::traits::habitable::Habitable::grant_position).
+    /// [`Habitable::grant_position()`](crate::traits::habitable::Habitable::grant_position).
     fn birth(&self) -> EmptyCell<Self>;
 }
 

@@ -13,7 +13,7 @@ use std::f32::consts::E;
 use std::f64::consts::E;
 
 /// This trait defines how a Monte Carlo [`PottsAlgorithm::step()`] of the model should modify a
-///[`Habitable`] environment.
+/// [`Habitable`] environment.
 ///
 /// The default methods for this trait restrict lattice updates to cell borders following
 /// [van Steijn, 2022](https://doi.org/10.1371/journal.pcbi.1009156) to improve computational efficiency.
