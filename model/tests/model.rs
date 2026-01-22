@@ -7,6 +7,7 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
     params.io.image_period = 64;
     params.io.data.cells_period = 512;
     params.io.data.lattice_period = 512;
+    params.io.kinect = None;
     params.cell.update_period = 1;
     #[cfg(feature = "movie")]
     if let Some(movie_params) = &mut params.io.movie {

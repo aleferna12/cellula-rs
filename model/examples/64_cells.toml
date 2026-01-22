@@ -16,6 +16,12 @@ height = 424
 enclose = false
 # Radius of the neighbourhood.
 neigh-r = 1
+# Center position of the target.
+target-x = 256
+target-y = 212
+# Speed with which to move target.
+# 0 disables movement.
+target-move-period = 0
 
 [cell]
 # Number of starting cells in the environment.
@@ -62,6 +68,9 @@ solid-energy = 16.0
 [io]
 # Output directory for files.
 outdir = "model/examples/64_cells"
+# Png file used to draw the chemotaxis target.
+# Should be an RGBA png where transparent pixels are part of the "hitbox" of the target but are not drawn.
+target-png = "../targets/carrot.png"
 # Flag used to delete contents of `outdir` if it exists.
 # [default = false]
 replace-outdir = true

@@ -6,8 +6,9 @@ pub struct KinectHandle {
 }
 
 unsafe extern "C" {
-    pub fn kinect_create() -> *mut KinectHandle;
-    pub fn kinect_next_depth(h: *mut KinectHandle, ms: i32) -> *const f32;
+    pub fn kinect_create(rgb: bool, depth: bool) -> *mut KinectHandle;
+    pub fn kinect_listen_frame(h: *mut KinectHandle, ms: i32) -> bool;
     pub fn kinect_release_frame(h: *mut KinectHandle);
     pub fn kinect_destroy(h: *const KinectHandle);
+    pub fn kinect_depth(h: *mut KinectHandle) -> *const f32;
 }

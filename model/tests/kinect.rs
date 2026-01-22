@@ -5,10 +5,11 @@ use model::kinect::*;
 #[test]
 fn test_kinect() {
     unsafe {
-        let h = kinect_create();
+        let h = kinect_create(true, true);
         assert!(!h.is_null());
 
-        let data = kinect_next_depth(h, 10_000);
+        assert!(kinect_listen_frame(h, 10_000));
+        let data = kinect_depth(h);
         let data_arr = std::ptr::read(data as *const [f32; 512 * 424]);
         let image = Image::from_fn(
             512,
@@ -22,8 +23,9 @@ fn test_kinect() {
                 Luma([(val / 20.) as u8])
             },
         );
-        image.save("tests/test_kinect.png").unwrap();
+        dbg!(&image);
         kinect_release_frame(h);
         kinect_destroy(h);
+        image.save("tests/test_kinect.png").unwrap();
     }
 }

@@ -1,6 +1,6 @@
 use cellulars_lib::positional::boundaries::Boundary;
 use crate::environment::Environment;
-use crate::kinect::{kinect_create, kinect_destroy, kinect_next_depth, kinect_release_frame, KinectHandle};
+use crate::kinect::{kinect_create, kinect_depth, kinect_destroy, kinect_listen_frame, kinect_release_frame, KinectHandle};
 use cellulars_lib::prelude::{Habitable, Neighbourhood, Pos};
 use cellulars_lib::spin::Spin;
 use crate::constants::KinectNeighbourhoodType;
@@ -20,7 +20,7 @@ impl KinectListener {
         frame_period: u32,
         neighbourhood: KinectNeighbourhoodType
     ) -> Option<Self> {
-        let handle = unsafe { kinect_create() };
+        let handle = unsafe { kinect_create(false, true) };
         if handle.is_null() {
             return None;
         }
@@ -89,7 +89,10 @@ impl KinectListener {
         if handle.is_null() { anyhow::bail!("kinect handle was lost") };
 
         unsafe {
-            let data = kinect_next_depth(handle, 10_000);
+            if !kinect_listen_frame(handle, 10_000) {
+                anyhow::bail!("failed to get frame");
+            }
+            let data = kinect_depth(handle);
             if data.is_null() {
                 anyhow::bail!("failed to fetch next depth");
             }
