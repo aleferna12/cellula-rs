@@ -2,15 +2,15 @@
 
 // TODO!: file names should have leading zeros (account for max size of time_steps)
 
-use crate::cell::{Cell, CellType};
-use crate::environment::Environment;
+use crate::my_cell::{MyCell, CellType};
+use crate::my_environment::MyEnvironment;
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::io::plot::Plot;
 use anyhow::{bail, Context};
 use bon::Builder;
-use cellulars_lib::base::base_cell::BaseCell;
+use cellulars_lib::base::cell::Cell;
 use cellulars_lib::cell_container::{CellContainer, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::lattice::Lattice;
@@ -95,7 +95,7 @@ impl IoManager {
         Ok(())
     }
 
-    fn make_cells_from_data(celldf: DataFrame) -> anyhow::Result<CellContainer<Cell>> {
+    fn make_cells_from_data(celldf: DataFrame) -> anyhow::Result<CellContainer<MyCell>> {
         let last_index = celldf
             .column("index")?
             .u32()?
@@ -104,12 +104,12 @@ impl IoManager {
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=last_index {
-            cells.push(Cell::new_empty(0, 0, CellType::Migrating));
+            cells.push(MyCell::new_empty(0, 0, CellType::Migrating));
         }
 
         for row_i in 0..celldf.height() {
             let row = celldf.get_row(row_i)?;
-            let base_cell = BaseCell::new_ready(
+            let cell = Cell::new_ready(
                 Self::get_col_num(&row, "area", &celldf)?,
                 Self::get_col_num(&row, "target_area", &celldf)?,
                 Pos::new(
@@ -119,8 +119,8 @@ impl IoManager {
             );
             cells.replace(RelCell {
                 index: Self::get_col_num(&row, "index", &celldf)?,
-                cell: Cell::builder()
-                    .base_cell(base_cell)
+                cell: MyCell::builder()
+                    .cell(cell)
                     .divide_area(Self::get_col_num(&row, "divide_area", &celldf)?)
                     .newborn_target_area(Self::get_col_num(&row, "newborn_target_area", &celldf)?)
                     .chem_com(Com {
@@ -154,7 +154,7 @@ impl IoManager {
     /// Reads a cell data file into a [`CellContainer`].
     pub fn read_cells(
         cells_path: impl AsRef<Path>
-    ) -> anyhow::Result<CellContainer<Cell>> {
+    ) -> anyhow::Result<CellContainer<MyCell>> {
         let cells_path = cells_path.as_ref();
         let file = std::fs::File::open(cells_path).context(format!("while opening {}", cells_path.display()))?;
         let celldf = ParquetReader::new(file).finish()?;
@@ -252,7 +252,7 @@ impl IoManager {
     pub fn write_if_time(
         &mut self,
         time_step: u32,
-        env: &Environment
+        env: &MyEnvironment
     ) -> anyhow::Result<()> {
         self.write_data_if_time(time_step, env)?;
         self.write_image_if_time(time_step, env)
@@ -261,13 +261,13 @@ impl IoManager {
     fn write_data_if_time(
         &self,
         time_step: u32,
-        env: &Environment
+        env: &MyEnvironment
     ) -> anyhow::Result<()> {
         let time_str = Self::pad_time_step(time_step);
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step.is_multiple_of(self.cells_period) {
-            let mut celldf = env.base_env.cells.to_dataframe()?;
+            let mut celldf = env.env.cells.to_dataframe()?;
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
@@ -279,7 +279,7 @@ impl IoManager {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            Self::write_lattice(file_path.as_path(), &env.base_env.cell_lattice)?;
+            Self::write_lattice(file_path.as_path(), &env.env.cell_lattice)?;
         }
         Ok(())
     }
@@ -312,7 +312,7 @@ impl IoManager {
     fn write_image_if_time(
         &mut self,
         time_step: u32, 
-        env: &Environment
+        env: &MyEnvironment
     ) -> anyhow::Result<()> {
         // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
@@ -356,11 +356,11 @@ impl IoManager {
     /// Makes a new frame of the simulation by drawing a succession of plots (see [`io::plot`](crate::io::plot)).
     pub fn make_simulation_image(
         &self, 
-        env: &Environment
+        env: &MyEnvironment
     ) -> RgbaImage {
         let mut image = RgbaImage::new(
-            env.base_env.width() as u32,
-            env.base_env.height() as u32
+            env.env.width() as u32,
+            env.env.height() as u32
         );
         for plot in &self.plots {
             plot.plot(env, &mut image);
@@ -403,7 +403,7 @@ trait ToDataFrame {
     fn to_dataframe(&self) -> PolarsResult<DataFrame>;
 }
 
-impl ToDataFrame for CellContainer<Cell> {
+impl ToDataFrame for CellContainer<MyCell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
         let non_empty = self.iter().filter(|rel_cell| rel_cell.cell.is_empty()).collect::<Box<_>>();
         df!(

@@ -109,14 +109,14 @@ impl<C: Cellular> CellContainer<C> {
 
     /// Gets a reference to a cell using its unique cell index.
     ///
-    /// Returns [None] if the index does not point to a non-empty cell.
+    /// Returns [None] if the index points to an empty cell.
     pub fn get(&self, index: CellIndex) -> Option<&RelCell<C>> {
         self.vec.get(index as usize).filter(|rel_cell| !rel_cell.cell.is_empty())
     }
 
     /// Gets a mutable reference to a cell using its unique cell index.
     ///
-    /// Returns [None] if the index does not point to a non-empty cell.
+    /// Returns [None] if the index points to an empty cell.
     pub fn get_mut(&mut self, index: CellIndex) -> Option<&mut RelCell<C>> {
         self.vec.get_mut(index as usize).filter(|rel_cell| !rel_cell.cell.is_empty())
     }
@@ -151,7 +151,7 @@ impl<C> IndexMut<CellIndex> for CellContainer<C> {
     }
 }
 
-/// Represents a cell that is bound to an [Environment](crate::base::base_environment::BaseEnvironment).
+/// Represents a cell that is bound to an [Environment](crate::base::environment::Environment).
 ///
 /// Functions that do not need information about the cell's `index` relational operators should take
 /// the inner cell type `C` directly.
@@ -160,7 +160,7 @@ impl<C> IndexMut<CellIndex> for CellContainer<C> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RelCell<C> {
     /// Relational cell index that is unique to this cell in its
-    /// [Environment](crate::base::base_environment::BaseEnvironment).
+    /// [Environment](crate::base::environment::Environment).
     pub index: CellIndex,
     /// Inner cell instance.
     pub cell: C

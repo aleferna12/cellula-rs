@@ -1,7 +1,7 @@
 //! Contains logic associated with [`Potts`].
 
-use crate::cell::CellType;
-use crate::environment::Environment;
+use crate::my_cell::CellType;
+use crate::my_environment::MyEnvironment;
 use bon::Builder;
 use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundary;
@@ -31,7 +31,7 @@ pub struct Potts {
 }
 
 impl PottsAlgorithm for Potts {
-    type Environment = Environment;
+    type Environment = MyEnvironment;
 
     fn boltz_t(&self) -> FloatType {
         self.boltz_t
@@ -45,19 +45,19 @@ impl PottsAlgorithm for Potts {
         if !self.enable_migration {
             return 0.
         }
-        let Spin::Some(cell_index) = env.base_env.cell_lattice[pos_source] else {
+        let Spin::Some(cell_index) = env.env.cell_lattice[pos_source] else {
             return 0.;
         };
-        let rel_cell = &env.base_env.cells[cell_index];
+        let rel_cell = &env.env.cells[cell_index];
         if let CellType::Dividing = rel_cell.cell.cell_type {
             return 0.;
         }
 
-        let (dx1, dy1) = env.base_env.bounds.boundary.displacement(
+        let (dx1, dy1) = env.env.bounds.boundary.displacement(
             rel_cell.cell.center(),
             Pos::new(pos_target.x as FloatType, pos_target.y as FloatType)
         );
-        let (dx2, dy2) = env.base_env.bounds.boundary.displacement(
+        let (dx2, dy2) = env.env.bounds.boundary.displacement(
             rel_cell.cell.center(),
             rel_cell.cell.chem_center()
         );

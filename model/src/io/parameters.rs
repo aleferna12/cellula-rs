@@ -133,7 +133,7 @@ pub struct GeneralParameters {
     pub seed: Option<u64>
 }
 
-/// Parameters determining how a pond is created (see [`pond`](crate::pond));
+/// Parameters determining how a pond is created (see [`pond`](crate::my_pond));
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PondParameters {
@@ -144,7 +144,7 @@ pub struct PondParameters {
     pub neigh_r: u8,
 }
 
-/// Parameters specifying how cells are created and behave (see [`cell`](crate::cell)).
+/// Parameters specifying how cells are created and behave (see [`cell`](crate::my_cell)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct CellParameters {

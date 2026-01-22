@@ -1,7 +1,7 @@
-//! Contains logic associated with [`Cell`].
+//! Contains logic associated with [`MyCell`].
 
 use bon::Builder;
-use cellulars_lib::base::base_cell::BaseCell;
+use cellulars_lib::base::cell::Cell;
 use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::com::Com;
@@ -11,7 +11,7 @@ use strum_macros::{Display, EnumString};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
 #[derive(Clone, Debug, Builder)]
-pub struct Cell {
+pub struct MyCell {
     /// Area at which the cell divides.
     pub divide_area: u32,
     /// Target area for newborns of this cell (see [`Alive::birth()`]).
@@ -19,17 +19,17 @@ pub struct Cell {
     /// Current type of the cell.
     pub cell_type: CellType,
     /// Inner base cell.
-    pub base_cell: BaseCell,
+    pub cell: Cell,
     /// Center of mass of the cell's perceived chemical concentration.
     chem_com: Com
 
 }
 
-impl Cell {
-    /// Initialises an empty [`Cell`] to be filled progressively with [`Cell::shift_position()`].
+impl MyCell {
+    /// Initialises an empty [`MyCell`] to be filled progressively with [`MyCell::shift_position()`].
     pub fn new_empty(target_area: u32, divide_area: u32, cell_type: CellType) -> EmptyCell<Self> {
         EmptyCell::new(Self {
-            base_cell: BaseCell::new_empty(target_area).into_cell(),
+            cell: Cell::new_empty(target_area).into_cell(),
             chem_com: Com { pos: Pos::new(0., 0.), mass: 0 },
             newborn_target_area: target_area,
             divide_area,
@@ -48,7 +48,7 @@ impl Cell {
     }
 
     /// Sets the area at which the cell divides when
-    /// [`Environment::reproduce()`](crate::environment::Environment::reproduce()) is called.
+    /// [`Environment::reproduce()`](crate::my_environment::MyEnvironment::reproduce()) is called.
     pub fn set_divide_area(&mut self, value: u32) {
         self.divide_area = value;
     }
@@ -70,48 +70,48 @@ impl Cell {
     pub fn update(&mut self) {
         if let CellType::Dividing = self.cell_type && self.target_area() < self.divide_area {
             let new_target_area = self.target_area() + 1;
-            self.base_cell.target_area = new_target_area;
+            self.cell.target_area = new_target_area;
         }
     }
 }
 
-impl Cellular for Cell {
+impl Cellular for MyCell {
     fn target_area(&self) -> u32 {
-        self.base_cell.target_area()
+        self.cell.target_area()
     }
 
     fn area(&self) -> u32 {
-        self.base_cell.area()
+        self.cell.area()
     }
 
     fn center(&self) -> Pos<FloatType> {
-        self.base_cell.center()
+        self.cell.center()
     }
 
     fn is_empty(&self) -> bool {
-        self.base_cell.is_empty()
+        self.cell.is_empty()
     }
 
     fn shift_position(&mut self, pos: Pos<usize>, adding: bool, bound: &impl Boundary<Coord = FloatType>) {
-        self.base_cell.shift_position(pos, adding, bound)
+        self.cell.shift_position(pos, adding, bound)
     }
 }
 
-impl Alive for Cell {
+impl Alive for MyCell {
     fn is_alive(&self) -> bool {
-        self.base_cell.is_alive()
+        self.cell.is_alive()
     }
 
     fn apoptosis(&mut self) {
-        self.base_cell.apoptosis()
+        self.cell.apoptosis()
     }
 
     fn birth(&self) -> EmptyCell<Self> {
-        let mut basic_cell = self.base_cell.birth().into_cell();
+        let mut basic_cell = self.cell.birth().into_cell();
         basic_cell.target_area = self.newborn_target_area;
         EmptyCell::new(Self {
             chem_com: Com { pos: basic_cell.center(), mass: 0 },
-            base_cell: basic_cell,
+            cell: basic_cell,
             ..self.clone()
         }).expect("failed to create empty cell")
     }
@@ -137,8 +137,8 @@ mod tests {
         UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
     }
     
-    fn make_test_cell() -> Cell {
-        Cell::new_empty(
+    fn make_test_cell() -> MyCell {
+        MyCell::new_empty(
             100,
             200,
             CellType::Migrating,

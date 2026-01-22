@@ -16,7 +16,7 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
 }
 
 #[test]
-fn test_run() -> anyhow::Result<()> {
+fn test_plots() -> anyhow::Result<()> {
     for plot in [PT::CellType, PT::Area, PT::Center, PT::ChemCenter] {
         let mut params = make_test_parameters()?;
         params.io.outdir = format!("tests/plots/{plot:?}");

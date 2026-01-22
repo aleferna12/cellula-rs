@@ -1,8 +1,8 @@
 //! Prelude containing commonly used items.
 
-pub use crate::base::base_cell::BaseCell;
-pub use crate::base::base_environment::BaseEnvironment;
-pub use crate::base::base_pond::BasePond;
+pub use crate::base::cell::Cell;
+pub use crate::base::environment::Environment;
+pub use crate::base::pond::Pond;
 pub use crate::cell_container::{CellContainer, RelCell};
 pub use crate::constants::CellIndex;
 pub use crate::lattice::Lattice;
