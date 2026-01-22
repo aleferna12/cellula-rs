@@ -27,7 +27,7 @@ impl MyPond {
         division_enabled: bool
     ) -> Self {
         Self {
-            pond: pond,
+            pond,
             update_period,
             division_enabled
         }

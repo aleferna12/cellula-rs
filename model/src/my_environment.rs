@@ -38,7 +38,7 @@ impl MyEnvironment {
     ) -> Self {
         let mut env_ = Self {
             chem_lattice: Lattice::new(env.cell_lattice.rect.clone()),
-            env: env,
+            env,
             cell_search_scaler,
             max_cells,
             population_exploded: false
