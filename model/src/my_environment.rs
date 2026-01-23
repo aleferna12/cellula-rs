@@ -56,7 +56,7 @@ impl MyEnvironment {
                 Pos::new(0, 0)
             ).round() as u32 + 1,
             population_exploded: false,
-            env: env,
+            env,
         }
     }
 

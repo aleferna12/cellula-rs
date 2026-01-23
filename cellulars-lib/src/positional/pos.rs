@@ -73,7 +73,7 @@ pub trait CastCoords<T: Copy + 'static> {
     /// Converts the coordinates system of `self` to type `T`.
     ///
     /// This conversion is performed using the `as` operator, which can lead to narrowing and loss of precision
-    /// (see [`num::traits::AsPrimitive`](AsPrimitive)).
+    /// (see [`num::traits::AsPrimitive`]).
     fn cast_coords(&self) -> Self::Outer<T>;
 }
 

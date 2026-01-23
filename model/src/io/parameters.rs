@@ -1,5 +1,7 @@
 //! Contains logic related to the simulation parameters.
 
+#![allow(missing_docs)]
+
 use cellulars_lib::constants::{CellIndex, FloatType};
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};

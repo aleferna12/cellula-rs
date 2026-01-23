@@ -31,7 +31,7 @@ impl MyPond {
         target_move_period: u32,
     ) -> Self {
         Self {
-            pond: pond,
+            pond,
             update_period,
             division_enabled,
             target_move_period,
