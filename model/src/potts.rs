@@ -9,7 +9,7 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::spin::Spin;
 use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::adhesion_system::AdhesionSystem;
-use cellulars_lib::traits::cellular::Cellular;
+use cellulars_lib::traits::cellular::HasCenter;
 use cellulars_lib::traits::potts_algorithm::PottsAlgorithm;
 
 // This could be a module but it's convenient to be able to access the relevant parameters

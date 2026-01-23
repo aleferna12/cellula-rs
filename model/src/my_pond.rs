@@ -1,10 +1,10 @@
 //! Contains logic required to run an instance of a simulation in a [`MyPond`].
 
+use crate::my_environment::MyEnvironment;
 use crate::potts::Potts;
 use cellulars_lib::base::pond::Pond;
 use cellulars_lib::traits::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
-use crate::my_environment::MyEnvironment;
 
 /// A pond is responsible for updating an [`Environment`](crate::my_environment::MyEnvironment) using the [`Potts`] algorithm.
 ///

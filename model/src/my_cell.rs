@@ -6,7 +6,7 @@ use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::com::Com;
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell};
+use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell, HasCenter};
 use strum_macros::{Display, EnumString};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
@@ -84,16 +84,18 @@ impl Cellular for MyCell {
         self.cell.area()
     }
 
-    fn center(&self) -> Pos<FloatType> {
-        self.cell.center()
-    }
-
     fn is_empty(&self) -> bool {
         self.cell.is_empty()
     }
 
     fn shift_position(&mut self, pos: Pos<usize>, adding: bool, bound: &impl Boundary<Coord = FloatType>) {
         self.cell.shift_position(pos, adding, bound)
+    }
+}
+
+impl HasCenter for MyCell {
+    fn center(&self) -> Pos<FloatType> {
+        self.cell.center()
     }
 }
 

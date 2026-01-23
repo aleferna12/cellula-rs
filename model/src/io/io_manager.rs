@@ -2,12 +2,12 @@
 
 // TODO!: file names should have leading zeros (account for max size of time_steps)
 
-use crate::my_cell::{MyCell, CellType};
-use crate::my_environment::MyEnvironment;
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::io::plot::Plot;
+use crate::my_cell::{CellType, MyCell};
+use crate::my_environment::MyEnvironment;
 use anyhow::{bail, Context};
 use bon::Builder;
 use cellulars_lib::base::cell::Cell;
@@ -18,7 +18,7 @@ use cellulars_lib::positional::com::Com;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
-use cellulars_lib::traits::cellular::Cellular;
+use cellulars_lib::traits::cellular::{Cellular, HasCenter};
 use image::imageops::{flip_vertical_in_place, FilterType};
 use image::{ColorType, GrayImage, ImageReader, RgbaImage};
 use num_traits::NumCast;

@@ -1,8 +1,8 @@
 //! Contains logic associated with [`MyEnvironment`].
 
-use crate::my_cell::MyCell;
 use crate::constants::{BoundaryType, NeighborhoodType, EPSILON};
-use cellulars_lib::base::environment::{Environment, EdgesUpdate};
+use crate::my_cell::MyCell;
+use cellulars_lib::base::environment::{EdgesUpdate, Environment};
 use cellulars_lib::cell_container::RelCell;
 use cellulars_lib::constants::{CellIndex, FloatType};
 use cellulars_lib::lattice::Lattice;
@@ -11,7 +11,7 @@ use cellulars_lib::positional::neighborhood::Neighborhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
-use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell};
+use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell, HasCenter};
 use cellulars_lib::traits::habitable::Habitable;
 use rand::Rng;
 

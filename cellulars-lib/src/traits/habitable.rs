@@ -1,6 +1,6 @@
 //! Contains logic associated with [`Habitable`].
 
-use crate::base::environment::{Environment, EdgesUpdate};
+use crate::base::environment::{EdgesUpdate, Environment};
 use crate::cell_container::RelCell;
 use crate::positional::boundaries::ToLatticeBoundary;
 use crate::positional::neighborhood::Neighborhood;

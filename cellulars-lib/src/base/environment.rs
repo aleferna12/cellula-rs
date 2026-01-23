@@ -10,15 +10,15 @@ use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::{CastCoords, Pos};
 use crate::spin::Spin;
-use crate::traits::cellular::{Alive, Cellular};
+use crate::traits::cellular::{Alive, Cellular, HasCenter};
 use crate::traits::habitable::Habitable;
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;
-#[cfg(feature = "high-precision")]
-use std::f64::consts::PI;
 #[cfg(not(feature = "high-precision"))]
 use std::f32::consts::PI;
+#[cfg(feature = "high-precision")]
+use std::f64::consts::PI;
 
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
 // If adding fields, remember to also change those!!!
@@ -88,14 +88,14 @@ impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
+impl<C: Cellular + HasCenter, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
     // This function returns a Box (not an Iter) so that we can check that the site number matches
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
     /// `search_scaler` multiplies the expected radius of `rel_cell` (which is calculated from its area).
     ///
     /// May fail to find all cell positions if `search_scaler` is too small, in which case logs a warning.
-    pub fn search_cell_box(&self, rel_cell: &RelCell<impl Cellular>, search_scaler: FloatType) -> Box<[Pos<usize>]> {
+    pub fn search_cell_box(&self, rel_cell: &RelCell<C>, search_scaler: FloatType) -> Box<[Pos<usize>]> {
         let search_diam = (
             search_scaler
                 * 2.
@@ -128,7 +128,7 @@ impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
     /// if the cell is not contiguous or if the cell center is not a cell position.
     pub fn search_cell_contiguous(
         &self,
-        rel_cell: &RelCell<impl Cellular>,
+        rel_cell: &RelCell<C>,
     ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
             &Spin::Some(rel_cell.index),
@@ -152,7 +152,7 @@ impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
     /// Searches for all cell positions that interface a different spin.
     pub fn search_cell_outline(
         &self,
-        rel_cell: &RelCell<impl Cellular>,
+        rel_cell: &RelCell<C>,
         search_scaler: FloatType
     ) -> Box<[Pos<usize>]> {
         let search_diam = (
@@ -174,7 +174,7 @@ impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
     /// Finds all cells adjacent to `cell` using a search algorithm.
     pub fn cell_neighbors(
         &self,
-        cell: &RelCell<impl Cellular>,
+        cell: &RelCell<C>,
         search_scaler: FloatType
     ) -> HashSet<Spin> {
         let outline = self

@@ -1,12 +1,12 @@
 //! Contains logic for plotting data about the simulation.
 
-use crate::my_cell::CellType;
-use crate::my_environment::MyEnvironment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
+use crate::my_cell::CellType;
+use crate::my_environment::MyEnvironment;
 use cellulars_lib::constants::{CellIndex, FloatType};
 use cellulars_lib::spin::Spin;
-use cellulars_lib::traits::cellular::Cellular;
+use cellulars_lib::traits::cellular::{Cellular, HasCenter};
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};

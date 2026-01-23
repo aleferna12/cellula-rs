@@ -10,22 +10,24 @@ pub trait Cellular {
     fn target_area(&self) -> u32;
     /// Returns the area of the cell.
     fn area(&self) -> u32;
-    /// Returns the center of mass of the cell.
-    fn center(&self) -> Pos<FloatType>;
     /// Returns whether the cell is empty or not.
     ///
     /// Empty cells cannot recover from this state, and can effectively be ignored by the simulation algorithm.
     ///
     /// A cell that has been validated to be empty is an [`EmptyCell`].
     fn is_empty(&self) -> bool;
-    /// Shifts the center and area of the cell by granting (`add == true`)
-    /// or stealing (`add == false`) a position from it.
+    /// Shifts the area of the cell by adding (`add == true`)
+    /// or removing (`add == false`) a position from it.
     fn shift_position(
         &mut self,
         pos: Pos<usize>,
         add: bool,
         bound: &impl Boundary<Coord = FloatType>
     );
+}
+
+pub trait HasCenter {
+    fn center(&self) -> Pos<FloatType>;
 }
 
 /// This trait indicates that a [`Cellular`] can be killed.

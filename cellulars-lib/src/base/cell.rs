@@ -4,7 +4,7 @@ use crate::constants::FloatType;
 use crate::positional::boundaries::Boundary;
 use crate::positional::com::Com;
 use crate::positional::pos::Pos;
-use crate::traits::cellular::{Alive, Cellular, EmptyCell};
+use crate::traits::cellular::{Alive, Cellular, EmptyCell, HasCenter};
 
 /// Minimum components required to simulate a cell.
 #[derive(Clone, Debug, PartialEq)]
@@ -50,10 +50,6 @@ impl Cellular for Cell {
         self.com.mass
     }
 
-    fn center(&self) -> Pos<FloatType> {
-        self.com.pos
-    }
-
     // Experimented with encoding this using typestate pattern but it was not helpful nor ergonomic
     fn is_empty(&self) -> bool {
         self.com.mass > 0
@@ -75,6 +71,12 @@ impl Cellular for Cell {
             Ok(new_com) => self.com = new_com,
             Err(e) => log::warn!("Failed to shift center of mass: {e}")
         }
+    }
+}
+
+impl HasCenter for Cell {
+    fn center(&self) -> Pos<FloatType> {
+        self.com.pos
     }
 }
 

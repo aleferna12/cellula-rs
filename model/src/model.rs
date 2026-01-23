@@ -1,12 +1,12 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
-use crate::my_cell::{MyCell, CellType};
 use crate::constants::{BoundaryType, NeighborhoodType};
-use crate::my_environment::MyEnvironment;
 use crate::io::io_manager::IoManager;
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
+use crate::my_cell::{CellType, MyCell};
+use crate::my_environment::MyEnvironment;
 use crate::my_pond::MyPond;
 use crate::potts::Potts;
 use cellulars_lib::base::environment::Environment;

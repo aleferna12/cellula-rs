@@ -1,11 +1,12 @@
 use crate::constants::{CellIndex, FloatType};
+use crate::io::lerper::Lerper;
 use crate::prelude::{Cellular, Habitable};
 use crate::spin::Spin;
+use crate::traits::cellular::HasCenter;
 use image::{Rgba, RgbaImage};
+use imageproc::drawing::draw_cross_mut;
 use palette::{IntoColor, Mix, Srgba};
 use std::hash::{DefaultHasher, Hash, Hasher};
-use imageproc::drawing::draw_cross_mut;
-use crate::io::lerper::Lerper;
 
 /// A trait to plot information about the simulation.
 pub trait Plot<P> {
@@ -57,7 +58,9 @@ pub struct CenterPlot {
     pub color: Srgba<u8>
 }
 
-impl<E: Habitable> Plot<E> for CenterPlot {
+impl<E: Habitable> Plot<E> for CenterPlot
+where 
+    E::Cell: HasCenter {
     fn plot(&self, env: &E, image: &mut RgbaImage) {
         for rel_cell in env.env().cells.iter() {
             if !rel_cell.cell.is_empty() {

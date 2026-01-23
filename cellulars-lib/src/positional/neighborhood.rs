@@ -145,8 +145,8 @@ impl Neighborhood for VonNeumannNeighborhood {
 
 #[cfg(test)]
 mod tests {
-    use core::assert;
     use super::*;
+    use core::assert;
     use std::collections::HashSet;
     #[test]
     fn test_moore() {
