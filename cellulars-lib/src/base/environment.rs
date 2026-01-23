@@ -1,6 +1,6 @@
-//! Contains logic associated with [`BaseEnvironment`].
+//! Contains logic associated with [`Environment`].
 
-use crate::base::base_cell::BaseCell;
+use crate::base::cell::Cell;
 use crate::cell_container::{CellContainer, RelCell};
 use crate::constants::FloatType;
 use crate::lattice::Lattice;
@@ -23,14 +23,14 @@ use std::f32::consts::PI;
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
 // If adding fields, remember to also change those!!!
 /// An environment where cells are spatially and relationally localised.
-pub struct BaseEnvironment<C, N, B: ToLatticeBoundary> {
+pub struct Environment<C, N, B: ToLatticeBoundary> {
     /// Boundaries of the environment.
     ///
     /// These are used to validate that a position can be used to access information in the environment.
     pub bounds: Boundaries<B>,
-    /// Cell container with spins matching those in [`BaseEnvironment::cell_lattice`].
+    /// Cell container with spins matching those in [`Environment::cell_lattice`].
     pub cells: CellContainer<C>,
-    /// Cell lattice with spins matching those in [`BaseEnvironment::cells`].
+    /// Cell lattice with spins matching those in [`Environment::cells`].
     pub cell_lattice: Lattice<Spin>,
     /// Edge book containing all positions at cell-cell interfaces.
     pub edge_book: EdgeBook,
@@ -38,7 +38,7 @@ pub struct BaseEnvironment<C, N, B: ToLatticeBoundary> {
     pub neighbourhood: N
 }
 
-impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> BaseEnvironment<C, N, B> {
+impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> Environment<C, N, B> {
     /// Makes a new empty environment with no cells.
     pub fn new_empty(
         neighbourhood: N,
@@ -54,7 +54,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> BaseEnvironment<C, N, B> {
     }
 }
 
-impl<C, N, B: ToLatticeBoundary> BaseEnvironment<C, N, B> {
+impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
     /// Makes a new environment from its components.
     pub fn new(
         cells: CellContainer<C>,
@@ -88,7 +88,7 @@ impl<C, N, B: ToLatticeBoundary> BaseEnvironment<C, N, B> {
     }
 }
 
-impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, B> {
+impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     // This function returns a Box (not an Iter) so that we can check that the site number matches
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
@@ -124,7 +124,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
 
     /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
     ///
-    /// Is considerably slower than [`BaseEnvironment::search_cell_box()`] and may not return all positions
+    /// Is considerably slower than [`Environment::search_cell_box()`] and may not return all positions
     /// if the cell is not contiguous or if the cell centre is not a cell position.
     pub fn search_cell_contiguous(
         &self,
@@ -225,14 +225,14 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> BaseEnvironment<C, N, 
     }
 }
 
-impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = FloatType>> Habitable for BaseEnvironment<BaseCell, N, B> {
-    type Cell = BaseCell;
+impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = FloatType>> Habitable for Environment<Cell, N, B> {
+    type Cell = Cell;
 
-    fn env(&self) -> &BaseEnvironment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+    fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
         self
     }
 
-    fn env_mut(&mut self) -> &mut BaseEnvironment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
         self
     }
 
@@ -257,14 +257,14 @@ impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = FloatType>> Habitable for Ba
     }
 }
 
-impl<C, N, B: ToLatticeBoundary> Clone for BaseEnvironment<C, N, B>
+impl<C, N, B: ToLatticeBoundary> Clone for Environment<C, N, B>
 where
     C: Clone,
     N: Clone,
     B: Clone,
     B::LatticeBoundary: Clone {
     fn clone(&self) -> Self {
-        BaseEnvironment {
+        Environment {
             bounds: self.bounds.clone(),
             cells: self.cells.clone(),
             cell_lattice: self.cell_lattice.clone(),
@@ -274,7 +274,7 @@ where
     }
 }
 
-impl<C, N, B:ToLatticeBoundary> fmt::Debug for BaseEnvironment<C, N, B>
+impl<C, N, B:ToLatticeBoundary> fmt::Debug for Environment<C, N, B>
 where
     C: fmt::Debug,
     N: fmt::Debug,
@@ -291,7 +291,7 @@ where
     }
 }
 
-impl<C, N, B:ToLatticeBoundary> PartialEq for BaseEnvironment<C, N, B>
+impl<C, N, B:ToLatticeBoundary> PartialEq for Environment<C, N, B>
 where
     C: PartialEq,
     N: PartialEq,
@@ -315,7 +315,7 @@ pub struct EdgesUpdate {
     pub removed: u16
 }
 
-/// Helper function used in [BaseEnvironment::valid_neighbours].
+/// Helper function used in [Environment::valid_neighbours].
 fn valid_neighbours(
     lattice_boundary: &impl Boundary<Coord = isize>,
     neighbourhood: &impl Neighbourhood,
@@ -331,19 +331,19 @@ fn valid_neighbours(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::base::base_cell::BaseCell;
+    use crate::base::cell::Cell;
     use crate::cell_container::RelCell;
     use crate::positional::boundaries::UnsafePeriodicBoundary;
     use crate::positional::neighbourhood::MooreNeighbourhood;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
-    fn make_test_env() -> BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>> {
+    fn make_test_env() -> Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>> {
         let rect = Rect::new(
             (0., 0.,).into(),
             (10., 10.).into()
         );
-        BaseEnvironment::new_empty(
+        Environment::new_empty(
             MooreNeighbourhood::new(1),
             Boundaries::new(UnsafePeriodicBoundary::new(rect.clone()))
         )
@@ -351,9 +351,9 @@ pub mod tests {
 
     fn add_cell(
         positions: &[Pos<usize>],
-        env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>
-    ) -> RelCell<BaseCell> {
-        let mut rel_cell = RelCell{ index: 0, cell: BaseCell::new_empty(2).into_cell() };
+        env: &mut Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>
+    ) -> RelCell<Cell> {
+        let mut rel_cell = RelCell{ index: 0, cell: Cell::new_empty(2).into_cell() };
         for &pos in positions {
             rel_cell.cell.shift_position(pos, true, &env.bounds.boundary);
             env.cell_lattice[pos] = Spin::Some(rel_cell.index);

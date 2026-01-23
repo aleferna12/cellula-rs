@@ -1,7 +1,7 @@
 //! Contains logic for plotting data about the simulation.
 
-use crate::cell::CellType;
-use crate::environment::Environment;
+use crate::my_cell::CellType;
+use crate::my_environment::MyEnvironment;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use cellulars_lib::constants::{CellIndex, FloatType};
@@ -19,7 +19,7 @@ use thiserror::Error;
 /// A trait to plot information about the environment.
 pub trait Plot {
     /// Plots the information in `env` by drawing on `image`.
-    fn plot(&self, env: &Environment, image: &mut RgbaImage);
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage);
 }
 
 /// [`Plot`]s that can display continuous variables.
@@ -79,9 +79,9 @@ impl SpinPlot {
 }
 
 impl Plot for SpinPlot {
-    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
-        for pos in env.base_env.cell_lattice.iter_positions() {
-            let spin = env.base_env.cell_lattice[pos];
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        for pos in env.env.cell_lattice.iter_positions() {
+            let spin = env.env.cell_lattice[pos];
             let rgb = match spin {
                 Spin::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
                 Spin::Solid => Some(self.solid_color),
@@ -101,8 +101,8 @@ pub struct CenterPlot {
 }
 
 impl Plot for CenterPlot {
-    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
-        for rel_cell in env.base_env.cells.iter() {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        for rel_cell in env.env.cells.iter() {
             if !rel_cell.cell.is_empty() {
                 continue;
             }
@@ -122,8 +122,8 @@ pub struct ChemCenterPlot {
 }
 
 impl Plot for ChemCenterPlot {
-    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
-        for rel_cell in env.base_env.cells.iter() {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        for rel_cell in env.env.cells.iter() {
             if !rel_cell.cell.is_empty() {
                 continue;
             }
@@ -143,18 +143,18 @@ pub struct BorderPlot {
 }
 
 impl Plot for BorderPlot {
-    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
-        for pos in env.base_env.cell_lattice.iter_positions() {
-            let spin = env.base_env.cell_lattice[pos];
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        for pos in env.env.cell_lattice.iter_positions() {
+            let spin = env.env.cell_lattice[pos];
             let Spin::Some(cell_index) = spin else {
                 continue;
             };
 
             let is_border = env
-                .base_env
+                .env
                 .valid_neighbours(pos)
                 .any(|neigh| {
-                    let neigh_spin = env.base_env.cell_lattice[neigh];
+                    let neigh_spin = env.env.cell_lattice[neigh];
                     match neigh_spin {
                         Spin::Some(neigh_index) => cell_index < neigh_index,
                         _ => true
@@ -176,11 +176,11 @@ pub struct CellTypePlot {
 }
 
 impl Plot for CellTypePlot {
-    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
-        for pos in env.base_env.cell_lattice.iter_positions() {
-            let spin = env.base_env.cell_lattice[pos];
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        for pos in env.env.cell_lattice.iter_positions() {
+            let spin = env.env.cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
-                let rel_cell = &env.base_env.cells[cell_index];
+                let rel_cell = &env.env.cells[cell_index];
                 let color = match rel_cell.cell.cell_type {
                     CellType::Migrating => self.mig_color,
                     CellType::Dividing => self.div_color
@@ -198,7 +198,7 @@ impl Plot for CellTypePlot {
 pub struct TargetPlot;
 
 impl Plot for TargetPlot {
-    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let twidth = env.target_mask.width();
         let theight = env.target_mask.height();
 
@@ -213,7 +213,7 @@ impl Plot for TargetPlot {
                     env.target_center.x as isize - twidth as isize / 2 + i as isize,
                     env.target_center.y as isize - theight as isize / 2 + j as isize,
                 );
-                let Some(valid_pos) = env.base_env.bounds.lattice_boundary.valid_pos(trans_pos) else {
+                let Some(valid_pos) = env.env.bounds.lattice_boundary.valid_pos(trans_pos) else {
                     continue;
                 };
                 image[(valid_pos.x as u32, valid_pos.y as u32)] = pixel;
@@ -231,10 +231,10 @@ pub struct AreaPlot {
 }
 
 impl Plot for AreaPlot {
-    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
-        for rel_cell in env.base_env.cells.iter() {
+        for rel_cell in env.env.cells.iter() {
             if !rel_cell.cell.is_empty() {
                 continue;
             }
@@ -246,9 +246,9 @@ impl Plot for AreaPlot {
             }
         }
 
-        for pos in env.base_env.cell_lattice.iter_positions() {
-            if let Spin::Some(cell_index) = env.base_env.cell_lattice[pos] {
-                let rel_cell = &env.base_env.cells[cell_index];
+        for pos in env.env.cell_lattice.iter_positions() {
+            if let Spin::Some(cell_index) = env.env.cell_lattice[pos] {
+                let rel_cell = &env.env.cells[cell_index];
                 let color = self.lerp(
                     rel_cell.cell.area() as FloatType,
                     min as FloatType,
@@ -285,11 +285,11 @@ pub struct ChemPlot {
 }
 
 impl Plot for ChemPlot {
-    fn plot(&self, env: &Environment, image: &mut RgbaImage) {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let corners = [
-            (0, 0).into(), (env.base_env.width() - 1, 0).into(),
-            (0, env.base_env.height() - 1).into(),
-            (env.base_env.width() - 1, env.base_env.height() - 1).into()
+            (0, 0).into(), (env.env.width() - 1, 0).into(),
+            (0, env.env.height() - 1).into(),
+            (env.env.width() - 1, env.env.height() - 1).into()
         ];
         let chem_min = corners
             .map(|corner| env.chem_signal(corner, env.target_center))

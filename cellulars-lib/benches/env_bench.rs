@@ -1,5 +1,5 @@
-use cellulars_lib::base::base_cell::BaseCell;
-use cellulars_lib::base::base_environment::BaseEnvironment;
+use cellulars_lib::base::cell::Cell;
+use cellulars_lib::base::environment::Environment;
 use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::{Boundaries, Boundary, UnsafePeriodicBoundary};
 use cellulars_lib::positional::edge::Edge;
@@ -16,8 +16,8 @@ use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
 
-fn empty_env(width: FloatType, height: FloatType) -> BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>> {
-    BaseEnvironment::new_empty(
+fn empty_env(width: FloatType, height: FloatType) -> Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>> {
+    Environment::new_empty(
         MooreNeighbourhood::new(1),
         Boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
             (0., 0.).into(),
@@ -27,7 +27,7 @@ fn empty_env(width: FloatType, height: FloatType) -> BaseEnvironment<BaseCell, M
 }
 
 fn random_neighbour(
-    env: &BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
+    env: &Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl Rng
@@ -47,7 +47,7 @@ fn random_neighbour(
 }
 
 fn add_random_edge(
-    env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
+    env: &mut Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
     rng: &mut impl Rng
 ) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
@@ -57,7 +57,7 @@ fn add_random_edge(
 
 fn replace_random_edges(
     n_edges: usize,
-    env: &mut BaseEnvironment<BaseCell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
+    env: &mut Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
     rng: &mut impl Rng
 ) {
     for _ in 0..n_edges {
@@ -111,7 +111,7 @@ fn bench_env(c: &mut Criterion) {
 
     let mut env = empty_env(100., 100.);
     env.spawn_cell(
-        BaseCell::new_empty(100),
+        Cell::new_empty(100),
         Rect::new((10, 10).into(), (20, 20).into()).iter_positions(),
     );
 

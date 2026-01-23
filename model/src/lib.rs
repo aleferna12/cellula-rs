@@ -5,9 +5,9 @@
 
 pub mod model;
 pub mod io;
-pub mod pond;
+pub mod my_pond;
 pub mod potts;
 pub mod constants;
-pub mod cell;
-pub mod environment;
+pub mod my_cell;
+pub mod my_environment;
 pub mod kinect;

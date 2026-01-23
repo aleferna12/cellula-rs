@@ -1,4 +1,4 @@
-//! Contains logic associated with [`BaseCell`].
+//! Contains logic associated with [`Cell`].
 
 use crate::constants::FloatType;
 use crate::positional::boundaries::Boundary;
@@ -8,14 +8,14 @@ use crate::traits::cellular::{Alive, Cellular, EmptyCell};
 
 /// Minimum components required to simulate a cell.
 #[derive(Clone, Debug, PartialEq)]
-pub struct BaseCell {
+pub struct Cell {
     /// Cell's current target area.
     pub target_area: u32,
     /// Center of mass of the cell.
     com: Com
 }
 
-impl BaseCell {
+impl Cell {
     /// Returns an empty cell to be filled by methods like 
     /// [`Habitable::spawn_cell()`](crate::traits::habitable::Habitable::spawn_cell()).
     pub fn new_empty(target_area: u32) -> EmptyCell<Self> {
@@ -28,7 +28,7 @@ impl BaseCell {
     /// Makes a new, ready-to-go cell from a pre-existing state.
     ///
     /// Useful to initialize a cell from a backup.
-    /// For most use cases, use [`BaseCell::new_empty()`] instead.
+    /// For most use cases, use [`Cell::new_empty()`] instead.
     pub fn new_ready(
         area: u32,
         target_area: u32,
@@ -41,7 +41,7 @@ impl BaseCell {
     }
 }
 
-impl Cellular for BaseCell {
+impl Cellular for Cell {
     fn target_area(&self) -> u32 {
         self.target_area
     }
@@ -78,7 +78,7 @@ impl Cellular for BaseCell {
     }
 }
 
-impl Alive for BaseCell {
+impl Alive for Cell {
     fn is_alive(&self) -> bool {
         self.is_empty() && self.target_area() > 0
     }
@@ -87,7 +87,7 @@ impl Alive for BaseCell {
         self.target_area = 0
     }
 
-    fn birth(&self) -> EmptyCell<BaseCell> {
+    fn birth(&self) -> EmptyCell<Cell> {
         let mut newborn = self.clone();
         newborn.com.mass = 0;
         EmptyCell::new(newborn).expect("cell is not empty")

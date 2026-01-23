@@ -1,5 +1,5 @@
 use cellulars_lib::positional::boundaries::Boundary;
-use crate::environment::Environment;
+use crate::my_environment::MyEnvironment;
 use crate::kinect::{kinect_create, kinect_depth, kinect_destroy, kinect_listen_frame, kinect_release_frame, KinectHandle};
 use cellulars_lib::prelude::{Habitable, Neighbourhood, Pos};
 use cellulars_lib::spin::Spin;
@@ -33,8 +33,8 @@ impl KinectListener {
         })
     }
 
-    pub fn draw_silhouette(&mut self, env: &mut Environment) -> anyhow::Result<u32> {
-        if env.base_env.width() != 512 || env.base_env.height() != 424 {
+    pub fn draw_silhouette(&mut self, env: &mut MyEnvironment) -> anyhow::Result<u32> {
+        if env.env.width() != 512 || env.env.height() != 424 {
             anyhow::bail!("kinect can only be used if pond's width is 512 and height is 424");
         }
 
@@ -45,7 +45,7 @@ impl KinectListener {
         for j in 0..424 {
             for i in 0..512 {
                 let pos = Pos::new(i, j);
-                if !self.should_display(pos, data_arr, &env.base_env.bounds.lattice_boundary) {
+                if !self.should_display(pos, data_arr, &env.env.bounds.lattice_boundary) {
                     continue;
                 }
                 env.grant_position(pos, Spin::Solid);

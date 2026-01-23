@@ -1,17 +1,17 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
-use crate::cell::{Cell, CellType};
+use crate::my_cell::{MyCell, CellType};
 use crate::constants::{BoundaryType, KinectNeighbourhoodType, NeighbourhoodType};
-use crate::environment::Environment;
+use crate::my_environment::MyEnvironment;
 use crate::io::io_manager::IoManager;
 use crate::io::kinect_listener::KinectListener;
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
-use crate::pond::Pond;
+use crate::my_pond::MyPond;
 use crate::potts::Potts;
-use cellulars_lib::base::base_environment::BaseEnvironment;
-use cellulars_lib::base::base_pond::BasePond;
+use cellulars_lib::base::environment::Environment;
+use cellulars_lib::base::pond::Pond;
 use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::pos::CastCoords;
@@ -28,10 +28,10 @@ use std::path::Path;
 use image::{ImageReader, RgbaImage};
 use image::imageops::flip_vertical_in_place;
 
-/// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
+/// This is the master struct that runs the simulation in a [`MyPond`] and manages IO through an [`IoManager`].
 pub struct Model {
     /// Pond containing all cells and the model Potts algorithm.
-    pub pond: Pond,
+    pub my_pond: MyPond,
     /// Instance responsible for managing IO for the model.
     pub io: IoManager,
     /// Unique random number generator of this model.
@@ -52,7 +52,7 @@ impl Model {
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         Ok(Self {
-            pond: Self::make_new_pond(
+            my_pond: Self::make_new_pond(
                 &parameters,
                 &mut rng,
                 maybe_templates_path
@@ -79,7 +79,7 @@ impl Model {
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         let pond = Self::read_layout_pond(&parameters, layout_path, &mut rng, maybe_templates_path)?;
         Ok(Self {
-            pond,
+            my_pond: pond,
             io: Self::setup_io(&parameters, seed)?,
             rng,
             info_period: parameters.io.info_period,
@@ -112,7 +112,7 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
-            pond,
+            my_pond: pond,
             rng
         })
     }
@@ -206,9 +206,9 @@ impl Model {
             .build()
     }
 
-    fn make_env(parameters: &Parameters) -> Environment {
-        Environment::new(
-            BaseEnvironment::new_empty(
+    fn make_env(parameters: &Parameters) -> MyEnvironment {
+        MyEnvironment::new(
+            Environment::new_empty(
                 NeighbourhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(Rect::new(
                     (0., 0.).into(),
@@ -239,9 +239,9 @@ impl Model {
         seed_param.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64)
     }
 
-    fn make_empty_pond(parameters: &Parameters, rng: &mut Xoshiro256StarStar) -> Pond {
-        Pond::new(
-            BasePond::new(
+    fn make_empty_pond(parameters: &Parameters, rng: &mut Xoshiro256StarStar) -> MyPond {
+        MyPond::new(
+            Pond::new(
                 Self::make_env(parameters),
                 Self::make_potts(parameters),
                 Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
@@ -255,7 +255,7 @@ impl Model {
 
     fn templates_path_to_box(
         maybe_templates_path: Option<String>
-    ) -> anyhow::Result<Option<Box<[Cell]>>> {
+    ) -> anyhow::Result<Option<Box<[MyCell]>>> {
         maybe_templates_path.map(|path| {
             // This is required to obtain a clonable iterator that we can cycle over
             let templates_cells = IoManager::read_cells(path)?
@@ -266,8 +266,8 @@ impl Model {
         }).transpose()
     }
 
-    fn empty_cell_from_parameters(parameters: &Parameters) -> EmptyCell<Cell> {
-        Cell::new_empty(
+    fn empty_cell_from_parameters(parameters: &Parameters) -> EmptyCell<MyCell> {
+        MyCell::new_empty(
             parameters.cell.target_area,
             parameters.cell.div_area,
             CellType::Migrating
@@ -278,7 +278,7 @@ impl Model {
         parameters: &Parameters,
         rng: &mut Xoshiro256StarStar,
         maybe_templates_path: Option<String>,
-    ) -> anyhow::Result<Pond> {
+    ) -> anyhow::Result<MyPond> {
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, rng);
         pond.env_mut().update_chem_gradient();
@@ -287,7 +287,7 @@ impl Model {
         let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
-        while pond.env().base_env.cells.n_non_empty() < parameters.cell.starting_cells {
+        while pond.env().env.cells.n_non_empty() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
                 None => Self::empty_cell_from_parameters(parameters).into_cell(),
                 Some(templates_it) => templates_it
@@ -295,10 +295,10 @@ impl Model {
                     .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))?
             };
             let cell_area = if cell.area() == 0 { parameters.cell.starting_area } else { cell.area() };
-            pond.base_pond.env.spawn_cell_random(
+            pond.pond.env.spawn_cell_random(
                 cell.birth(),
                 cell_area,
-                &mut pond.base_pond.rng
+                &mut pond.pond.rng
             );
             spawn_attempts += 1;
 
@@ -308,7 +308,7 @@ impl Model {
             } else if spawn_attempts > parameters.cell.starting_cells * 20 {
                 log::error!(
                     "Only {} cells were initialized out of {} cells requested",
-                    pond.env().base_env.cells.n_non_empty(),
+                    pond.env().env.cells.n_non_empty(),
                     parameters.cell.starting_cells);
                 break;
             }
@@ -324,7 +324,7 @@ impl Model {
         layout_path: impl AsRef<Path>,
         rng: &mut Xoshiro256StarStar,
         maybe_templates_path: Option<String>
-    ) -> anyhow::Result<Pond> {
+    ) -> anyhow::Result<MyPond> {
         let layout_path = layout_path.as_ref();
 
         let layout = IoManager::read_layout(
@@ -376,7 +376,7 @@ impl Model {
                 .remove(&luma)
                 .expect("missing luma key");
             for positions in cell_positions.values() {
-                if pond.env().base_env.cells.n_non_empty() >= parameters.cell.starting_cells {
+                if pond.env().env.cells.n_non_empty() >= parameters.cell.starting_cells {
                     not_spawned += 1;
                     continue;
                 }
@@ -405,7 +405,7 @@ impl Model {
         rng: &mut Xoshiro256StarStar,
         sim_path: impl AsRef<Path>,
         time_step: u32
-    ) -> anyhow::Result<Pond> {
+    ) -> anyhow::Result<MyPond> {
         let sim_path = sim_path.as_ref();
 
         log::info!("Reading pond");
@@ -422,8 +422,8 @@ impl Model {
             rect.cast_coords(),
         )?;
 
-        let mut env = Environment::new(
-            BaseEnvironment::new(
+        let mut env = MyEnvironment::new(
+            Environment::new(
                 cells,
                 lattice,
                 NeighbourhoodType::new(parameters.pond.neigh_r),
@@ -437,12 +437,12 @@ impl Model {
                 parameters.pond.target_y
             )
         );
-        for pos in env.base_env.cell_lattice.iter_positions() {
-            env.base_env.update_edges(pos);
+        for pos in env.env.cell_lattice.iter_positions() {
+            env.env.update_edges(pos);
         }
 
-        let pond = Pond::new(
-            BasePond::new(
+        let pond = MyPond::new(
+            Pond::new(
                 env,
                 Self::make_potts(parameters),
                 Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
@@ -466,8 +466,8 @@ impl Model {
     }
 
     fn log_info(&self) {
-        log::info!("Time step {}:", self.pond.time_step());
-        let non_empty = self.pond.env().base_env.cells.n_non_empty();
+        log::info!("Time step {}:", self.my_pond.time_step());
+        let non_empty = self.my_pond.env().env.cells.n_non_empty();
         log::info!("\t{non_empty} cells");
     }
 
@@ -476,34 +476,34 @@ impl Model {
 
 impl Step for Model {
     fn step(&mut self) {
-        if self.pond.time_step().is_multiple_of(self.info_period) {
+        if self.my_pond.time_step().is_multiple_of(self.info_period) {
             self.log_info();
         }
 
         let saved = self.io.write_if_time(
-            self.pond.time_step(),
-            self.pond.env()
+            self.my_pond.time_step(),
+            self.my_pond.env()
         );
         if let Err(e) = saved {
-            log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())
+            log::warn!("Failed to save data at time step {} with error `{e}`", self.my_pond.time_step())
         }
 
         // Draw silhouette
         if let Some(kinect) = &mut self.io.kinect_listener
-            && self.pond.time_step().is_multiple_of(kinect.frame_period) {
+            && self.my_pond.time_step().is_multiple_of(kinect.frame_period) {
             // Clear solids
-            for spin in self.pond.env_mut().base_env.cell_lattice.iter_values_mut() {
+            for spin in self.my_pond.env_mut().env.cell_lattice.iter_values_mut() {
                 if matches!(spin, Spin::Solid) {
                     *spin = Spin::Medium;
                 }
             }
 
-            kinect.draw_silhouette(self.pond.env_mut())
+            kinect.draw_silhouette(self.my_pond.env_mut())
                 .expect("failed to draw silhouette from kinect");
-            self.pond.env_mut().draw_solid_target();
+            self.my_pond.env_mut().draw_solid_target();
         }
 
-        self.pond.step();
+        self.my_pond.step();
     }
 }
 

@@ -151,7 +151,7 @@ impl<C> IndexMut<CellIndex> for CellContainer<C> {
     }
 }
 
-/// Represents a cell that is bound to an [Environment](crate::base::base_environment::BaseEnvironment).
+/// Represents a cell that is bound to an [Environment](crate::base::environment::Environment).
 ///
 /// Functions that do not need information about the cell's `index` relational operators should take
 /// the inner cell type `C` directly.
@@ -160,7 +160,7 @@ impl<C> IndexMut<CellIndex> for CellContainer<C> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RelCell<C> {
     /// Relational cell index that is unique to this cell in its
-    /// [Environment](crate::base::base_environment::BaseEnvironment).
+    /// [Environment](crate::base::environment::Environment).
     pub index: CellIndex,
     /// Inner cell instance.
     pub cell: C
