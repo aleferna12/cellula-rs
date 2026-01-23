@@ -48,7 +48,7 @@ impl Cell {
     }
 
     /// Sets the area at which the cell divides when
-    ///[`Environment::reproduce()`](crate::environment::Environment::reproduce()) is called.
+    /// [`Environment::reproduce()`](crate::environment::Environment::reproduce()) is called.
     pub fn set_divide_area(&mut self, value: u32) {
         self.divide_area = value;
     }

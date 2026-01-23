@@ -1,5 +1,7 @@
 //! Contains logic related to [`IoManager`].
 
+// TODO!: file names should have leading zeros (account for max size of time_steps)
+
 use crate::cell::{Cell, CellType};
 use crate::environment::Environment;
 #[cfg(feature = "movie")]
@@ -32,6 +34,15 @@ static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
 static LATTICES_PATH: &str = "lattices";
 static CONFIG_COPY_PATH: &str = "config.toml";
+const PAD_FILE_LEN: usize = {
+    let mut n = u32::MAX;
+    let mut digits = 0;
+    while n > 0 {
+        digits += 1;
+        n /= 10;
+    }
+    digits
+};
 
 /// Manages all io operations, including saving and loading data and displaying the simulation movie.
 #[derive(Builder)]
@@ -172,6 +183,10 @@ impl IoManager {
         Ok(layout.resize_exact(pond_width as u32, pond_height as u32, FilterType::Nearest).into_luma8())
     }
 
+    fn pad_time_step(time_step: u32) -> String {
+        format!("{time_step:0>PAD_FILE_LEN$}")
+    }
+
     /// Given a path to the main folder of a simulation, resolve the path to the file
     /// containing the simulation parameters.
     pub fn resolve_parameters_path(sim_path: impl AsRef<Path>) -> PathBuf {
@@ -186,7 +201,7 @@ impl IoManager {
     ) -> PathBuf {
         sim_path.as_ref()
             .join(CELLS_PATH)
-            .join(format!("{time_step}.parquet"))
+            .join(format!("{}.parquet", Self::pad_time_step(time_step)))
     }
 
     /// Given a path to the main folder of a simulation, resolve the path to the lattice file
@@ -197,7 +212,7 @@ impl IoManager {
     ) -> PathBuf {
         sim_path.as_ref()
             .join(LATTICES_PATH)
-            .join(format!("{time_step}.parquet"))
+            .join(format!("{}.parquet", Self::pad_time_step(time_step)))
     }
 
     /// Reads a lattice from a backup file at `file_path`.
@@ -250,7 +265,7 @@ impl IoManager {
         time_step: u32,
         env: &Environment
     ) -> anyhow::Result<()> {
-        let time_str = time_step.to_string();
+        let time_str = Self::pad_time_step(time_step);
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step.is_multiple_of(self.cells_period) {
@@ -330,8 +345,12 @@ impl IoManager {
             frame.unwrap().save(
                 &self.outdir
                     .join(IMAGES_PATH)
-                    .join(format!("{time_step}.{}", self.image_format.to_lowercase())
-                    ))?;
+                    .join(format!(
+                        "{}.{}",
+                        Self::pad_time_step(time_step),
+                        self.image_format.to_lowercase()
+                    ))
+            )?;
         }
         Ok(())
     }
