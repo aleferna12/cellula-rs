@@ -4,7 +4,7 @@ use crate::constants::FloatType;
 use crate::positional::boundaries::Boundary;
 use crate::positional::pos::Pos;
 
-/// Types that can be used a cell in a simulation.
+/// Types that can be simulated like a cell.
 pub trait Cellular {
     /// Returns the target area of the cell.
     fn target_area(&self) -> u32;
