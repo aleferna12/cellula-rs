@@ -1,4 +1,4 @@
-//! Contains logic associated with neighbourhoods for a discrete lattice.
+//! Contains logic associated with neighborhoods for a discrete lattice.
 
 use crate::positional::pos::Pos;
 
@@ -73,32 +73,32 @@ fn fetch_neighs(
         })
 }
 
-/// Describes a neighbourhood of a square, discrete lattice.
-pub trait Neighbourhood {
-    /// Returns the radius of the neighbourhood.
+/// Describes a neighborhood of a square, discrete lattice.
+pub trait Neighborhood {
+    /// Returns the radius of the neighborhood.
     fn radius(&self) -> u8;
 
-    /// Returns the number of positions in this neighbourhood.
+    /// Returns the number of positions in this neighborhood.
     fn n_neighs(&self) -> u16;
 
-    /// Returns the positions in the neighbourhood of `pos`.
-    fn neighbours(&self, pos: Pos<isize>) -> impl Iterator<Item = Pos<isize>>;
+    /// Returns the positions in the neighborhood of `pos`.
+    fn neighbors(&self, pos: Pos<isize>) -> impl Iterator<Item = Pos<isize>>;
 }
 
-/// Moore neighbourhood with variable radius.
+/// Moore neighborhood with variable radius.
 #[derive(Clone, Debug, PartialEq)]
-pub struct MooreNeighbourhood {
+pub struct MooreNeighborhood {
     radius: u8
 }
 
-impl MooreNeighbourhood {
-    /// Makes a new neighbourhood with an associated `radius`.
+impl MooreNeighborhood {
+    /// Makes a new neighborhood with an associated `radius`.
     pub fn new(radius: u8) -> Self {
         Self { radius }
     }
 }
 
-impl Neighbourhood for MooreNeighbourhood {
+impl Neighborhood for MooreNeighborhood {
     fn radius(&self) -> u8 {
         self.radius
     }
@@ -109,25 +109,25 @@ impl Neighbourhood for MooreNeighbourhood {
     }
 
     #[inline]
-    fn neighbours(&self, pos: Pos<isize>) -> impl Iterator<Item=Pos<isize>> {
+    fn neighbors(&self, pos: Pos<isize>) -> impl Iterator<Item=Pos<isize>> {
         fetch_neighs(pos, &MOORE_NEIGHS, self.n_neighs())
     }
 }
 
-/// VonNeumann neighbourhood with variable radius.
+/// VonNeumann neighborhood with variable radius.
 #[derive(Clone, Debug, PartialEq)]
-pub struct VonNeumannNeighbourhood {
+pub struct VonNeumannNeighborhood {
     radius: u8,
 }
 
-impl VonNeumannNeighbourhood {
-    /// Makes a new neighbourhood with an associated `radius`.
+impl VonNeumannNeighborhood {
+    /// Makes a new neighborhood with an associated `radius`.
     pub fn new(radius: u8) -> Self {
         Self { radius }
     }
 }
 
-impl Neighbourhood for VonNeumannNeighbourhood {
+impl Neighborhood for VonNeumannNeighborhood {
     fn radius(&self) -> u8 {
         self.radius
     }
@@ -138,13 +138,14 @@ impl Neighbourhood for VonNeumannNeighbourhood {
     }
 
     #[inline]
-    fn neighbours(&self, pos: Pos<isize>) -> impl Iterator<Item = Pos<isize>> {
+    fn neighbors(&self, pos: Pos<isize>) -> impl Iterator<Item = Pos<isize>> {
         fetch_neighs(pos, &VON_NEUMANN_NEIGHS, self.n_neighs())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use core::assert;
     use super::*;
     use std::collections::HashSet;
     #[test]
@@ -154,20 +155,20 @@ mod tests {
     }
 
     #[test]
-    fn test_neighbourhood_symmetry_moore() {
-        let nh = MooreNeighbourhood::new(3);
+    fn test_neighborhood_symmetry_moore() {
+        let nh = MooreNeighborhood::new(3);
         let pos = Pos::new(0, 0);
-        let neighs: HashSet<_> = nh.neighbours(pos).collect();
+        let neighs: HashSet<_> = nh.neighbors(pos).collect();
         for p in &neighs {
             assert!(neighs.contains(&Pos::new(-p.x, -p.y)), "Asymmetric Moore offset: {p:?}");
         }
     }
 
     #[test]
-    fn test_neighbourhood_symmetry_von_neumann() {
-        let nh = VonNeumannNeighbourhood::new(5);
+    fn test_neighborhood_symmetry_von_neumann() {
+        let nh = VonNeumannNeighborhood::new(5);
         let pos = Pos::new(0, 0);
-        let neighs: HashSet<_> = nh.neighbours(pos).collect();
+        let neighs: HashSet<_> = nh.neighbors(pos).collect();
         for p in &neighs {
             assert!(neighs.contains(&Pos::new(-p.x, -p.y)), "Asymmetric Von Neumann offset: {p:?}");
         }
@@ -175,20 +176,20 @@ mod tests {
     
     #[test]
     fn test_radius_zero_returns_empty() {
-        let moore = MooreNeighbourhood::new(0);
-        let von = VonNeumannNeighbourhood::new(0);
+        let moore = MooreNeighborhood::new(0);
+        let von = VonNeumannNeighborhood::new(0);
         let pos = Pos::new(123, 456);
-        assert_eq!(moore.neighbours(pos).count(), 0);
-        assert_eq!(von.neighbours(pos).count(), 0);
+        assert_eq!(moore.neighbors(pos).count(), 0);
+        assert_eq!(von.neighbors(pos).count(), 0);
     }
 
     #[test]
     fn test_neighs_do_not_include_center() {
         let pos = Pos::new(100, 100);
-        let moore = MooreNeighbourhood::new(1);
-        let von = VonNeumannNeighbourhood::new(1);
+        let moore = MooreNeighborhood::new(1);
+        let von = VonNeumannNeighborhood::new(1);
 
-        assert!(!moore.neighbours(pos).any(|p| p == pos), "Moore included center");
-        assert!(!von.neighbours(pos).any(|p| p == pos), "Von Neumann included center");
+        assert!(!moore.neighbors(pos).any(|p| p == pos), "Moore included center");
+        assert!(!von.neighbors(pos).any(|p| p == pos), "Von Neumann included center");
     }
 }

@@ -7,7 +7,7 @@ use crate::lattice::Lattice;
 use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
-use crate::positional::neighbourhood::Neighbourhood;
+use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::{CastCoords, Pos};
 use crate::spin::Spin;
 use crate::traits::cellular::{Alive, Cellular};
@@ -34,14 +34,14 @@ pub struct Environment<C, N, B: ToLatticeBoundary> {
     pub cell_lattice: Lattice<Spin>,
     /// Edge book containing all positions at cell-cell interfaces.
     pub edge_book: EdgeBook,
-    /// Neighbourhood of the environment.
-    pub neighbourhood: N
+    /// Neighborhood of the environment.
+    pub neighborhood: N
 }
 
 impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> Environment<C, N, B> {
     /// Makes a new empty environment with no cells.
     pub fn new_empty(
-        neighbourhood: N,
+        neighborhood: N,
         bounds: Boundaries<B>,
     ) -> Self {
         Self {
@@ -49,7 +49,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> Environment<C, N, B> {
             edge_book: EdgeBook::new(),
             cells: CellContainer::new(),
             bounds,
-            neighbourhood
+            neighborhood
         }
     }
 }
@@ -59,14 +59,14 @@ impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
     pub fn new(
         cells: CellContainer<C>,
         cell_lattice: Lattice<Spin>,
-        neighbourhood: N,
+        neighborhood: N,
         bounds: Boundaries<B>,
     ) -> Self {
         Self {
             cell_lattice,
             bounds,
             cells,
-            neighbourhood,
+            neighborhood,
             edge_book: EdgeBook::new()
         }
     }
@@ -81,14 +81,14 @@ impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
         self.cell_lattice.height()
     }
 
-    /// Returns an iterator over all sites in the neighbourhood of `pos` that are within lattice boundaries.
-    pub fn valid_neighbours(&self, pos: Pos<usize>) -> impl Iterator<Item = Pos<usize>>
-    where N: Neighbourhood {
-        valid_neighbours(&self.bounds.lattice_boundary, &self.neighbourhood, pos)
+    /// Returns an iterator over all sites in the neighborhood of `pos` that are within lattice boundaries.
+    pub fn valid_neighbors(&self, pos: Pos<usize>) -> impl Iterator<Item = Pos<usize>>
+    where N: Neighborhood {
+        valid_neighbors(&self.bounds.lattice_boundary, &self.neighborhood, pos)
     }
 }
 
-impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
+impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
     // This function returns a Box (not an Iter) so that we can check that the site number matches
     /// Searches for all cell positions by creating a box around the cell and iterating all the positions inside it.
     ///
@@ -105,7 +105,7 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
         let found: Box<_> = self.cell_lattice.search_box(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().cast_as(),
+            rel_cell.cell.centre().round().cast_as(),
             search_diam,
             &self.bounds.lattice_boundary,
         ).collect();
@@ -132,9 +132,9 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().cast_as(),
+            rel_cell.cell.centre().round().cast_as(),
             &self.bounds.lattice_boundary,
-            &self.neighbourhood
+            &self.neighborhood
         );
 
         if found.len() != rel_cell.cell.area() as usize {
@@ -164,15 +164,15 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
         self.cell_lattice.search_outline(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.center().round().cast_as(),
+            rel_cell.cell.centre().round().cast_as(),
             search_diam,
             &self.bounds.lattice_boundary,
-            &self.neighbourhood
+            &self.neighborhood
         )
     }
 
     /// Finds all cells adjacent to `cell` using a search algorithm.
-    pub fn cell_neighbours(
+    pub fn cell_neighbors(
         &self,
         cell: &RelCell<impl Cellular>,
         search_scaler: FloatType
@@ -200,9 +200,9 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
         let mut removed = 0;
         let mut added = 0;
         let spin = self.cell_lattice[pos];
-        let valid_neighs = valid_neighbours(
+        let valid_neighs = valid_neighbors(
             &self.bounds.lattice_boundary,
-            &self.neighbourhood,
+            &self.neighborhood,
             pos
         );
         for neigh in valid_neighs {
@@ -225,14 +225,14 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
     }
 }
 
-impl<N: Neighbourhood, B: ToLatticeBoundary<Coord = FloatType>> Habitable for Environment<Cell, N, B> {
+impl<N: Neighborhood, B: ToLatticeBoundary<Coord = FloatType>> Habitable for Environment<Cell, N, B> {
     type Cell = Cell;
 
-    fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
         self
     }
 
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
         self
     }
 
@@ -269,7 +269,7 @@ where
             cells: self.cells.clone(),
             cell_lattice: self.cell_lattice.clone(),
             edge_book: self.edge_book.clone(),
-            neighbourhood: self.neighbourhood.clone(),
+            neighborhood: self.neighborhood.clone(),
         }
     }
 }
@@ -286,7 +286,7 @@ where
             .field("cells", &self.cells)
             .field("cell", &self.cell_lattice)
             .field("edge_book", &self.edge_book)
-            .field("neighbourhood", &self.neighbourhood)
+            .field("neighborhood", &self.neighborhood)
             .finish()
     }
 }
@@ -301,7 +301,7 @@ where
         // Assume correctness: no need to check edge_books
         self.cells == other.cells
             && self.cell_lattice == other.cell_lattice
-            && self.neighbourhood == other.neighbourhood
+            && self.neighborhood == other.neighborhood
             && self.bounds == other.bounds
     }
 }
@@ -315,14 +315,14 @@ pub struct EdgesUpdate {
     pub removed: u16
 }
 
-/// Helper function used in [Environment::valid_neighbours].
-fn valid_neighbours(
+/// Helper function used in [Environment::valid_neighbors].
+fn valid_neighbors(
     lattice_boundary: &impl Boundary<Coord = isize>,
-    neighbourhood: &impl Neighbourhood,
+    neighborhood: &impl Neighborhood,
     pos: Pos<usize>
 ) -> impl Iterator<Item = Pos<usize>> {
     lattice_boundary.valid_positions(
-        neighbourhood.neighbours(
+        neighborhood.neighbors(
             pos.cast_as()
         )
     ).map(|pos| pos.cast_as())
@@ -334,24 +334,24 @@ pub mod tests {
     use crate::base::cell::Cell;
     use crate::cell_container::RelCell;
     use crate::positional::boundaries::UnsafePeriodicBoundary;
-    use crate::positional::neighbourhood::MooreNeighbourhood;
+    use crate::positional::neighborhood::MooreNeighborhood;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
-    fn make_test_env() -> Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>> {
+    fn make_test_env() -> Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>> {
         let rect = Rect::new(
             (0., 0.,).into(),
             (10., 10.).into()
         );
         Environment::new_empty(
-            MooreNeighbourhood::new(1),
+            MooreNeighborhood::new(1),
             Boundaries::new(UnsafePeriodicBoundary::new(rect.clone()))
         )
     }
 
     fn add_cell(
         positions: &[Pos<usize>],
-        env: &mut Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>
+        env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>
     ) -> RelCell<Cell> {
         let mut rel_cell = RelCell{ index: 0, cell: Cell::new_empty(2).into_cell() };
         for &pos in positions {
@@ -459,7 +459,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_cell_neighbours() {
+    fn test_cell_neighbors() {
         let positions = [
             Pos::new(2, 2),
             Pos::new(2, 1),
@@ -467,14 +467,14 @@ pub mod tests {
         let mut env = make_test_env();
         let rel_cell = add_cell(&positions, &mut env);
 
-        let neighbour_spins = [Spin::Some(rel_cell.index + 1), Spin::Some(rel_cell.index + 2)];
-        env.cell_lattice[Pos::new(1, 2)] = neighbour_spins[0];
-        env.cell_lattice[Pos::new(2, 0)] = neighbour_spins[1];
+        let neighbor_spins = [Spin::Some(rel_cell.index + 1), Spin::Some(rel_cell.index + 2)];
+        env.cell_lattice[Pos::new(1, 2)] = neighbor_spins[0];
+        env.cell_lattice[Pos::new(2, 0)] = neighbor_spins[1];
 
-        let neighs = env.cell_neighbours(&rel_cell, 2.);
+        let neighs = env.cell_neighbors(&rel_cell, 2.);
 
-        assert!(neighs.contains(&neighbour_spins[0]));
-        assert!(neighs.contains(&neighbour_spins[1]));
+        assert!(neighs.contains(&neighbor_spins[0]));
+        assert!(neighs.contains(&neighbor_spins[1]));
         assert!(!neighs.contains(&Spin::Some(rel_cell.index)));
     }
 }

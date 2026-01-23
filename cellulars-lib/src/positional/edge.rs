@@ -14,7 +14,7 @@ pub struct Edge {
 }
 
 impl Edge {
-    /// Makes a new edge between `pos1` and `pos2` without checking if they are neighbours.
+    /// Makes a new edge between `pos1` and `pos2` without checking if they are neighbors.
     pub fn new(p1: Pos<usize>, p2: Pos<usize>) -> Self {
         Self { p1, p2 }
     }
@@ -37,7 +37,7 @@ impl PartialEq for Edge {
 
 // TODO: test the perfect hash algorithm that steven sent me
 //       also test a perfect hash where we use row-major ordering to index a vector of all possible edges
-//       the vector has size 9 * width * height (since each position has 8 neighbours), and the hash function
+//       the vector has size 9 * width * height (since each position has 8 neighbors), and the hash function
 //       is: row_major(pos1, height) + row_major(pos2, 3)
 //       this would mean replacing edge_set with a Vec
 impl Hash for Edge {

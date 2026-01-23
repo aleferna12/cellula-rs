@@ -2,7 +2,7 @@
 
 /*
 TODO!:
- - Implement EnvNeighbours, which tracks neighbours
+ - Implement EnvNeighbors, which tracks neighbors
  - Make a BasePotts, BaseIoManager, BaseModel etc such that we can move the crate fully to cellulars-lib
  - Add a command to parse a grayscale PNG into a simulation
  */
@@ -16,4 +16,5 @@ pub mod constants;
 pub mod spin;
 pub mod traits;
 pub mod base;
+pub mod io;
 pub mod prelude;

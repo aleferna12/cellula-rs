@@ -5,5 +5,5 @@ pub mod edge;
 pub mod edge_book;
 pub mod rect;
 pub mod boundaries;
-pub mod neighbourhood;
+pub mod neighborhood;
 pub mod com;

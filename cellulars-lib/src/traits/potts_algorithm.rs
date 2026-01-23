@@ -1,7 +1,7 @@
 //! Contains logic associated with [`PottsAlgorithm`].
 
 use crate::constants::FloatType;
-use crate::positional::neighbourhood::Neighbourhood;
+use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
 use crate::traits::cellular::Cellular;
@@ -75,7 +75,7 @@ pub trait PottsAlgorithm {
         env: &mut Self::Environment,
         rng: &mut impl Rng
     ) {
-        let mut to_visit = 2. * env.env().edge_book.len() as FloatType / env.env().neighbourhood.n_neighs() as FloatType;
+        let mut to_visit = 2. * env.env().edge_book.len() as FloatType / env.env().neighborhood.n_neighs() as FloatType;
         while 0. < to_visit {
             let edge_i = env.env().edge_book.random_index(rng);
             let edge = env.env().edge_book.at(edge_i);
@@ -117,7 +117,7 @@ pub trait PottsAlgorithm {
         };
         let neigh_spins = env
             .env()
-            .valid_neighbours(pos_target)
+            .valid_neighbors(pos_target)
             .map(|pos| env.env().cell_lattice[pos]);
 
         let delta_h = self.delta_hamiltonian(
@@ -139,7 +139,7 @@ pub trait PottsAlgorithm {
             spin_source
         );
         // Times 2 to represent the symmetric edge
-        2. * (edges_update.added as FloatType - edges_update.removed as FloatType) / env.env().neighbourhood.n_neighs() as FloatType
+        2. * (edges_update.added as FloatType - edges_update.removed as FloatType) / env.env().neighborhood.n_neighs() as FloatType
     }
 
     /// Returns the total energy differential of the system if `spin_source` were to be copied into `spin_target`.

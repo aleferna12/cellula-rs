@@ -14,7 +14,7 @@ height = 128
 # Should not be used with `neigh_r` > 1.
 # [default = false]
 enclose = false
-# Radius of the neighbourhood.
+# Radius of the neighborhood.
 neigh-r = 1
 
 [cell]

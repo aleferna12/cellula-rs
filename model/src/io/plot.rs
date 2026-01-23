@@ -106,7 +106,7 @@ impl Plot for CenterPlot {
             }
             let center = rel_cell
                 .cell
-                .center()
+                .centre()
                 .round();
             draw_cross_mut(image, srgb_to_rgba(self.color), center.x as i32, center.y as i32);
         }
@@ -150,7 +150,7 @@ impl Plot for BorderPlot {
 
             let is_border = env
                 .env
-                .valid_neighbours(pos)
+                .valid_neighbors(pos)
                 .any(|neigh| {
                     let neigh_spin = env.env.cell_lattice[neigh];
                     match neigh_spin {

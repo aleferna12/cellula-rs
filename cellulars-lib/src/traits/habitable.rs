@@ -3,7 +3,7 @@
 use crate::base::environment::{Environment, EdgesUpdate};
 use crate::cell_container::RelCell;
 use crate::positional::boundaries::ToLatticeBoundary;
-use crate::positional::neighbourhood::Neighbourhood;
+use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
 use crate::traits::cellular::{Cellular, EmptyCell};
@@ -18,10 +18,10 @@ pub trait Habitable {
     type Cell: Cellular;
 
     /// Returns a reference to the environment where cells live.
-    fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
+    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;
 
     /// Returns a mutable reference to the environment  where cells live.
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary>;
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;
 
     /// Grants position `pos` to the entity represented by spin `to`.
     ///

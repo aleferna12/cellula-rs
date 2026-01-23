@@ -54,11 +54,11 @@ impl PottsAlgorithm for Potts {
         }
 
         let (dx1, dy1) = env.env.bounds.boundary.displacement(
-            rel_cell.cell.center(),
+            rel_cell.cell.centre(),
             Pos::new(pos_target.x as FloatType, pos_target.y as FloatType)
         );
         let (dx2, dy2) = env.env.bounds.boundary.displacement(
-            rel_cell.cell.center(),
+            rel_cell.cell.centre(),
             rel_cell.cell.chem_center()
         );
 

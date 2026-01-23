@@ -1,7 +1,7 @@
 //! Contains logic associated with [`Lattice`].
 
 use crate::positional::boundaries::Boundary;
-use crate::positional::neighbourhood::Neighbourhood;
+use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use rand::Rng;
@@ -117,7 +117,7 @@ impl<T: PartialEq> Lattice<T> {
             })
     }
 
-    /// Searches for `value` using a BFS algorithm that iterates neighbours.
+    /// Searches for `value` using a BFS algorithm that iterates neighbors.
     ///
     /// Is considerably slower than [Lattice::search_box()].
     pub fn search_contiguous(
@@ -125,7 +125,7 @@ impl<T: PartialEq> Lattice<T> {
         value: &T,
         start_pos: Pos<usize>,
         bound: &impl Boundary<Coord = isize>,
-        neighbourhood: &impl Neighbourhood
+        neighborhood: &impl Neighborhood
     ) -> Box<[Pos<usize>]> {
         let mut found = vec![];
         let mut queue = VecDeque::from([start_pos.cast_as()]);
@@ -138,7 +138,7 @@ impl<T: PartialEq> Lattice<T> {
                 continue;
             }
             bound
-                .valid_positions(neighbourhood.neighbours(pos))
+                .valid_positions(neighborhood.neighbors(pos))
                 .for_each(|neigh| {
                     let lat_neigh = neigh.cast_as();
                     if !visited[lat_neigh] {
@@ -160,7 +160,7 @@ impl<T: PartialEq> Lattice<T> {
         center_pos: Pos<usize>,
         box_side: usize,
         bound: &impl Boundary<Coord = isize>,
-        neighbourhood: &impl Neighbourhood
+        neighborhood: &impl Neighborhood
     ) -> Box<[Pos<usize>]> {
         let mut found = vec![];
         let border_pos = match self.search_box(
@@ -188,9 +188,9 @@ impl<T: PartialEq> Lattice<T> {
         visited[border_pos.cast_as()] = true;
 
         while let Some(pos) = queue.pop_front() {
-            let mut diff_spin_neighs = Vec::with_capacity(neighbourhood.n_neighs().into());
-            let mut has_value_neighbour = false;
-            for neigh in bound.valid_positions(neighbourhood.neighbours(pos)) {
+            let mut diff_spin_neighs = Vec::with_capacity(neighborhood.n_neighs().into());
+            let mut has_value_neighbor = false;
+            for neigh in bound.valid_positions(neighborhood.neighbors(pos)) {
                 let neigh_pos = neigh.cast_as();
                 if visited[neigh_pos] {
                     continue;
@@ -198,13 +198,13 @@ impl<T: PartialEq> Lattice<T> {
 
                 let neigh_spin = &self[neigh_pos];
                 if neigh_spin == value {
-                    has_value_neighbour = true;
+                    has_value_neighbor = true;
                 } else {
                     diff_spin_neighs.push(neigh);
                 }
             }
 
-            if has_value_neighbour {
+            if has_value_neighbor {
                 found.push(pos.cast_as());
                 for neigh in diff_spin_neighs {
                     visited[neigh.cast_as()] = true;
@@ -235,7 +235,7 @@ impl<T> IndexMut<Pos<usize>> for Lattice<T> {
 mod tests {
     use super::*;
     use crate::positional::boundaries::{ToLatticeBoundary, UnsafePeriodicBoundary};
-    use crate::positional::neighbourhood::MooreNeighbourhood;
+    use crate::positional::neighborhood::MooreNeighborhood;
     use crate::positional::pos::{CastCoords, Pos};
     use crate::positional::rect::Rect;
     use rand::{rngs::StdRng, SeedableRng};
@@ -289,7 +289,7 @@ mod tests {
             Pos::new(5, 5),
             5,
             &UnsafePeriodicBoundary::new(rect).to_lattice_boundary(),
-            &MooreNeighbourhood::new(1)
+            &MooreNeighborhood::new(1)
         );
         assert_eq!(outline.len(), 12);
     }

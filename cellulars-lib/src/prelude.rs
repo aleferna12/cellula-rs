@@ -8,7 +8,7 @@ pub use crate::constants::CellIndex;
 pub use crate::lattice::Lattice;
 pub use crate::positional::boundaries::{FixedBoundary, UnsafePeriodicBoundary};
 pub use crate::positional::edge::Edge;
-pub use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood, VonNeumannNeighbourhood};
+pub use crate::positional::neighborhood::{MooreNeighborhood, Neighborhood, VonNeumannNeighborhood};
 pub use crate::positional::pos::Pos;
 pub use crate::positional::rect::Rect;
 pub use crate::spin::Spin;

@@ -6,9 +6,9 @@ use cellulars_lib::positional::boundaries::FixedBoundary;
 #[cfg(not(feature = "fixed-boundary"))]
 use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
 #[cfg(not(feature = "von-neumann"))]
-use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
+use cellulars_lib::positional::neighborhood::MooreNeighborhood;
 #[cfg(feature = "von-neumann")]
-use cellulars_lib::positional::neighbourhood::VonNeumannNeighbourhood;
+use cellulars_lib::positional::neighborhood::VonNeumannNeighborhood;
 
 /// Boundary type of the environment.
 ///
@@ -19,11 +19,11 @@ pub type BoundaryType = UnsafePeriodicBoundary<FloatType>;
 #[cfg(feature = "fixed-boundary")]
 pub type BoundaryType = FixedBoundary<FloatType>;
 
-/// Neighbourhood type of the environment.
+/// Neighborhood type of the environment.
 #[cfg(not(feature = "von-neumann"))]
-pub type NeighbourhoodType = MooreNeighbourhood;
+pub type NeighborhoodType = MooreNeighborhood;
 #[cfg(feature = "von-neumann")]
-pub type NeighbourhoodType = VonNeumannNeighbourhood;
+pub type NeighborhoodType = VonNeumannNeighborhood;
 
 /// Small value distinguishable from 0.
 ///

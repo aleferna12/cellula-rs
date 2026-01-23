@@ -116,7 +116,7 @@ impl Parameters {
         if self.pond.enclose && self.pond.neigh_r > 1 {
             anyhow::bail!(
                 "`enclose` can only be used with `neigh-r=1`. \
-                 If you need an enclosed pond with larger neighbourhoods, enable the `fixed_boundary` feature."
+                 If you need an enclosed pond with larger neighborhoods, enable the `fixed_boundary` feature."
             );
         }
         #[cfg(feature = "fixed-boundary")]

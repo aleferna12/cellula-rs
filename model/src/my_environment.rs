@@ -1,13 +1,13 @@
 //! Contains logic associated with [`MyEnvironment`].
 
 use crate::my_cell::MyCell;
-use crate::constants::{BoundaryType, NeighbourhoodType, EPSILON};
+use crate::constants::{BoundaryType, NeighborhoodType, EPSILON};
 use cellulars_lib::base::environment::{Environment, EdgesUpdate};
 use cellulars_lib::cell_container::RelCell;
 use cellulars_lib::constants::{CellIndex, FloatType};
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::boundaries::{Boundary, ToLatticeBoundary};
-use cellulars_lib::positional::neighbourhood::Neighbourhood;
+use cellulars_lib::positional::neighborhood::Neighborhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
@@ -19,7 +19,7 @@ use rand::Rng;
 #[derive(Clone)]
 pub struct MyEnvironment {
     /// Inner [`Environment`].
-    pub env: Environment<MyCell, NeighbourhoodType, BoundaryType>,
+    pub env: Environment<MyCell, NeighborhoodType, BoundaryType>,
     /// Lattice containing the chemical gradient.
     pub chem_lattice: Lattice<u32>,
     /// Scaler used to determine the radius of search for cell positions starting from its center.
@@ -32,7 +32,7 @@ pub struct MyEnvironment {
 impl MyEnvironment {
     /// Make a new [`MyEnvironment`] from an existing [`Environment`].
     pub fn new(
-        env: Environment<MyCell, NeighbourhoodType, BoundaryType>,
+        env: Environment<MyCell, NeighborhoodType, BoundaryType>,
         max_cells: CellIndex,
         cell_search_scaler: FloatType
     ) -> Self {
@@ -163,7 +163,7 @@ impl MyEnvironment {
         for p in &self.env.search_cell_box(rel_cell, search_scaler) {
             let (dx, dy) = self.env.bounds.boundary.displacement(
                 p.cast_as(),
-                rel_cell.cell.center()
+                rel_cell.cell.centre()
             );
             sum_xx += dx * dx;
             sum_yy += dy * dy;
@@ -206,7 +206,7 @@ impl MyEnvironment {
         } else {
             FloatType::INFINITY // vertical line
         };
-        let intercept = rel_cell.cell.center().y - slope * rel_cell.cell.center().x;
+        let intercept = rel_cell.cell.centre().y - slope * rel_cell.cell.centre().x;
 
         SplitLine { slope, intercept }
     }
@@ -271,11 +271,11 @@ impl MyEnvironment {
 impl Habitable for MyEnvironment {
     type Cell = MyCell;
 
-    fn env(&self) -> &Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
         &self.env
     }
 
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighbourhood, impl ToLatticeBoundary> {
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
         &mut self.env
     }
 

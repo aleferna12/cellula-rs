@@ -1,7 +1,7 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
 use crate::my_cell::{MyCell, CellType};
-use crate::constants::{BoundaryType, NeighbourhoodType};
+use crate::constants::{BoundaryType, NeighborhoodType};
 use crate::my_environment::MyEnvironment;
 use crate::io::io_manager::IoManager;
 #[cfg(feature = "movie")]
@@ -186,7 +186,7 @@ impl Model {
     fn make_env(parameters: &Parameters) -> MyEnvironment {
         MyEnvironment::new(
             Environment::new_empty(
-                NeighbourhoodType::new(parameters.pond.neigh_r),
+                NeighborhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(Rect::new(
                     (0., 0.).into(),
                     (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
@@ -387,7 +387,7 @@ impl Model {
             Environment::new(
                 cells,
                 lattice,
-                NeighbourhoodType::new(parameters.pond.neigh_r),
+                NeighborhoodType::new(parameters.pond.neigh_r),
                 Boundaries::new(BoundaryType::new(rect)),
             ),
             parameters.cell.max_cells,

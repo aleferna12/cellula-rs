@@ -3,7 +3,7 @@ use cellulars_lib::base::environment::Environment;
 use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::{Boundaries, Boundary, UnsafePeriodicBoundary};
 use cellulars_lib::positional::edge::Edge;
-use cellulars_lib::positional::neighbourhood::MooreNeighbourhood;
+use cellulars_lib::positional::neighborhood::MooreNeighborhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::prelude::Cellular;
@@ -16,9 +16,9 @@ use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
 
-fn empty_env(width: FloatType, height: FloatType) -> Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>> {
+fn empty_env(width: FloatType, height: FloatType) -> Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>> {
     Environment::new_empty(
-        MooreNeighbourhood::new(1),
+        MooreNeighborhood::new(1),
         Boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
             (0., 0.).into(),
             (width, height).into()
@@ -26,8 +26,8 @@ fn empty_env(width: FloatType, height: FloatType) -> Environment<Cell, MooreNeig
     )
 }
 
-fn random_neighbour(
-    env: &Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
+fn random_neighbor(
+    env: &Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl Rng
@@ -47,17 +47,17 @@ fn random_neighbour(
 }
 
 fn add_random_edge(
-    env: &mut Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
+    env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
     rng: &mut impl Rng
 ) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
-    let e = Edge::new(p1, random_neighbour(env, p1, 1, rng));
+    let e = Edge::new(p1, random_neighbor(env, p1, 1, rng));
     env.edge_book.insert(e)
 }
 
 fn replace_random_edges(
     n_edges: usize,
-    env: &mut Environment<Cell, MooreNeighbourhood, UnsafePeriodicBoundary<FloatType>>,
+    env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
     rng: &mut impl Rng
 ) {
     for _ in 0..n_edges {

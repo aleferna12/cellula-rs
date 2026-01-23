@@ -50,7 +50,7 @@ impl Cellular for Cell {
         self.com.mass
     }
 
-    fn center(&self) -> Pos<FloatType> {
+    fn centre(&self) -> Pos<FloatType> {
         self.com.pos
     }
 
