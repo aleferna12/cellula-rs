@@ -281,7 +281,7 @@ where
     B: fmt::Debug,
     B::LatticeBoundary: fmt::Debug {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BaseEnvironment")
+        f.debug_struct("Environment")
             .field("bounds", &self.bounds)
             .field("cells", &self.cells)
             .field("cell", &self.cell_lattice)
