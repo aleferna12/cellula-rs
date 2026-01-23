@@ -106,7 +106,7 @@ impl Plot for CenterPlot {
             }
             let center = rel_cell
                 .cell
-                .centre()
+                .center()
                 .round();
             draw_cross_mut(image, srgb_to_rgba(self.color), center.x as i32, center.y as i32);
         }

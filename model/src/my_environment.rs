@@ -163,7 +163,7 @@ impl MyEnvironment {
         for p in &self.env.search_cell_box(rel_cell, search_scaler) {
             let (dx, dy) = self.env.bounds.boundary.displacement(
                 p.cast_as(),
-                rel_cell.cell.centre()
+                rel_cell.cell.center()
             );
             sum_xx += dx * dx;
             sum_yy += dy * dy;
@@ -206,7 +206,7 @@ impl MyEnvironment {
         } else {
             FloatType::INFINITY // vertical line
         };
-        let intercept = rel_cell.cell.centre().y - slope * rel_cell.cell.centre().x;
+        let intercept = rel_cell.cell.center().y - slope * rel_cell.cell.center().x;
 
         SplitLine { slope, intercept }
     }

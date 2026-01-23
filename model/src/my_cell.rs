@@ -84,8 +84,8 @@ impl Cellular for MyCell {
         self.cell.area()
     }
 
-    fn centre(&self) -> Pos<FloatType> {
-        self.cell.centre()
+    fn center(&self) -> Pos<FloatType> {
+        self.cell.center()
     }
 
     fn is_empty(&self) -> bool {
@@ -110,7 +110,7 @@ impl Alive for MyCell {
         let mut basic_cell = self.cell.birth().into_cell();
         basic_cell.target_area = self.newborn_target_area;
         EmptyCell::new(Self {
-            chem_com: Com { pos: basic_cell.centre(), mass: 0 },
+            chem_com: Com { pos: basic_cell.center(), mass: 0 },
             cell: basic_cell,
             ..self.clone()
         }).expect("failed to create empty cell")
@@ -152,15 +152,15 @@ mod tests {
 
         cell.shift_position(Pos::new(10, 10), true, &bound);
         assert_eq!(cell.area(), 1);
-        assert_eq!(cell.centre(), Pos::new(10.0, 10.0));
+        assert_eq!(cell.center(), Pos::new(10.0, 10.0));
 
         cell.shift_position(Pos::new(20, 20), true, &bound);
         assert_eq!(cell.area(), 2);
-        assert_eq!(cell.centre(), Pos::new(15.0, 15.0));
+        assert_eq!(cell.center(), Pos::new(15.0, 15.0));
 
         cell.shift_position(Pos::new(10, 10), false, &bound);
         assert_eq!(cell.area(), 1);
-        assert_eq!(cell.centre(), Pos::new(20.0, 20.0));
+        assert_eq!(cell.center(), Pos::new(20.0, 20.0));
     }
 
     #[test]

@@ -105,7 +105,7 @@ impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
         let found: Box<_> = self.cell_lattice.search_box(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.centre().round().cast_as(),
+            rel_cell.cell.center().round().cast_as(),
             search_diam,
             &self.bounds.lattice_boundary,
         ).collect();
@@ -125,14 +125,14 @@ impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
     /// Searches for all cell positions with a BFS algorithm to traverse the lattice sites.
     ///
     /// Is considerably slower than [`Environment::search_cell_box()`] and may not return all positions
-    /// if the cell is not contiguous or if the cell centre is not a cell position.
+    /// if the cell is not contiguous or if the cell center is not a cell position.
     pub fn search_cell_contiguous(
         &self,
         rel_cell: &RelCell<impl Cellular>,
     ) -> Box<[Pos<usize>]> {
         let found = self.cell_lattice.search_contiguous(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.centre().round().cast_as(),
+            rel_cell.cell.center().round().cast_as(),
             &self.bounds.lattice_boundary,
             &self.neighborhood
         );
@@ -164,7 +164,7 @@ impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
 
         self.cell_lattice.search_outline(
             &Spin::Some(rel_cell.index),
-            rel_cell.cell.centre().round().cast_as(),
+            rel_cell.cell.center().round().cast_as(),
             search_diam,
             &self.bounds.lattice_boundary,
             &self.neighborhood
