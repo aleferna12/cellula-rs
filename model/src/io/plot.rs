@@ -4,122 +4,24 @@ use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use crate::my_cell::CellType;
 use crate::my_environment::MyEnvironment;
-use cellulars_lib::constants::{CellIndex, FloatType};
+use cellulars_lib::constants::FloatType;
+use cellulars_lib::io::lerper::Lerper;
+use cellulars_lib::io::plot::{srgba_to_rgba, AreaPlot, BorderPlot, CenterPlot, Plot, SpinPlot};
 use cellulars_lib::spin::Spin;
-use cellulars_lib::traits::cellular::{Cellular, HasCenter};
-use image::{Rgba, RgbaImage};
+use cellulars_lib::traits::cellular::Cellular;
+use image::RgbaImage;
 use imageproc::drawing::draw_cross_mut;
-use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
+use palette::{Clamp, FromColor, Oklab, Srgba};
 use std::fmt::Debug;
-use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-
-/// A trait to plot information about the environment.
-pub trait Plot {
-    /// Plots the information in `env` by drawing on `image`.
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage);
-}
-
-/// [`Plot`]s that can display continuous variables.
-pub trait ContinuousPlot: Plot {
-    /// Color for when `value == min`.
-    fn min_color(&self) -> Luv;
-    /// Color for when `value == max`.
-    fn max_color(&self) -> Luv;
-    /// Linearly interpolates `value` between `min` and `max`.
-    fn lerp(&self, value: FloatType, min: FloatType, max: FloatType) -> Result<Luv, LerpError> {
-        if max < min {
-            return Err(LerpError::NegativeRange);
-        }
-        if value < min {
-            return Err(LerpError::ValueTooSmall);
-        }
-        if value > max {
-            return Err(LerpError::ValueTooLarge);
-        }
-
-        let p = if min == max { 0.5 } else { (value - min) / (max - min) };
-        let blended = self.min_color().mix(self.max_color(), p as f32);
-        Ok(blended)
-    }
-}
-
-/// Error thrown when linear interpolation fails.
-#[derive(Debug)]
-pub enum LerpError {
-    /// Value falls outside the range because it's too small.
-    ValueTooSmall,
-    /// Value falls outside the range because it's too large.
-    ValueTooLarge,
-    /// Minimum value passed is larger than maximum.
-    NegativeRange
-}
-
-/// Plots the spin of cells in random colors (except for the solid and medium spin colors, which can be chosen).
-pub struct SpinPlot {
-    /// Color used for [`Spin::Solid`].
-    pub solid_color: Srgb<u8>,
-    /// Color used for [`Spin::Medium`].
-    pub medium_color: Option<Srgb<u8>>
-}
-
-impl SpinPlot {
-    fn cell_index_to_rgb(index: CellIndex) -> Srgb<u8> {
-        let mut hasher = DefaultHasher::new();
-        index.hash(&mut hasher);
-        let hashed = hasher.finish();
-        Srgb::new(
-            (hashed & 0xFF) as u8,
-            (hashed >> 8 & 0xFF) as u8,
-            (hashed >> 16 & 0xFF) as u8
-        )
-    }
-}
-
-impl Plot for SpinPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.env.cell_lattice.iter_positions() {
-            let spin = env.env.cell_lattice[pos];
-            let rgb = match spin {
-                Spin::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
-                Spin::Solid => Some(self.solid_color),
-                Spin::Medium => self.medium_color
-            };
-            if let Some(color) = rgb {
-                image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
-            }
-        }
-    }
-}
-
-/// Plots the center of cells.
-pub struct CenterPlot {
-    /// Color of the cell center.
-    pub color: Srgb<u8>
-}
-
-impl Plot for CenterPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for rel_cell in env.env.cells.iter() {
-            if !rel_cell.cell.is_empty() {
-                continue;
-            }
-            let center = rel_cell
-                .cell
-                .center()
-                .round();
-            draw_cross_mut(image, srgb_to_rgba(self.color), center.x as i32, center.y as i32);
-        }
-    }
-}
 
 /// Plots the perceived chemical center of cells.
 pub struct ChemCenterPlot {
     /// Color of the cell chemical center.
-    pub color: Srgb<u8>
+    pub color: Srgba<FloatType>,
 }
 
-impl Plot for ChemCenterPlot {
+impl Plot<MyEnvironment> for ChemCenterPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         for rel_cell in env.env.cells.iter() {
             if !rel_cell.cell.is_empty() {
@@ -129,38 +31,7 @@ impl Plot for ChemCenterPlot {
                 .cell
                 .chem_center()
                 .round();
-            draw_cross_mut(image, srgb_to_rgba(self.color), center.x as i32, center.y as i32);
-        }
-    }
-}
-
-/// Plots the border of cells.
-pub struct BorderPlot {
-    /// Color of the border.
-    pub color: Srgb<u8>
-}
-
-impl Plot for BorderPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.env.cell_lattice.iter_positions() {
-            let spin = env.env.cell_lattice[pos];
-            let Spin::Some(cell_index) = spin else {
-                continue;
-            };
-
-            let is_border = env
-                .env
-                .valid_neighbors(pos)
-                .any(|neigh| {
-                    let neigh_spin = env.env.cell_lattice[neigh];
-                    match neigh_spin {
-                        Spin::Some(neigh_index) => cell_index < neigh_index,
-                        _ => true
-                    }
-                });
-            if is_border {
-                image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(self.color));
-            }
+            draw_cross_mut(image, srgba_to_rgba(self.color), center.x as i32, center.y as i32);
         }
     }
 }
@@ -168,12 +39,12 @@ impl Plot for BorderPlot {
 /// Plots cells according to their cell type.
 pub struct CellTypePlot {
     /// Color for the migrating cells.
-    pub mig_color: Srgb<u8>,
+    pub mig_color: Srgba<FloatType>,
     /// Color for the dividing cells.
-    pub div_color: Srgb<u8>
+    pub div_color: Srgba<FloatType>
 }
 
-impl Plot for CellTypePlot {
+impl Plot<MyEnvironment> for CellTypePlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         for pos in env.env.cell_lattice.iter_positions() {
             let spin = env.env.cell_lattice[pos];
@@ -186,147 +57,80 @@ impl Plot for CellTypePlot {
                 image.put_pixel(
                     pos.x as u32,
                     pos.y as u32,
-                    srgb_to_rgba(color)
+                    srgba_to_rgba(color)
                 )
             }
         }
     }
 }
 
-/// Plots cell area.
-pub struct AreaPlot {
-    /// Color used to display the smallest value of the plot.
-    pub min_color: Luv,
-    /// Color used to display the largest value of the plot.
-    pub max_color: Luv
-}
-
-impl Plot for AreaPlot {
-    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        let mut min = u32::MAX;
-        let mut max = 0;
-        for rel_cell in env.env.cells.iter() {
-            if !rel_cell.cell.is_empty() {
-                continue;
-            }
-            if rel_cell.cell.area() < min {
-                min = rel_cell.cell.area()
-            }
-            if rel_cell.cell.area() > max {
-                max = rel_cell.cell.area()
-            }
-        }
-
-        for pos in env.env.cell_lattice.iter_positions() {
-            if let Spin::Some(cell_index) = env.env.cell_lattice[pos] {
-                let rel_cell = &env.env.cells[cell_index];
-                let color = self.lerp(
-                    rel_cell.cell.area() as FloatType,
-                    min as FloatType,
-                    max as FloatType
-                );
-                match color {
-                    Ok(c) => image.put_pixel(
-                        pos.x as u32,
-                        pos.y as u32,
-                        srgb_to_rgba(Srgb::from_linear(c.into_color()))
-                    ),
-                    Err(e) => log::warn!("Failed to plot area for pos `{pos:?}` with error `{e:?}`")
-                };
-            }
-        }
-    }
-}
-
-impl ContinuousPlot for AreaPlot {
-    fn min_color(&self) -> Luv {
-        self.min_color
-    }
-    fn max_color(&self) -> Luv {
-        self.max_color
-    }
-}
-
 /// Plots the chemical lattice.
 pub struct ChemPlot {
-    /// Color used to display the smallest value of the plot.
-    pub min_color: Luv,
-    /// Color used to display the largest value of the plot.
-    pub max_color: Luv
+    pub lerper: Lerper<Oklab<FloatType>>,
 }
 
-impl Plot for ChemPlot {
+impl Plot<MyEnvironment> for ChemPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let lat = &env.chem_lattice;
         for pos in lat.iter_positions() {
             let chem = lat[pos];
-            let color = self.lerp(
+            let color = self.lerper.lerp(
                 chem as FloatType,
                 0.,
                 lat.height() as FloatType
             );
-            match color { 
-                Ok(c) => image.put_pixel(
-                    pos.x as u32, 
-                    pos.y as u32,
-                    srgb_to_rgba(Srgb::from_linear(c.into_color()))
-                ),
+            match color {
+                Ok(c) => {
+                    image.put_pixel(
+                        pos.x as u32,
+                        pos.y as u32,
+                        srgba_to_rgba(oklab_to_srgba(c)),
+                    )
+                },
                 Err(e) => log::warn!("Failed to plot chem for pos `{pos:?}` with error `{e:?}`")
             }
         }
     }
 }
 
-impl ContinuousPlot for ChemPlot {
-    fn min_color(&self) -> Luv {
-        self.min_color
-    }
-
-    fn max_color(&self) -> Luv {
-        self.max_color
-    }
-}
-
-/// Adds an alpha = 255 component to the `color`.
-pub fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
-    let arr: [u8; 4] = color.with_alpha(255).into();
-    Rgba::from(arr)
-}
-
-impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
+impl TryFrom<PlotParameters> for Box<[Box<dyn Plot<MyEnvironment>>]> {
     type Error = HexError;
 
     fn try_from(params: PlotParameters) -> Result<Self, HexError> {
         let mut plots = Vec::with_capacity(params.order.len());
         for plot_type in params.order {
-            let plot: Box<dyn Plot> = match plot_type {
+            let plot: Box<dyn Plot<MyEnvironment>> = match plot_type {
                 PlotType::Spin => Box::new(SpinPlot {
-                    solid_color: hex_to_srgb(&params.solid_color)?,
+                    solid_color: hex_to_srgba(&params.solid_color)?,
                     medium_color: match &params.medium_color {
                         None => None,
-                        Some(c) => Some(hex_to_srgb(c)?)
+                        Some(c) => Some(hex_to_srgba(c)?)
                     }
                 }),
                 PlotType::Center => Box::new(CenterPlot {
-                    color: hex_to_srgb(&params.center_color)?
+                    color: hex_to_srgba(&params.center_color)?
                 }),
                 PlotType::ChemCenter => Box::new(ChemCenterPlot {
-                    color: hex_to_srgb(&params.chem_center_color)?
+                    color: hex_to_srgba(&params.chem_center_color)?
                 }),
-                PlotType::Area => Box::new(AreaPlot{
-                    min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
+                PlotType::Area => Box::new(AreaPlot::<Oklab<FloatType>> {
+                    lerper: Lerper {
+                        min_color: srgba_to_oklab(hex_to_srgba(&params.area_min_color)?),
+                        max_color: srgba_to_oklab(hex_to_srgba(&params.area_max_color)?),
+                    }
                 }),
                 PlotType::Border => Box::new(BorderPlot {
-                    color: hex_to_srgb(&params.border_color)?
+                    color: hex_to_srgba(&params.border_color)?
                 }),
                 PlotType::Chem => Box::new(ChemPlot {
-                    min_color: srgb_to_luv(hex_to_srgb(&params.chem_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.chem_max_color)?)
+                    lerper: Lerper {
+                        min_color: srgba_to_oklab(hex_to_srgba(&params.chem_min_color)?),
+                        max_color: srgba_to_oklab(hex_to_srgba(&params.chem_max_color)?)
+                    }
                 }),
                 PlotType::CellType => Box::new(CellTypePlot {
-                    mig_color: hex_to_srgb(&params.migrating_color)?,
-                    div_color: hex_to_srgb(&params.dividing_color)?,
+                    mig_color: hex_to_srgba(&params.migrating_color)?,
+                    div_color: hex_to_srgba(&params.dividing_color)?,
                 })
             };
             plots.push(plot);
@@ -335,13 +139,16 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
     }
 }
 
-/// Converts [`Srgb<u8>`] to [`Luv`].
-pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {
-    Luv::from_color(srgb.into_linear::<f32>())
+fn oklab_to_srgba(color: Oklab<FloatType>) -> Srgba<FloatType> {
+    Srgba::from_color(color).clamp()
 }
 
-/// Parses a hex string as an [`Srgb<u8>`].
-pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, HexError> {
+fn srgba_to_oklab(color: Srgba<FloatType>) -> Oklab<FloatType> {
+    Oklab::from_color(color).clamp()
+}
+
+/// Parses a hex string as an [`Srgba<FloatType>`].
+fn hex_to_srgba(hex: &str) -> Result<Srgba<FloatType>, HexError> {
     if !hex.starts_with("#") {
         return Err(HexError::MissingHashtag);
     }
@@ -350,10 +157,10 @@ pub fn hex_to_srgb(hex: &str) -> Result<Srgb<u8>, HexError> {
     }
     let hexu32 = hex.replace("#", "00");
     let bytes = u32::from_str_radix(&hexu32, 16).map_err(ParseU8Error)?.to_be_bytes();
-    Ok([bytes[1], bytes[2], bytes[3]].into())
+    Ok(Srgba::new(bytes[1], bytes[2], bytes[3], 255).into_format())
 }
 
-/// Error thrown when a string could not be parsed into a [`Srgb<u8>`]
+/// Error thrown when a string could not be parsed into a [`Srgba<FloatType>`]
 #[derive(Error, Debug)]
 pub enum HexError {
     /// Hex string is missing "#" in the beginning.
@@ -370,20 +177,12 @@ pub enum HexError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
-
-    #[test]
-    fn test_index_to_rgb() {
-        let mut tested = HashSet::<[u8; 3]>::default();
-        for i in 0..5232 as CellIndex {
-            let rgb: [u8; 3] = SpinPlot::cell_index_to_rgb(i).into();
-            assert!(!tested.contains(&rgb));
-            tested.insert(rgb);
-        }
-    }
 
     #[test]
     fn test_hex_to_rgb() {
-        assert_eq!(hex_to_srgb("#ff00ff").unwrap(), Srgb::new(255, 0, 255));
+        assert_eq!(
+            hex_to_srgba("#ff00ff").unwrap().into_format(),
+            Srgba::new(255u8, 0, 255, 255)
+        );
     }
 }

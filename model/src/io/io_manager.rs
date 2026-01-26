@@ -5,7 +5,6 @@
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
-use crate::io::plot::Plot;
 use crate::my_cell::{CellType, MyCell};
 use crate::my_environment::MyEnvironment;
 use anyhow::{bail, Context};
@@ -28,6 +27,7 @@ use polars::prelude::*;
 use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
+use cellulars_lib::io::plot::Plot;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -53,7 +53,7 @@ pub struct IoManager {
     /// Used to update the simulation video when it's time.
     #[cfg(feature = "movie")]
     pub movie_maker: Option<MovieMaker>,
-    plots: Box<[Box<dyn Plot>]>,
+    plots: Box<[Box<dyn Plot<MyEnvironment>>]>,
     image_period: u32,
     cells_period: u32,
     lattice_period: u32

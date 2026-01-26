@@ -17,13 +17,13 @@ pub trait Plot<P> {
 /// Plots the spin of cells in random colors (except for the solid and medium spin colors, which can be chosen).
 pub struct SpinPlot {
     /// Color used for [`Spin::Solid`].
-    pub solid_color: Srgba<u8>,
+    pub solid_color: Srgba<FloatType>,
     /// Color used for [`Spin::Medium`].
-    pub medium_color: Option<Srgba<u8>>
+    pub medium_color: Option<Srgba<FloatType>>
 }
 
 impl SpinPlot {
-    fn cell_index_to_rgb(index: CellIndex) -> Srgba<u8> {
+    fn cell_index_to_rgba(index: CellIndex) -> Srgba<FloatType> {
         let mut hasher = DefaultHasher::new();
         index.hash(&mut hasher);
         let hashed = hasher.finish();
@@ -32,7 +32,7 @@ impl SpinPlot {
             (hashed >> 8 & 0xFF) as u8,
             (hashed >> 16 & 0xFF) as u8,
             255
-        )
+        ).into_format()
     }
 }
 
@@ -41,7 +41,7 @@ impl<E: Habitable> Plot<E> for SpinPlot {
         for pos in env.env().cell_lattice.iter_positions() {
             let spin = env.env().cell_lattice[pos];
             let rgba = match spin {
-                Spin::Some(cell_index) => Some(Self::cell_index_to_rgb(cell_index)),
+                Spin::Some(cell_index) => Some(Self::cell_index_to_rgba(cell_index)),
                 Spin::Solid => Some(self.solid_color),
                 Spin::Medium => self.medium_color,
             };
@@ -55,7 +55,7 @@ impl<E: Habitable> Plot<E> for SpinPlot {
 /// Plots the center of cells.
 pub struct CenterPlot {
     /// Color of the cell center.
-    pub color: Srgba<u8>
+    pub color: Srgba<FloatType>
 }
 
 impl<E: Habitable> Plot<E> for CenterPlot
@@ -78,7 +78,7 @@ where
 /// Plots the border of cells.
 pub struct BorderPlot {
     /// Color of the border.
-    pub color: Srgba<u8>
+    pub color: Srgba<FloatType>
 }
 
 impl<E: Habitable> Plot<E> for BorderPlot {
@@ -108,15 +108,13 @@ impl<E: Habitable> Plot<E> for BorderPlot {
 
 /// Plots cell area.
 pub struct AreaPlot<C> {
-    lerper: Lerper<C>
+    pub lerper: Lerper<C>
 }
 
 impl<E, C> Plot<E> for AreaPlot<C>
 where
     E: Habitable,
-    C: Mix<Scalar = FloatType>
-        + Clone
-        + IntoColor<Srgba> {
+    C: Mix<Scalar = FloatType> + Clone + IntoColor<Srgba<FloatType>> {
     fn plot(&self, env: &E, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
@@ -144,7 +142,7 @@ where
                     Ok(c) => image.put_pixel(
                         pos.x as u32,
                         pos.y as u32,
-                        srgba_to_rgba(c.into_color().into())
+                        srgba_to_rgba(c.into_color())
                     ),
                     Err(e) => log::warn!("Failed to plot area for pos `{pos:?}` with error `{e:?}`")
                 };
@@ -153,6 +151,24 @@ where
     }
 }
 
-fn srgba_to_rgba(srgba: Srgba<u8>) -> Rgba<u8> {
-    Rgba([srgba.red, srgba.green, srgba.blue, srgba.alpha])
+pub fn srgba_to_rgba(srgba: Srgba<FloatType>) -> Rgba<u8> {
+    let srgba_u8 = srgba.into_format();
+    Rgba([srgba_u8.red, srgba_u8.green, srgba_u8.blue, srgba_u8.alpha])
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::constants::CellIndex;
+    use crate::io::plot::SpinPlot;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_index_to_rgb() {
+        let mut tested = HashSet::<[u8; 4]>::default();
+        for i in 0..5232 as CellIndex {
+            let rgb: [u8; 4] = SpinPlot::cell_index_to_rgba(i).into_format().into();
+            assert!(!tested.contains(&rgb));
+            tested.insert(rgb);
+        }
+    }
 }
