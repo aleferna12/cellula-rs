@@ -27,7 +27,7 @@ use polars::prelude::*;
 use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
-use cellulars_lib::io::plot::Plot;
+use cellulars_lib::io::image::plot::Plot;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";

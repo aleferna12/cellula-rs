@@ -1,2 +1,1 @@
-pub mod plot;
-pub mod lerper;
+pub mod image;
