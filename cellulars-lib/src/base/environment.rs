@@ -9,6 +9,7 @@ use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::{CastCoords, Pos};
+use crate::prelude::{MooreNeighborhood, UnsafePeriodicBoundary};
 use crate::spin::Spin;
 use crate::traits::cellular::{Alive, Cellular, HasCenter};
 use crate::traits::habitable::Habitable;
@@ -23,7 +24,7 @@ use std::f64::consts::PI;
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
 // If adding fields, remember to also change those!!!
 /// An environment where cells are spatially and relationally localised.
-pub struct Environment<C, N, B: ToLatticeBoundary> {
+pub struct Environment<C, N = MooreNeighborhood, B: ToLatticeBoundary = UnsafePeriodicBoundary<FloatType>> {
     /// Boundaries of the environment.
     ///
     /// These are used to validate that a position can be used to access information in the environment.
