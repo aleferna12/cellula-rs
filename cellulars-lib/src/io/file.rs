@@ -32,7 +32,6 @@ pub fn pad_file_path(path: impl AsRef<Path>, pad_len: usize) -> Option<PathBuf> 
     let ext = path.extension().unwrap_or(OsStr::new(""));
     let file_name = path.file_name()?;
     let mut padded = OsString::new();
-    dbg!(file_name.len() - ext.len() - 1);
     if pad_len > file_name.len() - ext.len() - 1 {
         for _ in 0..(pad_len - (file_name.len() - ext.len() - 1)) {
             padded.push("0");

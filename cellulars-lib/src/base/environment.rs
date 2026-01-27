@@ -46,7 +46,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> Environment<C, N, B> {
         bounds: Boundaries<B>,
     ) -> Self {
         Self {
-            cell_lattice: Lattice::new(bounds.boundary.rect().cast_coords()),
+            cell_lattice: Lattice::from(bounds.boundary.rect().cast_coords()),
             edge_book: EdgeBook::new(),
             cells: CellContainer::new(),
             bounds,

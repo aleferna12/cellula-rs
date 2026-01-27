@@ -20,24 +20,26 @@ pub struct Lattice<T> {
 // Although technically it only has to be slightly larger than its defined size
 impl<T> Lattice<T> {
     /// Makes a lattice from a pre-existing buffer of values stored as an array.
-    pub fn from_array<const N: usize>(buf: [T; N], rect: Rect<usize>) -> Option<Self> {
-        if rect.area() != N {
+    pub fn from_array<const N: usize>(buf: [T; N], width: usize, height: usize) -> Option<Self> {
+        if width * height != N {
             return None;
         }
         Some(Self {
             array: Box::new(buf),
-            rect
+            rect: Rect::new(Pos::new(0, 0), Pos::new(width, height))
         })
     }
-
-    /// Makes a lattice from a pre-existing buffer of values stored in a [`Box`].
-    pub fn from_box(buf: Box<[T]>, rect: Rect<usize>) -> Option<Self> {
-        if rect.area() != buf.len() {
+    
+    /// Makes a lattice from a pre-existing buffer of values stored in a slice.
+    pub fn from_slice(slice: &[T], width: usize, height: usize) -> Option<Self>
+    where 
+        T: Clone {
+        if width * height != slice.len() {
             return None;
         }
         Some(Self {
-            array: buf,
-            rect
+            array: Box::from(slice),
+            rect: Rect::new(Pos::new(0, 0), Pos::new(width, height))
         })
     }
 
@@ -77,12 +79,9 @@ impl<T> Lattice<T> {
 }
 
 impl<T: Default + Clone> Lattice<T> {
-    /// Makes a new lattice using the default of the inner type of the lattice.
-    pub fn new(rect: Rect<usize>) -> Self {
-        Self {
-            array: vec![T::default(); rect.width() * rect.height()].into_boxed_slice(),
-            rect,
-        }
+    /// Makes a lattice using [`T::default()`].
+    pub fn new(width: usize, height: usize) -> Self {
+        Self::from_slice(&vec![T::default(); width * height], width, height).unwrap()
     }
 
     /// Clears the lattice by setting all values to the default of the inner type of the lattice.
@@ -129,7 +128,7 @@ impl<T: PartialEq> Lattice<T> {
     ) -> Box<[Pos<usize>]> {
         let mut found = vec![];
         let mut queue = VecDeque::from([start_pos.cast_as()]);
-        let mut visited = Lattice::<bool>::new(self.rect.clone());
+        let mut visited = Lattice::<bool>::from(self.rect.clone());
         visited[start_pos] = true;
 
         while let Some(pos) = queue.pop_front() {
@@ -184,7 +183,7 @@ impl<T: PartialEq> Lattice<T> {
         };
 
         let mut queue = VecDeque::from([border_pos]);
-        let mut visited = Lattice::<bool>::new(self.rect.clone());
+        let mut visited = Lattice::<bool>::from(self.rect.clone());
         visited[border_pos.cast_as()] = true;
 
         while let Some(pos) = queue.pop_front() {
@@ -231,6 +230,15 @@ impl<T> IndexMut<Pos<usize>> for Lattice<T> {
     }
 }
 
+impl<T: Default + Clone> From<Rect<usize>> for Lattice<T> {
+    fn from(rect: Rect<usize>) -> Self {
+        Self {
+            array: vec![T::default(); rect.width() * rect.height()].into_boxed_slice(),
+            rect,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -243,7 +251,7 @@ mod tests {
     #[test]
     fn test_lattice_indexing_get_and_set() {
         let rect = Rect::new((0, 0).into(), (3, 3).into());
-        let mut lattice: Lattice<i32> = Lattice::new(rect);
+        let mut lattice: Lattice<i32> = Lattice::from(rect);
         let pos = Pos::new(1, 2);
         lattice[pos] = 42;
         assert_eq!(lattice[pos], 42);
@@ -252,7 +260,7 @@ mod tests {
     #[test]
     fn test_random_pos_within_bounds() {
         let rect = Rect::new((0, 0).into(), (10, 10).into());
-        let lattice: Lattice<u8> = Lattice::new(rect);
+        let lattice: Lattice<u8> = Lattice::from(rect);
         let mut rng = StdRng::seed_from_u64(42);
         for _ in 0..100 {
             let p = lattice.random_pos(&mut rng);
@@ -264,7 +272,7 @@ mod tests {
     #[test]
     fn test_search_box() {
         let rect = Rect::new((0., 0.).into(), (10., 10.).into());
-        let mut lattice: Lattice<u8> = Lattice::new(rect.cast_coords());
+        let mut lattice: Lattice<u8> = Lattice::from(rect.cast_coords());
         lattice[(5, 5).into()] = 1;
         lattice[(5, 6).into()] = 1;
         lattice[(4, 5).into()] = 1;
@@ -280,7 +288,7 @@ mod tests {
     #[test]
     fn test_search_outline() {
         let rect = Rect::new((0., 0.).into(), (10., 10.).into());
-        let mut lattice: Lattice<u8> = Lattice::new(rect.cast_coords());
+        let mut lattice: Lattice<u8> = Lattice::from(rect.cast_coords());
         lattice[(5, 5).into()] = 1;
         lattice[(5, 6).into()] = 1;
         lattice[(4, 5).into()] = 1;
