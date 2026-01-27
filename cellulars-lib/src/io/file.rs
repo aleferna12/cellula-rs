@@ -1,8 +1,8 @@
-use std::ffi::{OsStr, OsString};
-use std::path::{Path, PathBuf};
+use std::ffi::OsString;
+use std::path::Path;
 
 /// Length of a string that can represent any [`u32`].
-pub const U32_STR_LEN: usize = {
+pub(crate) const U32_STR_LEN: usize = {
     let mut n = u32::MAX;
     let mut digits = 0;
     while n > 0 {
@@ -12,31 +12,30 @@ pub const U32_STR_LEN: usize = {
     digits
 };
 
-/// Returns `path` padded with 0s until reaching length `pad_len`.
+/// Returns `file_name` padded with 0s until reaching length `pad_len`.
 ///
-/// Returns `None` if `path` points to ".." or "\".
+/// Returns `None` if `file_name` is invalid (see [`Path::file_name()`]).
 ///
 /// Extensions characters do not count towards `pad_len`.
-///
-/// # Examples
-///
 /// ```
-/// use std::path::PathBuf;
-/// use cellulars_lib::io::file::pad_file_path;
-///
-/// let p = pad_file_path("1.txt", 2).unwrap();
-/// assert_eq!(p, PathBuf::from("01.txt"));
-/// ```
-pub fn pad_file_path(path: impl AsRef<Path>, pad_len: usize) -> Option<PathBuf> {
-    let path = path.as_ref();
-    let ext = path.extension().unwrap_or(OsStr::new(""));
-    let file_name = path.file_name()?;
-    let mut padded = OsString::new();
-    if pad_len > file_name.len() - ext.len() - 1 {
-        for _ in 0..(pad_len - (file_name.len() - ext.len() - 1)) {
-            padded.push("0");
-        }
+pub(crate) fn pad_file_name(file_name: &str, pad_len: usize) -> Option<OsString> {
+    // This is only safe if we take str and convert to path ourselves
+    let path = Path::new(file_name);
+    let stem = path.file_stem()?.to_string_lossy();
+    let mut padded: OsString = format!("{stem:0>pad_len$}").into();
+    if let Some(ext) = path.extension() {
+        padded.push(".");
+        padded.push(ext);
     }
-    padded.push(file_name);
-    Some(path.with_file_name(padded))
+    Some(padded)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pad_file_name() {
+        assert_eq!(pad_file_name("1.txt", 2), Some(OsString::from("01.txt")));
+    }
 }

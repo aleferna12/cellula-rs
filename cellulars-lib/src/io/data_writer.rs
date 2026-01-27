@@ -1,5 +1,5 @@
 use std::fs::File;
-use crate::io::file::{pad_file_path, U32_STR_LEN};
+use crate::io::file::{pad_file_name, U32_STR_LEN};
 use crate::lattice::Lattice;
 use crate::prelude::Pos;
 use crate::spin::Spin;
@@ -22,8 +22,8 @@ pub struct DataWriter {
 
 impl DataWriter {
     fn file_path(&self, subfolder: &str, ext: &str, time_step: u32) -> Option<PathBuf> {
-        let padded = pad_file_path(
-            format!("{time_step}.{ext}"),
+        let padded = pad_file_name(
+            &format!("{time_step}.{ext}"),
             U32_STR_LEN
         )?;
         Some(self.outdir.join(subfolder).join(padded))
