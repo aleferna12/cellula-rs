@@ -26,6 +26,15 @@ static CELL_LATTICES_PATH: &str = "lattices";
 static CHEM_LATTICES_PATH: &str = "chem_lattices";
 static ACT_LATTICES_PATH: &str = "act_lattices";
 static CONFIG_COPY_PATH: &str = "config.toml";
+const PAD_FILE_LEN: usize = {
+    let mut n = u32::MAX;
+    let mut digits = 0;
+    while n > 0 {
+        digits += 1;
+        n /= 10;
+    }
+    digits
+};
 
 #[derive(Builder)]
 pub struct IoManager {
@@ -208,7 +217,7 @@ impl IoManager {
     ) -> PathBuf {
         sim_path.as_ref()
             .join(CELLS_PATH)
-            .join(format!("{time_step}.parquet"))
+            .join(format!("{}.parquet", Self::pad_time_step(time_step)))
     }
 
     pub fn resolve_cell_lattice_path(
@@ -217,7 +226,7 @@ impl IoManager {
     ) -> PathBuf {
         sim_path.as_ref()
             .join(CELL_LATTICES_PATH)
-            .join(format!("{time_step}.parquet"))
+            .join(format!("{}.parquet", Self::pad_time_step(time_step)))
     }
 
     pub fn resolve_chem_lattice_path(
@@ -226,7 +235,7 @@ impl IoManager {
     ) -> PathBuf {
         sim_path.as_ref()
             .join(CHEM_LATTICES_PATH)
-            .join(format!("{time_step}.parquet"))
+            .join(format!("{}.parquet", Self::pad_time_step(time_step)))
     }
 
     pub fn resolve_act_lattice_path(
@@ -235,7 +244,7 @@ impl IoManager {
     ) -> PathBuf {
         sim_path.as_ref()
             .join(ACT_LATTICES_PATH)
-            .join(format!("{time_step}.parquet"))
+            .join(format!("{}.parquet", Self::pad_time_step(time_step)))
     }
 
     fn read_ladf(file_path: impl AsRef<Path>, rect: &Rect<usize>) -> anyhow::Result<DataFrame> {
@@ -308,8 +317,6 @@ impl IoManager {
         time_step: u32,
         env: &mut MyEnvironment
     ) -> anyhow::Result<()> {
-        let time_str = time_step.to_string();
-
         if time_step.is_multiple_of(self.cells_period) {
             let mut celldf = env.cells
                 .to_dataframe()
@@ -325,7 +332,7 @@ impl IoManager {
         if time_step.is_multiple_of(self.cells_write_period) {
             let file_path = self.outdir
                 .join(CELLS_PATH)
-                .join(format!("{time_str}.parquet"));
+                .join(format!("{}.parquet", Self::pad_time_step(time_step)));
             let file = std::fs::File::create(file_path)?;
 
             let newdfs = std::mem::take(&mut self.celldfs);
@@ -344,19 +351,20 @@ impl IoManager {
         }
 
         if time_step.is_multiple_of(self.lattices_period) {
+            let file_name = format!("{}.parquet", Self::pad_time_step(time_step));
             let cell_lat_file_path = self.outdir
                 .join(CELL_LATTICES_PATH)
-                .join(format!("{time_str}.parquet"));
+                .join(&file_name);
             Self::write_lattice(cell_lat_file_path.as_path(), &env.cell_lattice)?;
 
             let chem_lat_file_path = self.outdir
                 .join(CHEM_LATTICES_PATH)
-                .join(format!("{time_str}.parquet"));
+                .join(&file_name);
             Self::write_lattice_u32(chem_lat_file_path.as_path(), &env.chem_lattice)?;
 
             let act_lat_file_path = self.outdir
                 .join(ACT_LATTICES_PATH)
-                .join(format!("{time_str}.parquet"));
+                .join(&file_name);
             Self::write_lattice_u32(act_lat_file_path.as_path(), &env.act_lattice)?;
         }
         Ok(())
@@ -431,10 +439,18 @@ impl IoManager {
             frame.unwrap().save(
                 &self.outdir
                     .join(IMAGES_PATH)
-                    .join(format!("{time_step}.{}", self.image_format.to_lowercase())
-                    ))?;
+                    .join(format!(
+                        "{}.{}",
+                        Self::pad_time_step(time_step),
+                        self.image_format.to_lowercase()
+                    ))
+            )?;
         }
         Ok(())
+    }
+
+    fn pad_time_step(time_step: u32) -> String {
+        format!("{time_step:0>PAD_FILE_LEN$}")
     }
 
     pub fn make_simulation_image(

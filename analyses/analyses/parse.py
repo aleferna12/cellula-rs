@@ -8,7 +8,7 @@ def parse_cells(sim_path):
     for file in Path(sim_path / "cells").iterdir():
         data = pl.read_parquet(file)
         time = int(file.name.rstrip(".parquet"))
-        data = data.with_columns(time=time)
+        data = data.with_columns(wtime=time)
         dfs.append(data)
     return pl.concat(dfs)
 
