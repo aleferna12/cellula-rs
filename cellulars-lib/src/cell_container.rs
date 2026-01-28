@@ -137,6 +137,24 @@ impl<C> IntoIterator for CellContainer<C> {
     }
 }
 
+impl<'c, C> IntoIterator for &'c CellContainer<C> {
+    type Item = &'c RelCell<C>;
+    type IntoIter = std::slice::Iter<'c, RelCell<C>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.vec.iter()
+    }
+}
+
+impl<'c, C> IntoIterator for &'c mut CellContainer<C> {
+    type Item = &'c mut RelCell<C>;
+    type IntoIter = std::slice::IterMut<'c, RelCell<C>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.vec.iter_mut()
+    }
+}
+
 impl<C> Index<CellIndex> for CellContainer<C> {
     type Output = RelCell<C>;
 
