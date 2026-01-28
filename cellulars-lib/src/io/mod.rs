@@ -1,3 +1,3 @@
 pub mod image;
-pub mod file;
 pub mod data_writer;
+pub(crate) mod file;

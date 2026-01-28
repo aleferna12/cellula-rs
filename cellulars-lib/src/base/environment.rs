@@ -23,7 +23,6 @@ use std::f64::consts::PI;
 
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
 // If adding fields, remember to also change those!!!
-// TODO!: make spin a generic
 /// An environment where cells are spatially and relationally localised.
 pub struct Environment<C, N = MooreNeighborhood, B: ToLatticeBoundary = UnsafePeriodicBoundary<FloatType>> {
     /// Boundaries of the environment.
@@ -47,7 +46,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> Environment<C, N, B> {
         bounds: Boundaries<B>,
     ) -> Self {
         Self {
-            cell_lattice: Lattice::new(bounds.boundary.rect().cast_coords()),
+            cell_lattice: Lattice::from(bounds.boundary.rect().cast_coords()),
             edge_book: EdgeBook::new(),
             cells: CellContainer::new(),
             bounds,

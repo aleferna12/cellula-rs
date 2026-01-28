@@ -37,7 +37,7 @@ impl MyEnvironment {
         cell_search_scaler: FloatType
     ) -> Self {
         let mut env_ = Self {
-            chem_lattice: Lattice::new(env.cell_lattice.rect.clone()),
+            chem_lattice: Lattice::from(env.cell_lattice.rect.clone()),
             env,
             cell_search_scaler,
             max_cells,

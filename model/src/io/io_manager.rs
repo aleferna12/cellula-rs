@@ -223,7 +223,7 @@ impl IoManager {
             bail!("expected lattice dimensions do not match those in file");
         }
 
-        let mut lattice = Lattice::new(rect);
+        let mut lattice = Lattice::from(rect);
         for (j, column) in latdf.get_columns().iter().enumerate() {
             for (i, maybe_val) in column.str()?.into_iter().enumerate() {
                 match maybe_val {

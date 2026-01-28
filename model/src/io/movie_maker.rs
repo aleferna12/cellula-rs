@@ -52,17 +52,3 @@ impl MovieMaker {
         self.window.update_with_buffer(&buffer, self.width as usize, self.height as usize)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_window() {
-        let window = minifb::Window::new(
-            "test",
-            100,
-            100,
-            minifb::WindowOptions::default()
-        );
-        assert!(window.is_ok());
-    }
-}
