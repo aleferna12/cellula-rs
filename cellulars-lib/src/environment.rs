@@ -241,10 +241,17 @@ impl<C: Cellular, N: Neighbourhood, B: ToLatticeBoundary> Environment<C, N, B> {
                 }
                 continue;
             }
-            if (matches!(spin, Spin::Some(_))
-                || matches!(spin_neigh, Spin::Some(_)))
-                && self.edge_book.insert(edge) {
-                added += 1;
+            match (spin, spin_neigh) {
+                (Spin::Some(_), _) | (_, Spin::Some(_)) => {
+                    if self.edge_book.insert(edge) {
+                        added += 1;
+                    }
+                },
+                _ => {
+                    if self.edge_book.remove(&edge) {
+                        removed += 1;
+                    }
+                }
             }
         }
         EdgesUpdate { added, removed }
