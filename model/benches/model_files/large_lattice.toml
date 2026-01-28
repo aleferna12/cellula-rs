@@ -29,7 +29,6 @@ length = 8
 boltz-t = 16.0
 size-lambda = 1.0
 perimeter-lambda = 1.0
-chemotaxis-mu = 4.0
 chemotaxis-min = 0.5
 act-max = 40
 act-lambda = 20.0
