@@ -222,11 +222,12 @@ impl<C: Cellular + HasCenter, N: Neighborhood, B: ToLatticeBoundary> Environment
                         added += 1;
                     }
                 },
-                _ => {
+                (Spin::Medium, Spin::Solid) | (Spin::Solid, Spin::Medium) => {
                     if self.edge_book.remove(&edge) {
                         removed += 1;
                     }
-                }
+                },
+                _ => panic!("inconsistent edges")
             }
         }
         EdgesUpdate { added, removed }
