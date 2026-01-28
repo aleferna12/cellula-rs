@@ -1,16 +1,14 @@
-use std::fs::File;
 use crate::io::file::{pad_file_name, U32_STR_LEN};
-use crate::lattice::Lattice;
-use crate::prelude::Pos;
-use crate::spin::Spin;
+use crate::prelude::{Lattice, Pos, Spin};
 use arrow_array::{ArrayRef, RecordBatch, StringArray};
 use image::{ImageError, RgbaImage};
-use parquet::file::properties::WriterProperties;
-use std::path::PathBuf;
-use std::sync::Arc;
 use parquet::arrow::ArrowWriter;
 use parquet::basic::{Compression, ZstdLevel};
 use parquet::errors::ParquetError;
+use parquet::file::properties::WriterProperties;
+use std::fs::File;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 pub trait WriteData<D, E> {
     fn write(&mut self, data: &mut D, time_step: u32) -> Result<PathBuf, E>;

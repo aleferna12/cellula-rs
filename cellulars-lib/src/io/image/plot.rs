@@ -1,7 +1,4 @@
-use crate::constants::{CellIndex, FloatType};
-use crate::prelude::{Cellular, Habitable};
-use crate::spin::Spin;
-use crate::traits::cellular::HasCenter;
+use crate::prelude::{Cellular, Habitable, CellIndex, FloatType, Spin, HasCenter};
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{IntoColor, Mix, Srgba};

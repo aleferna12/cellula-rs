@@ -1,18 +1,10 @@
 //! Contains logic associated with [`Environment`].
 
-use crate::base::cell::Cell;
-use crate::cell_container::{CellContainer, RelCell};
-use crate::constants::FloatType;
-use crate::lattice::Lattice;
 use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
-use crate::positional::edge::Edge;
 use crate::positional::edge_book::EdgeBook;
-use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::{CastCoords, Pos};
-use crate::prelude::{MooreNeighborhood, UnsafePeriodicBoundary};
-use crate::spin::Spin;
-use crate::traits::cellular::{Alive, Cellular, HasCenter};
-use crate::traits::habitable::Habitable;
+use crate::prelude::{Alive, Cell, CellContainer, Cellular, Edge, FloatType, Habitable, HasCenter,
+                     Lattice, MooreNeighborhood, Neighborhood, RelCell, Spin, UnsafePeriodicBoundary};
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;

@@ -1,10 +1,9 @@
 //! Contains logic associated with [`Cell`].
 
-use crate::constants::FloatType;
+use crate::prelude::{Pos, Alive, Cellular, HasCenter, FloatType};
 use crate::positional::boundaries::Boundary;
 use crate::positional::com::Com;
-use crate::positional::pos::Pos;
-use crate::traits::cellular::{Alive, Cellular, EmptyCell, HasCenter};
+use crate::traits::cellular::EmptyCell;
 
 /// Minimum components required to simulate a cell.
 #[derive(Clone, Debug, PartialEq)]
