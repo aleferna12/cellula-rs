@@ -49,7 +49,7 @@ impl<C: Cellular> CellContainer<C> {
     pub fn n_non_empty(&self) -> CellIndex {
         self.vec
             .iter()
-            .filter(|rel_cell| rel_cell.cell.is_empty())
+            .filter(|rel_cell| !rel_cell.cell.is_empty())
             .count() as CellIndex
     }
     
@@ -65,7 +65,7 @@ impl<C: Cellular> CellContainer<C> {
     fn next_index(&self) -> CellIndex {
         self.vec
             .iter()
-            .find(|rel_cell| !rel_cell.cell.is_empty())
+            .find(|rel_cell| rel_cell.cell.is_empty())
             .map(|rel_cell| rel_cell.index)
             .unwrap_or(self.n_cells())
     }

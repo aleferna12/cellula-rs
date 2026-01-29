@@ -49,7 +49,7 @@ where
     C: Cellular {
     /// Returns `Some(cell)` if `cell` is [`Cellular::is_empty()`] and [`None`] otherwise.
     pub fn new(cell: C) -> Option<Self> {
-        if !cell.is_empty() {
+        if cell.is_empty() {
             return Some(EmptyCell(cell))
         }
         None

@@ -60,7 +60,7 @@ where
     E::Cell: HasCenter {
     fn plot(&self, env: &E, image: &mut RgbaImage) {
         for rel_cell in env.env().cells.iter() {
-            if !rel_cell.cell.is_empty() {
+            if rel_cell.cell.is_empty() {
                 continue;
             }
             let center = rel_cell
@@ -116,7 +116,7 @@ where
         let mut min = u32::MAX;
         let mut max = 0;
         for rel_cell in env.env().cells.iter() {
-            if !rel_cell.cell.is_empty() {
+            if rel_cell.cell.is_empty() {
                 continue;
             }
             if rel_cell.cell.area() < min {

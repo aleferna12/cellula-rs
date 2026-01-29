@@ -51,7 +51,7 @@ impl Cellular for Cell {
 
     // Experimented with encoding this using typestate pattern but it was not helpful nor ergonomic
     fn is_empty(&self) -> bool {
-        self.com.mass > 0
+        self.com.mass == 0
     }
 
     fn shift_position(
@@ -81,7 +81,7 @@ impl HasCenter for Cell {
 
 impl Alive for Cell {
     fn is_alive(&self) -> bool {
-        self.is_empty() && self.target_area() > 0
+        !self.is_empty() && self.target_area() > 0
     }
 
     fn apoptosis(&mut self) {

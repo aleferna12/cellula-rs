@@ -24,7 +24,7 @@ pub struct ChemCenterPlot {
 impl Plot<MyEnvironment> for ChemCenterPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         for rel_cell in env.env.cells.iter() {
-            if !rel_cell.cell.is_empty() {
+            if rel_cell.cell.is_empty() {
                 continue;
             }
             let center = rel_cell

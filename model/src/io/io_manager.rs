@@ -405,7 +405,7 @@ trait ToDataFrame {
 
 impl ToDataFrame for CellContainer<MyCell> {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let non_empty = self.iter().filter(|rel_cell| rel_cell.cell.is_empty()).collect::<Box<_>>();
+        let non_empty: Box<_> = self.iter_non_empty().collect();
         df!(
             "index" => non_empty.iter().map(|rel_cell| rel_cell.index).collect::<Box<_>>(),
             "area" => non_empty.iter().map(|rel_cell| rel_cell.cell.area()).collect::<Box<_>>(),
