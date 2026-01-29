@@ -3,8 +3,8 @@
 use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::pos::{CastCoords, Pos};
-use crate::prelude::{Alive, Cell, CellContainer, Cellular, Edge, FloatType, Habitable, HasCenter,
-                     Lattice, MooreNeighborhood, Neighborhood, RelCell, Spin, UnsafePeriodicBoundary};
+use crate::prelude::{Alive, Cell, CellContainer, Cellular, Edge, FloatType, Habitable, HasCenter, Lattice,
+                     MooreNeighborhood, Neighborhood, RelCell, Spin, UnsafePeriodicBoundary};
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;

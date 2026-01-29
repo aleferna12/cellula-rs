@@ -17,6 +17,13 @@ impl<C> CellContainer<C> {
             vec: vec![],
         }
     }
+
+    /// Constructs a new, empty [`CellContainer`] with at least the specified `capacity`.
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            vec: Vec::with_capacity(capacity)
+        }
+    }
     
     /// Returns the total number of cells in the cell container, including empty cells (see [Cellular::is_empty()]).
     pub fn n_cells(&self) -> CellIndex {
@@ -182,4 +189,90 @@ pub struct RelCell<C> {
     pub index: CellIndex,
     /// Inner cell instance.
     pub cell: C
+}
+
+/// Initializes a [`CellContainer`] with [`EmptyCell`]s.
+///
+/// Syntax is the same as `vec![]`.
+///
+/// # Examples
+///
+/// ```
+/// use cellulars_lib::cell_container;
+/// use cellulars_lib::prelude::{Cell, CellContainer};
+///
+/// let cc1 = cell_container![Cell::new_empty(10), Cell::new_empty(10)];
+/// let cc2 = cell_container![Cell::new_empty(10); 2];
+/// assert_eq!(cc1, cc2);
+/// ```
+#[macro_export]
+macro_rules! cell_container {
+    () => {{
+        CellContainer::new()
+    }};
+    ( $($cell:expr),+ $(,)? ) => {{
+        let mut cc = CellContainer::new();
+        $(
+            cc.push($cell);
+        )*
+        cc
+    }};
+    ( $cell:expr; $number:expr ) => {{
+        let mut cc = CellContainer::with_capacity($number);
+        for _ in 0..$number {
+            cc.push($cell.clone());
+        }
+        cc
+    }};
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::Cell;
+
+    fn cell_container() -> CellContainer<Cell> {
+        let mut cc = cell_container![Cell::new_empty(10); 2];
+        cc.replace(RelCell{ index: 0, cell: Cell::new_ready(10, 10, (0., 0.).into()) });
+        cc
+    }
+
+    #[test]
+    fn test_get() {
+        let cc = cell_container();
+        assert!(cc.get(0).is_some());
+        assert!(cc.get(1).is_none());
+    }
+
+    #[test]
+    fn test_index() {
+        let cc = cell_container();
+        assert!(!cc[0].cell.is_empty());
+        assert!(cc[1].cell.is_empty());
+    }
+
+    #[test]
+    fn test_add() {
+        let mut cc = cell_container();
+        let cell = cc.add(Cell::new_empty(10));
+        assert_eq!(1, cell.index);
+        assert_eq!(cc.n_cells(), 2);
+    }
+
+    #[test]
+    fn test_push() {
+        let mut cc = cell_container();
+        cc.push(Cell::new_empty(10));
+        assert_eq!(cc.n_cells(), 3);
+        assert!(cc.get(2).is_none());
+    }
+
+    #[test]
+    fn test_replace() {
+        let mut cc = cell_container();
+        let cell = cc.replace(RelCell{ index: 0, cell: Cell::new_empty(10).into_cell() });
+        assert_eq!(0, cell.index);
+        assert_eq!(cc.n_cells(), 2);
+        assert!(cc.get(0).is_none());
+    }
 }

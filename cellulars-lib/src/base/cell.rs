@@ -94,3 +94,17 @@ impl Alive for Cell {
         EmptyCell::new(newborn).expect("cell is not empty")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_empty_cell() {
+        let empty_cell = Cell::new_empty(0);
+        let cell = empty_cell.as_cell();
+        assert!(cell.is_empty());
+        assert_eq!(cell.area(), 0);
+        assert!(!cell.is_alive())
+    }
+}

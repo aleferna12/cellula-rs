@@ -42,6 +42,7 @@ pub trait Alive: Cellular + Sized {
 }
 
 /// A cell who is guaranteed to be empty (see [`Cellular::is_empty()`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EmptyCell<C>(C);
 
 impl<C> EmptyCell<C>

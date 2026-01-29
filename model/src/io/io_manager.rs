@@ -27,6 +27,7 @@ use polars::prelude::*;
 use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
+use cellulars_lib::cell_container;
 use cellulars_lib::io::image::plot::Plot;
 
 static IMAGES_PATH: &str = "images";
@@ -101,11 +102,10 @@ impl IoManager {
             .u32()?
             .max()
             .ok_or(anyhow::anyhow!("null `index` column"))?;
-        let mut cells = CellContainer::new();
-        // We need this to call replace on cells later
-        for _ in 0..=last_index {
-            cells.push(MyCell::new_empty(0, 0, CellType::Migrating));
-        }
+        let mut cells = cell_container![
+            MyCell::new_empty(0, 0, CellType::Migrating); 
+            last_index as usize + 1
+        ];
 
         for row_i in 0..celldf.height() {
             let row = celldf.get_row(row_i)?;
