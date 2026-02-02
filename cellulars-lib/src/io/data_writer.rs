@@ -2,7 +2,7 @@ use crate::constants::FloatType;
 use crate::io::file::{pad_file_name, U32_STR_LEN};
 use crate::prelude::{Cell, CellContainer, Cellular, HasCenter, Lattice, Pos, Spin};
 use arrow_array::{ArrayRef, Float64Array, RecordBatch, StringArray, UInt32Array};
-#[cfg(feature = "image_io")]
+#[cfg(feature = "image-io")]
 use image::{ImageError, RgbaImage};
 use parquet::arrow::ArrowWriter;
 use parquet::basic::{Compression, ZstdLevel};
@@ -31,7 +31,7 @@ impl DataWriter {
     }
 }
 
-#[cfg(feature = "image_io")]
+#[cfg(feature = "image-io")]
 impl WriteData<RgbaImage, ImageError> for DataWriter {
     fn write(&mut self, data: &RgbaImage, time_step: u32) -> Result<PathBuf, ImageError> {
         let file_path = self.file_path(

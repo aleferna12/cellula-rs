@@ -366,7 +366,7 @@ pub mod tests {
     ) -> RelCell<Cell> {
         let mut rel_cell = RelCell{ index: 0, cell: Cell::new_empty(2).into_cell() };
         for &pos in positions {
-            rel_cell.cell.shift_position(pos, true, &env.bounds.boundary);
+            rel_cell.cell.shift_position(pos, true, &env.bounds.boundary).unwrap();
             env.cell_lattice[pos] = Spin::Some(rel_cell.index);
         }
         rel_cell

@@ -1,4 +1,4 @@
-#[cfg(feature = "image_io")]
+#[cfg(feature = "image-io")]
 pub mod image;
 pub mod data_writer;
 pub(crate) mod file;
