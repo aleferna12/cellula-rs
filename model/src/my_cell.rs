@@ -4,7 +4,7 @@ use bon::Builder;
 use cellulars_lib::base::cell::Cell;
 use cellulars_lib::constants::FloatType;
 use cellulars_lib::positional::boundaries::Boundary;
-use cellulars_lib::positional::com::Com;
+use cellulars_lib::positional::com::{Com, ShiftError};
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell, HasCenter};
 use strum_macros::{Display, EnumString};
@@ -88,7 +88,12 @@ impl Cellular for MyCell {
         self.cell.is_empty()
     }
 
-    fn shift_position(&mut self, pos: Pos<usize>, adding: bool, bound: &impl Boundary<Coord = FloatType>) {
+    fn shift_position(
+        &mut self,
+        pos: Pos<usize>,
+        adding: bool,
+        bound: &impl Boundary<Coord = FloatType>
+    ) -> Result<(), ShiftError> {
         self.cell.shift_position(pos, adding, bound)
     }
 }
@@ -152,15 +157,15 @@ mod tests {
         let mut cell = make_test_cell();
         let bound = make_unsafe_boundary();
 
-        cell.shift_position(Pos::new(10, 10), true, &bound);
+        cell.shift_position(Pos::new(10, 10), true, &bound).unwrap();
         assert_eq!(cell.area(), 1);
         assert_eq!(cell.center(), Pos::new(10.0, 10.0));
 
-        cell.shift_position(Pos::new(20, 20), true, &bound);
+        cell.shift_position(Pos::new(20, 20), true, &bound).unwrap();
         assert_eq!(cell.area(), 2);
         assert_eq!(cell.center(), Pos::new(15.0, 15.0));
 
-        cell.shift_position(Pos::new(10, 10), false, &bound);
+        cell.shift_position(Pos::new(10, 10), false, &bound).unwrap();
         assert_eq!(cell.area(), 1);
         assert_eq!(cell.center(), Pos::new(20.0, 20.0));
     }

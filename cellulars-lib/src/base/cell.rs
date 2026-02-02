@@ -2,7 +2,7 @@
 
 use crate::prelude::{Pos, Alive, Cellular, HasCenter, FloatType};
 use crate::positional::boundaries::Boundary;
-use crate::positional::com::Com;
+use crate::positional::com::{Com, ShiftError};
 use crate::traits::cellular::EmptyCell;
 
 /// Minimum components required to simulate a cell.
@@ -59,17 +59,15 @@ impl Cellular for Cell {
         pos: Pos<usize>,
         adding: bool,
         boundary: &impl Boundary<Coord = FloatType>
-    ) {
-        // The order here matters (area is last), be careful
+    ) -> Result<(), ShiftError> {
         let shifted = self.com.shift(
             Com { pos: pos.cast_as(), mass: 1 },
             adding,
             boundary
         );
-        match shifted {
-            Ok(new_com) => self.com = new_com,
-            Err(e) => log::warn!("Failed to shift center of mass: {e}")
-        }
+        shifted.map(|new_com| {
+            self.com = new_com;
+        })
     }
 }
 

@@ -287,12 +287,18 @@ impl Habitable for MyEnvironment {
         let chem_at_pos = self.chem_lattice[pos];
         if let Spin::Some(index) = to {
             let to_rel_cell = &mut self.env.cells[index];
-            to_rel_cell.cell.shift_position(pos, true, &self.env.bounds.boundary);
+            let shifted = to_rel_cell.cell.shift_position(pos, true, &self.env.bounds.boundary);
+            if let Err(e) = shifted {
+                log::warn!("Failed to shift center of mass: {e}")
+            }
             to_rel_cell.cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
         if let Spin::Some(index) = self.env.cell_lattice[pos] {
             let from_rel_cell = &mut self.env.cells[index];
-            from_rel_cell.cell.shift_position(pos, false, &self.env.bounds.boundary);
+            let shifted = from_rel_cell.cell.shift_position(pos, false, &self.env.bounds.boundary);
+            if let Err(e) = shifted {
+                log::warn!("Failed to shift center of mass: {e}")
+            }
             from_rel_cell.cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
             // If the copy kills the cell
             if from_rel_cell.cell.area() == 0 {

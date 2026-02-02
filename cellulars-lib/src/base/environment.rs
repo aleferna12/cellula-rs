@@ -103,6 +103,7 @@ impl<C: Cellular + HasCenter, N: Neighborhood, B: ToLatticeBoundary> Environment
             &self.bounds.lattice_boundary,
         ).collect();
 
+        #[cfg(feature = "log")]
         if found.len() != rel_cell.cell.area() as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with index {} \
@@ -130,6 +131,7 @@ impl<C: Cellular + HasCenter, N: Neighborhood, B: ToLatticeBoundary> Environment
             &self.neighborhood
         );
 
+        #[cfg(feature = "log")]
         if found.len() != rel_cell.cell.area() as usize {
             log::warn!(
                 "Only found {} positions out of the {} expected for cell with index {} \
@@ -243,11 +245,19 @@ impl<N: Neighborhood, B: ToLatticeBoundary<Coord = FloatType>> Habitable for Env
         to: Spin
     ) -> EdgesUpdate {
         if let Spin::Some(index) = to {
-            self.cells[index].cell.shift_position(pos, true, &self.bounds.boundary);
+            let _shifted = self.cells[index].cell.shift_position(pos, true, &self.bounds.boundary);
+            #[cfg(feature = "log")]
+            if let Err(e) = _shifted {
+                log::warn!("Failed to shift center of mass of source spin: {e}")
+            }
         }
         if let Spin::Some(index) = self.cell_lattice[pos] {
             let from_rel_cell = &mut self.cells[index];
-            from_rel_cell.cell.shift_position(pos, false, &self.bounds.boundary);
+            let _shifted = from_rel_cell.cell.shift_position(pos, false, &self.bounds.boundary);
+            #[cfg(feature = "log")]
+            if let Err(e) = _shifted {
+                log::warn!("Failed to shift center of mass or target spin: {e}")
+            };
             if from_rel_cell.cell.area() == 0 {
                 from_rel_cell.cell.apoptosis();
             }

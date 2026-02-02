@@ -2,6 +2,7 @@
 
 use crate::constants::FloatType;
 use crate::positional::boundaries::Boundary;
+use crate::positional::com::ShiftError;
 use crate::positional::pos::Pos;
 
 /// Types that can be simulated like a cell.
@@ -23,7 +24,7 @@ pub trait Cellular {
         pos: Pos<usize>,
         add: bool,
         bound: &impl Boundary<Coord = FloatType>
-    );
+    ) -> Result<(), ShiftError>;
 }
 
 pub trait HasCenter {

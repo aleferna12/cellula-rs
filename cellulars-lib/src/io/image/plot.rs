@@ -141,7 +141,10 @@ where
                         pos.y as u32,
                         srgba_to_rgba(c.into_color())
                     ),
-                    Err(e) => log::warn!("Failed to plot area for pos `{pos:?}` with error `{e:?}`")
+                    Err(_e) => {
+                        #[cfg(feature = "log")]
+                        log::warn!("Failed to plot area for pos `{pos:?}` with error `{_e:?}`")
+                    }
                 };
             }
         }
