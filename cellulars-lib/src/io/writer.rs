@@ -22,16 +22,16 @@ use {
     std::sync::Arc,
 };
 
-pub trait WriteData<D, E> {
+pub trait Write<D, E> {
     fn write(&mut self, data: &D, time_step: u32) -> Result<PathBuf, E>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct DataWriter {
+pub struct Writer {
     pub outdir: PathBuf
 }
 
-impl DataWriter {
+impl Writer {
     fn file_path(&self, subfolder: &str, ext: &str, time_step: u32) -> Option<PathBuf> {
         let padded = pad_file_name(
             &format!("{time_step}.{ext}"),
@@ -42,7 +42,7 @@ impl DataWriter {
 }
 
 #[cfg(feature = "image-io")]
-impl WriteData<RgbaImage, ImageError> for DataWriter {
+impl Write<RgbaImage, ImageError> for Writer {
     fn write(&mut self, data: &RgbaImage, time_step: u32) -> Result<PathBuf, ImageError> {
         let file_path = self.file_path(
             "images",
@@ -54,7 +54,7 @@ impl WriteData<RgbaImage, ImageError> for DataWriter {
 }
 
 #[cfg(feature = "data-io")]
-impl WriteData<Lattice<Spin>, ParquetError> for DataWriter {
+impl Write<Lattice<Spin>, ParquetError> for Writer {
     fn write(&mut self, data: &Lattice<Spin>, time_step: u32) -> Result<PathBuf, ParquetError> {
         let file_path = self.file_path(
             "lattices",
@@ -82,7 +82,7 @@ impl WriteData<Lattice<Spin>, ParquetError> for DataWriter {
 }
 
 #[cfg(feature = "data-io")]
-impl<'de, T> WriteData<CellContainer<T>, CellsWriteError> for DataWriter
+impl<'de, T> Write<CellContainer<T>, CellsWriteError> for Writer
 where
     T: Cellular,
     RelCell<T>: Serialize + Deserialize<'de> {

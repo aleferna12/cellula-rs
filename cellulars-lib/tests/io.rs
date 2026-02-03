@@ -1,6 +1,6 @@
 #![cfg(any(feature = "data-io", feature = "image-io"))]
 
-use cellulars_lib::io::data_writer::{DataWriter, WriteData};
+use cellulars_lib::io::writer::{Writer, Write};
 #[cfg(feature = "image-io")]
 use image::RgbaImage;
 #[cfg(feature = "data-io")]
@@ -13,8 +13,8 @@ use {
     cellulars_lib::spin::Spin
 };
 
-fn dw() -> DataWriter {
-    DataWriter { outdir: "tests".into() }
+fn dw() -> Writer {
+    Writer { outdir: "tests".into() }
 }
 
 #[cfg(feature = "image-io")]

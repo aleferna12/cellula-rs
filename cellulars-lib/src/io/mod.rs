@@ -1,4 +1,5 @@
 #[cfg(feature = "image-io")]
 pub mod image;
-pub mod data_writer;
+#[cfg(any(feature = "data-io", feature = "image-io"))]
+pub mod writer;
 pub(crate) mod file;
