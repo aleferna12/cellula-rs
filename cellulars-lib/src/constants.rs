@@ -9,7 +9,7 @@ pub type CellIndex = u32;
 /// Otherwise, [f32] will be used.
 ///
 /// Using [f32] instead if [f64] provides some performance gain at the cost of mathematical precision.
-#[cfg(feature = "high-precision")]
+#[cfg(feature = "f64")]
 pub type FloatType = f64;
-#[cfg(not(feature = "high-precision"))]
+#[cfg(not(feature = "f64"))]
 pub type FloatType = f32;

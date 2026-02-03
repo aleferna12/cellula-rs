@@ -7,9 +7,9 @@ use crate::spin::Spin;
 use crate::traits::cellular::Cellular;
 use crate::traits::habitable::Habitable;
 use rand::Rng;
-#[cfg(not(feature = "high-precision"))]
+#[cfg(not(feature = "f64"))]
 use std::f32::consts::E;
-#[cfg(feature = "high-precision")]
+#[cfg(feature = "f64")]
 use std::f64::consts::E;
 
 /// This trait defines how a Monte Carlo [`PottsAlgorithm::step()`] of the model should modify a

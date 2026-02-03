@@ -5,8 +5,8 @@ edition = "2024"
 description = "Library supporting the cellulars package"
 
 [features]
-default = ["high-precision", "image-io", "log"]
-high-precision = []
+default = ["f64", "image-io", "log"]
+f64 = []
 image-io = ["dep:image", "dep:imageproc", "dep:palette"]
 log = ["dep:log"]
 

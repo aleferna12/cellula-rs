@@ -6,7 +6,7 @@ description = "A very fast, extensible CPM implementation."
 
 [features]
 default = ["movie", "high-precision"]
-high-precision = ["cellulars-lib/high-precision"]
+high-precision = ["cellulars-lib/f64"]
 movie = ["dep:minifb"]
 fixed-boundary = []
 von-neumann = []

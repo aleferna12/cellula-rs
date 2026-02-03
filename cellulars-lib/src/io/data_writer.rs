@@ -118,9 +118,9 @@ impl<T: Iterator<Item = u32>> IntoArray<u32> for T {
 
 impl<T: Iterator<Item = FloatType>> IntoArray<FloatType> for T {
     fn into_array(self) -> ArrayRef {
-        #[cfg(feature = "high-precision")]
+        #[cfg(feature = "f64")]
         return Arc::new(Float64Array::from(self.collect::<Vec<T::Item>>())) as ArrayRef;
-        #[cfg(not(feature = "high-precision"))]
+        #[cfg(not(feature = "f64"))]
         return Arc::new(Float32Array::from(self.collect::<Vec<T::Item>>())) as ArrayRef;
     }
 }

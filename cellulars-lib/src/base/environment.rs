@@ -8,9 +8,9 @@ use crate::prelude::{Alive, Cell, CellContainer, Cellular, Edge, FloatType, Habi
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;
-#[cfg(not(feature = "high-precision"))]
+#[cfg(not(feature = "f64"))]
 use std::f32::consts::PI;
-#[cfg(feature = "high-precision")]
+#[cfg(feature = "f64")]
 use std::f64::consts::PI;
 
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
