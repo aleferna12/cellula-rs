@@ -1,5 +1,5 @@
 use std::ffi::OsString;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Length of a string that can represent any [`u32`].
 pub(crate) const U32_STR_LEN: usize = {
@@ -28,14 +28,6 @@ pub(crate) fn pad_file_name(file_name: &str, pad_len: usize) -> Option<OsString>
         padded.push(ext);
     }
     Some(padded)
-}
-
-pub(crate) fn file_path(outdir: impl AsRef<Path>, subfolder: &str, ext: &str, time_step: u32) -> Option<PathBuf> {
-    let padded = pad_file_name(
-        &format!("{time_step}.{ext}"),
-        U32_STR_LEN
-    )?;
-    Some(outdir.as_ref().join(subfolder).join(padded))
 }
 
 #[cfg(test)]

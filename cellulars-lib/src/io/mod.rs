@@ -1,6 +1,5 @@
 #[cfg(feature = "image-io")]
 pub mod image;
-#[cfg(feature = "data-io")]
-mod data;
-pub(crate) mod file;
+pub(crate) mod pad_file;
 pub mod writer;
+pub mod io_manager;
