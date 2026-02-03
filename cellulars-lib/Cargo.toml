@@ -7,7 +7,7 @@ description = "Library supporting the cellulars package"
 [features]
 default = ["f64", "log", "data-io", "image-io"]
 f64 = []
-image-io = ["parquet", "dep:image", "dep:imageproc", "dep:palette",]
+image-io = ["dep:image", "dep:imageproc", "dep:palette",]
 data-io = ["serde", "parquet", "dep:serde_arrow"]
 log = ["dep:log"]
 serde = ["dep:serde"]
