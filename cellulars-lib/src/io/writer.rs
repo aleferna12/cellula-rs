@@ -62,7 +62,7 @@ impl Write<Lattice<Spin>, ParquetError> for Writer {
             time_step
         ).expect("failed to pad time step when saving cell lattice");  // This should never fail
 
-        let batch = RecordBatch::try_from_iter_with_nullable(
+        let batch = RecordBatch::try_from_iter(
             (0..data.width()).map(move |j| {
                 let vec: Vec<_> = (0..data.height()).map(|i| {
                     let spin = data[Pos::new(i, j)];
@@ -74,7 +74,7 @@ impl Write<Lattice<Spin>, ParquetError> for Writer {
                     }
                 }).collect();
                 let arr = StringArray::from(vec);
-                (j.to_string(), Arc::new(arr) as ArrayRef, false)
+                (j.to_string(), Arc::new(arr) as ArrayRef)
             })
         )?;
         write_record_batch(&file_path, &batch).map(|_| file_path)
