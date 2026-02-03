@@ -2,6 +2,7 @@ use num::{Num, Zero};
 use palette::Mix;
 
 /// Used to interpolate colors with [`Lerper::lerp()`].
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Lerper<C> {
     pub min_color: C,
     pub max_color: C
@@ -30,12 +31,12 @@ impl<C> Lerper<C> {
 }
 
 /// Error thrown when linear interpolation fails.
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum LerpError {
-    /// Value falls outside the range because it's too small.
+    #[error("value falls outside the range because it's too small")]
     ValueTooSmall,
-    /// Value falls outside the range because it's too large.
+    #[error("value falls outside the range because it's too large")]
     ValueTooLarge,
-    /// Minimum value passed is larger than maximum.
+    #[error("minimum value passed is larger than maximum")]
     NegativeRange
 }

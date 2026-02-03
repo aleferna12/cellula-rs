@@ -1,12 +1,15 @@
 //! Contains logic associated with [`Cell`].
 
-use crate::prelude::{Pos, Alive, Cellular, HasCenter, FloatType};
 use crate::positional::boundaries::Boundary;
 use crate::positional::com::{Com, ShiftError};
+use crate::prelude::{Alive, Cellular, FloatType, HasCenter, Pos};
 use crate::traits::cellular::EmptyCell;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Minimum components required to simulate a cell.
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Cell {
     /// Cell's current target area.
     pub target_area: u32,

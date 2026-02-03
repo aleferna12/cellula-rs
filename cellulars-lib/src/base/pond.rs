@@ -7,7 +7,7 @@ use rand::Rng;
 /// A pond is responsible for updating a [`Habitable`](crate::traits::habitable::Habitable) environment
 /// using a [`PottsAlgorithm`].
 ///
-/// Comparisons using [`PartialEq`] do not consider the state of [`Pond::rng`].
+/// Comparisons using [`PartialEq` and `Eq`] do not compare [`Pond::rng`].
 #[derive(Clone, Debug)]
 pub struct Pond<P: PottsAlgorithm, R> {
     /// Environment containing the cells.
@@ -42,8 +42,7 @@ impl<P: PottsAlgorithm, R: Rng> Step for Pond<P, R> {
 impl<P, R> PartialEq for Pond<P, R>
 where
     P: PottsAlgorithm + PartialEq,
-    P::Environment: PartialEq,
-    R: Rng {
+    P::Environment: PartialEq {
     // Dont compare rng state
     fn eq(&self, other: &Self) -> bool {
         self.time_step == other.time_step
@@ -51,3 +50,5 @@ where
             && self.env == other.env
     }
 }
+
+impl<P, R> Eq for Pond<P, R> where P: PottsAlgorithm + Eq, P::Environment: Eq {}

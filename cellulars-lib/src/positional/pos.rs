@@ -2,9 +2,12 @@
 
 use crate::constants::FloatType;
 use num::cast::AsPrimitive;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// A 2D position in space.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Pos<T> {
     /// X component of the position.
     pub x: T,

@@ -2,10 +2,13 @@
 
 use crate::constants::CellIndex;
 use crate::traits::cellular::{Alive, Cellular, EmptyCell};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CellContainer<C> {
     vec: Vec<RelCell<C>>
 }
@@ -182,7 +185,8 @@ impl<C> IndexMut<CellIndex> for CellContainer<C> {
 /// the inner cell type `C` directly.
 ///
 /// Implements [Deref<Target = C>].
-#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RelCell<C> {
     /// Relational cell index that is unique to this cell in its
     /// [Environment](crate::base::environment::Environment).

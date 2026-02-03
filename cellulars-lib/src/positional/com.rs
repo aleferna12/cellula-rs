@@ -3,10 +3,12 @@
 use crate::constants::FloatType;
 use crate::positional::boundaries::Boundary;
 use crate::prelude::Pos;
-use thiserror::Error;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// A center of mass of a cell that is shifted throughout the simulation.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Com {
     /// Position of the [`Com`].
     pub pos: Pos<FloatType>,
@@ -22,7 +24,7 @@ impl Com {
     ///
     /// This operation is prone to accumulating floating-point errors, so be careful with those.
     pub fn shift(
-        self,
+        &self,
         other: Com,
         adding: bool,
         bound: &impl Boundary<Coord = FloatType>
@@ -49,7 +51,7 @@ impl Com {
     }
 }
 
-#[derive(Error, Clone, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 /// Error thrown when a [`Com::shift()`] operation fails.
 pub enum ShiftError {
     /// Shifting resulted in a negative mass.

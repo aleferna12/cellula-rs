@@ -1,9 +1,9 @@
-use crate::prelude::{Cellular, Habitable, CellIndex, FloatType, Spin, HasCenter};
+use crate::io::image::lerper::Lerper;
+use crate::prelude::{CellIndex, Cellular, FloatType, Habitable, HasCenter, Spin};
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{IntoColor, Mix, Srgba};
 use std::hash::{DefaultHasher, Hash, Hasher};
-use crate::io::image::lerper::Lerper;
 
 /// A trait to plot information about the simulation.
 pub trait Plot<P> {
@@ -12,6 +12,7 @@ pub trait Plot<P> {
 }
 
 /// Plots the spin of cells in random colors (except for the solid and medium spin colors, which can be chosen).
+#[derive(Clone, PartialEq, Debug)]
 pub struct SpinPlot {
     /// Color used for [`Spin::Solid`].
     pub solid_color: Srgba<FloatType>,
@@ -50,6 +51,7 @@ impl<E: Habitable> Plot<E> for SpinPlot {
 }
 
 /// Plots the center of cells.
+#[derive(Clone, PartialEq, Debug)]
 pub struct CenterPlot {
     /// Color of the cell center.
     pub color: Srgba<FloatType>
@@ -73,6 +75,7 @@ where
 }
 
 /// Plots the border of cells.
+#[derive(Clone, PartialEq, Debug)]
 pub struct BorderPlot {
     /// Color of the border.
     pub color: Srgba<FloatType>
@@ -104,6 +107,7 @@ impl<E: Habitable> Plot<E> for BorderPlot {
 }
 
 /// Plots cell area.
+#[derive(Clone, PartialEq, Debug, Eq, Hash)]
 pub struct AreaPlot<C> {
     pub lerper: Lerper<C>
 }
@@ -159,8 +163,8 @@ pub fn srgba_to_rgba(srgba: Srgba<FloatType>) -> Rgba<u8> {
 #[cfg(test)]
 mod tests {
     use crate::constants::CellIndex;
-    use std::collections::HashSet;
     use crate::io::image::plot::SpinPlot;
+    use std::collections::HashSet;
 
     #[test]
     fn test_index_to_rgb() {

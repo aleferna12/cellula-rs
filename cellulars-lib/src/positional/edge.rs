@@ -1,11 +1,14 @@
 //! Contains logic associated with [`Edge`].
 
 use crate::positional::pos::Pos;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 use std::mem;
 
 /// A symmetrical edge between two positions (such that `Edge(p1, p2) == Edge(p2, p1)`).
 #[derive(Eq, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Edge {
     /// Position at one end of the edge.
     pub p1: Pos<usize>,

@@ -15,7 +15,7 @@ use std::f64::consts::PI;
 
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
 // If adding fields, remember to also change those!!!
-/// An environment where cells are spatially and relationally localised.
+/// An environment where cells are spatially and relationally localized.
 pub struct Environment<C, N = MooreNeighborhood, B: ToLatticeBoundary = UnsafePeriodicBoundary<FloatType>> {
     /// Boundaries of the environment.
     ///
@@ -317,8 +317,11 @@ where
     }
 }
 
+impl<C, N, B:ToLatticeBoundary> Eq for Environment<C, N, B>
+where C: Eq, N: Eq, B: Eq, B::LatticeBoundary: Eq {}
+
 /// Counts the number of changed cell-cell edges after modifying the environment with [Habitable::grant_position()].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Copy)]
 pub struct EdgesUpdate {
     /// Number of cell-cell edges added by granting the position.
     pub added: u16,

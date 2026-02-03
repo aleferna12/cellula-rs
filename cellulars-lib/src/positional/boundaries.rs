@@ -8,7 +8,7 @@ use num::Num;
 use std::ops::Sub;
 
 /// A conjugate pair of continuous/discrete boundaries that have the same boundary conditions.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Boundaries<B: ToLatticeBoundary> {
     /// The conjugate continuous boundary type.
     pub boundary: B,
@@ -84,7 +84,7 @@ pub trait ToLatticeBoundary: Boundary {
 }
 
 /// Implementation of fixed (truncated) boundary conditions.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FixedBoundary<T> {
     rect: Rect<T>
 }
@@ -131,7 +131,7 @@ impl ToLatticeBoundary for FixedBoundary<FloatType> {
 }
 
 /// Mathematically sound (albeit slow) implementation of periodic boundary conditions.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SafePeriodicBoundary<T> {
     rect: Rect<T>
 }
@@ -188,7 +188,7 @@ impl ToLatticeBoundary for SafePeriodicBoundary<FloatType> {
 /// Only use when you are confident that all input positions are close to the boundary.
 ///
 /// </div>
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct UnsafePeriodicBoundary<T> {
     rect: Rect<T>
 }

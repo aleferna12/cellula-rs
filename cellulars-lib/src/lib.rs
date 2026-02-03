@@ -16,5 +16,6 @@ pub mod constants;
 pub mod spin;
 pub mod traits;
 pub mod base;
+#[cfg(any(feature = "data-io", feature = "image-io"))]
 pub mod io;
 pub mod prelude;

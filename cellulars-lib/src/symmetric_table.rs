@@ -1,9 +1,12 @@
 //! Contains logic associated with [SymmetricTable].
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
 
 /// A symmetric table where indexes (x, y) and (y, x) map to the same value.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SymmetricTable<T> {
     array: Box<[T]>,
     length: usize,

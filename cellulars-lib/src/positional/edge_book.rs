@@ -9,7 +9,7 @@ use std::ops::Index;
 ///
 /// It provides both fast index-based and hash-based access to edges by keeping separate but related contiguous and
 /// hash map representations of the data.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeBook {
     // TODO: profile using this crate, I have no clue of whether it's fast enough
     edge_set: IndexSet<Edge>,

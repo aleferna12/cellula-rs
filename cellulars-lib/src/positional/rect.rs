@@ -4,10 +4,13 @@ use crate::constants::FloatType;
 use crate::positional::pos::{CastCoords, Pos};
 use num::cast::AsPrimitive;
 use num::{Integer, Num};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::ops::AddAssign;
 
 /// A rectangle defined by two corners.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Rect<T> {
     /// Bottom-left corner.
     pub min: Pos<T>,

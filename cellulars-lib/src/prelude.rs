@@ -6,7 +6,7 @@ pub use crate::base::pond::Pond;
 pub use crate::cell_container::{CellContainer, RelCell};
 pub use crate::constants::{CellIndex, FloatType};
 pub use crate::lattice::Lattice;
-pub use crate::positional::boundaries::{FixedBoundary, UnsafePeriodicBoundary, Boundary};
+pub use crate::positional::boundaries::{Boundary, FixedBoundary, UnsafePeriodicBoundary};
 pub use crate::positional::edge::Edge;
 pub use crate::positional::neighborhood::{MooreNeighborhood, Neighborhood, VonNeumannNeighborhood};
 pub use crate::positional::pos::Pos;
