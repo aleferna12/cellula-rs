@@ -13,7 +13,6 @@ use cellulars_lib::base::cell::Cell;
 use cellulars_lib::cell_container;
 use cellulars_lib::cell_container::{CellContainer, RelCell};
 use cellulars_lib::constants::CellIndex;
-use cellulars_lib::io::image::plot::Plot;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::com::Com;
 use cellulars_lib::positional::pos::Pos;
@@ -29,6 +28,7 @@ use polars::prelude::*;
 use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
+use cellulars_lib::io::write::image::plot::Plot;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";

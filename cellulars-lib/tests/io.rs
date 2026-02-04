@@ -2,13 +2,13 @@
 
 #[cfg(feature = "image-io")]
 mod image_test {
-    use cellulars_lib::io::writer::{Write, Writer};
     use image::RgbaImage;
+    use cellulars_lib::io::write::writer::{Write, Writer};
 
     #[test]
     fn test_image_writer() {
         let image = RgbaImage::from_pixel(10, 10, [255, 0, 0, 255].into());
-        Writer {}.write(&image, "tests/image.webp").unwrap();
+        Writer {}.write(&image, "tests/out/image.webp").unwrap();
     }
 }
 
@@ -16,14 +16,14 @@ mod image_test {
 mod data_test {
     use crate::data_test::cell_container::CellContainer;
     use cellulars_lib::cell_container;
-    use cellulars_lib::io::writer::{Write, Writer};
+    use cellulars_lib::io::write::writer::{Write, Writer};
     use cellulars_lib::prelude::{Cell, Lattice, RelCell, Spin};
 
     #[test]
     fn test_lattice_writer() {
         let mut lattice = Lattice::<Spin>::new(10, 10);
         lattice[(0, 0).into()] = Spin::Some(0);
-        Writer {}.write(&lattice, "tests/lattice.parquet").unwrap();
+        Writer {}.write(&lattice, "tests/out/lattice.parquet").unwrap();
     }
     
     #[test]
@@ -38,6 +38,6 @@ mod data_test {
             index: 4,
             cell,
         });
-        Writer {}.write(&cells, "tests/cells.parquet").unwrap();
+        Writer {}.write(&cells, "tests/out/cells.parquet").unwrap();
     }
 }

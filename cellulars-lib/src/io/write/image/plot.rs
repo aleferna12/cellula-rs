@@ -1,9 +1,9 @@
-use crate::io::image::lerper::Lerper;
 use crate::prelude::{CellIndex, Cellular, FloatType, Habitable, HasCenter, Spin};
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{IntoColor, Mix, Srgba};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use crate::io::write::image::lerper::Lerper;
 
 /// A trait to plot information about the simulation.
 pub trait Plot<P> {
@@ -162,8 +162,8 @@ pub fn srgba_to_rgba(srgba: Srgba<FloatType>) -> Rgba<u8> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::constants::CellIndex;
-    use crate::io::image::plot::SpinPlot;
     use std::collections::HashSet;
 
     #[test]
