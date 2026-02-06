@@ -1,67 +1,42 @@
 use crate::lattice::Lattice;
-use crate::prelude::Pos;
+use crate::prelude::{CellIndex, Pos};
 use crate::spin::Spin;
-use arrow::array::{Array, RecordBatch, StringArray, UInt32Array};
+use arrow::array::{Array, RecordBatch, StringArray};
 use arrow::error::ArrowError;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::errors::ParquetError;
+use std::error::Error;
 use std::fs::File;
 use std::path::Path;
+use std::str::FromStr;
 
 pub struct Reader {}
 
 impl Reader {
-    fn parse_spin(spin_str: &str) -> Result<Spin, String> {
-        Ok(match spin_str {
+    fn parse_spin(spin_str: String) -> Result<Spin, <CellIndex as FromStr>::Err> {
+        Ok(match spin_str.as_str() {
             "m" => Spin::Medium,
             "s" => Spin::Solid,
             c => {
-                let Ok(cell_index) = c.parse() else {
-                    return Err(c.to_string());
-                };
+                let cell_index = c.parse()?;
                 Spin::Some(cell_index)
             }
         })
     }
 }
 
-impl Read<Lattice<Spin>, LatticeReadError<String>> for Reader {
-    fn read(&mut self, path: impl AsRef<Path>) -> Result<Lattice<Spin>, LatticeReadError<String>> {
-        read_lattice::<&str, Spin, StringArray, _, String>(path, Self::parse_spin)
+impl Read<Lattice<Spin>, LatticeReadError> for Reader {
+    fn read(&mut self, path: impl AsRef<Path>) -> Result<Lattice<Spin>, LatticeReadError> {
+        read_lattice::<StringArray, _, _, _, _>(path, Self::parse_spin)
     }
 }
 
-trait ColumnIter<'a, T> {
-    type Iter: Iterator<Item = Option<T>>;
-
-    fn iter(&'a self) -> Self::Iter;
-}
-
-impl<'a> ColumnIter<'a, u32> for UInt32Array {
-    type Iter = std::iter::Map<
-        std::slice::Iter<'a, u32>,
-        fn(&u32) -> Option<u32>
-    >;
-
-    fn iter(&'a self) -> Self::Iter {
-        self.iter()
-    }
-}
-
-impl<'a> ColumnIter<'a, String> for StringArray {
-    type Iter = std::iter::Map<std::slice::Iter<'a, &'a str>, fn(&&str) -> Option<String>>;
-
-    fn iter(&'a self) -> Self::Iter {
-        self.iter().map(|x| x.map(ToOwned::to_owned))
-    }
-}
-
-fn read_lattice<T, U, A, F, E>(path: impl AsRef<Path>, map: F) -> Result<Lattice<U>, LatticeReadError<E>>
+fn read_lattice<A, T, U, F, E>(path: impl AsRef<Path>, map: F) -> Result<Lattice<U>, LatticeReadError>
 where
-    A: 'static + Array,
-    for<'a> &'a A: IntoIterator<Item = Option<T>>,
+    A: 'static + Array + ColumnIter<T>,
+    U: Clone + Default,
     F: Fn(T) -> Result<U, E>,
-    U: Clone + Default {
+    E: 'static + Error {
     let batches = read_parquet(path)?;
     if batches.is_empty() {
         return Err(LatticeReadError::EmptyFile);
@@ -85,12 +60,12 @@ where
             if col_array.is_nullable() {
                 return Err(LatticeReadError::NullValue);
             }
-            for (i, maybe_spin_str) in col_array.into_iter().enumerate() {
+            for (i, maybe_spin_str) in col_array.iter().enumerate() {
                 // We gotta do this again because is_nullable can lie...
                 let Some(spin_val) = maybe_spin_str else {
                     return Err(LatticeReadError::NullValue);
                 };
-                let spin = map(spin_val).map_err(|e| LatticeReadError::InvalidValue(e))?;
+                let spin = map(spin_val).map_err(|e| LatticeReadError::InvalidValue(Box::new(e)))?;
                 lat[Pos::new(row_offset + i, j)] = spin;
             }
         }
@@ -100,13 +75,13 @@ where
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum LatticeReadError<T> {
+pub enum LatticeReadError {
     #[error("encountered a null value in the file")]
     NullValue,
     #[error("encountered a value with invalid type")]
     InvalidType,
-    #[error("encountered an invalid value: ({0})")]
-    InvalidValue(T),
+    #[error("encountered an invalid value: {0}")]
+    InvalidValue(#[source] Box<dyn Error>),
     #[error("the file contained no records")]
     EmptyFile,
     #[error("lattice width ({width}) and height ({height}) do not match")]
@@ -134,4 +109,41 @@ fn read_parquet(path: impl AsRef<Path>) -> Result<Vec<RecordBatch>, ParquetError
 
 pub trait Read<D, E> {
     fn read(&mut self, path: impl AsRef<Path>) -> Result<D, E>;
+}
+
+trait ColumnIter<T> {
+    fn iter(&self) -> impl Iterator<Item = Option<T>>;
+}
+
+impl ColumnIter<String> for StringArray {
+    fn iter(&self) -> impl Iterator<Item = Option<String>> {
+        self.iter().map(|x| x.map(ToOwned::to_owned))
+    }
+}
+
+mod impls {
+    use super::*;
+    use arrow::array::*;
+
+    macro_rules! impl_column_iter_primitive {
+        ( $( ($t1:ty, $t2:ty) ),* $(,)? ) => {
+            $(
+                impl ColumnIter<$t1> for $t2 {
+                    fn iter(&self) -> impl Iterator<Item = Option<$t1>> {
+                        self.iter()
+                    }
+                }
+            )*
+        };
+    }
+
+    impl_column_iter_primitive![
+        (i8,  Int8Array),
+        (i32, Int32Array),
+        (i64, Int64Array),
+        (u8,  UInt8Array),
+        (u32, UInt32Array),
+        (u64, UInt64Array),
+        (f32, Float32Array),
+    ];
 }
