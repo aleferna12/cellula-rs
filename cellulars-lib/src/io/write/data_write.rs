@@ -17,7 +17,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 impl Write<Lattice<Spin>, ParquetError> for Writer {
-    fn write(&mut self, data: &Lattice<Spin>, file_path: impl AsRef<Path>) -> Result<(), ParquetError> {
+    fn write(&mut self, data: &Lattice<Spin>, path: impl AsRef<Path>) -> Result<(), ParquetError> {
         let batch = RecordBatch::try_from_iter(
             (0..data.width()).map(move |j| {
                 let vec: Vec<_> = (0..data.height()).map(|i| {
@@ -33,7 +33,7 @@ impl Write<Lattice<Spin>, ParquetError> for Writer {
                 (j.to_string(), Arc::new(arr) as ArrayRef)
             })
         )?;
-        write_record_batch(file_path, &batch).map(|_| ())
+        write_parquet(path, &batch).map(|_| ())
     }
 }
 
@@ -41,11 +41,11 @@ impl<'de, T> Write<CellContainer<T>, CellsWriteError> for Writer
 where
     T: Cellular,
     RelCell<T>: Serialize + Deserialize<'de> {
-    fn write(&mut self, data: &CellContainer<T>, file_path: impl AsRef<Path>) -> Result<(), CellsWriteError> {
+    fn write(&mut self, data: &CellContainer<T>, path: impl AsRef<Path>) -> Result<(), CellsWriteError> {
         let cells: Box<_> = data.iter_non_empty().collect();
         let fields = Vec::<FieldRef>::from_type::<RelCell<T>>(TracingOptions::default())?;
         let batch = to_record_batch(&fields, &cells)?;
-        match write_record_batch(&file_path, &batch) {
+        match write_parquet(&path, &batch) {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into())
         }
@@ -61,12 +61,12 @@ pub enum CellsWriteError {
     SerdeArrow(#[from] serde_arrow::Error),
 }
 
-pub fn write_record_batch(path: impl AsRef<Path>, batch: &RecordBatch) -> Result<ParquetMetaData, ParquetError> {
-    let file_path = path.as_ref();
+fn write_parquet(path: impl AsRef<Path>, batch: &RecordBatch) -> Result<ParquetMetaData, ParquetError> {
+    let path = path.as_ref();
     let props = WriterProperties::builder()
         .set_compression(Compression::ZSTD(ZstdLevel::default()))
         .build();
-    let file = File::create(file_path)?;
+    let file = File::create(path)?;
     let mut writer = ArrowWriter::try_new(file, batch.schema(), Some(props))?;
     writer.write(batch)?;
     writer.close()

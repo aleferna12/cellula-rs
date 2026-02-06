@@ -4,5 +4,5 @@ use std::path::Path;
 pub struct Writer {}
 
 pub trait Write<D, E> {
-    fn write(&mut self, data: &D, file_path: impl AsRef<Path>) -> Result<(), E>;
+    fn write(&mut self, data: &D, path: impl AsRef<Path>) -> Result<(), E>;
 }
