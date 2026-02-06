@@ -16,18 +16,22 @@ mod image_test {
 mod data_test {
     use crate::data_test::cell_container::CellContainer;
     use cellulars_lib::cell_container;
+    use cellulars_lib::io::read::reader::{Read, Reader};
     use cellulars_lib::io::write::writer::{Write, Writer};
     use cellulars_lib::prelude::{Cell, Lattice, RelCell, Spin};
 
     #[test]
-    fn test_lattice_writer() {
+    fn test_lattice_io() {
         let mut lattice = Lattice::<Spin>::new(10, 10);
         lattice[(0, 0).into()] = Spin::Some(0);
-        Writer {}.write(&lattice, "tests/out/lattice.parquet").unwrap();
+        let path = "tests/out/lattice.parquet";
+        Writer {}.write(&lattice, path).unwrap();
+        let lattice2 = Reader {}.read(path).unwrap();
+        assert_eq!(lattice, lattice2);
     }
     
     #[test]
-    fn test_cells_writer() {
+    fn test_cells_io() {
         let mut cells = cell_container![Cell::new_empty(10); 5];
         let cell = Cell::new_ready(10, 10, (10., 10.).into());
         cells.replace(RelCell {
@@ -38,6 +42,9 @@ mod data_test {
             index: 4,
             cell,
         });
-        Writer {}.write(&cells, "tests/out/cells.parquet").unwrap();
+        let path = "tests/out/cells.parquet";
+        Writer {}.write(&cells, path).unwrap();
+        let cells2 = Reader {}.read(path).unwrap();
+        assert_eq!(cells, cells2);
     }
 }

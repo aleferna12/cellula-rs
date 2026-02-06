@@ -46,6 +46,18 @@ pub trait Alive: Cellular + Sized {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EmptyCell<C>(C);
 
+impl<C> EmptyCell<C> {
+    /// Returns the inner cell, which is guaranteed to be [Cellular::`is_empty()`].
+    pub fn into_cell(self) -> C {
+        self.0
+    }
+
+    /// Returns a reference to the inner cell, which is guaranteed to be [`Cellular::is_empty()`].
+    pub fn as_cell(&self) -> &C {
+        &self.0
+    }
+}
+
 impl<C> EmptyCell<C>
 where
     C: Cellular {
@@ -55,15 +67,5 @@ where
             return Some(EmptyCell(cell))
         }
         None
-    }
-
-    /// Returns the inner cell, which is guaranteed to be [Cellular::`is_empty()`].
-    pub fn into_cell(self) -> C {
-        self.0
-    }
-
-    /// Returns a reference to the inner cell, which is guaranteed to be [`Cellular::is_empty()`].
-    pub fn as_cell(&self) -> &C {
-        &self.0
     }
 }

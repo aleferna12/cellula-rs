@@ -8,7 +8,9 @@ use crate::traits::cellular::EmptyCell;
 use serde::{Deserialize, Serialize};
 
 /// Minimum components required to simulate a cell.
-#[derive(Clone, Debug, PartialEq)]
+///
+/// Comparisons with [`PartialEq`] always return true if both cells [`Cellular::is_empty()`].
+#[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Cell {
     /// Cell's current target area.
@@ -93,6 +95,22 @@ impl Alive for Cell {
         let mut newborn = self.clone();
         newborn.com.mass = 0;
         EmptyCell::new(newborn).expect("cell is not empty")
+    }
+}
+
+impl PartialEq for Cell {
+    fn eq(&self, other: &Self) -> bool {
+        if self.is_empty() && other.is_empty() {
+            return true;
+        }
+        self.target_area == other.target_area
+            && self.com == other.com
+    }
+}
+
+impl Default for EmptyCell<Cell> {
+    fn default() -> Self {
+        Cell::new_empty(0)
     }
 }
 

@@ -52,6 +52,17 @@ impl<C> CellContainer<C> {
     pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut RelCell<C>> {
         self.vec.iter_mut()
     }
+
+    /// Add a cell to the end of the cell container without replacing any empty cells.
+    pub fn push(&mut self, cell: EmptyCell<C>) -> &mut RelCell<C> {
+        let new_index = self.n_cells();
+        let rel_cell = RelCell {
+            index: new_index,
+            cell: cell.into_cell()
+        };
+        self.vec.push(rel_cell);
+        &mut self.vec[new_index as usize]
+    }
 }
 
 impl<C: Cellular> CellContainer<C> {
@@ -93,17 +104,6 @@ impl<C: Cellular> CellContainer<C> {
         } else {
             self.replace(rel_cell);
         }
-        &mut self.vec[new_index as usize]
-    }
-
-    /// Add a cell to the end of the cell container without replacing any empty cells.
-    pub fn push(&mut self, cell: EmptyCell<C>) -> &mut RelCell<C> {
-        let new_index = self.n_cells();
-        let rel_cell = RelCell {
-            index: new_index,
-            cell: cell.into_cell()
-        };
-        self.vec.push(rel_cell);
         &mut self.vec[new_index as usize]
     }
 

@@ -16,6 +16,7 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
+// TODO!: make impls for primitive lattice types
 impl Write<Lattice<Spin>, ParquetError> for Writer {
     fn write(&mut self, data: &Lattice<Spin>, path: impl AsRef<Path>) -> Result<(), ParquetError> {
         let batch = RecordBatch::try_from_iter(
