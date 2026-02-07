@@ -46,6 +46,14 @@ where
     }
 }
 
+pub trait Read<D, E> {
+    fn read(&mut self, path: impl AsRef<Path>) -> Result<D, E>;
+}
+
+pub trait MapFromColumn<T, E> {
+    fn map(&self) -> impl Iterator<Item = Result<T, E>>;
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum CellsReadError {
     #[error(transparent)]
@@ -58,10 +66,72 @@ pub enum CellsReadError {
     SerdeArrow(#[from] serde_arrow::Error),
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum LatticeReadError {
+    #[error("encountered a value with invalid type")]
+    InvalidType,
+    #[error("the file contained no records")]
+    EmptyFile,
+    #[error("lattice width ({width}) and height ({height}) do not match")]
+    NotSquare {
+        width: usize,
+        height: usize,
+    },
+    #[error("encountered an invalid value: {0}")]
+    InvalidValue(#[source] Box<dyn Error + Send + Sync>),
+    #[error(transparent)]
+    Null(#[from] NullError),
+    #[error(transparent)]
+    Parquet(#[from] ParquetError),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum SpinParseError {
+    #[error(transparent)]
+    Parse(#[from] ParseIntError),
+    #[error(transparent)]
+    Null(#[from] NullError)
+}
+
+#[derive(thiserror::Error, Debug)]
+#[error("encountered null value")]
+pub struct NullError;
+
+impl MapFromColumn<Option<String>, ()> for StringArray {
+    fn map(&self) -> impl Iterator<Item = Result<Option<String>, ()>> {
+        self.iter().map(|maybe_s| Ok(maybe_s.map(|s| s.to_string())))
+    }
+}
+
+impl MapFromColumn<String, NullError> for StringArray {
+    fn map(&self) -> impl Iterator<Item = Result<String, NullError>> {
+        self.iter().map(|maybe_s| match maybe_s {
+            Some(s) => Ok(s.to_string()),
+            None => Err(NullError),
+        })
+    }
+}
+
+impl MapFromColumn<Spin, SpinParseError> for StringArray {
+    fn map(&self) -> impl Iterator<Item = Result<Spin, SpinParseError>> {
+        self.iter().map(|maybe_s| match maybe_s {
+            Some(s) => Ok(match s {
+                "m" => Spin::Medium,
+                "s" => Spin::Solid,
+                c => {
+                    let cell_index = c.parse()?;
+                    Spin::Some(cell_index)
+                }
+            }),
+            None => Err(NullError.into()),
+        })
+    }
+}
+
 fn read_lattice<T, A, E>(path: impl AsRef<Path>) -> Result<Lattice<T>, LatticeReadError>
 where
     T: Clone + Default,
-    A: 'static + Array + MapColumn<T, E>,
+    A: 'static + Array + MapFromColumn<T, E>,
     E: 'static + Error + Sync + Send {
     let batches = read_parquet(path)?;
     if batches.is_empty() {
@@ -96,25 +166,6 @@ where
     Ok(lat)
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum LatticeReadError {
-    #[error("encountered a value with invalid type")]
-    InvalidType,
-    #[error("the file contained no records")]
-    EmptyFile,
-    #[error("lattice width ({width}) and height ({height}) do not match")]
-    NotSquare {
-        width: usize,
-        height: usize,
-    },
-    #[error("encountered an invalid value: {0}")]
-    InvalidValue(#[source] Box<dyn Error + Send + Sync>),
-    #[error(transparent)]
-    Null(#[from] NullError),
-    #[error(transparent)]
-    Parquet(#[from] ParquetError),
-}
-
 fn read_parquet(path: impl AsRef<Path>) -> Result<Vec<RecordBatch>, ParquetError> {
     let file = File::open(path)?;
     let builder = ParquetRecordBatchReaderBuilder::try_new(file)?;
@@ -127,57 +178,6 @@ fn read_parquet(path: impl AsRef<Path>) -> Result<Vec<RecordBatch>, ParquetError
     Ok(batches)
 }
 
-pub trait Read<D, E> {
-    fn read(&mut self, path: impl AsRef<Path>) -> Result<D, E>;
-}
-
-pub trait MapColumn<T, E> {
-    fn map(&self) -> impl Iterator<Item = Result<T, E>>;
-}
-
-impl MapColumn<Option<String>, ()> for StringArray {
-    fn map(&self) -> impl Iterator<Item = Result<Option<String>, ()>> {
-        self.iter().map(|maybe_s| Ok(maybe_s.map(|s| s.to_string())))
-    }
-}
-
-impl MapColumn<String, NullError> for StringArray {
-    fn map(&self) -> impl Iterator<Item = Result<String, NullError>> {
-        self.iter().map(|maybe_s| match maybe_s {
-            Some(s) => Ok(s.to_string()),
-            None => Err(NullError),
-        })
-    }
-}
-
-impl MapColumn<Spin, SpinParseError> for StringArray {
-    fn map(&self) -> impl Iterator<Item = Result<Spin, SpinParseError>> {
-        self.iter().map(|maybe_s| match maybe_s {
-            Some(s) => Ok(match s {
-                "m" => Spin::Medium,
-                "s" => Spin::Solid,
-                c => {
-                    let cell_index = c.parse()?;
-                    Spin::Some(cell_index)
-                }
-            }),
-            None => Err(NullError.into()),
-        })
-    }
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum SpinParseError {
-    #[error(transparent)]
-    Parse(#[from] ParseIntError),
-    #[error(transparent)]
-    Null(#[from] NullError)
-}
-
-#[derive(thiserror::Error, Debug)]
-#[error("encountered null value")]
-pub struct NullError;
-
 mod impls {
     use super::*;
     use arrow::array::*;
@@ -185,23 +185,23 @@ mod impls {
     macro_rules! impl_read_lat_primitive {
         ( $( ($t1:ty, $t2:ty) ),* $(,)? ) => {
             $(
-                impl MapColumn<Option<$t1>, ()> for $t2 {
+                impl MapFromColumn<Option<$t1>, ()> for $t2 {
                     fn map(&self) -> impl Iterator<Item = Result<Option<$t1>, ()>> {
                         self.iter().map(|x| Ok(x))
                     }
                 }
 
-                impl MapColumn<$t1, NullError> for $t2 {
+                impl MapFromColumn<$t1, NullError> for $t2 {
                     fn map(&self) -> impl Iterator<Item = Result<$t1, NullError>> {
                         self.iter().map(|x| x.ok_or(NullError))
                     }
                 }
 
-            impl Read<Lattice<$t1>, LatticeReadError> for Reader {
-                fn read(&mut self, path: impl AsRef<Path>) -> Result<Lattice<$t1>, LatticeReadError> {
-                    read_lattice::<$t1, $t2, _>(path)
+                impl Read<Lattice<$t1>, LatticeReadError> for Reader {
+                    fn read(&mut self, path: impl AsRef<Path>) -> Result<Lattice<$t1>, LatticeReadError> {
+                        read_lattice::<$t1, $t2, _>(path)
+                    }
                 }
-            }
             )*
         };
     }
