@@ -13,6 +13,8 @@ default = ["model"]
 model = ["dep:model"]
 
 [dependencies]
+anyhow = "1.0.100"
+cellulars-lib = { path = "../cellulars-lib" }
 model = { path =  "../model", optional = true }
 pyo3 = "0.26.0"
 pyo3-polars = { version =  "0.25.0", features = [] }
