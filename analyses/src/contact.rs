@@ -15,6 +15,8 @@ pub mod contact {
     use super::local_act;
     #[pymodule_export]
     use super::geom_act;
+    #[pymodule_export]
+    use super::kernel_act;
 }
 
 #[pyfunction]
@@ -38,17 +40,10 @@ pub fn local_act(
     let mut act_vecs = ActVecs::default();
     for pos in clat.iter_positions() {
         let spin = clat[pos];
-        let Spin::Some(cell_index) = spin else {
+        let Spin::Some(_) = spin else {
             continue;
         };
-        for neigh in neighborhood.neighbours(pos.to_isize()) {
-            let Some(valid_neigh) = bound.valid_pos(neigh) else {
-                continue;
-            };
-            let neigh_spin = clat[valid_neigh.to_usize()];
-            if let Spin::Some(neighbor_index) = neigh_spin && cell_index == neighbor_index {
-                continue;
-            }
+        for neigh_spin in filter_neighs(pos, &clat, &neighborhood, &bound).unwrap() {
             let vec = act_vecs.vec_ref_mut(neigh_spin);
             vec.push(alat[pos] as f64);
         }
@@ -93,11 +88,97 @@ pub fn geom_act(
             }
             let vec = act_vecs.vec_ref_mut(neigh_spin);
             let neigh_act = geom_mean_act(lat_neigh, &clat, &alat, &neighborhood, &bound);
-            vec.push(neigh_act - act);
+            let act_diff = neigh_act - act;
+            vec.push(act_diff);
         }
     }
 
     Ok(act_vecs)
+}
+
+#[pyfunction]
+pub fn kernel_act(
+    cell_lattice_path: &str,
+    act_lattice_path: &str,
+    width: usize,
+    height: usize,
+    radius: u8,
+    geom: bool
+) -> PyResult<(ActVecs, Vec<f64>)> {
+    let (clat, alat) = clat_alat(
+        cell_lattice_path,
+        act_lattice_path,
+        width,
+        height
+    ).map_err(|e| PyValueError::new_err(e.to_string()))?;
+
+    let mut klat = Lattice::new(clat.rect.clone());
+    let neighborhood = MooreNeighbourhood::new(1);
+    let kernel = MooreNeighbourhood::new(radius);
+    let bound = FixedBoundary::new(Rect::new(
+        clat.rect.min.to_isize(),
+        clat.rect.max.to_isize()
+    ));
+    let mut act_vecs = ActVecs::default();
+    for pos in clat.iter_positions() {
+        let spin = clat[pos];
+        let Spin::Some(cell_index) = spin else {
+            continue;
+        };
+
+        let mut act_sum = alat[pos];
+        let mut neigh_count = 1;
+        for neigh in kernel.neighbours(pos.to_isize()) {
+            let Some(valid_neigh) = bound.valid_pos(neigh) else {
+                continue;
+            };
+            let lat_neigh = valid_neigh.to_usize();
+            let neigh_spin = clat[lat_neigh];
+            if let Spin::Some(neighbor_index) = neigh_spin && cell_index == neighbor_index {
+                let neigh_act = alat[lat_neigh];
+                if geom {
+                    act_sum *= neigh_act;
+                } else {
+                    act_sum += neigh_act;
+                }
+                neigh_count += 1;
+            }
+        }
+
+        let act = if geom {
+            (act_sum as f64).powf( 1. / neigh_count as f64)
+        } else {
+            act_sum as f64 / neigh_count as f64
+        };
+        klat[pos] = act;
+
+        for neigh_spin in filter_neighs(pos, &clat, &neighborhood, &bound).unwrap() {
+            let vec = act_vecs.vec_ref_mut(neigh_spin);
+            vec.push(klat[pos]);
+        }
+    }
+    Ok((act_vecs, klat.as_array().into()))
+}
+
+fn filter_neighs(
+    pos: Pos<usize>,
+    clat: &Lattice<Spin>,
+    neighborhood: &impl Neighbourhood,
+    bound: &impl Boundary<Coord = isize>
+) -> Option<impl Iterator<Item = Spin>> {
+    let Spin::Some(cell_index) = clat[pos] else {
+        return None;
+    };
+    Some(neighborhood.neighbours(pos.to_isize()).filter_map(move |neigh| {
+        let Some(valid_neigh) = bound.valid_pos(neigh) else {
+            return None;
+        };
+        let neigh_spin = clat[valid_neigh.to_usize()];
+        if let Spin::Some(neighbor_index) = neigh_spin && cell_index == neighbor_index {
+            return None;
+        }
+        Some(neigh_spin)
+    }))
 }
 
 fn geom_mean_act(
