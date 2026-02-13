@@ -10,7 +10,7 @@ def dec_to_bitarray(num, width=None):
 
 
 def calculate_complimentarity(key, lock):
-    return (key ^ lock).bit_count()
+    return np.bitwise_count(key ^ lock)
 
 
 def cell_contact_energy(k1: int, l1: int, k2: int, l2: int, cell_energy, gene_energy, genome_length):

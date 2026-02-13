@@ -1,9 +1,9 @@
 pub mod model;
 pub mod io;
-mod pond;
-mod my_potts;
-mod constants;
-mod cell;
-mod my_environment;
-mod evolution;
-mod bit_adhesion;
+pub mod pond;
+pub mod my_potts;
+pub mod constants;
+pub mod cell;
+pub mod my_environment;
+pub mod evolution;
+pub mod bit_adhesion;

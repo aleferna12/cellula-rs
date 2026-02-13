@@ -1,37 +1,35 @@
-use anyhow::Context;
+use anyhow::{bail, Context};
+use cellulars_lib::constants::CellIndex;
+use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::boundaries::{Boundary, FixedBoundary};
 use cellulars_lib::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
+use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
-use model::io::io_manager::IoManager;
+use num::NumCast;
+use polars::polars_utils::float::IsFloat;
+use polars::prelude::AnyValue;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use cellulars_lib::lattice::Lattice;
-use cellulars_lib::positional::pos::Pos;
+use pyo3_polars::PyDataFrame;
 
 #[pymodule]
 pub mod contact {
     #[pymodule_export]
-    use super::local_act;
-    #[pymodule_export]
     use super::geom_act;
     #[pymodule_export]
     use super::kernel_act;
+    #[pymodule_export]
+    use super::local_act;
 }
 
 #[pyfunction]
 pub fn local_act(
-    cell_lattice_path: &str,
-    act_lattice_path: &str,
-    width: usize,
-    height: usize
+    clat: PyDataFrame,
+    alat: PyDataFrame
 ) -> PyResult<ActVecs> {
-    let (clat, alat) = clat_alat(
-        cell_lattice_path,
-        act_lattice_path,
-        width,
-        height
-    ).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let clat = into_spin_lat(clat).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let alat = into_lat::<u32>(alat).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let neighborhood = MooreNeighbourhood::new(1);
     let bound = FixedBoundary::new(Rect::new(
         clat.rect.min.to_isize(),
@@ -54,17 +52,11 @@ pub fn local_act(
 
 #[pyfunction]
 pub fn geom_act(
-    cell_lattice_path: &str,
-    act_lattice_path: &str,
-    width: usize,
-    height: usize
+    clat: PyDataFrame,
+    alat: PyDataFrame
 ) -> PyResult<ActVecs> {
-    let (clat, alat) = clat_alat(
-        cell_lattice_path,
-        act_lattice_path,
-        width,
-        height
-    ).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let clat = into_spin_lat(clat).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let alat = into_lat::<u32>(alat).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let neighborhood = MooreNeighbourhood::new(1);
     let bound = FixedBoundary::new(Rect::new(
         clat.rect.min.to_isize(),
@@ -98,19 +90,13 @@ pub fn geom_act(
 
 #[pyfunction]
 pub fn kernel_act(
-    cell_lattice_path: &str,
-    act_lattice_path: &str,
-    width: usize,
-    height: usize,
+    clat: PyDataFrame,
+    alat: PyDataFrame,
     radius: u8,
     geom: bool
 ) -> PyResult<(ActVecs, Vec<f64>)> {
-    let (clat, alat) = clat_alat(
-        cell_lattice_path,
-        act_lattice_path,
-        width,
-        height
-    ).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let clat = into_spin_lat(clat).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let alat = into_lat::<u32>(alat).map_err(|e| PyValueError::new_err(e.to_string()))?;
 
     let mut klat = Lattice::new(clat.rect.clone());
     let neighborhood = MooreNeighbourhood::new(1);
@@ -235,20 +221,41 @@ impl ActVecs {
     }
 }
 
-fn clat_alat(
-    cell_lattice_path: &str,
-    act_lattice_path: &str,
-    width: usize,
-    height: usize
-) -> anyhow::Result<(Lattice<Spin>, Lattice<u32>)> {
-    let rect = Rect::new((0, 0).into(), (width, height).into());
-    let clat = IoManager::read_cell_lattice(
-        cell_lattice_path,
-        rect.clone()
-    ).with_context(|| "while reading cell lattice")?;
-    let alat = IoManager::read_lattice_u32(
-        act_lattice_path,
-        rect.clone()
-    ).with_context(|| "while reading act lattice")?;
-    Ok((clat, alat))
+fn into_spin_lat(df: PyDataFrame) -> anyhow::Result<Lattice<Spin>> {
+    let df = df.0;
+    let rect = Rect::new((0, 0).into(), (df.width(), df.height()).into());
+    let mut lat = Lattice::new(rect);
+    for pos in lat.iter_positions() {
+        let col = &df[pos.x];
+        let maybe_val = col.get(pos.y)?;
+        match maybe_val {
+            AnyValue::String(val) => {
+                let spin = match val {
+                    "s" => Spin::Solid,
+                    "m" => Spin::Medium,
+                    _ => {
+                        let cell_index = val.parse::<CellIndex>().with_context(|| {
+                            format!("lattice contains invalid value {val}")
+                        })?;
+                        Spin::Some(cell_index)
+                    },
+                };
+                lat[pos] = spin;
+            },
+            AnyValue::Null => bail!("cell lattice contains null values"),
+            _ => bail!("cell lattice contains invalid value")
+        }
+    }
+    Ok(lat)
+}
+
+fn into_lat<T: Clone + Default + NumCast + IsFloat>(df: PyDataFrame) -> anyhow::Result<Lattice<T>> {
+    let df = df.0;
+    let rect = Rect::new((0, 0).into(), (df.width(), df.height()).into());
+    let mut lat = Lattice::new(rect);
+    for pos in lat.iter_positions() {
+        let x = df[pos.x].get(pos.y)?.try_extract::<T>()?;
+        lat[pos] = x;
+    }
+    Ok(lat)
 }

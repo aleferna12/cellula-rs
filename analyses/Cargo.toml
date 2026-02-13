@@ -16,5 +16,7 @@ model = ["dep:model"]
 anyhow = "1.0.100"
 cellulars-lib = { path = "../cellulars-lib" }
 model = { path =  "../model", optional = true }
+num = "0.4.3"
+polars = "0.52.0"
 pyo3 = "0.26.0"
-pyo3-polars = { version =  "0.25.0", features = [] }
+pyo3-polars = "0.25.0"
