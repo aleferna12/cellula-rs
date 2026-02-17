@@ -1,6 +1,6 @@
 # This is a copy of the parameters used in the simulation
 [general]
-time-steps = 5_000_000
+time-steps = 1_000_000
 
 [pond]
 width = 500
@@ -35,7 +35,7 @@ act-max = 20
 act-lambda = 150.0
 
 [potts.adhesion]
-cell-energy = 8.0
+cell-energy = 20.0
 medium-energy = 20.0
 solid-energy = 20.0
 gene-energy = 0.0
@@ -48,8 +48,9 @@ image-format = "webp"
 info-period = 50_000
 
 [io.data]
-cells-period = 50_000
-lattice-period = 50_000
+cells-period = 10_000
+cells-write-period = 25_000
+lattice-period = 25_000
 
 [io.movie]
 show = false
