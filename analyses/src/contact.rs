@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use anyhow::{bail, Context};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::lattice::Lattice;
@@ -21,6 +22,8 @@ pub mod contact {
     use super::kernel_act;
     #[pymodule_export]
     use super::local_act;
+    #[pymodule_export]
+    use super::neighbour_map;
 }
 
 #[pyfunction]
@@ -146,6 +149,37 @@ pub fn kernel_act(
     Ok((act_vecs, klat.as_array().into()))
 }
 
+#[pyfunction]
+pub fn neighbour_map(
+    clat: PyDataFrame,
+    include_self: bool
+) -> PyResult<HashMap<String, HashSet<String>>> {
+    let clat = into_spin_lat(clat).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let mut neigh_map = HashMap::new();
+    let neighborhood = MooreNeighbourhood::new(1);
+    let bound = FixedBoundary::new(Rect::new(
+        clat.rect.min.to_isize(),
+        clat.rect.max.to_isize()
+    ));
+    for pos in clat.iter_positions() {
+        let spin = clat[pos];
+        let entry = neigh_map.entry(spin_to_str(spin)).or_insert_with(HashSet::new);
+        for neigh in neighborhood.neighbours(pos.to_isize()) {
+            let Some(valid_neigh) = bound.valid_pos(neigh) else {
+                continue;
+            };
+            let lat_neigh = valid_neigh.to_usize();
+            let neigh_spin = clat[lat_neigh];
+            if !include_self && spin == neigh_spin {
+                continue;
+            }
+            entry.insert(spin_to_str(neigh_spin));
+        }
+    }
+
+    Ok(neigh_map)
+}
+
 fn filter_neighs(
     pos: Pos<usize>,
     clat: &Lattice<Spin>,
@@ -230,16 +264,7 @@ fn into_spin_lat(df: PyDataFrame) -> anyhow::Result<Lattice<Spin>> {
         let maybe_val = col.get(pos.y)?;
         match maybe_val {
             AnyValue::String(val) => {
-                let spin = match val {
-                    "s" => Spin::Solid,
-                    "m" => Spin::Medium,
-                    _ => {
-                        let cell_index = val.parse::<CellIndex>().with_context(|| {
-                            format!("lattice contains invalid value {val}")
-                        })?;
-                        Spin::Some(cell_index)
-                    },
-                };
+                let spin = str_to_spin(val)?;
                 lat[pos] = spin;
             },
             AnyValue::Null => bail!("cell lattice contains null values"),
@@ -258,4 +283,25 @@ fn into_lat<T: Clone + Default + NumCast + IsFloat>(df: PyDataFrame) -> anyhow::
         lat[pos] = x;
     }
     Ok(lat)
+}
+
+fn spin_to_str(spin: Spin) -> String {
+    match spin {
+        Spin::Solid => String::from("s"),
+        Spin::Medium => String::from("m"),
+        Spin::Some(cell_index) => cell_index.to_string(),
+    }
+}
+
+fn str_to_spin(s: &str) -> anyhow::Result<Spin> {
+    Ok(match s {
+        "s" => Spin::Solid,
+        "m" => Spin::Medium,
+        _ => {
+            let cell_index = s.parse::<CellIndex>().with_context(|| {
+                format!("lattice contains invalid value {s}")
+            })?;
+            Spin::Some(cell_index)
+        },
+    })
 }

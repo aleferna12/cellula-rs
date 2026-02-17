@@ -318,7 +318,7 @@ impl IoManager {
         env: &mut MyEnvironment
     ) -> anyhow::Result<()> {
         if time_step.is_multiple_of(self.cells_period) {
-            let mut celldf = env.cells
+            let mut celldf = env
                 .to_dataframe()
                 .with_context(|| "failed to make data frame from cells")?;
             celldf
@@ -473,9 +473,20 @@ trait ToDataFrame {
     fn to_dataframe(&self) -> PolarsResult<DataFrame>;
 }
 
-impl ToDataFrame for CellContainer<Cell> {
+impl ToDataFrame for MyEnvironment {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let valid = self.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
+        let valid = self.cells.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
+        let neighs = valid
+            .iter()
+            .map(|cell| {
+                let set: Vec<String> = self
+                    .cell_neighbours(cell, self.cell_search_scaler)
+                    .iter()
+                    .map(|n| format!("{n}"))
+                    .collect();
+                set.join(" ")
+            })
+            .collect::<Vec<String>>();
         df!(
             "index" => valid.iter().map(|cell| cell.index).collect::<Box<_>>(),
             "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Box<_>>(),
@@ -489,7 +500,8 @@ impl ToDataFrame for CellContainer<Cell> {
             "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Box<_>>(),
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Box<_>>(),
             "ligands" => valid.iter().map(|cell| cell.genome.ligands()).collect::<Box<_>>(),
-            "receptors" => valid.iter().map(|cell| cell.genome.receptors()).collect::<Box<_>>()
+            "receptors" => valid.iter().map(|cell| cell.genome.receptors()).collect::<Box<_>>(),
+            "neighbors" => neighs
         )
     }
 }
