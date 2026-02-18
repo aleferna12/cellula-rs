@@ -1,11 +1,12 @@
 //! Contains logic associated with [Lattice].
 
-use crate::positional::boundaries::Boundary;
-use crate::positional::neighbourhood::Neighbourhood;
+use crate::positional::boundaries::{Boundary, FixedBoundary};
+use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
+use crate::spin::Spin;
 use rand::Rng;
-use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Clone)]
@@ -216,6 +217,33 @@ impl<T> Index<Pos<usize>> for Lattice<T> {
 impl<T> IndexMut<Pos<usize>> for Lattice<T> {
     fn index_mut(&mut self, pos: Pos<usize>) -> &mut Self::Output {
         &mut self.array[pos.col_major(self.height())]
+    }
+}
+
+impl Lattice<Spin> {
+    pub fn neighbour_map(&self) -> HashMap<Spin, HashSet<Spin>> {
+        let mut neigh_map = HashMap::new();
+        let neighborhood = MooreNeighbourhood::new(1);
+        let bound = FixedBoundary::new(Rect::new(
+            self.rect.min.to_isize(),
+            self.rect.max.to_isize()
+        ));
+        for pos in self.iter_positions() {
+            let spin = self[pos];
+            let entry = neigh_map.entry(spin).or_insert_with(HashSet::new);
+            for neigh in neighborhood.neighbours(pos.to_isize()) {
+                let Some(valid_neigh) = bound.valid_pos(neigh) else {
+                    continue;
+                };
+                let lat_neigh = valid_neigh.to_usize();
+                let neigh_spin = self[lat_neigh];
+                if spin == neigh_spin {
+                    continue;
+                }
+                entry.insert(neigh_spin);
+            }
+        }
+        neigh_map
     }
 }
 

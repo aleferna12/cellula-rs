@@ -12,7 +12,7 @@ use cellulars_lib::constants::CellIndex;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::spin::Spin;
+use cellulars_lib::spin::{spin_to_str, Spin};
 use image::imageops::{flip_vertical_in_place, FilterType};
 use image::{ColorType, GrayImage, ImageReader, RgbaImage};
 use polars::prelude::*;
@@ -380,13 +380,7 @@ impl IoManager {
             cols.push(Series::new(
                 format!("col_{j}").into(),
                 col.iter()
-                    .map(|val| {
-                        match val {
-                            Spin::Solid => "s".into(),
-                            Spin::Medium => "m".into(),
-                            Spin::Some(cell_index) => cell_index.to_string()
-                        }
-                    })
+                    .map(|val| spin_to_str(*val))
                     .collect::<Vec<_>>(),
             ).into())
         }
@@ -476,17 +470,14 @@ trait ToDataFrame {
 impl ToDataFrame for MyEnvironment {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
         let valid = self.cells.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
-        let neighs = valid
-            .iter()
-            .map(|cell| {
-                let set: Vec<String> = self
-                    .cell_neighbours(cell, self.cell_search_scaler)
-                    .iter()
-                    .map(|n| format!("{n}"))
-                    .collect();
-                set.join(" ")
-            })
-            .collect::<Vec<String>>();
+        let neighmap = self.cell_lattice.neighbour_map();
+        let neighs = valid.iter().map(|cell| {
+            neighmap[&Spin::Some(cell.index)]
+                .iter()
+                .map(|v| spin_to_str(*v))
+                .collect::<Box<[String]>>()
+                .join(" ")
+        }).collect::<Box<[String]>>();
         df!(
             "index" => valid.iter().map(|cell| cell.index).collect::<Box<_>>(),
             "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Box<_>>(),

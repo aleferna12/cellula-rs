@@ -1,18 +1,17 @@
-use std::collections::{HashMap, HashSet};
-use anyhow::{bail, Context};
-use cellulars_lib::constants::CellIndex;
+use anyhow::bail;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::positional::boundaries::{Boundary, FixedBoundary};
 use cellulars_lib::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::spin::Spin;
+use cellulars_lib::spin::{spin_to_str, str_to_spin, Spin};
 use num::NumCast;
 use polars::polars_utils::float::IsFloat;
 use polars::prelude::AnyValue;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3_polars::PyDataFrame;
+use std::collections::HashMap;
 
 #[pymodule]
 pub mod contact {
@@ -151,33 +150,13 @@ pub fn kernel_act(
 
 #[pyfunction]
 pub fn neighbour_map(
-    clat: PyDataFrame,
-    include_self: bool
-) -> PyResult<HashMap<String, HashSet<String>>> {
+    clat: PyDataFrame
+) -> PyResult<HashMap<String, Vec<String>>> {
     let clat = into_spin_lat(clat).map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let mut neigh_map = HashMap::new();
-    let neighborhood = MooreNeighbourhood::new(1);
-    let bound = FixedBoundary::new(Rect::new(
-        clat.rect.min.to_isize(),
-        clat.rect.max.to_isize()
-    ));
-    for pos in clat.iter_positions() {
-        let spin = clat[pos];
-        let entry = neigh_map.entry(spin_to_str(spin)).or_insert_with(HashSet::new);
-        for neigh in neighborhood.neighbours(pos.to_isize()) {
-            let Some(valid_neigh) = bound.valid_pos(neigh) else {
-                continue;
-            };
-            let lat_neigh = valid_neigh.to_usize();
-            let neigh_spin = clat[lat_neigh];
-            if !include_self && spin == neigh_spin {
-                continue;
-            }
-            entry.insert(spin_to_str(neigh_spin));
-        }
-    }
-
-    Ok(neigh_map)
+    let nmap = clat.neighbour_map();
+    Ok(HashMap::from_iter(nmap.into_iter().map(|(k, v)| {
+        (spin_to_str(k), v.into_iter().map(|v| v.to_string()).collect())
+    })))
 }
 
 fn filter_neighs(
@@ -283,25 +262,4 @@ fn into_lat<T: Clone + Default + NumCast + IsFloat>(df: PyDataFrame) -> anyhow::
         lat[pos] = x;
     }
     Ok(lat)
-}
-
-fn spin_to_str(spin: Spin) -> String {
-    match spin {
-        Spin::Solid => String::from("s"),
-        Spin::Medium => String::from("m"),
-        Spin::Some(cell_index) => cell_index.to_string(),
-    }
-}
-
-fn str_to_spin(s: &str) -> anyhow::Result<Spin> {
-    Ok(match s {
-        "s" => Spin::Solid,
-        "m" => Spin::Medium,
-        _ => {
-            let cell_index = s.parse::<CellIndex>().with_context(|| {
-                format!("lattice contains invalid value {s}")
-            })?;
-            Spin::Some(cell_index)
-        },
-    })
 }
