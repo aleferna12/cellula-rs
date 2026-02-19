@@ -4,7 +4,7 @@ use crate::positional::boundaries::Boundary;
 use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
-use rand::Rng;
+use rand::{Rng, RngExt};
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 

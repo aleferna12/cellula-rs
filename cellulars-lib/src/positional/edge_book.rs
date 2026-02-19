@@ -2,7 +2,7 @@
 
 use crate::positional::edge::Edge;
 use indexmap::IndexSet;
-use rand::Rng;
+use rand::{Rng, RngExt};
 use std::ops::Index;
 
 /// This type exists to book-keep the edges in a lattice.
