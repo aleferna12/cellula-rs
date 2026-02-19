@@ -2,7 +2,7 @@
 
 use crate::positional::edge::Edge;
 use indexmap::IndexSet;
-use rand::{Rng, RngExt};
+use rand::RngExt;
 use std::ops::Index;
 
 /// This type exists to book-keep the edges in a lattice.
@@ -48,7 +48,7 @@ impl EdgeBook {
     }
 
     /// Returns a random number between 0 and the number of edges in the edge book.
-    pub fn random_index(&self, rng: &mut impl Rng) -> usize {
+    pub fn random_index(&self, rng: &mut impl RngExt) -> usize {
         rng.random_range(0..self.edge_set.len())
     }
 

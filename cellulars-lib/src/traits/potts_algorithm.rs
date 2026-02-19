@@ -6,7 +6,7 @@ use crate::positional::pos::Pos;
 use crate::spin::Spin;
 use crate::traits::cellular::Cellular;
 use crate::traits::habitable::Habitable;
-use rand::Rng;
+use rand::RngExt;
 #[cfg(not(feature = "f64"))]
 use std::f32::consts::E;
 #[cfg(feature = "f64")]
@@ -59,7 +59,7 @@ pub trait PottsAlgorithm {
 
     /// Returns whether a copy attempt that results in an energy differential `delta_h` should be randomly accepted
     /// by drawing from a Boltzmann distribution.
-    fn accept_site_copy(&self, rng: &mut impl Rng, delta_h: FloatType) -> bool {
+    fn accept_site_copy(&self, rng: &mut impl RngExt, delta_h: FloatType) -> bool {
         delta_h < 0. || rng.random::<FloatType>() < E.powf(-delta_h / self.boltz_t())
     }
 
@@ -73,7 +73,7 @@ pub trait PottsAlgorithm {
     fn step(
         &self,
         env: &mut Self::Environment,
-        rng: &mut impl Rng
+        rng: &mut impl RngExt
     ) {
         let mut to_visit = 2. * env.env().edge_book.len() as FloatType / env.env().neighborhood.n_neighs() as FloatType;
         while 0. < to_visit {
@@ -100,7 +100,7 @@ pub trait PottsAlgorithm {
         pos_source: Pos<usize>,
         pos_target: Pos<usize>,
         env: &mut Self::Environment,
-        rng: &mut impl Rng
+        rng: &mut impl RngExt
     ) -> FloatType {
         let spin_target = env.env().cell_lattice[pos_target];
         if spin_target == Spin::Solid {

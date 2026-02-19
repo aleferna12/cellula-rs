@@ -20,7 +20,7 @@ use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
 use polars::polars_utils::itertools::Itertools;
-use rand::{Rng, RngCore, SeedableRng};
+use rand::{make_rng, Rng, RngExt, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
@@ -199,7 +199,7 @@ impl Model {
 
     fn determine_seed(seed_param: Option<u64>) -> u64 {
         // TOML doesnt support large u64s so we use a u32 seed
-        seed_param.unwrap_or(Xoshiro256StarStar::from_os_rng().next_u32() as u64)
+        seed_param.unwrap_or(make_rng::<Xoshiro256StarStar>().next_u32() as u64)
     }
 
     fn make_empty_pond(parameters: &Parameters, rng: &mut Xoshiro256StarStar) -> MyPond {
@@ -228,7 +228,7 @@ impl Model {
         }).transpose()
     }
 
-    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl Rng) -> EmptyCell<MyCell> {
+    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl RngExt) -> EmptyCell<MyCell> {
         MyCell::new_empty(
             parameters.cell.target_area,
             parameters.cell.div_area,
@@ -446,7 +446,7 @@ impl Step for Model {
 
 #[cfg(test)]
 mod tests {
-    use rand::{Rng, SeedableRng};
+    use rand::{RngExt, SeedableRng};
     use rand_xoshiro::Xoshiro256StarStar;
 
     #[test]

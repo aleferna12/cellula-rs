@@ -13,7 +13,7 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell, HasCenter};
 use cellulars_lib::traits::habitable::Habitable;
-use rand::Rng;
+use rand::RngExt;
 
 /// An environment that contains a chemical gradient and limits cell growth to [`MyEnvironment::max_cells`].
 #[derive(Clone)]
@@ -80,7 +80,7 @@ impl MyEnvironment {
         &mut self,
         empty_cell: EmptyCell<MyCell>,
         cell_area: u32,
-        rng: &mut impl Rng,
+        rng: &mut impl RngExt,
     ) -> &RelCell<MyCell> {
         let pos_isize = self
             .env

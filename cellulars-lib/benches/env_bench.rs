@@ -10,7 +10,7 @@ use cellulars_lib::prelude::Cellular;
 use cellulars_lib::traits::habitable::Habitable;
 use criterion::BatchSize;
 use criterion::{criterion_group, criterion_main, Criterion};
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::cmp::min;
 use std::default::Default;
@@ -30,7 +30,7 @@ fn random_neighbor(
     env: &Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
     p: Pos<usize>,
     neigh_r: u8,
-    rng: &mut impl Rng
+    rng: &mut impl RngExt
 ) -> Pos<usize> {
     let oldp = (p.x as i32, p.y as i32);
     let mut newp = oldp;
@@ -48,7 +48,7 @@ fn random_neighbor(
 
 fn add_random_edge(
     env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
-    rng: &mut impl Rng
+    rng: &mut impl RngExt
 ) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
     let e = Edge::new(p1, random_neighbor(env, p1, 1, rng));
@@ -58,7 +58,7 @@ fn add_random_edge(
 fn replace_random_edges(
     n_edges: usize,
     env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
-    rng: &mut impl Rng
+    rng: &mut impl RngExt
 ) {
     for _ in 0..n_edges {
         let e1 = add_random_edge(env, rng);

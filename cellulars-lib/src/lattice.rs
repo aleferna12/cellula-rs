@@ -4,7 +4,7 @@ use crate::positional::boundaries::Boundary;
 use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
-use rand::{Rng, RngExt};
+use rand::RngExt;
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 
@@ -54,7 +54,7 @@ impl<T> Lattice<T> {
     }
 
     /// Returns a random position from the lattice using a uniform distribution.
-    pub fn random_pos(&self, rng: &mut impl Rng) -> Pos<usize> {
+    pub fn random_pos(&self, rng: &mut impl RngExt) -> Pos<usize> {
         Pos::new(
             rng.random_range(0..self.width()),
             rng.random_range(0..self.height())
