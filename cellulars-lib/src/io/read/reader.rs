@@ -1,6 +1,5 @@
 //! Contains logic associated with the default [`Reader`].
-//! 
-use std::convert::Infallible;
+//!
 use crate::cell_container;
 use crate::lattice::Lattice;
 use crate::prelude::{CellContainer, Pos, RelCell};
@@ -13,6 +12,7 @@ use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::errors::ParquetError;
 use serde::de::DeserializeOwned;
 use serde_arrow::from_record_batch;
+use std::convert::Infallible;
 use std::error::Error;
 use std::fs::File;
 use std::num::ParseIntError;

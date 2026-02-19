@@ -1,7 +1,7 @@
 #[cfg(feature = "image-io")]
 mod image_test {
-    use image::RgbaImage;
     use cellulars_lib::io::write::writer::{Write, Writer};
+    use image::RgbaImage;
 
     #[test]
     fn test_image_writer() {

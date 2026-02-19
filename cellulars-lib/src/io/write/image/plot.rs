@@ -1,11 +1,11 @@
 //! Contains logic used to plot information to an [`RgbaImage`].
 
+use crate::io::write::image::lerper::Lerper;
 use crate::prelude::{CellIndex, Cellular, FloatType, Habitable, HasCenter, Spin};
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{IntoColor, Mix, Srgba};
 use std::hash::{DefaultHasher, Hash, Hasher};
-use crate::io::write::image::lerper::Lerper;
 
 /// A trait to plot information about the simulation.
 pub trait Plot<P> {
