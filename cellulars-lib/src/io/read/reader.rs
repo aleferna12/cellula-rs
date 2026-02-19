@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use crate::cell_container;
 use crate::lattice::Lattice;
 use crate::prelude::{CellContainer, Pos, RelCell};
@@ -50,8 +51,8 @@ pub trait Read<D, E> {
     fn read(&mut self, path: impl AsRef<Path>) -> Result<D, E>;
 }
 
-pub trait MapFromColumn<T, E> {
-    fn map(&self) -> impl Iterator<Item = Result<T, E>>;
+pub trait MapFromArray<T, E> {
+    fn map_from(&self) -> impl Iterator<Item = Result<T, E>>;
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -97,14 +98,8 @@ pub enum SpinParseError {
 #[error("encountered null value")]
 pub struct NullError;
 
-impl MapFromColumn<Option<String>, ()> for StringArray {
-    fn map(&self) -> impl Iterator<Item = Result<Option<String>, ()>> {
-        self.iter().map(|maybe_s| Ok(maybe_s.map(|s| s.to_string())))
-    }
-}
-
-impl MapFromColumn<String, NullError> for StringArray {
-    fn map(&self) -> impl Iterator<Item = Result<String, NullError>> {
+impl MapFromArray<String, NullError> for StringArray {
+    fn map_from(&self) -> impl Iterator<Item = Result<String, NullError>> {
         self.iter().map(|maybe_s| match maybe_s {
             Some(s) => Ok(s.to_string()),
             None => Err(NullError),
@@ -112,8 +107,14 @@ impl MapFromColumn<String, NullError> for StringArray {
     }
 }
 
-impl MapFromColumn<Spin, SpinParseError> for StringArray {
-    fn map(&self) -> impl Iterator<Item = Result<Spin, SpinParseError>> {
+impl MapFromArray<Option<String>, Infallible> for StringArray {
+    fn map_from(&self) -> impl Iterator<Item = Result<Option<String>, Infallible>> {
+        self.iter().map(|maybe_s| Ok(maybe_s.map(|s| s.to_string())))
+    }
+}
+
+impl MapFromArray<Spin, SpinParseError> for StringArray {
+    fn map_from(&self) -> impl Iterator<Item = Result<Spin, SpinParseError>> {
         self.iter().map(|maybe_s| match maybe_s {
             Some(s) => Ok(match s {
                 "m" => Spin::Medium,
@@ -131,7 +132,7 @@ impl MapFromColumn<Spin, SpinParseError> for StringArray {
 fn read_lattice<T, A, E>(path: impl AsRef<Path>) -> Result<Lattice<T>, LatticeReadError>
 where
     T: Clone + Default,
-    A: 'static + Array + MapFromColumn<T, E>,
+    A: 'static + Array + MapFromArray<T, E>,
     E: 'static + Error + Sync + Send {
     let batches = read_parquet(path)?;
     if batches.is_empty() {
@@ -153,7 +154,7 @@ where
             let Some(col_array) = col.as_any().downcast_ref::<A>() else {
                 return Err(LatticeReadError::InvalidType);
             };
-            for (i, spin) in col_array.map().enumerate() {
+            for (i, spin) in col_array.map_from().enumerate() {
                 // We gotta do this again because is_nullable can lie...
                 match spin {
                     Ok(valid_spin) => lat[Pos::new(row_offset + i, j)] = valid_spin,
@@ -185,14 +186,14 @@ mod impls {
     macro_rules! impl_read_lat_primitive {
         ( $( ($t1:ty, $t2:ty) ),* $(,)? ) => {
             $(
-                impl MapFromColumn<Option<$t1>, ()> for $t2 {
-                    fn map(&self) -> impl Iterator<Item = Result<Option<$t1>, ()>> {
+                impl MapFromArray<Option<$t1>, Infallible> for $t2 {
+                    fn map_from(&self) -> impl Iterator<Item = Result<Option<$t1>, Infallible>> {
                         self.iter().map(|x| Ok(x))
                     }
                 }
 
-                impl MapFromColumn<$t1, NullError> for $t2 {
-                    fn map(&self) -> impl Iterator<Item = Result<$t1, NullError>> {
+                impl MapFromArray<$t1, NullError> for $t2 {
+                    fn map_from(&self) -> impl Iterator<Item = Result<$t1, NullError>> {
                         self.iter().map(|x| x.ok_or(NullError))
                     }
                 }

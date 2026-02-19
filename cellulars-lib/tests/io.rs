@@ -1,5 +1,3 @@
-#![cfg(any(feature = "data-io", feature = "image-io"))]
-
 #[cfg(feature = "image-io")]
 mod image_test {
     use image::RgbaImage;

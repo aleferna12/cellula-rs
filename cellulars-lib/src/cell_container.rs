@@ -185,8 +185,8 @@ impl<C> IndexMut<CellIndex> for CellContainer<C> {
 /// the inner cell type `C` directly.
 ///
 /// Implements [Deref<Target = C>].
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RelCell<C> {
     /// Relational cell index that is unique to this cell in its
     /// [Environment](crate::base::environment::Environment).

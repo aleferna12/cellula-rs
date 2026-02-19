@@ -5,14 +5,11 @@ use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
 use rand::Rng;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 
 /// A 2D rectangular lattice containing some objects of type `T`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Lattice<T> {
     array: Box<[T]>,
     /// The lattice dimensions.

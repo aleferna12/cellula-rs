@@ -2,8 +2,9 @@ use crate::cell_container::{CellContainer, RelCell};
 use crate::io::write::writer::{Write, Writer};
 use crate::lattice::Lattice;
 use crate::prelude::{Cellular, Pos, Spin};
-use arrow::array::{Array, ArrayRef, RecordBatch, StringArray, UInt32Array};
+use arrow::array::{Array, ArrayRef, RecordBatch, StringArray};
 use arrow::datatypes::FieldRef;
+use arrow::error::ArrowError;
 use parquet::arrow::ArrowWriter;
 use parquet::basic::{Compression, ZstdLevel};
 use parquet::errors::ParquetError;
@@ -16,8 +17,9 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-impl Write<Lattice<Spin>, ParquetError> for Writer {
-    fn write(&mut self, data: &Lattice<Spin>, path: impl AsRef<Path>) -> Result<(), ParquetError> {
+impl Write<Lattice<Spin>, LatticeWriteError> for Writer {
+    fn write(&mut self, data: &Lattice<Spin>, path: impl AsRef<Path>) -> Result<(), LatticeWriteError> {
+        write_lattice(data, path).map(|_| ())
     }
 }
 
@@ -36,19 +38,33 @@ where
     }
 }
 
-pub trait MapIntoColumn<A, E> {
-    fn map(self) -> Result<A, E>;
+pub trait MapIntoArray<A> {
+    fn map_into(self) -> A;
 }
 
-impl MapIntoColumn<StringArray, ()> for Vec<String> {
-    fn map(self) -> Result<StringArray, ()> {
-        Ok(StringArray::from(self))
+impl MapIntoArray<StringArray> for Vec<String> {
+    fn map_into(self) -> StringArray {
+        self.into()
     }
 }
 
-impl MapIntoColumn<StringArray, ()> for Vec<Option<String>> {
-    fn map(self) -> Result<StringArray, ()> {
-        Ok(StringArray::from(self))
+impl MapIntoArray<StringArray> for Vec<Option<String>> {
+    fn map_into(self) -> StringArray {
+        self.into()
+    }
+}
+
+impl MapIntoArray<StringArray> for Vec<Spin> {
+    fn map_into(self) -> StringArray {
+        self
+            .iter()
+            .map(|val| match val {
+                Spin::Medium => "m".into(),
+                Spin::Solid => "s".into(),
+                Spin::Some(ci) => ci.to_string()
+            })
+            .collect::<Vec<_>>()
+            .into()
     }
 }
 
@@ -61,30 +77,29 @@ pub enum CellsWriteError {
     SerdeArrow(#[from] serde_arrow::Error),
 }
 
-fn f() {
-    match spin {
-        // Saving as strings with one char is more compact than u32 (or longer strings)
-        Spin::Medium => "m".to_string(),
-        Spin::Solid => "s".to_string(),
-        Spin::Some(cell_index) => cell_index.to_string()
-    }
+#[derive(thiserror::Error, Debug)]
+pub enum LatticeWriteError {
+    #[error(transparent)]
+    Arrow(# [from] ArrowError),
+    #[error(transparent)]
+    Parquet(#[from] ParquetError),
 }
 
-fn write_lattice<T, A, E>(path: impl AsRef<Path>, data: &Lattice<T>) -> Result<ParquetMetaData, E>
+fn write_lattice<T, A>(data: &Lattice<T>, path: impl AsRef<Path>) -> Result<ParquetMetaData, LatticeWriteError>
 where
-    Vec<T>: MapIntoColumn<A, E>,
-    A: Array {
+    Vec<T>: MapIntoArray<A>,
+    T: Clone,
+    A: Array + 'static {
     let batch = RecordBatch::try_from_iter(
-        // TODO!: This needs to short circuit
-        (0..data.width()).find_map(move |j| {
+        (0..data.width()).map(move |j| {
             let vec: Vec<T> = (0..data.height()).map(|i| {
-                data[Pos::new(i, j)]
+                data[Pos::new(i, j)].clone()
             }).collect();
-            let arr = vec.map()?;
+            let arr = vec.map_into();
             (j.to_string(), Arc::new(arr) as ArrayRef)
         })
     )?;
-    write_parquet(path, &batch).map(|_| ())
+    write_parquet(path, &batch).map_err(|e| e.into())
 }
 
 fn write_parquet(path: impl AsRef<Path>, batch: &RecordBatch) -> Result<ParquetMetaData, ParquetError> {
@@ -96,4 +111,43 @@ fn write_parquet(path: impl AsRef<Path>, batch: &RecordBatch) -> Result<ParquetM
     let mut writer = ArrowWriter::try_new(file, batch.schema(), Some(props))?;
     writer.write(batch)?;
     writer.close()
+}
+
+mod impls {
+    use super::*;
+    use arrow::array::*;
+
+    macro_rules! impl_write_lat_primitive {
+        ( $( ($t1:ty, $t2:ty) ),* $(,)? ) => {
+            $(
+                impl MapIntoArray<$t2> for Vec<$t1> {
+                    fn map_into(self) -> $t2 {
+                        self.into()
+                    }
+                }
+
+                impl MapIntoArray<$t2> for Vec<Option<$t1>> {
+                    fn map_into(self) -> $t2 {
+                        self.into()
+                    }
+                }
+
+                impl Write<Lattice<$t1>, LatticeWriteError> for Writer {
+                    fn write(&mut self, data: &Lattice<$t1>, path: impl AsRef<Path>) -> Result<(), LatticeWriteError> {
+                        write_lattice::<$t1, $t2>(data, path).map(|_| ())
+                    }
+                }
+            )*
+        };
+    }
+
+    impl_write_lat_primitive![
+        (i8,  Int8Array),
+        (i32, Int32Array),
+        (i64, Int64Array),
+        (u8,  UInt8Array),
+        (u32, UInt32Array),
+        (u64, UInt64Array),
+        (f32, Float32Array),
+    ];
 }
