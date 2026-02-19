@@ -1,3 +1,5 @@
+//! Contains logic used to plot information to an [`RgbaImage`].
+
 use crate::prelude::{CellIndex, Cellular, FloatType, Habitable, HasCenter, Spin};
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
@@ -109,6 +111,7 @@ impl<E: Habitable> Plot<E> for BorderPlot {
 /// Plots cell area.
 #[derive(Clone, PartialEq, Debug, Eq, Hash)]
 pub struct AreaPlot<C> {
+    /// Lerper used for interpolation.
     pub lerper: Lerper<C>
 }
 
@@ -135,9 +138,7 @@ where
             if let Spin::Some(cell_index) = env.env().cell_lattice[pos] {
                 let rel_cell = &env.env().cells[cell_index];
                 let color = self.lerper.lerp(
-                    rel_cell.cell.area() as FloatType,
-                    min as FloatType,
-                    max as FloatType
+                    (rel_cell.cell.area() as FloatType - min as FloatType) / (max as FloatType - min as FloatType),
                 );
                 match color {
                     Ok(c) => image.put_pixel(
@@ -155,6 +156,7 @@ where
     }
 }
 
+/// Converts a [`palette`]s [`Srgba`] into an [`image`]s [`Rgba`].
 pub fn srgba_to_rgba(srgba: Srgba<FloatType>) -> Rgba<u8> {
     let srgba_u8 = srgba.into_format();
     Rgba([srgba_u8.red, srgba_u8.green, srgba_u8.blue, srgba_u8.alpha])

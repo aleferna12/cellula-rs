@@ -1,3 +1,5 @@
+//! Contains logic associated with the default [`Reader`].
+//! 
 use std::convert::Infallible;
 use crate::cell_container;
 use crate::lattice::Lattice;
@@ -16,6 +18,8 @@ use std::fs::File;
 use std::num::ParseIntError;
 use std::path::Path;
 
+// TODO: implement readers for other formats.
+/// Default reader type.
 pub struct Reader {}
 
 impl Reader {}
@@ -47,55 +51,82 @@ where
     }
 }
 
+/// Defines how to read data from a file path.
 pub trait Read<D, E> {
+    /// Reads data of type `D` from `path`.
     fn read(&mut self, path: impl AsRef<Path>) -> Result<D, E>;
 }
 
+/// Defines a protocol to map the implementor into an iterator over `T`s.
 pub trait MapFromArray<T, E> {
+    /// Executes the mapping.
     fn map_from(&self) -> impl Iterator<Item = Result<T, E>>;
 }
 
+/// Error thrown when reading a file with cells fails.
 #[derive(thiserror::Error, Debug)]
 pub enum CellsReadError {
+    /// Failed to read Parquet file.
     #[error(transparent)]
     Parquet(#[from] ParquetError),
 
+    /// Operation using underlying arrow structures failed.
     #[error(transparent)]
     Arrow(#[from] ArrowError),
 
+    /// Failed to deserialize cell.
     #[error(transparent)]
     SerdeArrow(#[from] serde_arrow::Error),
 }
 
+/// Error thrown when reading a lattice from a file fails.
 #[derive(thiserror::Error, Debug)]
 pub enum LatticeReadError {
+    /// Found values of incorrect type in the file.
     #[error("encountered a value with invalid type")]
     InvalidType,
+
+    /// File was empty.
     #[error("the file contained no records")]
     EmptyFile,
+
+    /// Lattice representation was not a square.
     #[error("lattice width ({width}) and height ({height}) do not match")]
     NotSquare {
+        /// Width of the lattice representation.
         width: usize,
+        /// Height of the lattice representation.
         height: usize,
     },
+
+    /// Found invalid value in the lattice.
     #[error("encountered an invalid value: {0}")]
     InvalidValue(#[source] Box<dyn Error + Send + Sync>),
+
+    /// Found null value in the lattice.
     #[error(transparent)]
     Null(#[from] NullError),
+
+    /// Failed to write Parquet file.
     #[error(transparent)]
     Parquet(#[from] ParquetError),
 }
 
+/// Error thrown when a [`Spin`] could not be parsed.
 #[derive(thiserror::Error, Debug)]
 pub enum SpinParseError {
+    /// Failed to parse integer type.
     #[error(transparent)]
     Parse(#[from] ParseIntError),
+
+    /// Found null value.
     #[error(transparent)]
     Null(#[from] NullError)
 }
 
 #[derive(thiserror::Error, Debug)]
 #[error("encountered null value")]
+/// Error thrown when encountering a null value where that should not be possible.
 pub struct NullError;
 
 impl MapFromArray<String, NullError> for StringArray {

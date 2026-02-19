@@ -1,30 +1,30 @@
-use num::{Num, Zero};
+//! Contains logic associated with [`Lerper`].
+
+use num::{Num, One, Zero};
 use palette::Mix;
 
 /// Used to interpolate colors with [`Lerper::lerp()`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Lerper<C> {
+    /// Color returned when the interpolated value is the minimum.
     pub min_color: C,
+    /// Color returned when the interpolated value is the maximum.
     pub max_color: C
 }
 
 impl<C> Lerper<C> {
-    /// Linearly interpolates `value` between `min` and `max`.
-    pub fn lerp(&self, value: C::Scalar, min: C::Scalar, max: C::Scalar) -> Result<C, LerpError>
+    /// Linearly interpolates colors at `p`.
+    pub fn lerp(&self, p: C::Scalar) -> Result<C, LerpError>
     where
         C: Mix + Clone,
         C::Scalar: Num + PartialOrd + Clone {
-        if max < min {
-            return Err(LerpError::NegativeRange);
-        }
-        if value < min {
+        if p < C::Scalar::zero() {
             return Err(LerpError::ValueTooSmall);
         }
-        if value > max {
+        if p > C::Scalar::one() {
             return Err(LerpError::ValueTooLarge);
         }
 
-        let p = if min == max { C::Scalar::zero() } else { (value - min.clone()) / (max - min) };
         let blended = self.min_color.clone().mix(self.max_color.clone(), p);
         Ok(blended)
     }
@@ -33,10 +33,11 @@ impl<C> Lerper<C> {
 /// Error thrown when linear interpolation fails.
 #[derive(thiserror::Error, Debug)]
 pub enum LerpError {
-    #[error("value falls outside the range because it's too small")]
+    /// The value falls outside the range because it's too small.
+    #[error("cannot interpolate at p < 0")]
     ValueTooSmall,
-    #[error("value falls outside the range because it's too large")]
-    ValueTooLarge,
-    #[error("minimum value passed is larger than maximum")]
-    NegativeRange
+
+    /// The value falls outside the range because it's too large.
+    #[error("cannot interpolate at p > 0")]
+    ValueTooLarge
 }

@@ -1,3 +1,5 @@
+//! Contains logic used to write data using [`Writer`].
+
 use crate::cell_container::{CellContainer, RelCell};
 use crate::io::write::writer::{Write, Writer};
 use crate::lattice::Lattice;
@@ -38,7 +40,9 @@ where
     }
 }
 
+/// Defines a protocol to mapping a container type into an [`arrow`] array type.
 pub trait MapIntoArray<A> {
+    /// Executes the mapping.
     fn map_into(self) -> A;
 }
 
@@ -68,19 +72,26 @@ impl MapIntoArray<StringArray> for Vec<Spin> {
     }
 }
 
+/// Error thrown when writing cells to a file fails.
 #[derive(thiserror::Error, Debug)]
 pub enum CellsWriteError {
+    /// Failed to write Parquet file.
     #[error(transparent)]
     Parquet(#[from] ParquetError),
 
+    /// Failed to serialize the cell.
     #[error(transparent)]
     SerdeArrow(#[from] serde_arrow::Error),
 }
 
+/// Error thrown when writing a lattice fails.
 #[derive(thiserror::Error, Debug)]
 pub enum LatticeWriteError {
+    /// Failed an operation using underlying arrow data structures.
     #[error(transparent)]
     Arrow(# [from] ArrowError),
+
+    /// Failed to write Parquet file.
     #[error(transparent)]
     Parquet(#[from] ParquetError),
 }

@@ -66,6 +66,7 @@ impl Plot<MyEnvironment> for CellTypePlot {
 
 /// Plots the chemical lattice.
 pub struct ChemPlot {
+    /// Interpolator struct.
     pub lerper: Lerper<Oklab<FloatType>>,
 }
 
@@ -75,9 +76,7 @@ impl Plot<MyEnvironment> for ChemPlot {
         for pos in lat.iter_positions() {
             let chem = lat[pos];
             let color = self.lerper.lerp(
-                chem as FloatType,
-                0.,
-                lat.height() as FloatType
+                chem as FloatType / lat.height() as FloatType,
             );
             match color {
                 Ok(c) => {

@@ -27,7 +27,9 @@ pub trait Cellular {
     ) -> Result<(), ShiftError>;
 }
 
+/// Indicates that this cell keeps track of its center.
 pub trait HasCenter {
+    /// Returns the center of the cell.
     fn center(&self) -> Pos<FloatType>;
 }
 
