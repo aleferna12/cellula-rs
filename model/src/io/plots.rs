@@ -1,19 +1,18 @@
 //! Contains logic for plotting data about the simulation.
 
 use crate::io::parameters::{PlotParameters, PlotType};
-use crate::io::plot::HexError::ParseU8Error;
 use crate::my_cell::CellType;
 use crate::my_environment::MyEnvironment;
+use anyhow::{anyhow, bail};
 use cellulars_lib::constants::FloatType;
+use cellulars_lib::empty_cell::Empty;
 use cellulars_lib::io::write::image::lerper::Lerper;
 use cellulars_lib::io::write::image::plot::{srgba_to_rgba, AreaPlot, BorderPlot, CenterPlot, Plot, SpinPlot};
 use cellulars_lib::spin::Spin;
-use cellulars_lib::traits::cellular::Cellular;
 use image::RgbaImage;
 use imageproc::drawing::draw_cross_mut;
-use palette::{Clamp, FromColor, Oklab, Srgba};
-use std::fmt::Debug;
-use thiserror::Error;
+use palette::Clamp;
+use palette::{FromColor, Oklab, Srgba};
 
 /// Plots the perceived chemical center of cells.
 pub struct ChemCenterPlot {
@@ -93,9 +92,9 @@ impl Plot<MyEnvironment> for ChemPlot {
 }
 
 impl TryFrom<PlotParameters> for Box<[Box<dyn Plot<MyEnvironment>>]> {
-    type Error = HexError;
+    type Error = anyhow::Error;
 
-    fn try_from(params: PlotParameters) -> Result<Self, HexError> {
+    fn try_from(params: PlotParameters) -> anyhow::Result<Self> {
         let mut plots = Vec::with_capacity(params.order.len());
         for plot_type in params.order {
             let plot: Box<dyn Plot<MyEnvironment>> = match plot_type {
@@ -147,30 +146,17 @@ fn srgba_to_oklab(color: Srgba<FloatType>) -> Oklab<FloatType> {
 }
 
 /// Parses a hex string as an [`Srgba<FloatType>`].
-fn hex_to_srgba(hex: &str) -> Result<Srgba<FloatType>, HexError> {
-    if !hex.starts_with("#") {
-        return Err(HexError::MissingHashtag);
-    }
+fn hex_to_srgba(hex: &str) -> anyhow::Result<Srgba<FloatType>> {
     if hex.len() != 7 {
-        return Err(HexError::WrongLength);
+        bail!("Hex string must have length 7");
     }
-    let hexu32 = hex.replace("#", "00");
-    let bytes = u32::from_str_radix(&hexu32, 16).map_err(ParseU8Error)?.to_be_bytes();
+    let hexu32 = hex
+        .strip_prefix("#")
+        .ok_or(anyhow!("Missing starting `#` character in hex string"))?;
+    let bytes = u32::from_str_radix(&hexu32, 16)
+        .map_err(|e| anyhow::Error::new(e))?
+        .to_be_bytes();
     Ok(Srgba::new(bytes[1], bytes[2], bytes[3], 255).into_format())
-}
-
-/// Error thrown when a string could not be parsed into a [`Srgba<FloatType>`]
-#[derive(Error, Debug)]
-pub enum HexError {
-    /// Hex string is missing "#" in the beginning.
-    #[error("missing \"#\" in the color name")]
-    MissingHashtag,
-    /// Hex string has the wrong length.
-    #[error("`hex` must be six characters long, excluding `#`")]
-    WrongLength,
-    /// Failed to parse the hex string as a number.
-    #[error("failed to parse the string as a hex `u8`: {0}")]
-    ParseU8Error(#[from] std::num::ParseIntError),
 }
 
 #[cfg(test)]
@@ -182,6 +168,10 @@ mod tests {
         assert_eq!(
             hex_to_srgba("#ff00ff").unwrap().into_format(),
             Srgba::new(255u8, 0, 255, 255)
+        );
+        assert_eq!(
+            hex_to_srgba("#79933b").unwrap().into_format(),
+            Srgba::new(121u8, 147, 59, 255)
         );
     }
 }

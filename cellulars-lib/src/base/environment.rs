@@ -347,6 +347,7 @@ pub mod tests {
     use super::*;
     use crate::base::cell::Cell;
     use crate::cell_container::RelCell;
+    use crate::empty_cell::Empty;
     use crate::positional::boundaries::UnsafePeriodicBoundary;
     use crate::positional::neighborhood::MooreNeighborhood;
     use crate::positional::pos::Pos;
@@ -367,7 +368,9 @@ pub mod tests {
         positions: &[Pos<usize>],
         env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>
     ) -> RelCell<Cell> {
-        let mut rel_cell = RelCell{ index: 0, cell: Cell::new_empty(2).into_cell() };
+        let mut empty = Cell::empty_default().into_cell();
+        empty.target_area = 2;
+        let mut rel_cell = RelCell{ index: 0, cell: empty };
         for &pos in positions {
             rel_cell.cell.shift_position(pos, true, &env.bounds.boundary).unwrap();
             env.cell_lattice[pos] = Spin::Some(rel_cell.index);

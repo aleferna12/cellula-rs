@@ -1,29 +1,33 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
 use crate::constants::{BoundaryType, NeighborhoodType};
-use crate::io::io_manager::IoManager;
-#[cfg(feature = "movie")]
-use crate::io::movie_maker::MovieMaker;
+use crate::io::io_manager::{IoManager, MovieModule};
+#[cfg(feature = "movie-io")]
 use crate::io::parameters::Parameters;
 use crate::my_cell::{CellType, MyCell};
 use crate::my_environment::MyEnvironment;
 use crate::my_pond::MyPond;
 use crate::potts::Potts;
+use anyhow::bail;
 use cellulars_lib::base::environment::Environment;
 use cellulars_lib::base::pond::Pond;
 use cellulars_lib::constants::FloatType;
+use cellulars_lib::empty_cell::EmptyCell;
+use cellulars_lib::io::read::parquet_reader::ParquetReader;
+use cellulars_lib::io::read::read::Read;
+use cellulars_lib::io::write::image::movie_window::MovieWindow;
 use cellulars_lib::positional::boundaries::Boundaries;
-use cellulars_lib::positional::pos::CastCoords;
 use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos};
+use cellulars_lib::prelude::{Alive, CellContainer, CellIndex, Cellular, Habitable, Pos};
 use cellulars_lib::static_adhesion::StaticAdhesion;
-use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
-use polars::polars_utils::itertools::Itertools;
 use rand::{make_rng, Rng, RngExt, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
+use std::fs::File;
 use std::path::Path;
+
+// TODO!: The backup functions should live in IoManager i think
 
 /// This is the master struct that runs the simulation in a [`MyPond`] and manages IO through an [`IoManager`].
 pub struct Model {
@@ -115,17 +119,32 @@ impl Model {
     }
 
     fn setup_io(parameters: &Parameters, new_seed: u64) -> anyhow::Result<IoManager> {
-        #[cfg(feature = "movie")]
-        let movie_maker = if let Some(movie_params) = &parameters.io.movie {
+        #[cfg(not(feature = "movie-io"))]
+        if parameters.io.movie.is_some() {
+            log::info!("Not displaying movie since feature flag `movie` was not set");
+        }
+
+        let io_builder = IoManager::builder()
+            .outdir(parameters.io.outdir.clone().into())
+            .image_format(parameters.io.image_format.clone())
+            .image_period(parameters.io.image_period)
+            .cells_period(parameters.io.data.cells_period)
+            .lattice_period(parameters.io.data.lattice_period)
+            .plots(parameters.io.plot.clone().try_into()?);
+
+        #[cfg(not(feature = "movie-io"))]
+        let io = io_builder.build();
+
+        #[cfg(feature = "movie-io")]
+        let movie_module = if let Some(movie_params) = &parameters.io.movie {
             if movie_params.show {
-                match MovieMaker::new(
+                match MovieWindow::new(
                     movie_params.width,
-                    movie_params.height,
-                    movie_params.frame_period
+                    movie_params.height
                 ) {
                     Ok(mm) => {
                         log::info!("Creating window for real-time movie display");
-                        Some(mm)
+                        Some(MovieModule{ movie_window: mm, frame_period: movie_params.frame_period })
                     },
                     Err(e) => {
                         log::warn!("Failed to initialise movie window with error `{e}`");
@@ -139,22 +158,7 @@ impl Model {
             log::info!("Not displaying movie since movie parameters were omitted");
             None
         };
-        #[cfg(not(feature = "movie"))]
-        if parameters.io.movie.is_some() {
-            log::info!("Not displaying movie since feature flag `movie` was not set");
-        }
-
-        let io_builder = IoManager::builder()
-            .outdir(parameters.io.outdir.clone().into())
-            .image_format(parameters.io.image_format.clone())
-            .image_period(parameters.io.image_period)
-            .cells_period(parameters.io.data.cells_period)
-            .lattice_period(parameters.io.data.lattice_period)
-            .plots(parameters.io.plot.clone().try_into()?);
-        #[cfg(feature = "movie")]
-        let io = io_builder.maybe_movie_maker(movie_maker).build();
-        #[cfg(not(feature = "movie"))]
-        let io = io_builder.build();
+        let io = io_builder.maybe_movie_module(movie_module).build();
 
         log::info!("Creating output directories and copy of parameter file");
         if parameters.io.replace_outdir {
@@ -219,8 +223,9 @@ impl Model {
         maybe_templates_path: Option<String>
     ) -> anyhow::Result<Option<Box<[MyCell]>>> {
         maybe_templates_path.map(|path| {
+            let cell_cont: CellContainer<MyCell> = ParquetReader::new(File::open(path)?).read()?;
             // This is required to obtain a clonable iterator that we can cycle over
-            let templates_cells = IoManager::read_cells(path)?
+            let templates_cells = cell_cont
                 .into_iter()
                 .map(|rel_cell| rel_cell.cell)
                 .collect::<Box<[_]>>();
@@ -326,7 +331,7 @@ impl Model {
             }
         }
 
-        let mut sorted_luma = luma_cell_positions.keys().copied().collect_vec();
+        let mut sorted_luma: Vec<_> = luma_cell_positions.keys().copied().collect();
         sorted_luma.sort();
 
         let mut not_spawned = 0;
@@ -370,18 +375,19 @@ impl Model {
         let sim_path = sim_path.as_ref();
 
         log::info!("Reading pond");
-        let cells = IoManager::read_cells(
-            IoManager::resolve_cells_path(sim_path, time_step),
-        )?;
-
         let rect = Rect::new(
             (0., 0.).into(),
             (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
         );
-        let lattice = IoManager::read_lattice(
-            IoManager::resolve_lattice_path(sim_path, time_step),
-            rect.cast_coords(),
+        let lattice = IoManager::read_cell_lattice(
+            sim_path,
+            time_step,
         )?;
+        if lattice.width() != parameters.pond.width || lattice.height() != parameters.pond.height {
+            bail!("pond width and height specified in the parameters do not match those of the back up file");
+        }
+
+        let cells = IoManager::read_cells(sim_path, time_step)?;
 
         let mut env = MyEnvironment::new(
             Environment::new(

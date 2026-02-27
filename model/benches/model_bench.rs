@@ -51,7 +51,7 @@ fn bench_param_files(
                         // Ensures that a single image will be saved, 
                         // either after the setup run or the whole simulation
                         params.io.image_period = max(time_steps, 100);
-                        #[cfg(feature = "movie")]
+                        #[cfg(feature = "movie-io")]
                         if let Some(movie_params) = &mut params.io.movie {
                             movie_params.show = false;
                         }
@@ -85,7 +85,7 @@ fn bench_slow(c: &mut Criterion) {
             || {
                 let mut params = Parameters::parse("examples/1_cell.toml").unwrap();
                 params.io.image_period = 50_000;
-                #[cfg(feature = "movie")]
+                #[cfg(feature = "movie-io")]
                 if let Some(movie_params) = &mut params.io.movie {
                     movie_params.show = false;
                 }
@@ -107,7 +107,7 @@ fn bench_slow(c: &mut Criterion) {
                     "./benches/model_files/large_lattice.toml"
                 ).unwrap();
                 params.io.image_period = 10_000;
-                #[cfg(feature = "movie")]
+                #[cfg(feature = "movie-io")]
                 if let Some(movie_params) = &mut params.io.movie {
                     movie_params.show = false;
                 }

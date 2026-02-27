@@ -1,7 +1,7 @@
 //! Contains logic used to write data using [`Writer`].
 
 use crate::cell_container::{CellContainer, RelCell};
-use crate::io::write::writer::{Write, Writer};
+use crate::io::write::write::Write;
 use crate::lattice::Lattice;
 use crate::prelude::{Cellular, Pos, Spin};
 use arrow::array::{Array, ArrayRef, RecordBatch, StringArray};
@@ -15,25 +15,37 @@ use parquet::file::properties::WriterProperties;
 use serde::{Deserialize, Serialize};
 use serde_arrow::schema::{SchemaLike, TracingOptions};
 use serde_arrow::to_record_batch;
-use std::fs::File;
-use std::path::Path;
+use std::io;
 use std::sync::Arc;
+use crate::empty_cell::Empty;
 
-impl Write<Lattice<Spin>, LatticeWriteError> for Writer {
-    fn write(&mut self, data: &Lattice<Spin>, path: impl AsRef<Path>) -> Result<(), LatticeWriteError> {
-        write_lattice(data, path).map(|_| ())
+/// Parquet writer.
+#[derive(Clone, Debug)]
+pub struct ParquetWriter<W> {
+    file: W
+}
+
+impl<W> ParquetWriter<W> {
+    pub fn new(file: W) -> Self {
+        Self { file }
     }
 }
 
-impl<'de, T> Write<CellContainer<T>, CellsWriteError> for Writer
+impl<W: io::Write + Send> Write<Lattice<Spin>, LatticeWriteError> for ParquetWriter<W> {
+    fn write(self, data: &Lattice<Spin>) -> Result<(), LatticeWriteError> {
+        write_lattice(data, self.file).map(|_| ())
+    }
+}
+
+impl<'de, T, W: io::Write + Send> Write<CellContainer<T>, CellsWriteError> for ParquetWriter<W>
 where
-    T: Cellular,
+    T: Cellular + Empty,
     RelCell<T>: Serialize + Deserialize<'de> {
-    fn write(&mut self, data: &CellContainer<T>, path: impl AsRef<Path>) -> Result<(), CellsWriteError> {
+    fn write(self, data: &CellContainer<T>) -> Result<(), CellsWriteError> {
         let cells: Box<_> = data.iter_non_empty().collect();
         let fields = Vec::<FieldRef>::from_type::<RelCell<T>>(TracingOptions::default())?;
         let batch = to_record_batch(&fields, &cells)?;
-        match write_parquet(&path, &batch) {
+        match write_parquet(&batch, self.file) {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into())
         }
@@ -96,7 +108,7 @@ pub enum LatticeWriteError {
     Parquet(#[from] ParquetError),
 }
 
-fn write_lattice<T, A>(data: &Lattice<T>, path: impl AsRef<Path>) -> Result<ParquetMetaData, LatticeWriteError>
+fn write_lattice<T, A>(data: &Lattice<T>, file: impl io::Write + Send) -> Result<ParquetMetaData, LatticeWriteError>
 where
     Vec<T>: MapIntoArray<A>,
     T: Clone,
@@ -110,15 +122,13 @@ where
             (j.to_string(), Arc::new(arr) as ArrayRef)
         })
     )?;
-    write_parquet(path, &batch).map_err(|e| e.into())
+    write_parquet(&batch, file).map_err(|e| e.into())
 }
 
-fn write_parquet(path: impl AsRef<Path>, batch: &RecordBatch) -> Result<ParquetMetaData, ParquetError> {
-    let path = path.as_ref();
+fn write_parquet(batch: &RecordBatch, file: impl io::Write + Send) -> Result<ParquetMetaData, ParquetError> {
     let props = WriterProperties::builder()
         .set_compression(Compression::ZSTD(ZstdLevel::default()))
         .build();
-    let file = File::create(path)?;
     let mut writer = ArrowWriter::try_new(file, batch.schema(), Some(props))?;
     writer.write(batch)?;
     writer.close()
@@ -143,9 +153,9 @@ mod impls {
                     }
                 }
 
-                impl Write<Lattice<$t1>, LatticeWriteError> for Writer {
-                    fn write(&mut self, data: &Lattice<$t1>, path: impl AsRef<Path>) -> Result<(), LatticeWriteError> {
-                        write_lattice::<$t1, $t2>(data, path).map(|_| ())
+                impl<W: io::Write + Send> Write<Lattice<$t1>, LatticeWriteError> for ParquetWriter<W> {
+                    fn write(self, data: &Lattice<$t1>) -> Result<(), LatticeWriteError> {
+                        write_lattice::<$t1, $t2>(data, self.file).map(|_| ())
                     }
                 }
             )*

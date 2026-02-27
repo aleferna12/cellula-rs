@@ -2,11 +2,12 @@
 
 use crate::base::environment::{EdgesUpdate, Environment};
 use crate::cell_container::RelCell;
+use crate::empty_cell::{Empty, EmptyCell};
 use crate::positional::boundaries::ToLatticeBoundary;
 use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::Pos;
 use crate::spin::Spin;
-use crate::traits::cellular::{Cellular, EmptyCell};
+use crate::traits::cellular::Cellular;
 
 /// This trait asserts that a type is habitable,
 /// which is to say that it can contain active cells.
@@ -15,7 +16,7 @@ use crate::traits::cellular::{Cellular, EmptyCell};
 /// allows for custom logic of how to update the simulation.
 pub trait Habitable {
     /// Cell type of the environment associated with this trait.
-    type Cell: Cellular;
+    type Cell: Cellular + Empty;
 
     /// Returns a reference to the environment where cells live.
     fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;

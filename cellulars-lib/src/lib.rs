@@ -19,3 +19,4 @@ pub mod base;
 #[cfg(any(feature = "data-io", feature = "image-io"))]
 pub mod io;
 pub mod prelude;
+pub mod empty_cell;

@@ -1,3 +1,4 @@
 //! Bundle of submodules used for reading data into a simulation.
 
-pub mod reader;
+pub mod parquet_reader;
+pub mod read;

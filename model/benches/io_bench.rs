@@ -13,7 +13,7 @@ fn make_model(params: Parameters) -> Model {
 fn bench_io(c: &mut Criterion) {
     let mut params = Parameters::parse("examples/64_cells.toml").unwrap();
     params.io.image_period = 1000000;
-    #[cfg(feature = "movie")]
+    #[cfg(feature = "movie-io")]
     if let Some(movie_params) = &mut params.io.movie {
         movie_params.show = false;
     }

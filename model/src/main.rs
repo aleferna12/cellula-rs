@@ -35,7 +35,7 @@ fn main() -> anyhow::Result<()> {
         } => {
             let params = match maybe_config {
                 Some(config) => Parameters::parse(config),
-                None => Parameters::parse(IoManager::resolve_parameters_path(&directory))
+                None => IoManager::read_parameters(&directory)
             }?;
             let time_step = maybe_time_step.unwrap_or(IoManager::find_last_time_step(&directory)?);
             Model::new_from_backup(params, directory, time_step)?

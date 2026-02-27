@@ -11,9 +11,10 @@ use cellulars_lib::positional::neighborhood::Neighborhood;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
-use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell, HasCenter};
+use cellulars_lib::traits::cellular::{Alive, Cellular, HasCenter};
 use cellulars_lib::traits::habitable::Habitable;
 use rand::RngExt;
+use cellulars_lib::empty_cell::EmptyCell;
 
 /// An environment that contains a chemical gradient and limits cell growth to [`MyEnvironment::max_cells`].
 #[derive(Clone)]

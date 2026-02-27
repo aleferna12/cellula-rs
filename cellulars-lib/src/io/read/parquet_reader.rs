@@ -1,41 +1,44 @@
 //! Contains logic associated with the default [`Reader`].
 //!
-use crate::cell_container;
+use crate::empty_cell::Empty;
+use crate::io::read::read::Read;
 use crate::lattice::Lattice;
 use crate::prelude::{CellContainer, Pos, RelCell};
 use crate::spin::Spin;
-use crate::traits::cellular::EmptyCell;
 use arrow::array::{Array, RecordBatch, StringArray};
 use arrow::compute::concat_batches;
 use arrow::error::ArrowError;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::errors::ParquetError;
+use parquet::file::reader::ChunkReader;
 use serde::de::DeserializeOwned;
 use serde_arrow::from_record_batch;
 use std::convert::Infallible;
 use std::error::Error;
-use std::fs::File;
 use std::num::ParseIntError;
-use std::path::Path;
 
-// TODO: implement readers for other formats.
-/// Default reader type.
-pub struct Reader {}
+#[derive(Clone, Debug)]
+pub struct ParquetReader<R> {
+    file: R
+}
 
-impl Reader {}
-
-impl Read<Lattice<Spin>, LatticeReadError> for Reader {
-    fn read(&mut self, path: impl AsRef<Path>) -> Result<Lattice<Spin>, LatticeReadError> {
-        read_lattice::<Spin, StringArray, _>(path)
+impl<R> ParquetReader<R> {
+    pub fn new(file: R) -> ParquetReader<R> {
+        ParquetReader { file }
     }
 }
 
-impl<C> Read<CellContainer<C>, CellsReadError> for Reader
+impl<R: ChunkReader + 'static> Read<Lattice<Spin>, LatticeReadError> for ParquetReader<R> {
+    fn read(self) -> Result<Lattice<Spin>, LatticeReadError> {
+        read_lattice::<Spin, StringArray, _>(self.file)
+    }
+}
+
+impl<C, R: ChunkReader + 'static> Read<CellContainer<C>, CellsReadError> for ParquetReader<R>
 where
-    C: DeserializeOwned,
-    EmptyCell<C>: Default + Clone {
-    fn read(&mut self, path: impl AsRef<Path>) -> Result<CellContainer<C>, CellsReadError> {
-        let batches = read_parquet(path)?;
+    C: DeserializeOwned + Empty {
+    fn read(self) -> Result<CellContainer<C>, CellsReadError> {
+        let batches = read_parquet(self.file)?;
         let Some(first) = batches.first() else {
             return Ok(CellContainer::new());
         };
@@ -43,18 +46,15 @@ where
         let batch = concat_batches(&schema, &batches)?;
         let vec: Vec<RelCell<C>> = from_record_batch(&batch)?;
         let size = vec.iter().map(|rel_cell| rel_cell.index).max().expect("empty vec") + 1;
-        let mut cells = cell_container![EmptyCell::<C>::default(); size as usize];
+        let mut cells = CellContainer::with_capacity(size as usize);
+        for _ in 0..size {
+            cells.push(C::empty_default());
+        }
         for rel_cell in vec {
             cells.replace(rel_cell);
         }
         Ok(cells)
     }
-}
-
-/// Defines how to read data from a file path.
-pub trait Read<D, E> {
-    /// Reads data of type `D` from `path`.
-    fn read(&mut self, path: impl AsRef<Path>) -> Result<D, E>;
 }
 
 /// Defines a protocol to map the implementor into an iterator over `T`s.
@@ -160,12 +160,12 @@ impl MapFromArray<Spin, SpinParseError> for StringArray {
     }
 }
 
-fn read_lattice<T, A, E>(path: impl AsRef<Path>) -> Result<Lattice<T>, LatticeReadError>
+fn read_lattice<T, A, E>(file: impl ChunkReader + 'static) -> Result<Lattice<T>, LatticeReadError>
 where
     T: Clone + Default,
     A: 'static + Array + MapFromArray<T, E>,
     E: 'static + Error + Sync + Send {
-    let batches = read_parquet(path)?;
+    let batches = read_parquet(file)?;
     if batches.is_empty() {
         return Err(LatticeReadError::EmptyFile);
     }
@@ -198,8 +198,7 @@ where
     Ok(lat)
 }
 
-fn read_parquet(path: impl AsRef<Path>) -> Result<Vec<RecordBatch>, ParquetError> {
-    let file = File::open(path)?;
+fn read_parquet(file: impl ChunkReader + 'static) -> Result<Vec<RecordBatch>, ParquetError> {
     let builder = ParquetRecordBatchReaderBuilder::try_new(file)?;
     let reader = builder.build()?;
 
@@ -229,9 +228,9 @@ mod impls {
                     }
                 }
 
-                impl Read<Lattice<$t1>, LatticeReadError> for Reader {
-                    fn read(&mut self, path: impl AsRef<Path>) -> Result<Lattice<$t1>, LatticeReadError> {
-                        read_lattice::<$t1, $t2, _>(path)
+                impl<R: ChunkReader + 'static> Read<Lattice<$t1>, LatticeReadError> for ParquetReader<R> {
+                    fn read(self) -> Result<Lattice<$t1>, LatticeReadError> {
+                        read_lattice::<$t1, $t2, _>(self.file)
                     }
                 }
             )*

@@ -215,8 +215,8 @@ pub struct DataParameters {
 pub struct MovieParameters {
     #[serde(default = "param_defaults::false_flag")]
     pub show: bool,
-    pub width: u32,
-    pub height: u32,
+    pub width: usize,
+    pub height: usize,
     pub frame_period: u32
 }
 

@@ -1,32 +1,25 @@
 //! Contains logic related to [`IoManager`].
 
-// TODO!: file names should have leading zeros (account for max size of time_steps)
-
-#[cfg(feature = "movie")]
-use crate::io::movie_maker::MovieMaker;
+#[cfg(feature = "movie-io")]
 use crate::io::parameters::Parameters;
-use crate::my_cell::{CellType, MyCell};
+use crate::my_cell::MyCell;
 use crate::my_environment::MyEnvironment;
-use anyhow::{bail, Context};
+use anyhow::Context;
 use bon::Builder;
-use cellulars_lib::base::cell::Cell;
-use cellulars_lib::cell_container;
-use cellulars_lib::cell_container::{CellContainer, RelCell};
-use cellulars_lib::constants::CellIndex;
+use cellulars_lib::io::read::parquet_reader::ParquetReader;
+use cellulars_lib::io::read::read::Read;
+#[cfg(feature = "movie-io")]
+use cellulars_lib::io::write::image::movie_window::MovieWindow;
 use cellulars_lib::io::write::image::plot::Plot;
+use cellulars_lib::io::write::parquet_writer::ParquetWriter;
+use cellulars_lib::io::write::write::Write;
 use cellulars_lib::lattice::Lattice;
-use cellulars_lib::positional::com::Com;
-use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::positional::rect::Rect;
+use cellulars_lib::prelude::CellContainer;
 use cellulars_lib::spin::Spin;
-use cellulars_lib::traits::cellular::{Cellular, HasCenter};
 use image::imageops::{flip_vertical_in_place, FilterType};
 use image::{ColorType, GrayImage, ImageReader, RgbaImage};
-use num_traits::NumCast;
-use polars::frame::row::Row;
-use polars::polars_utils::float::IsFloat;
-use polars::prelude::*;
 use std::collections::HashSet;
+use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -51,13 +44,13 @@ pub struct IoManager {
     pub outdir: PathBuf,
     /// Image format with which to save simulation images.
     pub image_format: String,
+    pub image_period: u32,
+    pub cells_period: u32,
+    pub lattice_period: u32,
     /// Used to update the simulation video when it's time.
-    #[cfg(feature = "movie")]
-    pub movie_maker: Option<MovieMaker>,
+    #[cfg(feature = "movie-io")]
+    pub movie_module: Option<MovieModule>,
     plots: Box<[Box<dyn Plot<MyEnvironment>>]>,
-    image_period: u32,
-    cells_period: u32,
-    lattice_period: u32
 }
 
 impl IoManager {
@@ -96,74 +89,44 @@ impl IoManager {
         Ok(())
     }
 
-    fn make_cells_from_data(celldf: DataFrame) -> anyhow::Result<CellContainer<MyCell>> {
-        let last_index = celldf
-            .column("index")?
-            .u32()?
-            .max()
-            .ok_or(anyhow::anyhow!("null `index` column"))?;
-        let mut cells = cell_container![
-            MyCell::new_empty(0, 0, CellType::Migrating); 
-            last_index as usize + 1
-        ];
-
-        for row_i in 0..celldf.height() {
-            let row = celldf.get_row(row_i)?;
-            let cell = Cell::new_ready(
-                Self::get_col_num(&row, "area", &celldf)?,
-                Self::get_col_num(&row, "target_area", &celldf)?,
-                Pos::new(
-                    Self::get_col_num(&row, "center_x", &celldf)?,
-                    Self::get_col_num(&row, "center_y", &celldf)?,
-                )
-            );
-            cells.replace(RelCell {
-                index: Self::get_col_num(&row, "index", &celldf)?,
-                cell: MyCell::builder()
-                    .cell(cell)
-                    .divide_area(Self::get_col_num(&row, "divide_area", &celldf)?)
-                    .newborn_target_area(Self::get_col_num(&row, "newborn_target_area", &celldf)?)
-                    .chem_com(Com {
-                        pos: Pos::new(
-                            Self::get_col_num(&row, "chem_center_x", &celldf)?,
-                            Self::get_col_num(&row, "chem_center_y", &celldf)?,
-                        ),
-                        mass: Self::get_col_num(&row, "chem_mass", &celldf)?
-                    })
-                    .cell_type(Self::get_col_str(&row, "cell_type", &celldf)?.try_into()?)
-                    .build()
-            });
-        }
-        Ok(cells)
+    fn pad_time_step(time_step: u32) -> String {
+        format!("{time_step:0>PAD_FILE_LEN$}")
     }
 
-    fn get_col_str<'r>(row: &'r Row, col_name: &str, celldf: &DataFrame) -> anyhow::Result<&'r str> {
-        let col_index = celldf
-            .get_column_index(col_name)
-            .ok_or(anyhow::anyhow!("missing `{col_name}`"))?;
-        row.0[col_index].get_str().context("could not extract `{col_name}`")
+    /// Given a path to the main folder of a simulation, resolve the path to the file
+    /// containing the simulation parameters.
+    fn parameters_path(sim_path: impl AsRef<Path>) -> PathBuf {
+        sim_path.as_ref().join(CONFIG_COPY_PATH)
     }
 
-    fn get_col_num<T: NumCast + IsFloat>(row: &Row, col_name: &str, celldf: &DataFrame) -> anyhow::Result<T> {
-        let col_index = celldf
-            .get_column_index(col_name)
-            .ok_or(anyhow::anyhow!("missing `{col_name}`"))?;
-        row.0[col_index].try_extract::<T>().context("could not extract `{col_name}`")
+    /// Given a path to the main folder of a simulation, resolve the path to the cell data file
+    /// that was saved at `time_step`.
+    fn cells_path(
+        sim_path: impl AsRef<Path>,
+        time_step: u32
+    ) -> PathBuf {
+        sim_path.as_ref()
+            .join(CELLS_PATH)
+            .join(format!("{}.parquet", Self::pad_time_step(time_step)))
     }
 
-    /// Reads a cell data file into a [`CellContainer`].
-    pub fn read_cells(
-        cells_path: impl AsRef<Path>
-    ) -> anyhow::Result<CellContainer<MyCell>> {
-        let cells_path = cells_path.as_ref();
-        let file = std::fs::File::open(cells_path).context(format!("while opening {}", cells_path.display()))?;
-        let celldf = ParquetReader::new(file).finish()?;
-        Self::make_cells_from_data(
-            celldf
-        )
+    pub fn read_parameters(sim_path: impl AsRef<Path>) -> anyhow::Result<Parameters> {
+        Parameters::parse(IoManager::parameters_path(sim_path))
     }
 
-    /// Reads a layout file at `layout_path` for a pond with dimensions
+    pub fn read_cells(sim_path: impl AsRef<Path>, time_step: u32) -> anyhow::Result<CellContainer<MyCell>> {
+        ParquetReader::new(File::open(Self::cells_path(sim_path, time_step))?)
+            .read()
+            .map_err(|e| anyhow::Error::new(e))
+    }
+
+    pub fn read_cell_lattice(sim_path: impl AsRef<Path>, time_step: u32) -> anyhow::Result<Lattice<Spin>> {
+        ParquetReader::new(File::open(Self::lattice_path(sim_path, time_step))?)
+            .read()
+            .map_err(|e| anyhow::Error::new(e))
+    }
+
+    /// Reads a layout PNG file at `layout_path` for a pond with dimensions
     /// `pond_width` and `pond_height` into a gray scale image.
     pub fn read_layout(
         layout_path: impl AsRef<Path>,
@@ -181,71 +144,15 @@ impl IoManager {
         Ok(layout.resize_exact(pond_width as u32, pond_height as u32, FilterType::Nearest).into_luma8())
     }
 
-    fn pad_time_step(time_step: u32) -> String {
-        format!("{time_step:0>PAD_FILE_LEN$}")
-    }
-
-    /// Given a path to the main folder of a simulation, resolve the path to the file
-    /// containing the simulation parameters.
-    pub fn resolve_parameters_path(sim_path: impl AsRef<Path>) -> PathBuf {
-        sim_path.as_ref().join(CONFIG_COPY_PATH)
-    }
-
-    /// Given a path to the main folder of a simulation, resolve the path to the cell data file
-    /// that was saved at `time_step`.
-    pub fn resolve_cells_path(
-        sim_path: impl AsRef<Path>,
-        time_step: u32
-    ) -> PathBuf {
-        sim_path.as_ref()
-            .join(CELLS_PATH)
-            .join(format!("{}.parquet", Self::pad_time_step(time_step)))
-    }
-
     /// Given a path to the main folder of a simulation, resolve the path to the lattice file
     /// that was saved at `time_step`.
-    pub fn resolve_lattice_path(
+    fn lattice_path(
         sim_path: impl AsRef<Path>,
         time_step: u32
     ) -> PathBuf {
         sim_path.as_ref()
             .join(LATTICES_PATH)
             .join(format!("{}.parquet", Self::pad_time_step(time_step)))
-    }
-
-    /// Reads a lattice from a backup file at `file_path`.
-    pub fn read_lattice(file_path: impl AsRef<Path>, rect: Rect<usize>) -> anyhow::Result<Lattice<Spin>> {
-        let file_path = file_path.as_ref();
-        let file = std::fs::File::open(file_path).context(format!("while opening {}", file_path.display()))?;
-        let latdf = ParquetReader::new(file).finish()?;
-        if latdf.width() != rect.width()
-            || latdf.height() != rect.height() {
-            bail!("expected lattice dimensions do not match those in file");
-        }
-
-        let mut lattice = Lattice::from(rect);
-        for (j, column) in latdf.get_columns().iter().enumerate() {
-            for (i, maybe_val) in column.str()?.into_iter().enumerate() {
-                match maybe_val {
-                    Some(val) => {
-                        let val: &str = val;
-                        let spin = match val {
-                            "s" => Spin::Solid,
-                            "m" => Spin::Medium,
-                            _ => {
-                                let cell_index = val.parse::<CellIndex>().with_context(|| {
-                                    format!("lattice contains invalid value {val}")
-                                })?;
-                                Spin::Some(cell_index)
-                            },
-                        };
-                        lattice[(j, i).into()] = spin;
-                    },
-                    None => bail!("file {} contains null values", file_path.display()),
-                }
-            }
-        }
-        Ok(lattice)
     }
 
     /// Writes both data and simulation images (including movie frames) if its time (according to `time_step`).
@@ -267,46 +174,19 @@ impl IoManager {
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step.is_multiple_of(self.cells_period) {
-            let mut celldf = env.env.cells.to_dataframe()?;
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
-            let file = std::fs::File::create(file_path)?;
-            ParquetWriter::new(file).finish(&mut celldf)?;
+            ParquetWriter::new(File::create(file_path)?).write(&env.env.cells)?;
         }
 
         if time_step.is_multiple_of(self.lattice_period) {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            Self::write_lattice(file_path.as_path(), &env.env.cell_lattice)?;
+            ParquetWriter::new(File::create(file_path)?).write(&env.env.cell_lattice)?;
         }
         Ok(())
-    }
-
-    // Experimented with:
-    //   - saving Medium and Solid as negative i32s
-    //   - parallelization with rayon
-    // and performance diff was minimal and file size became larger, keeping as is
-    fn write_lattice(file_path: &Path, lattice: &Lattice<Spin>) -> PolarsResult<u64>{
-        let mut cols = vec![];
-        for (j, col) in lattice.as_slice().chunks_exact(lattice.height()).enumerate() {
-            cols.push(Series::new(
-                format!("col_{j}").into(),
-                col.iter()
-                    .map(|val| {
-                        match val {
-                            Spin::Solid => "s".into(),
-                            Spin::Medium => "m".into(),
-                            Spin::Some(cell_index) => cell_index.to_string()
-                        }
-                    })
-                    .collect::<Vec<_>>(),
-            ).into())
-        }
-        let mut latdf = DataFrame::new(cols)?;
-        let file = std::fs::File::create(file_path)?;
-        ParquetWriter::new(file).finish(&mut latdf)
     }
 
     fn write_image_if_time(
@@ -314,26 +194,26 @@ impl IoManager {
         time_step: u32, 
         env: &MyEnvironment
     ) -> anyhow::Result<()> {
-        // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
+        // This looks like it should be a LazyCell but that doesnt work (i tried)
         let mut frame = None;
 
-        #[cfg(feature = "movie")]
-        let movie_update = if let Some(mm) = &self.movie_maker {
-            time_step.is_multiple_of(mm.frame_period) && mm.window_works()
+        #[cfg(feature = "movie-io")]
+        let movie_update = if let Some(mm) = &self.movie_module {
+            time_step.is_multiple_of(mm.frame_period) && mm.movie_window.is_open()
         } else {
             false
         };
-        #[cfg(feature = "movie")]
+        #[cfg(feature = "movie-io")]
         if movie_update {
             frame = Some(self.make_simulation_image(env));
-            let mm = self.movie_maker.as_mut().unwrap();
+            let mm = self.movie_module.as_mut().unwrap();
             let resized = image::imageops::resize(
                 frame.as_ref().unwrap(),
-                mm.width,
-                mm.height,
+                mm.movie_window.width.try_into()?,
+                mm.movie_window.height.try_into()?,
                 image::imageops::Nearest,
             );
-            mm.update(&resized)?
+            mm.movie_window.update(&resized)?
         }
 
         if time_step.is_multiple_of(self.image_period) {
@@ -399,25 +279,7 @@ impl IoManager {
     }
 }
 
-trait ToDataFrame {
-    fn to_dataframe(&self) -> PolarsResult<DataFrame>;
-}
-
-impl ToDataFrame for CellContainer<MyCell> {
-    fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-        let non_empty: Box<_> = self.iter_non_empty().collect();
-        df!(
-            "index" => non_empty.iter().map(|rel_cell| rel_cell.index).collect::<Box<_>>(),
-            "area" => non_empty.iter().map(|rel_cell| rel_cell.cell.area()).collect::<Box<_>>(),
-            "target_area" => non_empty.iter().map(|rel_cell| rel_cell.cell.target_area()).collect::<Box<_>>(),
-            "newborn_target_area" => non_empty.iter().map(|rel_cell| rel_cell.cell.newborn_target_area).collect::<Box<_>>(),
-            "divide_area" => non_empty.iter().map(|rel_cell| rel_cell.cell.divide_area).collect::<Box<_>>(),
-            "center_x" => non_empty.iter().map(|rel_cell| rel_cell.cell.center().x).collect::<Box<_>>(),
-            "center_y" => non_empty.iter().map(|rel_cell| rel_cell.cell.center().y).collect::<Box<_>>(),
-            "chem_center_x" => non_empty.iter().map(|rel_cell| rel_cell.cell.chem_center().x).collect::<Box<_>>(),
-            "chem_center_y" => non_empty.iter().map(|rel_cell| rel_cell.cell.chem_center().y).collect::<Box<_>>(),
-            "chem_mass" => non_empty.iter().map(|rel_cell| rel_cell.cell.chem_mass()).collect::<Box<_>>(),
-            "cell_type" => non_empty.iter().map(|rel_cell| rel_cell.cell.cell_type.to_string()).collect::<Box<[String]>>()
-        )
-    }
+pub struct MovieModule {
+    pub movie_window: MovieWindow,
+    pub frame_period: u32
 }

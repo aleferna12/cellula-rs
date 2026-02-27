@@ -3,14 +3,15 @@
 use bon::Builder;
 use cellulars_lib::base::cell::Cell;
 use cellulars_lib::constants::FloatType;
+use cellulars_lib::empty_cell::{Empty, EmptyCell};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::com::{Com, ShiftError};
 use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell, HasCenter};
-use strum_macros::{Display, EnumString};
+use cellulars_lib::traits::cellular::{Alive, Cellular, HasCenter};
+use serde::{Deserialize, Serialize};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
-#[derive(Clone, Debug, Builder)]
+#[derive(Clone, Debug, Serialize, Deserialize, Builder)]
 pub struct MyCell {
     /// Area at which the cell divides.
     pub divide_area: u32,
@@ -84,10 +85,6 @@ impl Cellular for MyCell {
         self.cell.area()
     }
 
-    fn is_empty(&self) -> bool {
-        self.cell.is_empty()
-    }
-
     fn shift_position(
         &mut self,
         pos: Pos<usize>,
@@ -95,6 +92,16 @@ impl Cellular for MyCell {
         bound: &impl Boundary<Coord = FloatType>
     ) -> Result<(), ShiftError> {
         self.cell.shift_position(pos, adding, bound)
+    }
+}
+
+impl Empty for MyCell {
+    fn empty_default() -> EmptyCell<Self> {
+        Self::new_empty(0, 0, CellType::Migrating)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.cell.is_empty()
     }
 }
 
@@ -125,8 +132,7 @@ impl Alive for MyCell {
 }
 
 /// A cell is either migrating or dividing.
-#[derive(Clone, Debug, EnumString, Display)]
-#[strum(serialize_all = "kebab-case")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum CellType {
     /// A cell that is migrating.
     Migrating,

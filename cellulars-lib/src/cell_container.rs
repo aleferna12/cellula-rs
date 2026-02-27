@@ -1,13 +1,14 @@
 //! Contains logic associated with [CellContainer].
 
 use crate::constants::CellIndex;
-use crate::traits::cellular::{Alive, Cellular, EmptyCell};
+use crate::traits::cellular::{Alive, Cellular};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
+use crate::empty_cell::{Empty, EmptyCell};
 
 /// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CellContainer<C> {
     vec: Vec<RelCell<C>>
@@ -65,7 +66,7 @@ impl<C> CellContainer<C> {
     }
 }
 
-impl<C: Cellular> CellContainer<C> {
+impl<C: Cellular + Empty> CellContainer<C> {
     /// Returns the number of cells that are not empty (see [Cellular::is_empty()]).
     pub fn n_non_empty(&self) -> CellIndex {
         self.vec
@@ -129,12 +130,6 @@ impl<C: Cellular> CellContainer<C> {
     /// Returns [None] if the index points to an empty cell.
     pub fn get_mut(&mut self, index: CellIndex) -> Option<&mut RelCell<C>> {
         self.vec.get_mut(index as usize).filter(|rel_cell| !rel_cell.cell.is_empty())
-    }
-}
-
-impl<C> Default for CellContainer<C> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -236,7 +231,7 @@ mod tests {
     use crate::prelude::Cell;
 
     fn cell_container() -> CellContainer<Cell> {
-        let mut cc = cell_container![Cell::new_empty(10); 2];
+        let mut cc = cell_container![Cell::empty_default(); 2];
         cc.replace(RelCell{ index: 0, cell: Cell::new_ready(10, 10, (0., 0.).into()) });
         cc
     }
@@ -258,7 +253,7 @@ mod tests {
     #[test]
     fn test_add() {
         let mut cc = cell_container();
-        let cell = cc.add(Cell::new_empty(10));
+        let cell = cc.add(Cell::empty_default());
         assert_eq!(1, cell.index);
         assert_eq!(cc.n_cells(), 2);
     }
@@ -266,7 +261,7 @@ mod tests {
     #[test]
     fn test_push() {
         let mut cc = cell_container();
-        cc.push(Cell::new_empty(10));
+        cc.push(Cell::empty_default());
         assert_eq!(cc.n_cells(), 3);
         assert!(cc.get(2).is_none());
     }
@@ -274,7 +269,7 @@ mod tests {
     #[test]
     fn test_replace() {
         let mut cc = cell_container();
-        let cell = cc.replace(RelCell{ index: 0, cell: Cell::new_empty(10).into_cell() });
+        let cell = cc.replace(RelCell{ index: 0, cell: Cell::empty_default().into_cell() });
         assert_eq!(0, cell.index);
         assert_eq!(cc.n_cells(), 2);
         assert!(cc.get(0).is_none());

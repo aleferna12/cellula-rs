@@ -3,9 +3,9 @@
 use crate::positional::boundaries::Boundary;
 use crate::positional::com::{Com, ShiftError};
 use crate::prelude::{Alive, Cellular, FloatType, HasCenter, Pos};
-use crate::traits::cellular::EmptyCell;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use crate::empty_cell::{Empty, EmptyCell};
 
 /// Minimum components required to simulate a cell.
 ///
@@ -20,15 +20,6 @@ pub struct Cell {
 }
 
 impl Cell {
-    /// Returns an empty cell to be filled by methods like 
-    /// [`Habitable::spawn_cell()`](crate::traits::habitable::Habitable::spawn_cell()).
-    pub fn new_empty(target_area: u32) -> EmptyCell<Self> {
-        EmptyCell::new(Self {
-            target_area,
-            com: Com { pos: Pos::new(0., 0.), mass: 0 }
-        }).unwrap()
-    }
-
     /// Makes a new, ready-to-go cell from a pre-existing state.
     ///
     /// Useful to initialize a cell from a backup.
@@ -43,6 +34,10 @@ impl Cell {
             target_area
         }
     }
+
+    pub fn new_empty(target_area: u32) -> EmptyCell<Self> {
+        EmptyCell::new_unchecked(Self::new_ready(0, target_area, Pos::new(0., 0.)))
+    }
 }
 
 impl Cellular for Cell {
@@ -52,11 +47,6 @@ impl Cellular for Cell {
 
     fn area(&self) -> u32 {
         self.com.mass
-    }
-
-    // Experimented with encoding this using typestate pattern but it was not helpful nor ergonomic
-    fn is_empty(&self) -> bool {
-        self.com.mass == 0
     }
 
     fn shift_position(
@@ -108,9 +98,16 @@ impl PartialEq for Cell {
     }
 }
 
-impl Default for EmptyCell<Cell> {
-    fn default() -> Self {
-        Cell::new_empty(0)
+impl Empty for Cell {
+    fn empty_default() -> EmptyCell<Self> {
+        EmptyCell::new_unchecked(Self {
+            target_area: 0,
+            com: Com { pos: Pos::new(0., 0.), mass: 0 }
+        })
+    }
+
+    fn is_empty(&self) -> bool {
+        self.area() == 0
     }
 }
 
@@ -120,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_empty_cell() {
-        let empty_cell = Cell::new_empty(0);
+        let empty_cell = Cell::empty_default();
         let cell = empty_cell.as_cell();
         assert!(cell.is_empty());
         assert_eq!(cell.area(), 0);

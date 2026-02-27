@@ -6,6 +6,7 @@ use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{IntoColor, Mix, Srgba};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use crate::empty_cell::Empty;
 
 /// A trait to plot information about the simulation.
 pub trait Plot<P> {
@@ -61,7 +62,7 @@ pub struct CenterPlot {
 
 impl<E: Habitable> Plot<E> for CenterPlot
 where 
-    E::Cell: HasCenter {
+    E::Cell: HasCenter + Empty {
     fn plot(&self, env: &E, image: &mut RgbaImage) {
         for rel_cell in env.env().cells.iter() {
             if rel_cell.cell.is_empty() {
@@ -118,6 +119,7 @@ pub struct AreaPlot<C> {
 impl<E, C> Plot<E> for AreaPlot<C>
 where
     E: Habitable,
+    E::Cell: Empty,
     C: Mix<Scalar = FloatType> + Clone + IntoColor<Srgba<FloatType>> {
     fn plot(&self, env: &E, image: &mut RgbaImage) {
         let mut min = u32::MAX;
