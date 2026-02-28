@@ -1,7 +1,7 @@
-//! Contains logic associated with the default [`Reader`].
+//! Contains logic associated with the default [`ParquetReader`].
 //!
 use crate::empty_cell::Empty;
-use crate::io::read::read::Read;
+use crate::io::read::r#trait::Read;
 use crate::lattice::Lattice;
 use crate::prelude::{CellContainer, Pos, RelCell};
 use crate::spin::Spin;
@@ -17,20 +17,16 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::num::ParseIntError;
 
+/// Used to read data stored in the [`Parquet`](parquet) format.
 #[derive(Clone, Debug)]
 pub struct ParquetReader<R> {
-    file: R
-}
-
-impl<R> ParquetReader<R> {
-    pub fn new(file: R) -> ParquetReader<R> {
-        ParquetReader { file }
-    }
+    /// Object responsible for reading data.
+    pub reader: R
 }
 
 impl<R: ChunkReader + 'static> Read<Lattice<Spin>, LatticeReadError> for ParquetReader<R> {
     fn read(self) -> Result<Lattice<Spin>, LatticeReadError> {
-        read_lattice::<Spin, StringArray, _>(self.file)
+        read_lattice::<Spin, StringArray, _>(self.reader)
     }
 }
 
@@ -38,7 +34,7 @@ impl<C, R: ChunkReader + 'static> Read<CellContainer<C>, CellsReadError> for Par
 where
     C: DeserializeOwned + Empty {
     fn read(self) -> Result<CellContainer<C>, CellsReadError> {
-        let batches = read_parquet(self.file)?;
+        let batches = read_parquet(self.reader)?;
         let Some(first) = batches.first() else {
             return Ok(CellContainer::new());
         };
@@ -230,7 +226,7 @@ mod impls {
 
                 impl<R: ChunkReader + 'static> Read<Lattice<$t1>, LatticeReadError> for ParquetReader<R> {
                     fn read(self) -> Result<Lattice<$t1>, LatticeReadError> {
-                        read_lattice::<$t1, $t2, _>(self.file)
+                        read_lattice::<$t1, $t2, _>(self.reader)
                     }
                 }
             )*

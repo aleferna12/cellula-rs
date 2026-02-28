@@ -14,7 +14,7 @@ use cellulars_lib::base::pond::Pond;
 use cellulars_lib::constants::FloatType;
 use cellulars_lib::empty_cell::EmptyCell;
 use cellulars_lib::io::read::parquet_reader::ParquetReader;
-use cellulars_lib::io::read::read::Read;
+use cellulars_lib::io::read::r#trait::Read;
 use cellulars_lib::io::write::image::movie_window::MovieWindow;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::rect::Rect;
@@ -223,7 +223,7 @@ impl Model {
         maybe_templates_path: Option<String>
     ) -> anyhow::Result<Option<Box<[MyCell]>>> {
         maybe_templates_path.map(|path| {
-            let cell_cont: CellContainer<MyCell> = ParquetReader::new(File::open(path)?).read()?;
+            let cell_cont: CellContainer<MyCell> = ParquetReader { reader: File::open(path)? }.read()?;
             // This is required to obtain a clonable iterator that we can cycle over
             let templates_cells = cell_cont
                 .into_iter()

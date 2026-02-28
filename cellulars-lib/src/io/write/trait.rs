@@ -1,3 +1,5 @@
+//! Contains logic associated with the [`Write`] trait;
+
 /// Defines how to write data to a file.
 pub trait Write<D, E> {
     /// Writes `data`.

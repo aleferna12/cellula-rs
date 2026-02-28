@@ -29,7 +29,7 @@ impl<C> CellContainer<C> {
         }
     }
     
-    /// Returns the total number of cells in the cell container, including empty cells (see [Cellular::is_empty()]).
+    /// Returns the total number of cells in the cell container, including empty cells (see [Empty::is_empty()]).
     pub fn n_cells(&self) -> CellIndex {
         self.vec.len().try_into().expect("there are more cells than supported by the type `CellIndex`")
     }
@@ -67,7 +67,7 @@ impl<C> CellContainer<C> {
 }
 
 impl<C: Cellular + Empty> CellContainer<C> {
-    /// Returns the number of cells that are not empty (see [Cellular::is_empty()]).
+    /// Returns the number of cells that are not empty (see [Empty::is_empty()]).
     pub fn n_non_empty(&self) -> CellIndex {
         self.vec
             .iter()
@@ -92,7 +92,7 @@ impl<C: Cellular + Empty> CellContainer<C> {
             .unwrap_or(self.n_cells())
     }
 
-    /// Add a cell by replacing the first empty cell (see [Cellular::is_empty()]).
+    /// Add a cell by replacing the first empty cell (see [Empty::is_empty()]).
     pub fn add(&mut self, cell: EmptyCell<C>) -> &mut RelCell<C> {
         let new_index = self.next_index();
         let rel_cell = RelCell {

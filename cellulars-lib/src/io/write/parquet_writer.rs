@@ -1,7 +1,8 @@
-//! Contains logic used to write data using [`Writer`].
+//! Contains logic used to write data using [`ParquetWriter`].
 
 use crate::cell_container::{CellContainer, RelCell};
-use crate::io::write::write::Write;
+use crate::empty_cell::Empty;
+use crate::io::write::r#trait::Write;
 use crate::lattice::Lattice;
 use crate::prelude::{Cellular, Pos, Spin};
 use arrow::array::{Array, ArrayRef, RecordBatch, StringArray};
@@ -13,27 +14,26 @@ use parquet::errors::ParquetError;
 use parquet::file::metadata::ParquetMetaData;
 use parquet::file::properties::WriterProperties;
 use serde::{Deserialize, Serialize};
+use serde_arrow::marrow::datatypes::Field;
 use serde_arrow::schema::{SchemaLike, TracingOptions};
 use serde_arrow::to_record_batch;
 use std::io;
 use std::sync::Arc;
-use crate::empty_cell::Empty;
 
 /// Parquet writer.
 #[derive(Clone, Debug)]
 pub struct ParquetWriter<W> {
-    file: W
-}
-
-impl<W> ParquetWriter<W> {
-    pub fn new(file: W) -> Self {
-        Self { file }
-    }
+    /// Object responsible for reading data.
+    pub writer: W,
+    /// These are passed to [`serde_arrow::schema::TracingOptions::overwrite()`].
+    ///
+    /// First element in the tuple is the path and the second the field.
+    pub overwrites: Vec<(String, Field)>
 }
 
 impl<W: io::Write + Send> Write<Lattice<Spin>, LatticeWriteError> for ParquetWriter<W> {
     fn write(self, data: &Lattice<Spin>) -> Result<(), LatticeWriteError> {
-        write_lattice(data, self.file).map(|_| ())
+        write_lattice(data, self.writer).map(|_| ())
     }
 }
 
@@ -43,9 +43,17 @@ where
     RelCell<T>: Serialize + Deserialize<'de> {
     fn write(self, data: &CellContainer<T>) -> Result<(), CellsWriteError> {
         let cells: Box<_> = data.iter_non_empty().collect();
-        let fields = Vec::<FieldRef>::from_type::<RelCell<T>>(TracingOptions::default())?;
+        let mut options = TracingOptions::default()
+            .allow_null_fields(true)
+            .allow_to_string(true)
+            .coerce_numbers(true)
+            .enums_without_data_as_strings(true);
+        for (path, field) in self.overwrites {
+            options = options.overwrite(path, field)?;
+        }
+        let fields = Vec::<FieldRef>::from_type::<RelCell<T>>(options)?;
         let batch = to_record_batch(&fields, &cells)?;
-        match write_parquet(&batch, self.file) {
+        match write_parquet(&batch, self.writer) {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into())
         }
@@ -155,7 +163,7 @@ mod impls {
 
                 impl<W: io::Write + Send> Write<Lattice<$t1>, LatticeWriteError> for ParquetWriter<W> {
                     fn write(self, data: &Lattice<$t1>) -> Result<(), LatticeWriteError> {
-                        write_lattice::<$t1, $t2>(data, self.file).map(|_| ())
+                        write_lattice::<$t1, $t2>(data, self.writer).map(|_| ())
                     }
                 }
             )*

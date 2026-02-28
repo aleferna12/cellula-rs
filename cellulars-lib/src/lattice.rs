@@ -79,7 +79,7 @@ impl<T> Lattice<T> {
 }
 
 impl<T: Default + Clone> Lattice<T> {
-    /// Makes a lattice using [`T::default()`].
+    /// Makes a lattice using `T`.
     pub fn new(width: usize, height: usize) -> Self {
         Self::from_slice(&vec![T::default(); width * height], width, height).unwrap()
     }

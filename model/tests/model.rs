@@ -19,7 +19,7 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
 fn test_plots() -> anyhow::Result<()> {
     for plot in [PT::CellType, PT::Area, PT::Center, PT::ChemCenter] {
         let mut params = make_test_parameters()?;
-        params.io.outdir = format!("tests/plots/{plot:?}");
+        params.io.outdir = format!("tests/out/plots/{plot:?}");
         params.io.plot.order = vec![PT::Chem, PT::Spin, plot, PT::Border].into();
 
         let mut model = Model::new_from_parameters(params.clone(), None)?;
@@ -36,9 +36,9 @@ fn test_plots() -> anyhow::Result<()> {
 #[test]
 fn test_templates() -> anyhow::Result<()> {
     let mut params = make_test_parameters()?;
-    params.io.outdir = "tests/templates/".to_string();
+    params.io.outdir = "tests/out/templates/".to_string();
 
-    let mut model = Model::new_from_parameters(params, Some("tests/mig_div_templates.parquet".to_string()))?;
+    let mut model = Model::new_from_parameters(params, Some("tests/fixtures/mig_div_templates.parquet".to_string()))?;
     model.run_for(512);
     Ok(())
 }
@@ -46,9 +46,9 @@ fn test_templates() -> anyhow::Result<()> {
 #[test]
 fn test_layout() -> anyhow::Result<()> {
     let mut params = make_test_parameters()?;
-    params.io.outdir = "tests/layout/".to_string();
+    params.io.outdir = "tests/out/layout/".to_string();
 
-    let mut model = Model::new_from_layout(params, "tests/squares_layout.png".to_string(), None)?;
+    let mut model = Model::new_from_layout(params, "tests/fixtures/squares_layout.png".to_string(), None)?;
     model.run_for(512);
     Ok(())
 }
@@ -56,12 +56,12 @@ fn test_layout() -> anyhow::Result<()> {
 #[test]
 fn test_layout_template() -> anyhow::Result<()> {
     let mut params = make_test_parameters()?;
-    params.io.outdir = "tests/layout_template/".to_string();
+    params.io.outdir = "tests/out/layout_template/".to_string();
 
     let mut model = Model::new_from_layout(
         params,
-        "tests/squares_layout.png".to_string(),
-        Some("tests/mig_div_templates.parquet".to_string())
+        "tests/fixtures/squares_layout.png".to_string(),
+        Some("tests/fixtures/mig_div_templates.parquet".to_string())
     )?;
     model.run_for(512);
     Ok(())

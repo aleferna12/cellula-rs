@@ -9,7 +9,7 @@ use crate::empty_cell::{Empty, EmptyCell};
 
 /// Minimum components required to simulate a cell.
 ///
-/// Comparisons with [`PartialEq`] always return true if both cells [`Cellular::is_empty()`].
+/// Comparisons with [`PartialEq`] always return true if both cells [`Empty::is_empty()`].
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Cell {
@@ -35,6 +35,7 @@ impl Cell {
         }
     }
 
+    /// Creates a new [`EmptyCell`].
     pub fn new_empty(target_area: u32) -> EmptyCell<Self> {
         EmptyCell::new_unchecked(Self::new_ready(0, target_area, Pos::new(0., 0.)))
     }

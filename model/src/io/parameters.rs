@@ -206,7 +206,7 @@ pub struct DataParameters {
     pub lattice_period: u32
 }
 
-/// Parameters used to display the real-time movie of the simulation (see [`movie_maker`](crate::io::movie_maker)).
+/// Parameters used to display the real-time movie of the simulation.
 ///
 /// Omitting these from the configuration file disables the movie window (same as setting `show` = False).
 /// The `movie` feature flag must be on for the movie to be displayed.
@@ -220,7 +220,7 @@ pub struct MovieParameters {
     pub frame_period: u32
 }
 
-/// Parameters using for plotting (see [`plot`](crate::io::plot)).
+/// Parameters using for plotting.
 // We flatten the parameters here to allow order to be an env variable
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]

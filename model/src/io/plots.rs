@@ -153,8 +153,8 @@ fn hex_to_srgba(hex: &str) -> anyhow::Result<Srgba<FloatType>> {
     let hexu32 = hex
         .strip_prefix("#")
         .ok_or(anyhow!("Missing starting `#` character in hex string"))?;
-    let bytes = u32::from_str_radix(&hexu32, 16)
-        .map_err(|e| anyhow::Error::new(e))?
+    let bytes = u32::from_str_radix(hexu32, 16)
+        .map_err(anyhow::Error::new)?
         .to_be_bytes();
     Ok(Srgba::new(bytes[1], bytes[2], bytes[3], 255).into_format())
 }

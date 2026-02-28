@@ -7,12 +7,12 @@ use crate::my_environment::MyEnvironment;
 use anyhow::Context;
 use bon::Builder;
 use cellulars_lib::io::read::parquet_reader::ParquetReader;
-use cellulars_lib::io::read::read::Read;
+use cellulars_lib::io::read::r#trait::Read;
 #[cfg(feature = "movie-io")]
 use cellulars_lib::io::write::image::movie_window::MovieWindow;
 use cellulars_lib::io::write::image::plot::Plot;
 use cellulars_lib::io::write::parquet_writer::ParquetWriter;
-use cellulars_lib::io::write::write::Write;
+use cellulars_lib::io::write::r#trait::Write;
 use cellulars_lib::lattice::Lattice;
 use cellulars_lib::prelude::CellContainer;
 use cellulars_lib::spin::Spin;
@@ -44,8 +44,11 @@ pub struct IoManager {
     pub outdir: PathBuf,
     /// Image format with which to save simulation images.
     pub image_format: String,
+    /// Period with which to save an image of the simulation.
     pub image_period: u32,
+    /// Period with which to save cell data.
     pub cells_period: u32,
+    /// Period with which to save the cell lattice.
     pub lattice_period: u32,
     /// Used to update the simulation video when it's time.
     #[cfg(feature = "movie-io")]
@@ -110,20 +113,23 @@ impl IoManager {
             .join(format!("{}.parquet", Self::pad_time_step(time_step)))
     }
 
+    /// Reads the parameter file of a simulation at `sim_path`.
     pub fn read_parameters(sim_path: impl AsRef<Path>) -> anyhow::Result<Parameters> {
         Parameters::parse(IoManager::parameters_path(sim_path))
     }
 
+    /// Reads a cell [`CellContainer`] from the simulation at `sim_path` at `time_step`.
     pub fn read_cells(sim_path: impl AsRef<Path>, time_step: u32) -> anyhow::Result<CellContainer<MyCell>> {
-        ParquetReader::new(File::open(Self::cells_path(sim_path, time_step))?)
+        ParquetReader { reader: File::open(Self::cells_path(sim_path, time_step))? }
             .read()
-            .map_err(|e| anyhow::Error::new(e))
+            .map_err(anyhow::Error::new)
     }
 
+    /// Reads a cell [`Lattice`] from the simulation at `sim_path` at `time_step`.
     pub fn read_cell_lattice(sim_path: impl AsRef<Path>, time_step: u32) -> anyhow::Result<Lattice<Spin>> {
-        ParquetReader::new(File::open(Self::lattice_path(sim_path, time_step))?)
+        ParquetReader{ reader: File::open(Self::lattice_path(sim_path, time_step))? }
             .read()
-            .map_err(|e| anyhow::Error::new(e))
+            .map_err(anyhow::Error::new)
     }
 
     /// Reads a layout PNG file at `layout_path` for a pond with dimensions
@@ -177,14 +183,14 @@ impl IoManager {
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
-            ParquetWriter::new(File::create(file_path)?).write(&env.env.cells)?;
+            ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(&env.env.cells)?;
         }
 
         if time_step.is_multiple_of(self.lattice_period) {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            ParquetWriter::new(File::create(file_path)?).write(&env.env.cell_lattice)?;
+            ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(&env.env.cell_lattice)?;
         }
         Ok(())
     }
@@ -233,7 +239,7 @@ impl IoManager {
         Ok(())
     }
 
-    /// Makes a new frame of the simulation by drawing a succession of plots (see [`io::plot`](crate::io::plot)).
+    /// Makes a new frame of the simulation by drawing a succession of plots.
     pub fn make_simulation_image(
         &self, 
         env: &MyEnvironment
@@ -279,7 +285,10 @@ impl IoManager {
     }
 }
 
+/// Groups together a movie window and its associated frame rate.
 pub struct MovieModule {
+    /// Movie window used to display the simulation.
     pub movie_window: MovieWindow,
+    /// Period with which to update the movie.
     pub frame_period: u32
 }

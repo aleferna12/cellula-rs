@@ -1,6 +1,9 @@
+//! Contains logic associated with [`MovieWindow`].
+
 use image::{EncodableLayout, RgbaImage};
 use minifb::{Window, WindowOptions};
 
+/// Movie window used to display the simulation in real time.
 pub struct MovieWindow {
     /// Width of the window.
     pub width: usize,
@@ -11,6 +14,7 @@ pub struct MovieWindow {
 }
 
 impl MovieWindow {
+    /// Makes a new movie window.
     pub fn new(
         width: usize,
         height: usize,
