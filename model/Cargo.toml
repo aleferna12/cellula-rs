@@ -9,8 +9,8 @@ repository = "https://github.com/aleferna12/cellulars-template"
 readme = "README.md"
 
 [features]
-default = ["high-precision", "movie-io"]
-high-precision = ["cellulars/f64"]
+default = ["f64", "movie-io"]
+f64 = ["cellulars/f64"]
 movie-io = ["cellulars/movie-io"]
 fixed-boundary = []
 von-neumann = []
