@@ -2,7 +2,11 @@
 name = "cellulars"
 version = "0.0.1"
 edition = "2024"
-description = "Library supporting the cellulars package"
+description = "A very fast, extensible CPM implementation."
+license = "LGPL-3.0-only"
+homepage = "https://github.com/aleferna12/cellula-rs"
+repository = "https://github.com/aleferna12/cellula-rs"
+readme = "../README.md"
 
 [features]
 default = ["f64", "log", "data-io", "image-io"]
