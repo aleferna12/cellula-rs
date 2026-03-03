@@ -18,8 +18,6 @@ jobs:
 
       - name: Push model/ to template repo
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Clone the template repo
           git clone https://x-access-token:${{ secrets.MODEL_TEMPLATE_TOKEN }}@github.com/aleferna12/cellulars-template.git /tmp/model-template
@@ -29,6 +27,8 @@ jobs:
 
           # Commit and push if there are changes
           cd /tmp/model-template
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --quiet || git commit -m "sync: ${{ github.event.head_commit.message }}"
           git push
