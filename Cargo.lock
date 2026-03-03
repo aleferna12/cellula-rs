@@ -580,7 +580,7 @@ dependencies = [
 
 [[package]]
 name = "cellulars"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "arrow",
  "criterion",
@@ -1875,7 +1875,7 @@ dependencies = [
 
 [[package]]
 name = "model"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "bon",
