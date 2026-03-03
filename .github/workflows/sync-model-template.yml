@@ -1,0 +1,34 @@
+name: Sync model in template repo
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'model/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push model/ to template repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Clone the template repo
+          git clone https://x-access-token:${{ secrets.MODEL_TEMPLATE_TOKEN }}@github.com/you/cellulars-template.git /tmp/model-template
+
+          # Sync model/ contents into the template repo (delete removed files too)
+          rsync -av --delete model/ /tmp/model-template/
+
+          # Commit and push if there are changes
+          cd /tmp/model-template
+          git add -A
+          git diff --cached --quiet || git commit -m "sync: ${{ github.event.head_commit.message }}"
+          git push
