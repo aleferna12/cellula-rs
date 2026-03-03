@@ -25,7 +25,7 @@ jobs:
           git clone https://x-access-token:${{ secrets.MODEL_TEMPLATE_TOKEN }}@github.com/aleferna12/cellulars-template.git /tmp/model-template
 
           # Sync model/ contents into the template repo (delete removed files too)
-          rsync -av --delete model/ /tmp/model-template/
+          rsync -av --delete --exclude='.git' model/ /tmp/model-template/
 
           # Commit and push if there are changes
           cd /tmp/model-template
