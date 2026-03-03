@@ -1,4 +1,4 @@
-use cellulars_lib::traits::step::Step;
+use cellulars::traits::step::Step;
 use model::io::parameters::{Parameters, PlotType as PT};
 use model::model::Model;
 

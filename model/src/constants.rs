@@ -1,18 +1,18 @@
 //! Contains constants that are set at compile-time with feature flags.
 
-use cellulars_lib::constants::FloatType;
+use cellulars::constants::FloatType;
 #[cfg(feature = "fixed-boundary")]
-use cellulars_lib::positional::boundaries::FixedBoundary;
+use cellulars::positional::boundaries::FixedBoundary;
 #[cfg(not(feature = "fixed-boundary"))]
-use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
+use cellulars::positional::boundaries::UnsafePeriodicBoundary;
 #[cfg(not(feature = "von-neumann"))]
-use cellulars_lib::positional::neighborhood::MooreNeighborhood;
+use cellulars::positional::neighborhood::MooreNeighborhood;
 #[cfg(feature = "von-neumann")]
-use cellulars_lib::positional::neighborhood::VonNeumannNeighborhood;
+use cellulars::positional::neighborhood::VonNeumannNeighborhood;
 
 /// Boundary type of the environment.
 ///
-/// [`FixedBoundary`](cellulars_lib::positional::boundaries::FixedBoundary) is ~18% faster than [`UnsafePeriodicBoundary`]
+/// [`FixedBoundary`](cellulars::positional::boundaries::FixedBoundary) is ~18% faster than [`UnsafePeriodicBoundary`]
 /// (in total run time).
 #[cfg(not(feature = "fixed-boundary"))]
 pub type BoundaryType = UnsafePeriodicBoundary<FloatType>;

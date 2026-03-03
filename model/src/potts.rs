@@ -3,14 +3,14 @@
 use crate::my_cell::CellType;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
-use cellulars_lib::constants::FloatType;
-use cellulars_lib::positional::boundaries::Boundary;
-use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::spin::Spin;
-use cellulars_lib::static_adhesion::StaticAdhesion;
-use cellulars_lib::traits::adhesion_system::AdhesionSystem;
-use cellulars_lib::traits::cellular::HasCenter;
-use cellulars_lib::traits::potts_algorithm::PottsAlgorithm;
+use cellulars::constants::FloatType;
+use cellulars::positional::boundaries::Boundary;
+use cellulars::positional::pos::Pos;
+use cellulars::spin::Spin;
+use cellulars::static_adhesion::StaticAdhesion;
+use cellulars::traits::adhesion_system::AdhesionSystem;
+use cellulars::traits::cellular::HasCenter;
+use cellulars::traits::potts_algorithm::PottsAlgorithm;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 

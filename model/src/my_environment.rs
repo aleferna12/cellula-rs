@@ -2,19 +2,19 @@
 
 use crate::constants::{BoundaryType, NeighborhoodType, EPSILON};
 use crate::my_cell::MyCell;
-use cellulars_lib::base::environment::{EdgesUpdate, Environment};
-use cellulars_lib::cell_container::RelCell;
-use cellulars_lib::constants::{CellIndex, FloatType};
-use cellulars_lib::lattice::Lattice;
-use cellulars_lib::positional::boundaries::{Boundary, ToLatticeBoundary};
-use cellulars_lib::positional::neighborhood::Neighborhood;
-use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::positional::rect::Rect;
-use cellulars_lib::spin::Spin;
-use cellulars_lib::traits::cellular::{Alive, Cellular, HasCenter};
-use cellulars_lib::traits::habitable::Habitable;
+use cellulars::base::environment::{EdgesUpdate, Environment};
+use cellulars::cell_container::RelCell;
+use cellulars::constants::{CellIndex, FloatType};
+use cellulars::lattice::Lattice;
+use cellulars::positional::boundaries::{Boundary, ToLatticeBoundary};
+use cellulars::positional::neighborhood::Neighborhood;
+use cellulars::positional::pos::Pos;
+use cellulars::positional::rect::Rect;
+use cellulars::spin::Spin;
+use cellulars::traits::cellular::{Alive, Cellular, HasCenter};
+use cellulars::traits::habitable::Habitable;
 use rand::RngExt;
-use cellulars_lib::empty_cell::EmptyCell;
+use cellulars::empty_cell::EmptyCell;
 
 /// An environment that contains a chemical gradient and limits cell growth to [`MyEnvironment::max_cells`].
 #[derive(Clone)]

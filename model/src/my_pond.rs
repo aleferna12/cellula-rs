@@ -2,18 +2,18 @@
 
 use crate::my_environment::MyEnvironment;
 use crate::potts::Potts;
-use cellulars_lib::base::pond::Pond;
-use cellulars_lib::traits::step::Step;
+use cellulars::base::pond::Pond;
+use cellulars::traits::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
 
-/// A pond is responsible for updating an [`Environment`](crate::my_environment::MyEnvironment) using the [`Potts`] algorithm.
+/// [`MyPond`] is responsible for updating an [`MyEnvironment`] using the [`Potts`] algorithm.
 ///
 /// All simulation logic is contained here, while [`Model`](crate::model::Model) is responsible for IO.
 #[derive(Clone)]
 pub struct MyPond {
     /// Inner [`Pond`].
     pub pond: Pond<Potts, Xoshiro256StarStar>,
-    /// Period with which the cells' [`Cell::update()`](crate::my_cell::MyCell::update()) method should be called.
+    /// Period with which the cells' [`MyCell::update()`](crate::my_cell::MyCell::update()) method should be called.
     pub update_period: u32,
     /// Whether cell division is enabled.
     pub division_enabled: bool

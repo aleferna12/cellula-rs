@@ -2,8 +2,8 @@
 mod image_test {
     use std::fs::File;
     use image::RgbaImage;
-    use cellulars_lib::io::write::image::webp_writer::WebpWriter;
-    use cellulars_lib::io::write::r#trait::Write;
+    use cellulars::io::write::image::webp_writer::WebpWriter;
+    use cellulars::io::write::r#trait::Write;
 
     #[test]
     fn test_image_writer() {
@@ -15,13 +15,13 @@ mod image_test {
 #[cfg(feature = "data-io")]
 mod data_test {
     use crate::data_test::cell_container::CellContainer;
-    use cellulars_lib::cell_container;
-    use cellulars_lib::io::read::parquet_reader::ParquetReader;
-    use cellulars_lib::io::read::r#trait::Read;
-    use cellulars_lib::prelude::{Cell, Lattice, RelCell, Spin};
+    use cellulars::cell_container;
+    use cellulars::io::read::parquet_reader::ParquetReader;
+    use cellulars::io::read::r#trait::Read;
+    use cellulars::prelude::{Cell, Lattice, RelCell, Spin};
     use std::fs::File;
-    use cellulars_lib::io::write::parquet_writer::ParquetWriter;
-    use cellulars_lib::io::write::r#trait::Write;
+    use cellulars::io::write::parquet_writer::ParquetWriter;
+    use cellulars::io::write::r#trait::Write;
 
     #[test]
     fn test_lattice_io() {

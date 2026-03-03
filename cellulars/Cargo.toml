@@ -1,5 +1,5 @@
 [package]
-name = "cellulars-lib"
+name = "cellulars"
 version = "0.0.1"
 edition = "2024"
 description = "Library supporting the cellulars package"

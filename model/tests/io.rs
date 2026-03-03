@@ -1,13 +1,13 @@
 use crate::cell_container::CellContainer;
-use cellulars_lib::cell_container;
-use cellulars_lib::empty_cell::EmptyCell;
-use cellulars_lib::io::write::parquet_writer::ParquetWriter;
-use cellulars_lib::io::write::r#trait::Write;
-use cellulars_lib::prelude::{Cellular, Pos, Rect, UnsafePeriodicBoundary};
+use cellulars::cell_container;
+use cellulars::empty_cell::EmptyCell;
+use cellulars::io::write::parquet_writer::ParquetWriter;
+use cellulars::io::write::r#trait::Write;
+use cellulars::prelude::{Cellular, Pos, Rect, UnsafePeriodicBoundary};
 use model::my_cell::{CellType, MyCell};
 use std::fs::File;
-use cellulars_lib::io::read::parquet_reader::ParquetReader;
-use cellulars_lib::io::read::r#trait::Read;
+use cellulars::io::read::parquet_reader::ParquetReader;
+use cellulars::io::read::r#trait::Read;
 
 #[test]
 fn test_cells_io() {

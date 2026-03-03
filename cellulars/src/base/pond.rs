@@ -7,7 +7,7 @@ use rand::Rng;
 /// A pond is responsible for updating a [`Habitable`](crate::traits::habitable::Habitable) environment
 /// using a [`PottsAlgorithm`].
 ///
-/// Comparisons using [`PartialEq` and `Eq`] do not compare [`Pond::rng`].
+/// Comparisons using [`PartialEq`] and [`Eq`] do not compare [`Pond::rng`].
 #[derive(Clone, Debug)]
 pub struct Pond<P: PottsAlgorithm, R> {
     /// Environment containing the cells.

@@ -197,8 +197,8 @@ pub struct RelCell<C> {
 /// # Examples
 ///
 /// ```
-/// use cellulars_lib::cell_container;
-/// use cellulars_lib::prelude::{Cell, CellContainer};
+/// use cellulars::cell_container;
+/// use cellulars::prelude::{Cell, CellContainer};
 ///
 /// let cc1 = cell_container![Cell::new_empty(10), Cell::new_empty(10)];
 /// let cc2 = cell_container![Cell::new_empty(10); 2];

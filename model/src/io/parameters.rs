@@ -2,7 +2,7 @@
 
 #![allow(missing_docs)]
 
-use cellulars_lib::constants::{CellIndex, FloatType};
+use cellulars::constants::{CellIndex, FloatType};
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -173,7 +173,7 @@ pub struct PottsParameters {
     pub adhesion: AdhesionParameters
 }
 
-/// Parameters used in cell adhesion (see [`cellulars_lib::static_adhesion`]).
+/// Parameters used in cell adhesion (see [`cellulars::static_adhesion`]).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct AdhesionParameters {

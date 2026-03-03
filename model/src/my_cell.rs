@@ -1,13 +1,13 @@
 //! Contains logic associated with [`MyCell`].
 
 use bon::Builder;
-use cellulars_lib::base::cell::Cell;
-use cellulars_lib::constants::FloatType;
-use cellulars_lib::empty_cell::{Empty, EmptyCell};
-use cellulars_lib::positional::boundaries::Boundary;
-use cellulars_lib::positional::com::{Com, ShiftError};
-use cellulars_lib::positional::pos::Pos;
-use cellulars_lib::traits::cellular::{Alive, Cellular, HasCenter};
+use cellulars::base::cell::Cell;
+use cellulars::constants::FloatType;
+use cellulars::empty_cell::{Empty, EmptyCell};
+use cellulars::positional::boundaries::Boundary;
+use cellulars::positional::com::{Com, ShiftError};
+use cellulars::positional::pos::Pos;
+use cellulars::traits::cellular::{Alive, Cellular, HasCenter};
 use serde::{Deserialize, Serialize};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
@@ -67,7 +67,7 @@ impl MyCell {
         }
     }
 
-    /// Updates parameters of the cell (called by [`Pond::step()`](cellulars_lib::traits::step::Step::step())).
+    /// Updates parameters of the cell (called by [`Pond::step()`](cellulars::traits::step::Step::step())).
     pub fn update(&mut self) {
         if let CellType::Dividing = self.cell_type && self.target_area() < self.divide_area {
             let new_target_area = self.target_area() + 1;
@@ -143,8 +143,8 @@ pub enum CellType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cellulars_lib::positional::boundaries::UnsafePeriodicBoundary;
-    use cellulars_lib::positional::rect::Rect;
+    use cellulars::positional::boundaries::UnsafePeriodicBoundary;
+    use cellulars::positional::rect::Rect;
 
     fn make_unsafe_boundary() -> UnsafePeriodicBoundary<FloatType> {
         UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))

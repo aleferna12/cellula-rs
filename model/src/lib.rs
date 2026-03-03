@@ -1,6 +1,6 @@
 //! This crate contains code that can be directly modified to extend the base model implementation provided.
 //!
-//! The base [`model::Model`] bundles a comprehensive set of IO-related features and showcases how the [`cellulars_lib`]
+//! The base [`model::Model`] bundles a comprehensive set of IO-related features and showcases how the [`cellulars`]
 //! library can be extended by implementing cell chemotaxis and cell division.
 
 pub mod model;

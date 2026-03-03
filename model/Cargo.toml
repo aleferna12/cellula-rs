@@ -6,8 +6,8 @@ description = "A very fast, extensible CPM implementation."
 
 [features]
 default = ["high-precision", "movie-io"]
-high-precision = ["cellulars-lib/f64"]
-movie-io = ["cellulars-lib/movie-io"]
+high-precision = ["cellulars/f64"]
+movie-io = ["cellulars/movie-io"]
 fixed-boundary = []
 von-neumann = []
 
@@ -24,7 +24,7 @@ name = "io_bench"
 harness = false
 
 [dependencies]
-cellulars-lib = { path = "../cellulars-lib", default-features = false, features = ["data-io", "image-io"] }
+cellulars = { path = "../cellulars", default-features = false, features = ["data-io", "image-io"] }
 anyhow = "1.0.99"
 bon = "3.7.2"
 clap = { version = "4.5.39", features = ["derive"] }

@@ -579,7 +579,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cellulars-lib"
+name = "cellulars"
 version = "0.0.1"
 dependencies = [
  "arrow",
@@ -1879,7 +1879,7 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "bon",
- "cellulars-lib",
+ "cellulars",
  "clap",
  "config",
  "criterion",
