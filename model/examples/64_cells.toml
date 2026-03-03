@@ -1,5 +1,5 @@
 [general]
-## How many MCS the simulation will run for.
+# How many MCS the simulation will run for.
 time-steps = 8192
 # Seed for the RNG.
 # Omit to pick a random seed.
