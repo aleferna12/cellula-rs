@@ -9,7 +9,7 @@ It currently runs on a single thread and achieves high performance using algorit
 Monte Carlo sampling method used traditionally for CPM.
 In the near future, the main step function will be parallelized for an even larger speed-up (stay tuned).
 
-Features currently included:
+Features currently include:
 - Total control over the Hamiltonian functional (C).
 - The Environment API makes it easy to design hybrid models that might require complex data structures (C).
 - Plotting API to display information about the simulation (C).
@@ -19,8 +19,8 @@ Features currently included:
 - Read simulation templates from image files (M).
 - Robust backup system to restore simulations (M).
 
-C: Features included in the cellulars lib.
-M: Features included in the [model template](https://github.com/aleferna12/cellulars-template).
+**C**: Features included in the cellulars lib.
+**M**: Features included in the [model template](https://github.com/aleferna12/cellulars-template).
 
 \* there are also alternative implementations of the CPM for users that are not as comfortable in Rust and prefer an
 out-of-the-box approach
@@ -38,7 +38,7 @@ automatic IO managing and other quality of life features, clone the repo at
 
 #### 2: Add it as a dependency (recommended for experimentation/mixed project)
 
-This will include only library code (so no fancy built-in IO/CLI features).
+This will include only library code (so no fancy built-in IO/CLI features, which you will need to implement yourself).
 Just add cellulars as a dependency to your cargo project with:
 
 ```commandline
@@ -47,6 +47,6 @@ cargo add cellulars
 
 #### 3: Clone this repo (recommended for extreme granular control)
 
-If you need to modify code from the cellulars library itself, you can clone this repo which includes both the lib code
-at `cellulars/` and the model code at `model/`. In principle there should be few cases where this is useful, since the
+If you need to modify code from the cellulars library itself, you can clone this repo (which includes both the lib code
+at `cellulars/` and the model code at `model/`). In principle there should be few cases where this is useful, since the
 lib was made highly extensible by design.
