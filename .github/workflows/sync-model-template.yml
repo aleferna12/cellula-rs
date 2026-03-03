@@ -3,7 +3,7 @@ name: Sync model in template repo
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'model/**'
 
