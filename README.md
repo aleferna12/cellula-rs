@@ -1,6 +1,6 @@
 ## Cellulars: a fast and extensible implementation of the Cellular Potts Model
 
-If you want full control over simulation code, this library is for you*.
+If you want full control over simulation code, this library is for you¹.
 Due to Rust's incredibly flexible type system, modifying cell behavior using cellulars is easy and intuitive, 
 while adding 0 overhead in execution time. 
 
@@ -22,7 +22,7 @@ Features currently include:
 **C**: Features included in the cellulars lib.
 **M**: Features included in the [model template](https://github.com/aleferna12/cellulars-template).
 
-\* there are also alternative implementations of the CPM for users that are not as comfortable in Rust and prefer an
+¹ There are also alternative implementations of the CPM for users who are not as comfortable in Rust and prefer an
 out-of-the-box approach
 (check out [Morpheus](https://morpheus.gitlab.io/) and [Artistoo](https://artistoo.net/), for example).
 
