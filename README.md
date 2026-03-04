@@ -30,7 +30,7 @@ out-of-the-box approach
 
 There are three ways to install cellulars, depending on the level of control you want over the simulation code.
 
-#### 1: Clone the template repo (recommended for full CPM project)
+#### 1: Clone the template repo
 
 To start with a template for a model that includes a CLI interface,
 automatic IO managing and other quality of life features, clone the template repo and start from there (read the README):
