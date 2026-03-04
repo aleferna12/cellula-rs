@@ -1,6 +1,6 @@
 ## Cellulars: a fast and extensible implementation of the Cellular Potts Model
 
-If you want full control over simulation code, this library is for you*.
+If you want full control over simulation code, this library is for you¹.
 Due to Rust's incredibly flexible type system, modifying cell behavior using cellulars is easy and intuitive, 
 while adding 0 overhead in execution time. 
 
@@ -22,7 +22,7 @@ Features currently include:
 **C**: Features included in the cellulars lib.
 **M**: Features included in the [model template](https://github.com/aleferna12/cellulars-template).
 
-\* there are also alternative implementations of the CPM for users that are not as comfortable in Rust and prefer an
+¹ There are also alternative implementations of the CPM for users who are not as comfortable in Rust and prefer an
 out-of-the-box approach
 (check out [Morpheus](https://morpheus.gitlab.io/) and [Artistoo](https://artistoo.net/), for example).
 
@@ -30,11 +30,14 @@ out-of-the-box approach
 
 There are three ways to install cellulars, depending on the level of control you want over the simulation code.
 
-#### 1: Clone the template repo (recommended for full CPM project)
+#### 1: Clone the template repo
 
 To start with a template for a model that includes a CLI interface,
-automatic IO managing and other quality of life features, clone the repo at 
-(https://github.com/aleferna12/cellulars-template) and start from there (read the README).
+automatic IO managing and other quality of life features, clone the template repo and start from there (read the README):
+
+```commandline
+git clone https://github.com/aleferna12/cellulars-template <my_project_name>
+```
 
 #### 2: Add it as a dependency (recommended for experimentation/mixed project)
 
@@ -47,6 +50,25 @@ cargo add cellulars
 
 #### 3: Clone this repo (recommended for extreme granular control)
 
-If you need to modify code from the cellulars library itself, you can clone this repo (which includes both the lib code
-at `cellulars/` and the model code at `model/`). In principle there should be few cases where this is useful, since the
+In principle, there should be few cases where this is useful, since the
 lib was made highly extensible by design.
+However, if for any reason you need to modify code from the cellulars library itself, you can clone this repo (which includes both the lib code
+at `cellulars/` and the model code at `model/`):
+
+```commandline
+git clone https://github.com/aleferna12/cellula-rs <my_project_name>
+```
+
+Then inside of model/Cargo.toml, replace:
+
+```toml
+cellulars = { version = "0.1.1", default-features = false, features = ["data-io", "image-io"] }
+```
+
+with:
+
+```toml
+cellulars = { path = "../cellulars", default-features = false, features = ["data-io", "image-io"] }
+```
+
+to use the local version of the library.
