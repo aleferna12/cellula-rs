@@ -18,6 +18,8 @@ jobs:
 
       - name: Push model/ to template repo
         run: |
+          # Get cellulars version
+          version=$(grep '^version' cellulars/Cargo.toml)
 
           # Clone the template repo
           git clone https://x-access-token:${{ secrets.MODEL_TEMPLATE_TOKEN }}@github.com/aleferna12/cellulars-template.git /tmp/model-template
@@ -27,9 +29,6 @@ jobs:
 
           # Commit and push if there are changes
           cd /tmp/model-template
-          ls
-          ls cellulars
-          version=$(grep '^version' cellulars/Cargo.toml)
           sed -i 's|cellulars = { path = "[^"]*"|cellulars = { $version|' Cargo.toml
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
