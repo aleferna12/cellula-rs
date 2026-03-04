@@ -2,9 +2,10 @@
 
 use crate::positional::boundaries::Boundary;
 use crate::positional::com::{Com, ShiftError};
-use crate::prelude::{Alive, Cellular, FloatType, HasCenter, Pos};
+use crate::prelude::{Alive, Cellular, HasCenter, Pos};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use crate::constants::FloatType;
 use crate::empty_cell::{Empty, EmptyCell};
 
 /// Minimum components required to simulate a cell.
@@ -85,7 +86,7 @@ impl Alive for Cell {
     fn birth(&self) -> EmptyCell<Cell> {
         let mut newborn = self.clone();
         newborn.com.mass = 0;
-        EmptyCell::new(newborn).expect("cell is not empty")
+        EmptyCell::new_unchecked(newborn)
     }
 }
 

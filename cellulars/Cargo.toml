@@ -19,6 +19,10 @@ serde = ["dep:serde"]
 parquet = ["dep:parquet", "dep:arrow"]
 minifb = ["dep:minifb"]
 
+[[example]]
+name = "division"
+required-features = ["f64", "movie-io"]
+
 [[bench]]
 name = "env_bench"
 harness = false

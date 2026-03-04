@@ -7,12 +7,12 @@ use crate::my_environment::MyEnvironment;
 use anyhow::Context;
 use bon::Builder;
 use cellulars::io::read::parquet_reader::ParquetReader;
-use cellulars::io::read::r#trait::Read;
+use cellulars::io::read::read_trait::Read;
 #[cfg(feature = "movie-io")]
 use cellulars::io::write::image::movie_window::MovieWindow;
 use cellulars::io::write::image::plot::Plot;
 use cellulars::io::write::parquet_writer::ParquetWriter;
-use cellulars::io::write::r#trait::Write;
+use cellulars::io::write::write_trait::Write;
 use cellulars::lattice::Lattice;
 use cellulars::prelude::CellContainer;
 use cellulars::spin::Spin;

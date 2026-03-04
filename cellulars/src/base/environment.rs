@@ -1,10 +1,12 @@
 //! Contains logic associated with [`Environment`].
 
+use crate::empty_cell::Empty;
 use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::pos::{CastCoords, Pos};
-use crate::prelude::{Alive, Cell, CellContainer, Cellular, Edge, FloatType, Habitable, HasCenter, Lattice,
+use crate::prelude::{Alive, CellContainer, Cellular, Edge, Habitable, HasCenter, Lattice,
                      MooreNeighborhood, Neighborhood, RelCell, Spin, UnsafePeriodicBoundary};
+use crate::constants::FloatType;
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;
@@ -228,8 +230,12 @@ impl<C: Cellular + HasCenter, N: Neighborhood, B: ToLatticeBoundary> Environment
     }
 }
 
-impl<N: Neighborhood, B: ToLatticeBoundary<Coord = FloatType>> Habitable for Environment<Cell, N, B> {
-    type Cell = Cell;
+impl<C, N, B> Habitable for Environment<C, N, B>
+where
+    C: Cellular + Alive + HasCenter + Empty,
+    N: Neighborhood,
+    B: ToLatticeBoundary<Coord = FloatType> {
+    type Cell = C;
 
     fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
         self

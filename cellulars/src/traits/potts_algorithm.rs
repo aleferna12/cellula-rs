@@ -159,7 +159,7 @@ pub trait PottsAlgorithm {
         &self,
         spin_source: Spin,
         spin_target: Spin,
-        neigh_spin: impl IntoIterator<Item = Spin>,
+        neigh_spins: impl IntoIterator<Item = Spin>,
         env: &Self::Environment,
     ) -> FloatType;
 }

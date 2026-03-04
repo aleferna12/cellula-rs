@@ -600,26 +600,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cellulars"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6d96e819088f2298509703c84d293b813e9c4e890c97371d54474e70a82c4b9"
-dependencies = [
- "arrow",
- "image",
- "imageproc",
- "indexmap",
- "minifb",
- "num",
- "palette",
- "parquet",
- "rand 0.10.0",
- "serde",
- "serde_arrow",
- "thiserror",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1899,7 +1879,7 @@ version = "0.1.1"
 dependencies = [
  "anyhow",
  "bon",
- "cellulars 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cellulars",
  "clap",
  "config",
  "criterion",
