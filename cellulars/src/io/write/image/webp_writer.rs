@@ -1,7 +1,7 @@
 //! Contains logic associated with [`WebpWriter`].
 
 use std::io;
-use crate::io::write::r#trait::Write;
+use crate::io::write::write_trait::Write;
 use image::{ImageError, ImageFormat, RgbaImage};
 
 /// WEBP writer.

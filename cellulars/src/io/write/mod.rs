@@ -4,4 +4,4 @@
 pub mod image;
 #[cfg(feature = "data-io")]
 pub mod parquet_writer;
-pub mod r#trait;
+pub mod write_trait;

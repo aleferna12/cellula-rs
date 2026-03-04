@@ -3,7 +3,7 @@ mod image_test {
     use std::fs::File;
     use image::RgbaImage;
     use cellulars::io::write::image::webp_writer::WebpWriter;
-    use cellulars::io::write::r#trait::Write;
+    use cellulars::io::write::write_trait::Write;
 
     #[test]
     fn test_image_writer() {
@@ -17,11 +17,11 @@ mod data_test {
     use crate::data_test::cell_container::CellContainer;
     use cellulars::cell_container;
     use cellulars::io::read::parquet_reader::ParquetReader;
-    use cellulars::io::read::r#trait::Read;
+    use cellulars::io::read::read_trait::Read;
     use cellulars::prelude::{Cell, Lattice, RelCell, Spin};
     use std::fs::File;
     use cellulars::io::write::parquet_writer::ParquetWriter;
-    use cellulars::io::write::r#trait::Write;
+    use cellulars::io::write::write_trait::Write;
 
     #[test]
     fn test_lattice_io() {

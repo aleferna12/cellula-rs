@@ -1,7 +1,7 @@
 //! Contains logic associated with the default [`ParquetReader`].
 //!
 use crate::empty_cell::Empty;
-use crate::io::read::r#trait::Read;
+use crate::io::read::read_trait::Read;
 use crate::lattice::Lattice;
 use crate::prelude::{CellContainer, Pos, RelCell};
 use crate::spin::Spin;

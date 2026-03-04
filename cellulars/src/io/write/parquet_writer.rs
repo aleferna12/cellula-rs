@@ -2,7 +2,7 @@
 
 use crate::cell_container::{CellContainer, RelCell};
 use crate::empty_cell::Empty;
-use crate::io::write::r#trait::Write;
+use crate::io::write::write_trait::Write;
 use crate::lattice::Lattice;
 use crate::prelude::{Cellular, Pos, Spin};
 use arrow::array::{Array, ArrayRef, RecordBatch, StringArray};
