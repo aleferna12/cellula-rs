@@ -33,8 +33,11 @@ There are three ways to install cellulars, depending on the level of control you
 #### 1: Clone the template repo (recommended for full CPM project)
 
 To start with a template for a model that includes a CLI interface,
-automatic IO managing and other quality of life features, clone the repo at 
-(https://github.com/aleferna12/cellulars-template) and start from there (read the README).
+automatic IO managing and other quality of life features, clone the template repo and start from there (read the README):
+
+```commandline
+git clone https://github.com/aleferna12/cellulars-template <my_project_name>
+```
 
 #### 2: Add it as a dependency (recommended for experimentation/mixed project)
 
@@ -50,3 +53,22 @@ cargo add cellulars
 If you need to modify code from the cellulars library itself, you can clone this repo (which includes both the lib code
 at `cellulars/` and the model code at `model/`). In principle there should be few cases where this is useful, since the
 lib was made highly extensible by design.
+
+
+```commandline
+git clone https://github.com/aleferna12/cellula-rs <my_project_name>
+```
+
+Then inside of model/Cargo.toml, replace:
+
+```toml
+cellulars = { version = "0.1.1", default-features = false, features = ["data-io", "image-io"] }
+```
+
+with:
+
+```toml
+cellulars = { path = "../cellulars", default-features = false, features = ["data-io", "image-io"] }
+```
+
+to use the local version of the library.
