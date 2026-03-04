@@ -50,10 +50,10 @@ cargo add cellulars
 
 #### 3: Clone this repo (recommended for extreme granular control)
 
-If you need to modify code from the cellulars library itself, you can clone this repo (which includes both the lib code
-at `cellulars/` and the model code at `model/`). In principle there should be few cases where this is useful, since the
+In principle, there should be few cases where this is useful, since the
 lib was made highly extensible by design.
-
+However, if for any reason you need to modify code from the cellulars library itself, you can clone this repo (which includes both the lib code
+at `cellulars/` and the model code at `model/`):
 
 ```commandline
 git clone https://github.com/aleferna12/cellula-rs <my_project_name>
