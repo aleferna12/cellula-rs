@@ -58,17 +58,3 @@ at `cellulars/` and the model code at `model/`):
 ```commandline
 git clone https://github.com/aleferna12/cellula-rs <my_project_name>
 ```
-
-Then inside of model/Cargo.toml, replace:
-
-```toml
-cellulars = { version = "0.1.1", default-features = false, features = ["data-io", "image-io"] }
-```
-
-with:
-
-```toml
-cellulars = { path = "../cellulars", default-features = false, features = ["data-io", "image-io"] }
-```
-
-to use the local version of the library.
