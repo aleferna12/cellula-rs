@@ -26,6 +26,57 @@ Features currently include:
 out-of-the-box approach
 (check out [Morpheus](https://morpheus.gitlab.io/) and [Artistoo](https://artistoo.net/), for example).
 
+### Getting started:
+
+The simplest CPM possible looks like this:
+
+```rust
+fn main() {
+    // Initialize periodic boundary conditions
+    let boundary = UnsafePeriodicBoundary::new(Rect::new(
+        Pos::new(0., 0.),
+        Pos::new(100., 100.)
+    ));
+    // Initialize an empty environment
+    let mut env = Environment::new(
+        cell_container![],
+        Lattice::new(100, 100),
+        MooreNeighborhood::new(1),
+        Boundaries::new(boundary)
+    );
+    // Spawn a cell in a rectangular region of the environment
+    let cell_rect = Rect::new(
+        Pos::new(25, 25),
+        Pos::new(75, 75)
+    );
+    env.spawn_cell(Cell::new_empty(cell_rect.area() as u32), cell_rect.iter_positions());
+
+    // Initialize the Potts algorithm used to update the environment
+    let potts = Potts {
+        boltz_t: 16.,
+        size_lambda: 4.,
+        adhesion: StaticAdhesion {
+            cell_energy: 10.,
+            medium_energy: 10.,
+            solid_energy: 10.
+        }
+    };
+    let mut rng = ThreadRng::default();
+
+    // Run 100k time steps of the simulation
+    for _ in 0..100_000 {
+        potts.step(&mut env, &mut rng);
+    }
+}
+```
+
+You will also need to define how the Potts algorithm updates the environment. 
+See `examples/basic.rs` for the full code, 
+including how to attach a movie window to the simulation so we can see what is going on.
+
+For more examples, see the `cellulars/examples` folder.
+Also check out cellulars [documentation](https://docs.rs/cellulars/latest/cellulars/).
+
 ### Installation:
 
 There are three ways to install cellulars, depending on the level of control you want over the simulation code.

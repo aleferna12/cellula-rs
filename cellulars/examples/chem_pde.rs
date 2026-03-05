@@ -1,11 +1,7 @@
-use crate::cell_container::CellContainer;
-use cellulars::base::environment::EdgesUpdate;
-use cellulars::cell_container;
 use cellulars::io::write::image::lerper::Lerper;
 use cellulars::io::write::image::movie_window::MovieWindow;
 use cellulars::io::write::image::plot::{srgba_to_rgba, Plot, SpinPlot};
-use cellulars::positional::boundaries::{Boundaries, ToLatticeBoundary};
-use cellulars::prelude::{AdhesionSystem, Boundary, Cell, Environment, Habitable, Lattice, MooreNeighborhood, Neighborhood, Pos, PottsAlgorithm, Rect, Spin, StaticAdhesion, Step, UnsafePeriodicBoundary};
+use cellulars::prelude::*;
 use image::RgbaImage;
 use palette::{IntoColor, Oklab, Srgba};
 use rand::RngExt;
@@ -71,7 +67,7 @@ fn main() -> Result<(), minifb::Error> {
     };
     let chem_plot = ChemPlot {
         lerper: Lerper {
-            min_color: Srgba::new(0., 0., 0., 1.).into_color(),
+            min_color: Default::default(),
             max_color: Srgba::new(1., 1., 1., 1.).into_color(),
         }
     };
@@ -98,6 +94,7 @@ struct ChemEnvironment {
 }
 
 impl ChemEnvironment {
+    // Updates the chemical signal on the environment with simple PDE system
     // In a real model you would parallelize this ofc
     fn update_chem(&mut self) {
         for pos in self.current_chem.iter_positions() {
@@ -151,6 +148,10 @@ impl PottsAlgorithm for Potts {
         self.size_lambda
     }
 
+    fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f64 {
+        -self.mig_lambda * (env.current_chem[pos_target] - env.current_chem[pos_source])
+    }
+
     fn delta_hamiltonian_adhesion(
         &self,
         spin_source: Spin,
@@ -164,10 +165,6 @@ impl PottsAlgorithm for Potts {
             energy += self.adhesion.adhesion_energy(neigh, spin_source, &());
         }
         energy
-    }
-
-    fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f64 {
-        -self.mig_lambda * (env.current_chem[pos_target] - env.current_chem[pos_source])
     }
 }
 

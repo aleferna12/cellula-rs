@@ -9,6 +9,7 @@ use cellulars::positional::com::{Com, ShiftError};
 use cellulars::positional::pos::Pos;
 use cellulars::traits::cellular::{Alive, Cellular, HasCenter};
 use serde::{Deserialize, Serialize};
+use crate::my_environment::MyEnvironment;
 
 /// A cell that can track a chemical concentration and migrate towards its source.
 #[derive(Clone, Debug, Serialize, Deserialize, Builder)]
@@ -49,7 +50,7 @@ impl MyCell {
     }
 
     /// Sets the area at which the cell divides when
-    /// [`Environment::reproduce()`](crate::my_environment::MyEnvironment::reproduce()) is called.
+    /// [`MyEnvironment::reproduce()`] is called.
     pub fn set_divide_area(&mut self, value: u32) {
         self.divide_area = value;
     }

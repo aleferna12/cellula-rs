@@ -1,11 +1,13 @@
 //! Prelude containing commonly used items.
 
 pub use crate::base::cell::Cell;
-pub use crate::base::environment::Environment;
+pub use crate::base::environment::{EdgesUpdate, Environment};
 pub use crate::base::pond::Pond;
 pub use crate::cell_container::{CellContainer, RelCell};
+pub use crate::empty_cell::{Empty, EmptyCell};
 pub use crate::lattice::Lattice;
-pub use crate::positional::boundaries::{Boundary, FixedBoundary, UnsafePeriodicBoundary};
+pub use crate::positional::boundaries::{Boundaries, Boundary, FixedBoundary, ToLatticeBoundary, UnsafePeriodicBoundary};
+pub use crate::positional::com::ShiftError;
 pub use crate::positional::edge::Edge;
 pub use crate::positional::neighborhood::{MooreNeighborhood, Neighborhood, VonNeumannNeighborhood};
 pub use crate::positional::pos::Pos;
@@ -18,5 +20,4 @@ pub use crate::traits::cellular::{Alive, Cellular, HasCenter};
 pub use crate::traits::habitable::Habitable;
 pub use crate::traits::potts_algorithm::PottsAlgorithm;
 pub use crate::traits::step::Step;
-pub use crate::empty_cell::{Empty, EmptyCell};
-pub use crate::positional::com::ShiftError;
+pub use crate::cell_container;

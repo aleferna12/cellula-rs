@@ -25,9 +25,10 @@ use std::sync::Arc;
 pub struct ParquetWriter<W> {
     /// Object responsible for reading data.
     pub writer: W,
-    /// These are passed to [`serde_arrow::schema::TracingOptions::overwrite()`].
+
+    /// These are passed to [`TracingOptions::overwrite()`].
     ///
-    /// First element in the tuple is the path and the second the field.
+    /// First element in the tuple is the path and the second is the field.
     pub overwrites: Vec<(String, Field)>
 }
 

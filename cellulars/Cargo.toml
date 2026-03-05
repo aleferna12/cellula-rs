@@ -20,6 +20,10 @@ parquet = ["dep:parquet", "dep:arrow"]
 minifb = ["dep:minifb"]
 
 [[example]]
+name = "basic"
+required-features = ["f64", "movie-io"]
+
+[[example]]
 name = "division"
 required-features = ["f64", "movie-io"]
 

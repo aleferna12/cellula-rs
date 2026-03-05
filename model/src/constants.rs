@@ -12,7 +12,7 @@ use cellulars::positional::neighborhood::VonNeumannNeighborhood;
 
 /// Boundary type of the environment.
 ///
-/// [`FixedBoundary`](cellulars::positional::boundaries::FixedBoundary) is ~18% faster than [`UnsafePeriodicBoundary`]
+/// [`FixedBoundary`] is ~18% faster than [`UnsafePeriodicBoundary`]
 /// (in total run time).
 #[cfg(not(feature = "fixed-boundary"))]
 pub type BoundaryType = UnsafePeriodicBoundary<FloatType>;

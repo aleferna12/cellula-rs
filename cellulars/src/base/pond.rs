@@ -4,7 +4,7 @@ use crate::traits::potts_algorithm::PottsAlgorithm;
 use crate::traits::step::Step;
 use rand::Rng;
 
-/// A pond is responsible for updating a [`Habitable`](crate::traits::habitable::Habitable) environment
+/// A pond is responsible for updating a [`Habitable`](crate::prelude::Habitable) environment
 /// using a [`PottsAlgorithm`].
 ///
 /// Comparisons using [`PartialEq`] and [`Eq`] do not compare [`Pond::rng`].

@@ -1,10 +1,7 @@
-use cellulars::cell_container;
 use cellulars::io::write::image::movie_window::MovieWindow;
 use cellulars::io::write::image::plot::{Plot, SpinPlot};
-use cellulars::positional::boundaries::Boundaries;
 use cellulars::prelude::*;
 use image::RgbaImage;
-use palette::Srgba;
 use rand::RngExt;
 
 const W: usize = 600;
@@ -46,7 +43,7 @@ fn main() -> Result<(), minifb::Error> {
     let mut window = MovieWindow::new(W, H)?;
     let mut image = RgbaImage::new(W as u32, H as u32);
     let plot = SpinPlot {
-        solid_color: Srgba::new(1., 1., 1., 1.),
+        solid_color: Default::default(),
         medium_color: None
     };
 
@@ -171,6 +168,7 @@ struct Pond {
 }
 
 impl Pond {
+    // Divides the by tracing a line through its center in a random angle
     fn divide_cell(&mut self, cell_index: u32) {
         let rel_cell = &self.env.cells[cell_index];
         let angle = self.rng.random::<f64>() * std::f64::consts::PI;
@@ -197,10 +195,12 @@ impl Pond {
 impl Step for Pond {
     fn step(&mut self) {
         self.potts.step(&mut self.env, &mut self.rng);
+        // Every 32 steps we make the cells grow
         if self.step.is_multiple_of(32) {
             let mut to_divide = vec![];
             for rel_cell in self.env.cells.iter_non_empty_mut() {
                 rel_cell.cell.cell.target_area += 1;
+                // If they have grown enough, it's time to divide!
                 if rel_cell.cell.cell.area() > SIDE.pow(2) * 2 {
                     to_divide.push(rel_cell.index);
                 }
