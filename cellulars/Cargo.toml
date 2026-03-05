@@ -23,6 +23,10 @@ minifb = ["dep:minifb"]
 name = "division"
 required-features = ["f64", "movie-io"]
 
+[[example]]
+name = "chem_pde"
+required-features = ["f64", "movie-io"]
+
 [[bench]]
 name = "env_bench"
 harness = false
