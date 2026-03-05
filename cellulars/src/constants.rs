@@ -5,10 +5,10 @@ pub type CellIndex = u32;
 
 /// Type of the floats used throughout the simulation.
 ///
-/// If the `f64` feature is enabled (the default), this will be [f64].
-/// Otherwise, [f32] will be used.
+/// If the `f64` feature is enabled (the default), this will be [`f64`].
+/// Otherwise, [`f32`] will be used.
 ///
-/// Using [f32] instead if [f64] provides some performance gain at the cost of mathematical precision.
+/// Using [`f32`] instead if [`f64`] provides some performance gain at the cost of mathematical precision.
 #[cfg(feature = "f64")]
 pub type FloatType = f64;
 #[cfg(not(feature = "f64"))]

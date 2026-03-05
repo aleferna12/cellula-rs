@@ -1,4 +1,4 @@
-//! Contains logic associated with [CellContainer].
+//! Contains logic associated with [`CellContainer`].
 
 use crate::constants::CellIndex;
 use crate::traits::cellular::{Alive, Cellular};
@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
 use crate::empty_cell::{Empty, EmptyCell};
 
-/// This is a vector type containing cell instances that can be accessed with their respective unique [CellIndex]es.
+/// This is a vector type containing cell instances that can be accessed with their respective unique [`CellIndex`]es.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CellContainer<C> {
@@ -29,7 +29,7 @@ impl<C> CellContainer<C> {
         }
     }
     
-    /// Returns the total number of cells in the cell container, including empty cells (see [Empty::is_empty()]).
+    /// Returns the total number of cells in the cell container, including empty cells (see [`Empty`]).
     pub fn n_cells(&self) -> CellIndex {
         self.vec.len().try_into().expect("there are more cells than supported by the type `CellIndex`")
     }
@@ -67,7 +67,7 @@ impl<C> CellContainer<C> {
 }
 
 impl<C: Cellular + Empty> CellContainer<C> {
-    /// Returns the number of cells that are not empty (see [Empty::is_empty()]).
+    /// Returns the number of cells that are not empty (see [`Empty`]).
     pub fn n_non_empty(&self) -> CellIndex {
         self.vec
             .iter()
@@ -75,7 +75,7 @@ impl<C: Cellular + Empty> CellContainer<C> {
             .count() as CellIndex
     }
     
-    /// Returns the number of cells that are alive (see [Alive::is_alive()]).
+    /// Returns the number of cells that are alive (see [`Alive::is_alive()`]).
     pub fn n_alive(&self) -> CellIndex
     where C: Alive {
         self.vec
@@ -92,7 +92,7 @@ impl<C: Cellular + Empty> CellContainer<C> {
             .unwrap_or(self.n_cells())
     }
 
-    /// Add a cell by replacing the first empty cell (see [Empty::is_empty()]).
+    /// Add a cell by replacing the first empty cell (see [`Empty`]).
     pub fn add(&mut self, cell: EmptyCell<C>) -> &mut RelCell<C> {
         let new_index = self.next_index();
         let rel_cell = RelCell {

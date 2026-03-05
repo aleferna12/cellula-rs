@@ -1,10 +1,10 @@
-//! Contains logic associated with [StaticAdhesion].
+//! Contains logic associated with [`StaticAdhesion`].
 
 use crate::constants::FloatType;
 use crate::spin::Spin;
 use crate::traits::adhesion_system::AdhesionSystem;
 
-/// An adhesion system that only considers [Spin]s to determine adhesion energies.
+/// An adhesion system that only considers [`Spin`]s to determine adhesion energies.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StaticAdhesion {
     /// Energy at a cell-cell interface.

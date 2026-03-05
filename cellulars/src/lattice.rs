@@ -69,7 +69,7 @@ impl<T> Lattice<T> {
     /// Iterates over all values in the lattice in column-major order.
     pub fn iter_values(&self) -> impl Iterator<Item = &T> { self.array.iter() }
 
-    /// Mutable version of [Lattice::iter_values()].
+    /// Mutable version of [`Lattice::iter_values()`].
     pub fn iter_values_mut(&mut self) -> impl Iterator<Item = &mut T> { self.array.iter_mut() }
 
     /// Returns a slice to the values contained in the lattice.

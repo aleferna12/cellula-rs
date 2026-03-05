@@ -12,7 +12,7 @@ use crate::traits::cellular::Cellular;
 /// This trait asserts that a type is habitable,
 /// which is to say that it can contain active cells.
 ///
-/// Overriding methods of this trait (especially [Habitable::grant_position()])
+/// Overriding methods of this trait (especially [`Habitable::grant_position()`])
 /// allows for custom logic of how to update the simulation.
 pub trait Habitable {
     /// Cell type of the environment associated with this trait.
@@ -31,7 +31,7 @@ pub trait Habitable {
     /// Assumes that `pos` is a valid position in the environment's lattice.
     fn grant_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate;
 
-    /// Spawns a cell by progressively granting `empty_cell` a series of `positions` with [Habitable::grant_position()].
+    /// Spawns a cell by progressively granting `empty_cell` a series of `positions` with [`Habitable::grant_position()`].
     ///
     /// Assumes that all `positions` are valid.
     fn spawn_cell(
@@ -47,7 +47,7 @@ pub trait Habitable {
         &self.env().cells[cell_index]
     }
 
-    /// Spawns a [Spin::Solid] at each position in `positions`.
+    /// Spawns a [`Spin::Solid`] at each position in `positions`.
     ///
     /// Assumes that all `positions` are valid.
     fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {

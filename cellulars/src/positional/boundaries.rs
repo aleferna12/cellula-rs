@@ -31,7 +31,7 @@ pub trait Boundary {
     /// Coordinate system associated with the boundaries.
     type Coord;
 
-    /// Expose the size of the boundary as a [Rect].
+    /// Expose the size of the boundary as a [`Rect`].
     fn rect(&self) -> &Rect<Self::Coord>;
 
     /// Validates that positions are in bounds.
@@ -39,7 +39,7 @@ pub trait Boundary {
     /// With fixed boundary conditions, that means filtering invalid positions.
     fn valid_pos(&self, pos: Pos<Self::Coord>) -> Option<Pos<Self::Coord>>;
 
-    /// Validates a series of positions using [Boundary::valid_pos()].
+    /// Validates a series of positions using [`Boundary::valid_pos()`].
     fn valid_positions(
         &self,
         positions: impl Iterator<Item = Pos<Self::Coord>>

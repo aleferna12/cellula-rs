@@ -1,4 +1,4 @@
-//! Contains logic associated with [SymmetricTable].
+//! Contains logic associated with [`SymmetricTable`].
 
 use std::ops::{Index, IndexMut};
 

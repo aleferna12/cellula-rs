@@ -72,7 +72,7 @@ impl<F: AsPrimitive<T> + Num, T: Copy + 'static> CastCoords<T> for Rect<F> {
     }
 }
 
-/// Iterator over all discrete positions contained in a [Rect].
+/// Iterator over all discrete positions contained in a [`Rect`].
 ///
 /// The iterator range is inclusive on both ends (position \[width, height\] is included for example).
 #[derive(Clone, Debug, PartialEq)]
