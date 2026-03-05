@@ -27,7 +27,7 @@ fn main() -> Result<(), minifb::Error> {
             ),
             current_chem: Lattice::new(W, H),
             new_chem: Lattice::new(W, H),
-            // Max is 1 / n_neighbours = 0.125
+            // Max is 1 / n_neighbors = 0.125
             diffuse_rate: 0.125,
             secrete_rate: 0.025,
             decay_rate: 0.0002,
@@ -62,7 +62,7 @@ fn main() -> Result<(), minifb::Error> {
     let mut window = MovieWindow::new(W, H)?;
     let mut image = RgbaImage::new(W as u32, H as u32);
     let spin_plot = SpinPlot {
-        solid_color: Srgba::new(1., 1., 1., 1.),
+        solid_color: Default::default(),
         medium_color: None
     };
     let chem_plot = ChemPlot {
