@@ -1,11 +1,12 @@
 [package]
 name = "cellulars"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "A very fast, extensible CPM implementation."
 license = "LGPL-3.0-only"
 homepage = "https://github.com/aleferna12/cellula-rs"
 repository = "https://github.com/aleferna12/cellula-rs"
+documentation = "https://docs.rs/cellulars/latest/cellulars/"
 readme = "../README.md"
 
 [features]

@@ -1,11 +1,18 @@
-//! This crate contains library functions for the [`Cellulars`](https://github.com/aleferna12/cellulars) project.
+/*!
+A very fast, extensible CPM implementation.
 
-/*
-TODO!:
- - Implement EnvNeighbors, which tracks neighbors
- - Make a BasePotts, BaseIoManager, BaseModel etc such that we can move the crate fully to cellulars-lib
- - Add a command to parse a grayscale PNG into a simulation
- */
+## Getting started:
+
+A minimal CPM implementation can be found in the
+[basics example](https://github.com/aleferna12/cellula-rs/blob/master/cellulars/examples/basic.rs),
+which should give you an idea of how to get started.
+
+Also check out the other [examples](https://github.com/aleferna12/cellula-rs/blob/master/cellulars/examples).
+
+Finally, we provide a [template repo](https://github.com/aleferna12/cellulars-template)
+with additional features that do not fit in the library to reduce boilerplate.
+These include a command line tool, a parameter parser and automatic data-write/backup.
+*/
 
 pub mod lattice;
 pub mod positional;
