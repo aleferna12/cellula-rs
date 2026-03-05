@@ -92,8 +92,7 @@ git clone https://github.com/aleferna12/cellulars-template <my_project_name>
 
 #### 2: Add it as a dependency (recommended for experimentation/mixed project)
 
-This will include only library code (so no fancy built-in IO/CLI features, which you will need to implement yourself).
-Just add cellulars as a dependency to your cargo project with:
+This will include only library code. Just add cellulars as a dependency to your cargo project with:
 
 ```commandline
 cargo add cellulars
