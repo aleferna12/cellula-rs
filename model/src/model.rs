@@ -117,6 +117,16 @@ impl Model {
         })
     }
 
+    /// Runs the model for the number of time-steps specified when creating the model.
+    pub fn run(&mut self) {
+        self.run_for(self.time_steps);
+    }
+
+    /// Logs some information at end of the simulation.
+    pub fn goodbye(&self) {
+        log::info!("Finished after {} time steps", self.time_steps);
+    }
+
     fn setup_io(parameters: &Parameters, new_seed: u64) -> anyhow::Result<IoManager> {
         #[cfg(not(feature = "movie-io"))]
         if parameters.io.movie.is_some() {
@@ -169,41 +179,6 @@ impl Model {
         Ok(io)
     }
 
-    fn make_potts(parameters: &Parameters) -> Potts {
-        Potts::builder()
-            .boltz_t(parameters.potts.boltz_t)
-            .size_lambda(parameters.potts.size_lambda)
-            .chemotaxis_mu(parameters.potts.chemotaxis_mu)
-            .enable_migration(parameters.cell.migrate)
-            .adhesion(
-                StaticAdhesion {
-                    cell_energy: parameters.potts.adhesion.cell_energy,
-                    medium_energy: parameters.potts.adhesion.medium_energy,
-                    solid_energy: parameters.potts.adhesion.solid_energy,
-                }
-            )
-            .build()
-    }
-
-    fn make_env(parameters: &Parameters) -> MyEnvironment {
-        MyEnvironment::new(
-            Environment::new_empty(
-                NeighborhoodType::new(parameters.pond.neigh_r),
-                Boundaries::new(BoundaryType::new(Rect::new(
-                    (0., 0.).into(),
-                    (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
-                )))
-            ),
-            parameters.cell.max_cells,
-            parameters.cell.search_radius
-        )
-    }
-
-    fn determine_seed(seed_param: Option<u64>) -> u64 {
-        // TOML doesnt support large u64s so we use a u32 seed
-        seed_param.unwrap_or(make_rng::<Xoshiro256StarStar>().next_u32() as u64)
-    }
-
     fn make_empty_pond(parameters: &Parameters, rng: &mut Xoshiro256StarStar) -> Pond {
         Pond::builder()
             .env(Self::make_env(parameters))
@@ -215,28 +190,6 @@ impl Model {
             .build()
     }
 
-    fn templates_path_to_box(
-        maybe_templates_path: Option<String>
-    ) -> anyhow::Result<Option<Box<[MyCell]>>> {
-        maybe_templates_path.map(|path| {
-            let cell_cont: CellContainer<MyCell> = ParquetReader { reader: File::open(path)? }.read()?;
-            // This is required to obtain a clonable iterator that we can cycle over
-            let templates_cells = cell_cont
-                .into_iter()
-                .map(|rel_cell| rel_cell.cell)
-                .collect::<Box<[_]>>();
-            anyhow::Ok(templates_cells)
-        }).transpose()
-    }
-
-    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl RngExt) -> EmptyCell<MyCell> {
-        MyCell::new_empty(
-            parameters.cell.target_area,
-            parameters.cell.div_area,
-            if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
-        )
-    }
-
     fn make_new_pond(
         parameters: &Parameters,
         rng: &mut Xoshiro256StarStar,
@@ -246,7 +199,7 @@ impl Model {
         let mut pond = Self::make_empty_pond(parameters, rng);
 
         // Obtains an iterator over cell templates if a templates_path is present
-        let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
+        let maybe_templates_box = Self::read_cell_templates(maybe_templates_path)?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
         while pond.env.env.cells.n_non_empty() < parameters.cell.starting_cells {
@@ -279,6 +232,63 @@ impl Model {
             pond.env.make_border(true, true, true, true);
         }
         Ok(pond)
+    }
+
+    fn make_potts(parameters: &Parameters) -> Potts {
+        Potts::builder()
+            .boltz_t(parameters.potts.boltz_t)
+            .size_lambda(parameters.potts.size_lambda)
+            .chemotaxis_mu(parameters.potts.chemotaxis_mu)
+            .enable_migration(parameters.cell.migrate)
+            .adhesion(
+                StaticAdhesion {
+                    cell_energy: parameters.potts.adhesion.cell_energy,
+                    medium_energy: parameters.potts.adhesion.medium_energy,
+                    solid_energy: parameters.potts.adhesion.solid_energy,
+                }
+            )
+            .build()
+    }
+
+    fn make_env(parameters: &Parameters) -> MyEnvironment {
+        MyEnvironment::new(
+            Environment::new_empty(
+                NeighborhoodType::new(parameters.pond.neigh_r),
+                Boundaries::new(BoundaryType::new(Rect::new(
+                    (0., 0.).into(),
+                    (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
+                )))
+            ),
+            parameters.cell.max_cells,
+            parameters.cell.search_radius
+        )
+    }
+
+    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl RngExt) -> EmptyCell<MyCell> {
+        MyCell::new_empty(
+            parameters.cell.target_area,
+            parameters.cell.div_area,
+            if rng.random_bool(0.5) { CellType::Migrating } else { CellType::Dividing }
+        )
+    }
+
+    fn determine_seed(seed_param: Option<u64>) -> u64 {
+        // TOML doesnt support large u64s so we use a u32 seed
+        seed_param.unwrap_or(make_rng::<Xoshiro256StarStar>().next_u32() as u64)
+    }
+
+    fn read_cell_templates(
+        maybe_templates_path: Option<String>
+    ) -> anyhow::Result<Option<Box<[MyCell]>>> {
+        maybe_templates_path.map(|path| {
+            let cell_cont: CellContainer<MyCell> = ParquetReader { reader: File::open(path)? }.read()?;
+            // This is required to obtain a clonable iterator that we can cycle over
+            let templates_cells = cell_cont
+                .into_iter()
+                .map(|rel_cell| rel_cell.cell)
+                .collect::<Box<[_]>>();
+            anyhow::Ok(templates_cells)
+        }).transpose()
     }
 
     fn read_layout_pond(
@@ -332,7 +342,7 @@ impl Model {
 
         let mut not_spawned = 0;
         let mut pond = Self::make_empty_pond(parameters, rng);
-        let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
+        let maybe_templates_box = Self::read_cell_templates(maybe_templates_path)?;
         for (group_index, luma) in sorted_luma.into_iter().enumerate() {
             let cell_positions = luma_cell_positions
                 .remove(&luma)
@@ -408,16 +418,6 @@ impl Model {
                 .division_enabled(parameters.cell.divide)
                 .build();
         Ok(pond)
-    }
-
-    /// Runs the model for the number of time-steps specified when creating the model.
-    pub fn run(&mut self) {
-        self.run_for(self.time_steps);
-    }
-
-    /// Logs some information at end of the simulation.
-    pub fn goodbye(&self) {
-        log::info!("Finished after {} time steps", self.time_steps);
     }
 
     fn log_info(&self) {
