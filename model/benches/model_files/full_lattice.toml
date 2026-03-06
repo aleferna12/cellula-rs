@@ -34,7 +34,6 @@ outdir = "benches/model_outputs/full_lattice"
 replace-outdir = true
 info-period = 1000
 image-period = 1000
-image-format = "webp"
 
 [io.data]
 cells-period = 1000

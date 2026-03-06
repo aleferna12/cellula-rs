@@ -169,7 +169,9 @@ pub struct PlotParameters {
     pub chem_min_color: String,
     pub chem_max_color: String,
     pub migrating_color: String,
-    pub dividing_color: String
+    pub dividing_color: String,
+    pub division_axis_color: String,
+    pub division_axis_length: i32,
 }
 
 
@@ -190,7 +192,9 @@ pub enum PlotType {
     /// Cell area.
     Area,
     /// Background chemical.
-    Chem
+    Chem,
+    /// Division axis of cell.
+    DivisionAxis
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

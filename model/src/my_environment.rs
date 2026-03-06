@@ -73,7 +73,6 @@ impl MyEnvironment {
         false
     }
 
-    // TODO: make spawn as a circle with center at pos
     /// Spawns a square cell centered at a random position with area = `cell_area`.
     ///
     /// Uses [`MyEnvironment::spawn_cell_checked()`] to restrict spawns to the medium.
@@ -103,14 +102,18 @@ impl MyEnvironment {
     pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<MyCell> {
         let rel_mom = &self.env.cells[mom_index];
         // TODO!: This searches cell positions twice (once to find div axis).
-        let div_axis = self.find_division_axis(rel_mom, self.cell_search_scaler);
+        let div_axis = self.find_division_axis(rel_mom);
+        let normal = (-div_axis.1, div_axis.0);
         let new_positions: Box<_> = self
             .env
             .search_cell_box(rel_mom, self.cell_search_scaler)
             .into_iter()
             .filter(|pos| {
-                let y = div_axis.slope * pos.x as FloatType + div_axis.intercept;
-                (pos.y as FloatType) < y
+                let (dx, dy) = self.env.bounds.boundary.displacement(
+                    pos.cast_as(),
+                    rel_mom.cell.center()
+                );
+                dx * normal.0 + dy * normal.1 < 0.
             })
             .collect();
         
@@ -147,15 +150,14 @@ impl MyEnvironment {
         }
     }
 
-    // TODO!: add plot to make sure this is right
     /// Finds the minor axis along which to split the cell.
-    pub fn find_division_axis(&self, rel_cell: &RelCell<MyCell>, search_scaler: FloatType) -> SplitLine {
+    pub fn find_division_axis(&self, rel_cell: &RelCell<MyCell>) -> (FloatType, FloatType) {
         // Compute covariance elements relative to centroid
         let mut sum_xx = 0.0;
         let mut sum_yy = 0.0;
         let mut sum_xy = 0.0;
 
-        for p in &self.env.search_cell_box(rel_cell, search_scaler) {
+        for p in &self.env.search_cell_box(rel_cell, self.cell_search_scaler) {
             let (dx, dy) = self.env.bounds.boundary.displacement(
                 p.cast_as(),
                 rel_cell.cell.center()
@@ -195,15 +197,7 @@ impl MyEnvironment {
         let vec_x = vec_x / norm;
         let vec_y = vec_y / norm;
 
-        // Line equation through centroid with this direction
-        let slope = if vec_x.abs() > EPSILON {
-            vec_y / vec_x
-        } else {
-            FloatType::INFINITY // vertical line
-        };
-        let intercept = rel_cell.cell.center().y - slope * rel_cell.cell.center().x;
-
-        SplitLine { slope, intercept }
+        (vec_x, vec_y)
     }
 
     /// Removes all cells from the environment and restore it to a clean state.
@@ -293,13 +287,4 @@ impl Habitable for MyEnvironment {
         }
         self.env.grant_position(pos, to)
     }
-}
-
-/// Represents a split line through the centroid: y = `slope` * x + `intercept`.
-#[derive(Debug)]
-pub struct SplitLine {
-    /// Slope of the linear equation.
-    pub slope: FloatType,
-    /// Intercept of the linear equation.
-    pub intercept: FloatType,
 }

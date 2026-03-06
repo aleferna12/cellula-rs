@@ -8,6 +8,7 @@ use cellulars::constants::FloatType;
 use cellulars::empty_cell::Empty;
 use cellulars::io::write::image::lerper::Lerper;
 use cellulars::io::write::image::plot::{srgba_to_rgba, AreaPlot, BorderPlot, CenterPlot, Plot, SpinPlot};
+use cellulars::prelude::{Boundary, FixedBoundary, HasCenter, Pos};
 use cellulars::spin::Spin;
 use image::RgbaImage;
 use imageproc::drawing::draw_cross_mut;
@@ -22,6 +23,7 @@ pub struct ChemCenterPlot {
 
 impl Plot<MyEnvironment> for ChemCenterPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        let color = srgba_to_rgba(self.color);
         for rel_cell in env.env.cells.iter() {
             if rel_cell.cell.is_empty() {
                 continue;
@@ -30,7 +32,7 @@ impl Plot<MyEnvironment> for ChemCenterPlot {
                 .cell
                 .chem_center()
                 .round();
-            draw_cross_mut(image, srgba_to_rgba(self.color), center.x as i32, center.y as i32);
+            draw_cross_mut(image, color, center.x as i32, center.y as i32);
         }
     }
 }
@@ -91,6 +93,33 @@ impl Plot<MyEnvironment> for ChemPlot {
     }
 }
 
+pub struct DivisionAxisPlot {
+    color: Srgba<FloatType>,
+    length: i32
+}
+
+impl Plot<MyEnvironment> for DivisionAxisPlot {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        let color = srgba_to_rgba(self.color);
+        for rel_cell in env.env.cells.iter() {
+            let div_axis = env.find_division_axis(rel_cell);
+            let center = rel_cell.cell.center();
+            let fixed_bound = FixedBoundary::new(env.env.bounds.boundary.rect().clone());
+
+            for t in -self.length / 2..self.length / 2 {
+                let x = center.x + div_axis.0 * t as FloatType;
+                let y = center.y + div_axis.1 * t as FloatType;
+
+                let Some(valid_pos) = fixed_bound.valid_pos(Pos::new(x, y)) else {
+                    continue;
+                };
+                let lat_pos = valid_pos.cast_as();
+                image.put_pixel(lat_pos.x, lat_pos.y, color);
+            }
+        }
+    }
+}
+
 impl TryFrom<PlotParameters> for Box<[Box<dyn Plot<MyEnvironment>>]> {
     type Error = anyhow::Error;
 
@@ -129,6 +158,10 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot<MyEnvironment>>]> {
                 PlotType::CellType => Box::new(CellTypePlot {
                     mig_color: hex_to_srgba(&params.migrating_color)?,
                     div_color: hex_to_srgba(&params.dividing_color)?,
+                }),
+                PlotType::DivisionAxis => Box::new(DivisionAxisPlot {
+                    color: hex_to_srgba(&params.division_axis_color)?,
+                    length: params.division_axis_length
                 })
             };
             plots.push(plot);

@@ -69,10 +69,6 @@ replace-outdir = true
 info-period = 2048
 # Period (in MCS) with which to save an image of the simulation.
 image-period = 2048
-# Format used to save images.
-# Supports any format supported by the `image` crate.
-# [default = "webp"]
-image-format = "webp"
 
 [io.data]
 # Period (in MCS) with which to save the cell attributes as a parquet file.
@@ -83,13 +79,14 @@ lattice-period = 4096
 [io.plot]
 # Defines which plots to make and in what order.
 # Options are:
-#   - "spin":         Plots lattice spins.
-#   - "center":       Plots cell centers.
-#   - "border":       Plots cell borders.
-#   - "chem":         Plots the chem gradient.
-#   - "chem-center":  Plots the perceived center of the chem gradient.
-#   - "area":         Plots the relative area of cells.
-#   - "cell-type":    Plots the cell type of cells.
+#   - "spin":          Plots lattice spins.
+#   - "center":        Plots cell centers.
+#   - "border":        Plots cell borders.
+#   - "chem":          Plots the chem gradient.
+#   - "chem-center":   Plots the perceived center of the chem gradient.
+#   - "area":          Plots the relative area of cells.
+#   - "cell-type":     Plots the cell type of cells.
+#   - "division-axis": Plots the division axis of cells.
 order = ["chem", "spin", "cell-type", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
@@ -97,15 +94,15 @@ solid-color = "#000000"
 # Ommit to make the medium transparent.
 # medium-color = "#ffffff"
 # With which color to plot the centers of cells.
-center-color = "#00ff00"
+center-color = "#00ee00"
 # With which color to plot the perceived center of chem of cells.
-chem-center-color = "#00ff00"
+chem-center-color = "#00ee00"
 # With which color to plot the border of cells.
 border-color = "#000000"
 # With which color to plot the minimum area in the cell population.
-area-min-color = "#ff00ff"
+area-min-color = "#ee00ee"
 # With which color to plot the maximum area in the cell population.
-area-max-color = "#ffff00"
+area-max-color = "#eeee00"
 # With which color to plot the minimum value for the chem in the environment.
 chem-min-color = "#000000"
 # With which color to plot the maximum value for the chem in the environment.
@@ -114,6 +111,10 @@ chem-max-color = "#ffffff"
 migrating-color = "#b30000"
 # With which color to plot dividing cells.
 dividing-color = "#045a8d"
+# With which color to plot the line where cells will divide
+division-axis-color = "#00eeee"
+# Length of the drawn division axis line
+division-axis-length = 8
 
 [io.movie]
 # Whether the real-time movie should be shown or not.
