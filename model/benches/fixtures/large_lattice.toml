@@ -30,7 +30,7 @@ medium-energy = 16
 solid-energy = 16
 
 [io]
-outdir = "benches/model_outputs/large_lattice"
+outdir = "benches/out/large_lattice"
 replace-outdir = true
 info-period = 1000
 image-period = 1000
@@ -57,3 +57,5 @@ chem-min-color = "#000000"
 chem-max-color = "#ffffff"
 migrating-color = "#b30000"
 dividing-color = "#045a8d"
+division-axis-color = "#00eeee"
+division-axis-length = 8

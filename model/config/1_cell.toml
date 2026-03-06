@@ -19,7 +19,7 @@ neigh-r = 1
 
 [cell]
 # Number of starting cells in the environment.
-starting-cells = 64
+starting-cells = 1
 # Maximum number of cells allowed in the environment.
 # Cell division is prevented if it would cause the cell population to exceed this threshold.
 max-cells = 1024
@@ -61,7 +61,7 @@ solid-energy = 16.0
 
 [io]
 # Output directory for files.
-outdir = "model/runs/64_cells"
+outdir = "model/runs/1_cell"
 # Flag used to delete contents of `outdir` if it exists.
 # [default = false]
 replace-outdir = true

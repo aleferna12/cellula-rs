@@ -3,7 +3,7 @@ use model::io::parameters::{Parameters, PlotType as PT};
 use model::model::Model;
 
 fn make_test_parameters() -> anyhow::Result<Parameters> {
-    let mut params = Parameters::parse("config/64_cells.toml")?;
+    let mut params = Parameters::parse("config/1_cell.toml")?;
     params.io.image_period = 64;
     params.io.data.cells_period = 512;
     params.io.data.lattice_period = 512;
@@ -47,6 +47,7 @@ fn test_templates() -> anyhow::Result<()> {
 fn test_layout() -> anyhow::Result<()> {
     let mut params = make_test_parameters()?;
     params.io.outdir = "tests/out/layout/".to_string();
+    params.cell.starting_cells = 128;
 
     let mut model = Model::new_from_layout(params, "tests/fixtures/squares_layout.png".to_string(), None)?;
     model.run_for(512);
@@ -57,6 +58,7 @@ fn test_layout() -> anyhow::Result<()> {
 fn test_layout_template() -> anyhow::Result<()> {
     let mut params = make_test_parameters()?;
     params.io.outdir = "tests/out/layout_template/".to_string();
+    params.cell.starting_cells = 128;
 
     let mut model = Model::new_from_layout(
         params,

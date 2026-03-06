@@ -10,7 +10,7 @@ use strum_macros::EnumIter;
 // When you add parameters, dont forget to document them (and their defaults)
 /// Parameters for the model.
 ///
-/// Documentation for each parameter is in `examples/64_cells.toml`
+/// Documentation for each parameter is in `examples/1_cell.toml`
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Parameters {
@@ -209,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_parse() -> anyhow::Result<()> {
-        Parameters::parse("config/64_cells.toml")?;
+        Parameters::parse("config/1_cell.toml")?;
         Ok(())
     }
 }

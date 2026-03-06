@@ -21,7 +21,7 @@ static RUN_NOTES: &str = "\
     (use `CPM` as a prefix and `__` as a separator for the parameter section, e.g. `CPM__GENERAL__TIME_STEPS=100`).\
     Use commas to pass parameters that expect lists (e.g. `CPM__IO__PLOT__ORDER=spin,center`).
     \n\
-    Documentation for parameters can be found in `model/examples/64_cells.toml`.\
+    Documentation for parameters can be found in `model/examples/1_cell.toml`.\
 ";
 
 /// CLI tool that executes [`Commands`].

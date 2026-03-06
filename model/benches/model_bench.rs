@@ -70,41 +70,19 @@ fn bench_param_files(
 }
 
 fn bench_param_files_1000mcs(c: &mut Criterion) {
-    bench_param_files(c, "examples", "./examples", 1000);
-    bench_param_files(c, "models", "./benches/model_files", 1000);
+    bench_param_files(c, "models", "./benches/fixtures", 1000);
 }
 
 fn bench_param_files_1mcs(c: &mut Criterion) {
-    bench_param_files(c, "examples", "./examples", 1);
-    bench_param_files(c, "models", "./benches/model_files", 1);
+    bench_param_files(c, "models", "./benches/fixtures", 1);
 }
 
 fn bench_slow(c: &mut Criterion) {
-    c.bench_function("clonal_dev", |b| {
-        b.iter_batched_ref(
-            || {
-                let mut params = Parameters::parse("examples/1_cell.toml").unwrap();
-                params.io.image_period = 50_000;
-                #[cfg(feature = "movie-io")]
-                if let Some(movie_params) = &mut params.io.movie {
-                    movie_params.show = false;
-                }
-                let mut model = Model::new_from_parameters(params, None).unwrap();
-                model.run_for(50_000);
-                model
-            },
-            |model| {
-                model.run_for(black_box(1_000));
-            },
-            BatchSize::LargeInput
-        )
-    });
-
     c.bench_function("large_lattice/10000mcs", |b| {
         b.iter_batched_ref(
             || {
                 let mut params = Parameters::parse(
-                    "./benches/model_files/large_lattice.toml"
+                    "./benches/fixtures/large_lattice.toml"
                 ).unwrap();
                 params.io.image_period = 10_000;
                 #[cfg(feature = "movie-io")]
