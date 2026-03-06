@@ -1,6 +1,6 @@
 //! Contains logic used to plot information to an [`RgbaImage`].
 
-// TODO! parallelize this and all other lattice-wide operations
+// TODO! parallelize image-writing and all other lattice-wide operations
 
 use crate::constants::{CellIndex, FloatType};
 use crate::empty_cell::Empty;
