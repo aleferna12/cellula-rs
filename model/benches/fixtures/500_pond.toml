@@ -3,8 +3,8 @@ time-steps = 2048
 seed = 1241254152
 
 [pond]
-width = 2000
-height = 2000
+width = 500
+height = 500
 enclose = false
 neigh-r = 1
 
@@ -20,9 +20,9 @@ migrate = true
 update-period = 16
 
 [potts]
-boltz-t = 16.0
-size-lambda = 1.0
-chemotaxis-mu = 4.0
+boltz-t = 16
+size-lambda = 1
+chemotaxis-mu = 4
 
 [potts.adhesion]
 cell-energy = 16
@@ -30,7 +30,7 @@ medium-energy = 16
 solid-energy = 16
 
 [io]
-outdir = "benches/out/large_lattice"
+outdir = "benches/out/500_pond"
 replace-outdir = true
 info-period = 1000
 image-period = 1000

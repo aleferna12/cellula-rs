@@ -1,9 +1,9 @@
 [general]
 # How many MCS the simulation will run for.
-time-steps = 8192
+time-steps = 20_000
 # Seed for the RNG.
 # Omit to pick a random seed.
-seed = 1241254152
+seed = 19414321574
 
 [pond]
 # Width of the lattice.

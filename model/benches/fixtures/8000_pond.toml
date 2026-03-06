@@ -1,0 +1,61 @@
+[general]
+time-steps = 2048
+seed = 1241254152
+
+[pond]
+width = 8000
+height = 8000
+enclose = false
+neigh-r = 1
+
+[cell]
+starting-cells = 300
+max-cells = 1024
+search-radius = 3
+starting-area = 64
+target-area = 64
+div-area = 128
+divide = true
+migrate = true
+update-period = 16
+
+[potts]
+boltz-t = 16
+size-lambda = 1
+chemotaxis-mu = 4
+
+[potts.adhesion]
+cell-energy = 16
+medium-energy = 16
+solid-energy = 16
+
+[io]
+outdir = "benches/out/8000_pond"
+replace-outdir = true
+info-period = 1000
+image-period = 1000
+
+[io.data]
+cells-period = 1000
+lattice-period = 5000
+
+[io.movie]
+show = false
+width = 320
+height = 320
+frame-period = 50
+
+[io.plot]
+order = ["spin"]
+solid-color = "#000000"
+center-color = "#00ff00"
+chem-center-color = "#00ff00"
+border-color = "#000000"
+area-min-color = "#ff00ff"
+area-max-color = "#ffff00"
+chem-min-color = "#000000"
+chem-max-color = "#ffffff"
+migrating-color = "#b30000"
+dividing-color = "#045a8d"
+division-axis-color = "#00eeee"
+division-axis-length = 8

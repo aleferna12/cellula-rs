@@ -78,11 +78,11 @@ fn bench_param_files_1mcs(c: &mut Criterion) {
 }
 
 fn bench_slow(c: &mut Criterion) {
-    c.bench_function("large_lattice/10000mcs", |b| {
+    c.bench_function("2000_pond/10000mcs", |b| {
         b.iter_batched_ref(
             || {
                 let mut params = Parameters::parse(
-                    "./benches/fixtures/large_lattice.toml"
+                    "./benches/fixtures/2000_pond.toml"
                 ).unwrap();
                 params.io.image_period = 10_000;
                 #[cfg(feature = "movie-io")]
