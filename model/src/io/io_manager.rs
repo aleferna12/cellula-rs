@@ -42,14 +42,16 @@ const PAD_FILE_LEN: usize = {
 pub struct IoManager {
     /// Path to directory where data and images of the simulation are saved.
     pub outdir: PathBuf,
-    /// Image format with which to save simulation images.
-    pub image_format: String,
+    
     /// Period with which to save an image of the simulation.
     pub image_period: u32,
+    
     /// Period with which to save cell data.
     pub cells_period: u32,
+    
     /// Period with which to save the cell lattice.
     pub lattice_period: u32,
+    
     /// Used to update the simulation video when it's time.
     #[cfg(feature = "movie-io")]
     pub movie_module: Option<MovieModule>,
@@ -230,9 +232,8 @@ impl IoManager {
                 &self.outdir
                     .join(IMAGES_PATH)
                     .join(format!(
-                        "{}.{}",
+                        "{}.webp",
                         Self::pad_time_step(time_step),
-                        self.image_format.to_lowercase()
                     ))
             )?;
         }

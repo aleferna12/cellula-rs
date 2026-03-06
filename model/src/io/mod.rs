@@ -2,4 +2,5 @@
 
 pub mod io_manager;
 pub mod parameters;
-mod plots;
+pub mod plots;
+pub mod cli;

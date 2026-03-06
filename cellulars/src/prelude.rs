@@ -2,7 +2,6 @@
 
 pub use crate::base::cell::Cell;
 pub use crate::base::environment::{EdgesUpdate, Environment};
-pub use crate::base::pond::Pond;
 pub use crate::cell_container::{CellContainer, RelCell};
 pub use crate::empty_cell::{Empty, EmptyCell};
 pub use crate::lattice::Lattice;

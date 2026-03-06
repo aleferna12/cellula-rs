@@ -6,11 +6,10 @@ use crate::io::io_manager::{IoManager, MovieModule};
 use crate::io::parameters::Parameters;
 use crate::my_cell::{CellType, MyCell};
 use crate::my_environment::MyEnvironment;
-use crate::my_pond::MyPond;
+use crate::pond::Pond;
 use crate::potts::Potts;
 use anyhow::bail;
 use cellulars::base::environment::Environment;
-use cellulars::base::pond::Pond;
 use cellulars::constants::{CellIndex, FloatType};
 use cellulars::empty_cell::EmptyCell;
 use cellulars::io::read::parquet_reader::ParquetReader;
@@ -29,10 +28,10 @@ use std::path::Path;
 
 // TODO!: The backup functions should live in IoManager i think
 
-/// This is the master struct that runs the simulation in a [`MyPond`] and manages IO through an [`IoManager`].
+/// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
 pub struct Model {
     /// Pond containing all cells and the model Potts algorithm.
-    pub pond: MyPond,
+    pub pond: Pond,
     /// Instance responsible for managing IO for the model.
     pub io: IoManager,
     /// Unique random number generator of this model.
@@ -126,7 +125,6 @@ impl Model {
 
         let io_builder = IoManager::builder()
             .outdir(parameters.io.outdir.clone().into())
-            .image_format(parameters.io.image_format.clone())
             .image_period(parameters.io.image_period)
             .cells_period(parameters.io.data.cells_period)
             .lattice_period(parameters.io.data.lattice_period)
@@ -206,17 +204,15 @@ impl Model {
         seed_param.unwrap_or(make_rng::<Xoshiro256StarStar>().next_u32() as u64)
     }
 
-    fn make_empty_pond(parameters: &Parameters, rng: &mut Xoshiro256StarStar) -> MyPond {
-        MyPond::new(
-            Pond::new(
-                Self::make_env(parameters),
-                Self::make_potts(parameters),
-                Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
-                0
-            ),
-            parameters.cell.update_period,
-            parameters.cell.divide
-        )
+    fn make_empty_pond(parameters: &Parameters, rng: &mut Xoshiro256StarStar) -> Pond {
+        Pond::builder()
+            .env(Self::make_env(parameters))
+            .potts(Self::make_potts(parameters))
+            .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
+            .time_step(0)
+            .update_period(parameters.cell.update_period)
+            .division_enabled(parameters.cell.divide)
+            .build()
     }
 
     fn templates_path_to_box(
@@ -245,7 +241,7 @@ impl Model {
         parameters: &Parameters,
         rng: &mut Xoshiro256StarStar,
         maybe_templates_path: Option<String>,
-    ) -> anyhow::Result<MyPond> {
+    ) -> anyhow::Result<Pond> {
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, rng);
 
@@ -253,7 +249,7 @@ impl Model {
         let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
-        while pond.env().env.cells.n_non_empty() < parameters.cell.starting_cells {
+        while pond.env.env.cells.n_non_empty() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
                 None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
                 Some(templates_it) => templates_it
@@ -261,10 +257,10 @@ impl Model {
                     .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))?
             };
             let cell_area = if cell.area() == 0 { parameters.cell.starting_area } else { cell.area() };
-            pond.pond.env.spawn_cell_random(
+            pond.env.spawn_cell_random(
                 cell.birth(),
                 cell_area,
-                &mut pond.pond.rng
+                &mut pond.rng
             );
             spawn_attempts += 1;
 
@@ -274,13 +270,13 @@ impl Model {
             } else if spawn_attempts > parameters.cell.starting_cells * 20 {
                 log::error!(
                     "Only {} cells were initialized out of {} cells requested",
-                    pond.env().env.cells.n_non_empty(),
+                    pond.env.env.cells.n_non_empty(),
                     parameters.cell.starting_cells);
                 break;
             }
         }
         if parameters.pond.enclose {
-            pond.env_mut().make_border(true, true, true, true);
+            pond.env.make_border(true, true, true, true);
         }
         Ok(pond)
     }
@@ -290,7 +286,7 @@ impl Model {
         layout_path: impl AsRef<Path>,
         rng: &mut Xoshiro256StarStar,
         maybe_templates_path: Option<String>
-    ) -> anyhow::Result<MyPond> {
+    ) -> anyhow::Result<Pond> {
         let layout_path = layout_path.as_ref();
 
         let layout = IoManager::read_layout(
@@ -342,7 +338,7 @@ impl Model {
                 .remove(&luma)
                 .expect("missing luma key");
             for positions in cell_positions.values() {
-                if pond.env().env.cells.n_non_empty() >= parameters.cell.starting_cells {
+                if pond.env.env.cells.n_non_empty() >= parameters.cell.starting_cells {
                     not_spawned += 1;
                     continue;
                 }
@@ -353,15 +349,15 @@ impl Model {
                         .ok_or(anyhow::anyhow!("there were more groups in the layout than in the template"))?
                         .clone()
                 };
-                pond.env_mut().spawn_cell(cell.birth(), positions.iter().copied());
+                pond.env.spawn_cell(cell.birth(), positions.iter().copied());
             }
         }
         log::warn!("Number of cells spawned was limited by `cell.starting-cells` parameter \
                     (layout had space for {not_spawned} additional cells)");
 
-        pond.env_mut().spawn_solid(solid_positions.into_iter());
+        pond.env.spawn_solid(solid_positions.into_iter());
         if parameters.pond.enclose {
-            pond.env_mut().make_border(true, true, true, true);
+            pond.env.make_border(true, true, true, true);
         }
         Ok(pond)
     }
@@ -371,7 +367,7 @@ impl Model {
         rng: &mut Xoshiro256StarStar,
         sim_path: impl AsRef<Path>,
         time_step: u32
-    ) -> anyhow::Result<MyPond> {
+    ) -> anyhow::Result<Pond> {
         let sim_path = sim_path.as_ref();
 
         log::info!("Reading pond");
@@ -403,16 +399,14 @@ impl Model {
             env.env.update_edges(pos);
         }
 
-        let pond = MyPond::new(
-            Pond::new(
-                env,
-                Self::make_potts(parameters),
-                Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
-                time_step
-            ),
-            parameters.cell.update_period,
-            parameters.cell.divide
-        );
+        let pond = Pond::builder()
+                .env(env)
+                .potts(Self::make_potts(parameters))
+                .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
+                .time_step(time_step)
+                .update_period(parameters.cell.update_period)
+                .division_enabled(parameters.cell.divide)
+                .build();
         Ok(pond)
     }
 
@@ -428,7 +422,7 @@ impl Model {
 
     fn log_info(&self) {
         log::info!("Time step {}:", self.pond.time_step());
-        let non_empty = self.pond.env().env.cells.n_non_empty();
+        let non_empty = self.pond.env.env.cells.n_non_empty();
         log::info!("\t{non_empty} cells");
     }
 }
@@ -441,7 +435,7 @@ impl Step for Model {
 
         let saved = self.io.write_if_time(
             self.pond.time_step(),
-            self.pond.env()
+            &self.pond.env
         );
         if let Err(e) = saved {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step())

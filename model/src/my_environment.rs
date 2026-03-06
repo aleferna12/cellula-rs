@@ -99,7 +99,7 @@ impl MyEnvironment {
         )
     }
 
-    /// Forces a cell to execute cell division.
+    /// Divides a cell along its minor axis.
     pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<MyCell> {
         let rel_mom = &self.env.cells[mom_index];
         // TODO!: This searches cell positions twice (once to find div axis).
@@ -127,10 +127,6 @@ impl MyEnvironment {
         &self.env.cells[new_index]
     }
 
-    // With some unsafe code we can return Vec<&RelCell> from this function, but it would
-    // require that self.divide_cell never invalidates any references to self.cells
-    // we need thorough testing of self.divide_cells to make this change, and the performance
-    // gain is minimal (although the ergonomic gains are significant)
     /// Checks which cells should divide and executes cell divisions.
     pub fn reproduce(&mut self) {
         let mut divide = vec![];
@@ -138,7 +134,7 @@ impl MyEnvironment {
             if !rel_cell.cell.is_alive() {
                 continue;
             }
-            // Currently cells don't need to express the dividing type to divide, they just need to be big enough
+            // Cells don't need to express the dividing type to divide, they just need to be big enough
             if rel_cell.cell.area() >= rel_cell.cell.divide_area {
                 divide.push(rel_cell.index);
             }
@@ -147,9 +143,7 @@ impl MyEnvironment {
             if !self.can_add_cell() {
                 return;
             }
-
-            let mom = &self.env.cells[cell_index];
-            self.divide_cell(mom.index);
+            self.divide_cell(cell_index);
         }
     }
 
@@ -287,28 +281,17 @@ impl Habitable for MyEnvironment {
     ) -> EdgesUpdate {
         let chem_at_pos = self.chem_lattice[pos];
         if let Spin::Some(index) = to {
-            let to_rel_cell = &mut self.env.cells[index];
-            let shifted = to_rel_cell.cell.shift_position(pos, true, &self.env.bounds.boundary);
-            if let Err(e) = shifted {
-                log::warn!("Failed to shift center of mass: {e}")
-            }
-            to_rel_cell.cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
+            self.env.cells[index].cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
         if let Spin::Some(index) = self.env.cell_lattice[pos] {
             let from_rel_cell = &mut self.env.cells[index];
-            let shifted = from_rel_cell.cell.shift_position(pos, false, &self.env.bounds.boundary);
-            if let Err(e) = shifted {
-                log::warn!("Failed to shift center of mass: {e}")
-            }
             from_rel_cell.cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
             // If the copy kills the cell
             if from_rel_cell.cell.area() == 0 {
                 from_rel_cell.cell.apoptosis();
             }
         }
-        // Executes the copy
-        self.env.cell_lattice[pos] = to;
-        self.env.update_edges(pos)
+        self.env.grant_position(pos, to)
     }
 }
 

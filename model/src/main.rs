@@ -2,14 +2,10 @@
 //!
 //! Check [`Cli`] for the available commands (or run with `--help`).
 
-/*
-TODO!:
-    - profile data write, something is taking awfully long (prob lattice write)
- */
 use clap::Parser;
+use model::io::cli::{Cli, Commands};
 use model::io::io_manager::IoManager;
-use model::io::parameters::Commands::{Resume, Run};
-use model::io::parameters::{Cli, Parameters};
+use model::io::parameters::{Parameters};
 use model::model::Model;
 
 fn main() -> anyhow::Result<()> {
@@ -17,7 +13,7 @@ fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
     let mut model = match cli.command {
-        Run {
+        Commands::Run {
             config,
             layout: maybe_layout,
             templates: maybe_templates
@@ -28,7 +24,7 @@ fn main() -> anyhow::Result<()> {
                 Some(layout) => Model::new_from_layout(params, layout, maybe_templates)?
             }
         },
-        Resume {
+        Commands::Resume {
             directory,
             config: maybe_config,
             time_step: maybe_time_step

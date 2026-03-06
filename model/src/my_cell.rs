@@ -9,19 +9,22 @@ use cellulars::positional::com::{Com, ShiftError};
 use cellulars::positional::pos::Pos;
 use cellulars::traits::cellular::{Alive, Cellular, HasCenter};
 use serde::{Deserialize, Serialize};
-use crate::my_environment::MyEnvironment;
 
 /// A cell that can track a chemical concentration and migrate towards its source.
 #[derive(Clone, Debug, Serialize, Deserialize, Builder)]
 pub struct MyCell {
     /// Area at which the cell divides.
     pub divide_area: u32,
+    
     /// Target area for newborns of this cell (see [`Alive::birth()`]).
     pub newborn_target_area: u32,
+    
     /// Current type of the cell.
     pub cell_type: CellType,
+    
     /// Inner base cell.
     pub cell: Cell,
+    
     /// Center of mass of the cell's perceived chemical concentration.
     chem_com: Com
 
