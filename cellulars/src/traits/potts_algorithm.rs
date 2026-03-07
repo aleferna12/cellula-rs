@@ -30,9 +30,6 @@ pub trait PottsAlgorithm {
     /// Returns the energy differential associated with copy biases of the model.
     ///
     /// Returns 0 by default.
-    ///
-    /// Overriding this method allows to easily extend the model's behaviour
-    /// without having to override [`PottsAlgorithm::attempt_site_copy()`].
     fn copy_biases(&self, _pos_source: Pos<usize>, _pos_target: Pos<usize>, _env: &Self::Environment) -> FloatType {
         0.
     }
