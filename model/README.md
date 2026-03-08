@@ -2,7 +2,7 @@ This is the template repo for the [cellulars](https://github.com/aleferna12/cell
 project.
 
 To reduce boilerplate when starting a new cellulars project, 
-we implement several quality of life features that are described below.
+this repo comes with several quality of life features (which are described below).
 
 ### Installation
 
