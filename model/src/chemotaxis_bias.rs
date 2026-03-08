@@ -7,6 +7,7 @@ pub struct ChemotaxisBias {
     pub chemotaxis_mu: FloatType
 }
 
+// TODO: should we simplify this to the default cellulars implementation?
 impl CopyBias<MyEnvironment> for ChemotaxisBias {
     fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> FloatType {
         let Spin::Some(cell_index) = env.env.cell_lattice[pos_source] else {
