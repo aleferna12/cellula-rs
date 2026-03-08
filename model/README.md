@@ -35,19 +35,25 @@ Optionally a `LAYOUT_PNG` file can be used to specify cell positions and a
 
 For example, passing a template file with a migrating cell and a dividing cell together with this layout:
 
-<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/fixtures/squares_layout.png" width="200" align="left" style="margin-right: 10px;">
+<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/fixtures/squares_layout.png" width="200" align="left">
+
 squares_layout.png
-<div style="clear: both;"></div>
+
+<br clear="all">
 
 initializes a simulation like this:
 
-<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000000.webp" width="200" align="left" style="margin-right: 10px;">
-time step 0
-<div style="clear: both;"></div>
+<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000000.webp" width="200" align="left">
 
-<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000064.webp" width="200" align="left" style="margin-right: 10px;">
+time step 0
+
+<br clear="all">
+
+<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000064.webp" width="200" align="left">
+
 time step 64
-<div style="clear: both;"></div>
+
+<br clear="all">
 
 
 #### 2. Resume a simulation from backup
