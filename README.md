@@ -84,11 +84,8 @@ There are three ways to install cellulars, depending on the level of control you
 #### 1: Clone the template repo (recommended for quick start)
 
 To start with a template for a model that includes a CLI interface,
-automatic IO managing, parameter parsing, and other quality of life features, clone the template repo and start from there (read the README):
-
-```commandline
-git clone https://github.com/aleferna12/cellulars-template <my_project_name>
-```
+automatic IO managing, parameter parsing, and other quality of life features, head over to the
+[model template page](https://github.com/aleferna12/cellulars-template) and follow installation instructions there.
 
 #### 2: Add it as a dependency (recommended for experimentation/mixed project)
 
@@ -106,5 +103,5 @@ However, if for any reason you need to modify code from the cellulars library it
 at `cellulars/` and the model code at `model/`):
 
 ```commandline
-git clone https://github.com/aleferna12/cellula-rs <my_project_name>
+git clone https://github.com/aleferna12/cellula-rs <MY_PROJECT_NAME>
 ```
