@@ -1,20 +1,19 @@
 //! Contains logic required to run an instance of a simulation in a [`Pond`].
 
-use bon::bon;
+use crate::chemotaxis_bias::ChemotaxisBias;
 use crate::my_environment::MyEnvironment;
-use crate::potts::Potts;
-use cellulars::traits::step::Step;
+use bon::bon;
+use cellulars::prelude::*;
 use rand_xoshiro::Xoshiro256StarStar;
-use cellulars::prelude::PottsAlgorithm;
 
-/// [`Pond`] is responsible for updating an [`MyEnvironment`] using the [`Potts`] algorithm.
+/// [`Pond`] is responsible for updating an [`MyEnvironment`] using the [`MyPotts`] algorithm.
 ///
 /// All simulation logic is contained here, while [`Model`](crate::model::Model) is responsible for IO.
 #[derive(Clone)]
 pub struct Pond {
     pub env: MyEnvironment,
 
-    pub potts: Potts,
+    pub potts: EdgePotts<StaticAdhesion, ChemotaxisBias>,
 
     pub rng: Xoshiro256StarStar,
 
@@ -33,7 +32,7 @@ impl Pond {
     #[builder]
     pub fn new(
         env: MyEnvironment,
-        potts: Potts,
+        potts: EdgePotts<StaticAdhesion, ChemotaxisBias>,
         rng: Xoshiro256StarStar,
         update_period: u32,
         division_enabled: bool,

@@ -32,14 +32,16 @@ fn main() -> Result<(), minifb::Error> {
             secrete_rate: 0.025,
             decay_rate: 0.0002,
         },
-        potts: Potts {
+        potts: EdgePotts {
             boltz_t: 5.,
             size_lambda: 10.,
-            mig_lambda: 50.,
             adhesion: StaticAdhesion {
                 cell_energy: 10.,
                 medium_energy: 10.,
                 solid_energy: 10.,
+            },
+            bias: Biases {
+                chem_lambda: 50.,
             }
         },
         rng: Default::default(),
@@ -114,7 +116,7 @@ impl ChemEnvironment {
     }
 }
 
-impl Habitable for ChemEnvironment {
+impl AsEnv for ChemEnvironment {
     type Cell = Cell;
 
     fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
@@ -124,53 +126,27 @@ impl Habitable for ChemEnvironment {
     fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
         &mut self.env
     }
+}
 
-    fn grant_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate {
-        self.env.grant_position(pos, to)
+impl TransferPosition for ChemEnvironment {
+    fn transfer_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate {
+        self.env.transfer_position(pos, to)
     }
 }
 
-struct Potts {
-    boltz_t: f64,
-    size_lambda: f64,
-    adhesion: StaticAdhesion,
-    mig_lambda: f64
+pub struct Biases {
+    chem_lambda: f64
 }
 
-impl PottsAlgorithm for Potts {
-    type Environment = ChemEnvironment;
-
-    fn boltz_t(&self) -> f64 {
-        self.boltz_t
-    }
-
-    fn size_lambda(&self) -> f64 {
-        self.size_lambda
-    }
-
-    fn copy_biases(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &Self::Environment) -> f64 {
-        -self.mig_lambda * (env.current_chem[pos_target] - env.current_chem[pos_source])
-    }
-
-    fn delta_hamiltonian_adhesion(
-        &self,
-        spin_source: Spin,
-        spin_target: Spin,
-        neigh_spin: impl IntoIterator<Item=Spin>,
-        _env: &Self::Environment
-    ) -> f64 {
-        let mut energy = 0.0;
-        for neigh in neigh_spin {
-            energy -= self.adhesion.adhesion_energy(neigh, spin_target, &());
-            energy += self.adhesion.adhesion_energy(neigh, spin_source, &());
-        }
-        energy
+impl CopyBias<ChemEnvironment> for Biases {
+    fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f64 {
+        -ChemotaxisBias { lambda: self.chem_lambda }.bias(pos_source, pos_target, &env.current_chem)
     }
 }
 
 struct Pond {
     env: ChemEnvironment,
-    potts: Potts,
+    potts: EdgePotts<StaticAdhesion, Biases>,
     rng: rand::rngs::ThreadRng
 }
 

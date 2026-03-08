@@ -1,8 +1,8 @@
-use image::RgbaImage;
+use cellulars::io::write::image::movie_window::MovieWindow;
 use cellulars::io::write::image::plot::{Plot, SpinPlot};
 use cellulars::prelude::*;
+use image::RgbaImage;
 use rand::rngs::ThreadRng;
-use cellulars::io::write::image::movie_window::MovieWindow;
 
 const W: usize = 300;
 const H: usize = 300;
@@ -29,14 +29,15 @@ fn main() -> Result<(), minifb::Error> {
     env.spawn_cell(Cell::new_empty(cell_rect.area() as u32), cell_rect.iter_positions());
 
     // Initialize the Potts algorithm used to update the environment
-    let potts = Potts {
+    let potts = EdgePotts {
         boltz_t: 10.,
         size_lambda: 10.,
         adhesion: StaticAdhesion {
             cell_energy: 10.,
             medium_energy: 10.,
             solid_energy: 10.
-        }
+        },
+        bias: NoBias
     };
     let mut rng = ThreadRng::default();
     let spin_plot = SpinPlot {
@@ -56,40 +57,4 @@ fn main() -> Result<(), minifb::Error> {
         potts.step(&mut env, &mut rng);
     }
     Ok(())
-}
-
-struct Potts {
-    boltz_t: f64,
-    size_lambda: f64,
-    adhesion: StaticAdhesion
-}
-
-impl PottsAlgorithm for Potts {
-    type Environment = Environment<Cell>;
-
-    // Boltzmann temperature
-    fn boltz_t(&self) -> f64 {
-        self.boltz_t
-    }
-
-    // Size constraint coefficient
-    fn size_lambda(&self) -> f64 {
-        self.size_lambda
-    }
-
-    // Adhesion constraint defined as a static term that depends on the spins
-    fn delta_hamiltonian_adhesion(
-        &self,
-        spin_source: Spin,
-        spin_target: Spin,
-        neigh_spin: impl IntoIterator<Item=Spin>,
-        _env: &Self::Environment
-    ) -> f64 {
-        let mut energy = 0.0;
-        for neigh in neigh_spin {
-            energy -= self.adhesion.adhesion_energy(neigh, spin_target, &());
-            energy += self.adhesion.adhesion_energy(neigh, spin_source, &());
-        }
-        energy
-    }
 }

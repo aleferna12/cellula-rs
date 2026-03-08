@@ -52,7 +52,7 @@ impl Com {
 }
 
 #[derive(thiserror::Error, Debug)]
-/// Error thrown when a [`Com::shift()`] operation fails.
+/// Error thrown when shifting a position fails.
 pub enum ShiftError {
     /// Shifting resulted in a negative mass.
     #[error("shifted COM has negative mass {0}")]

@@ -42,6 +42,7 @@ where
 pub trait Empty where Self: Sized {
     /// Returns a default empty cell which is used by [`CellContainer`](crate::prelude::CellContainer)s constructor.
     fn empty_default() -> EmptyCell<Self>;
+    
     /// Returns whether this cell is empty or not.
     fn is_empty(&self) -> bool;
 }

@@ -2,19 +2,8 @@
 
 use crate::constants::{BoundaryType, NeighborhoodType, EPSILON};
 use crate::my_cell::MyCell;
-use cellulars::base::environment::{EdgesUpdate, Environment};
-use cellulars::cell_container::RelCell;
-use cellulars::constants::{CellIndex, FloatType};
-use cellulars::lattice::Lattice;
-use cellulars::positional::boundaries::{Boundary, ToLatticeBoundary};
-use cellulars::positional::neighborhood::Neighborhood;
-use cellulars::positional::pos::Pos;
-use cellulars::positional::rect::Rect;
-use cellulars::spin::Spin;
-use cellulars::traits::cellular::{Alive, Cellular, HasCenter};
-use cellulars::traits::habitable::Habitable;
+use cellulars::prelude::*;
 use rand::RngExt;
-use cellulars::empty_cell::EmptyCell;
 
 /// An environment that contains a chemical gradient and limits cell growth to [`MyEnvironment::max_cells`].
 #[derive(Clone)]
@@ -101,7 +90,6 @@ impl MyEnvironment {
     /// Divides a cell along its minor axis.
     pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<MyCell> {
         let rel_mom = &self.env.cells[mom_index];
-        // TODO!: This searches cell positions twice (once to find div axis).
         let div_axis = self.find_division_axis(rel_mom);
         let normal = (-div_axis.1, div_axis.0);
         let new_positions: Box<_> = self
@@ -121,7 +109,7 @@ impl MyEnvironment {
         let newborn = rel_mom.cell.birth();
         let new_index = self.env.cells.add(newborn).index;
         for pos in new_positions {
-            self.grant_position(
+            self.transfer_position(
                 pos,
                 Spin::Some(new_index),
             );
@@ -257,18 +245,8 @@ impl MyEnvironment {
     }
 }
 
-impl Habitable for MyEnvironment {
-    type Cell = MyCell;
-
-    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
-        &self.env
-    }
-
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
-        &mut self.env
-    }
-
-    fn grant_position(
+impl TransferPosition for MyEnvironment {
+    fn transfer_position(
         &mut self,
         pos: Pos<usize>,
         to: Spin
@@ -285,6 +263,20 @@ impl Habitable for MyEnvironment {
                 from_rel_cell.cell.apoptosis();
             }
         }
-        self.env.grant_position(pos, to)
+        self.env.transfer_position(pos, to)
     }
 }
+
+impl AsEnv for MyEnvironment {
+    type Cell = MyCell;
+
+    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
+        &self.env
+    }
+
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
+        &mut self.env
+    }
+}
+
+impl Spawn for MyEnvironment {}

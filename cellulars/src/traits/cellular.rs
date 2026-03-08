@@ -10,8 +10,10 @@ use crate::positional::pos::Pos;
 pub trait Cellular {
     /// Returns the target area of the cell.
     fn target_area(&self) -> u32;
+
     /// Returns the area of the cell.
     fn area(&self) -> u32;
+
     /// Shifts the area of the cell by adding (`add == true`)
     /// or removing (`add == false`) a position from it.
     fn shift_position(
@@ -32,9 +34,11 @@ pub trait HasCenter {
 pub trait Alive: Cellular + Sized {
     /// Returns whether the cell is alive or not.
     fn is_alive(&self) -> bool;
+
     /// Kills the cell.
     fn apoptosis(&mut self);
+
     /// Returns a new cell that inherits properties from `self` but is empty and can be filled with
-    /// [`Habitable::grant_position()`](crate::traits::habitable::Habitable::grant_position).
+    /// [`TransferPosition::transfer_position()`](crate::prelude::TransferPosition::transfer_position()).
     fn birth(&self) -> EmptyCell<Self>;
 }

@@ -21,14 +21,15 @@ fn main() -> Result<(), minifb::Error> {
                 )
             ))
         ),
-        potts: Potts {
+        potts: EdgePotts {
             boltz_t: 5.,
             size_lambda: 20.,
             adhesion: StaticAdhesion {
                 cell_energy: 5.,
                 medium_energy: 10.,
                 solid_energy: 10.,
-            }
+            },
+            bias: NoBias,
         },
         rng: Default::default(),
         step: 0,
@@ -127,42 +128,9 @@ impl HasCenter for DividingCell {
     }
 }
 
-struct Potts {
-    boltz_t: f64,
-    size_lambda: f64,
-    adhesion: StaticAdhesion,
-}
-
-impl PottsAlgorithm for Potts {
-    type Environment = Environment<DividingCell>;
-
-    fn boltz_t(&self) -> f64 {
-        self.boltz_t
-    }
-
-    fn size_lambda(&self) -> f64 {
-        self.size_lambda
-    }
-
-    fn delta_hamiltonian_adhesion(
-        &self,
-        spin_source: Spin,
-        spin_target: Spin,
-        neigh_spin: impl IntoIterator<Item=Spin>,
-        _env: &Self::Environment
-    ) -> f64 {
-        let mut energy = 0.0;
-        for neigh in neigh_spin {
-            energy -= self.adhesion.adhesion_energy(neigh, spin_target, &());
-            energy += self.adhesion.adhesion_energy(neigh, spin_source, &());
-        }
-        energy
-    }
-}
-
 struct Pond {
     env: Environment<DividingCell>,
-    potts: Potts,
+    potts: EdgePotts<StaticAdhesion, NoBias>,
     rng: rand::rngs::ThreadRng,
     step: u32
 }
@@ -186,7 +154,7 @@ impl Pond {
         let new = rel_cell.cell.birth();
         let new_index = self.env.cells.add(new).index;
         for pos in positions {
-            self.env.grant_position(pos, Spin::Some(new_index));
+            self.env.transfer_position(pos, Spin::Some(new_index));
         }
         self.env.cells[cell_index].cell.reset_target_area();
     }

@@ -40,10 +40,10 @@ impl SpinPlot {
     }
 }
 
-impl<E: Habitable> Plot<E> for SpinPlot {
-    fn plot(&self, env: &E, image: &mut RgbaImage) {
-        for pos in env.env().cell_lattice.iter_positions() {
-            let spin = env.env().cell_lattice[pos];
+impl<H: Habitable<Cell = C>, C: Cellular> Plot<H> for SpinPlot {
+    fn plot<>(&self, hab: &H, image: &mut RgbaImage) {
+        for pos in hab.env().cell_lattice.iter_positions() {
+            let spin = hab.env().cell_lattice[pos];
             let rgba = match spin {
                 Spin::Some(cell_index) => Some(Self::cell_index_to_rgba(cell_index)),
                 Spin::Solid => Some(self.solid_color),
@@ -63,10 +63,8 @@ pub struct CenterPlot {
     pub color: Srgba<FloatType>
 }
 
-impl<E: Habitable> Plot<E> for CenterPlot
-where 
-    E::Cell: HasCenter + Empty {
-    fn plot(&self, env: &E, image: &mut RgbaImage) {
+impl<H: Habitable<Cell = C>, C: Cellular + Empty + HasCenter> Plot<H> for CenterPlot {
+    fn plot(&self, env: &H, image: &mut RgbaImage) {
         for rel_cell in env.env().cells.iter() {
             if rel_cell.cell.is_empty() {
                 continue;
@@ -87,8 +85,8 @@ pub struct BorderPlot {
     pub color: Srgba<FloatType>
 }
 
-impl<E: Habitable> Plot<E> for BorderPlot {
-    fn plot(&self, env: &E, image: &mut RgbaImage) {
+impl<H: Habitable> Plot<H> for BorderPlot {
+    fn plot(&self, env: &H, image: &mut RgbaImage) {
         for pos in env.env().cell_lattice.iter_positions() {
             let spin = env.env().cell_lattice[pos];
             let Spin::Some(cell_index) = spin else {
@@ -119,12 +117,12 @@ pub struct AreaPlot<C> {
     pub lerper: Lerper<C>
 }
 
-impl<E, C> Plot<E> for AreaPlot<C>
+impl<H, C> Plot<H> for AreaPlot<C>
 where
-    E: Habitable,
-    E::Cell: Empty,
+    H: Habitable,
+    H::Cell: Cellular + Empty,
     C: Mix<Scalar = FloatType> + Clone + IntoColor<Srgba<FloatType>> {
-    fn plot(&self, env: &E, image: &mut RgbaImage) {
+    fn plot(&self, env: &H, image: &mut RgbaImage) {
         let mut min = u32::MAX;
         let mut max = 0;
         for rel_cell in env.env().cells.iter() {

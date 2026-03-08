@@ -7,7 +7,7 @@ use cellulars::positional::neighborhood::MooreNeighborhood;
 use cellulars::positional::pos::Pos;
 use cellulars::positional::rect::Rect;
 use cellulars::prelude::Cellular;
-use cellulars::traits::habitable::Habitable;
+use cellulars::traits::habitable::Spawn;
 use criterion::BatchSize;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand::{RngExt, SeedableRng};

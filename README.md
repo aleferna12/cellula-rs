@@ -52,14 +52,15 @@ fn main() {
     env.spawn_cell(Cell::new_empty(cell_rect.area() as u32), cell_rect.iter_positions());
 
     // Initialize the Potts algorithm used to update the environment
-    let potts = Potts {
+    let potts = EdgePotts {
         boltz_t: 16.,
         size_lambda: 4.,
         adhesion: StaticAdhesion {
             cell_energy: 10.,
             medium_energy: 10.,
             solid_energy: 10.
-        }
+        },
+        bias: NoBias
     };
     let mut rng = ThreadRng::default();
 
@@ -70,9 +71,8 @@ fn main() {
 }
 ```
 
-You will also need to define how the Potts algorithm updates the environment. 
-See [`cellulars/examples/basic.rs`](https://github.com/aleferna12/cellula-rs/blob/master/cellulars/examples/basic.rs) for the full code, 
-including how to attach a movie window to the simulation so we can see what is going on.
+You will also need to attach a movie window to the simulation to see what is going on, see the full example at
+[`cellulars/examples/basic.rs`](https://github.com/aleferna12/cellula-rs/blob/master/cellulars/examples/basic.rs).
 
 For more examples, see the [examples](https://github.com/aleferna12/cellula-rs/blob/master/cellulars/examples) folder.
 Also check out cellulars [documentation](https://docs.rs/cellulars/latest/cellulars/).

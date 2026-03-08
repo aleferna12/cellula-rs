@@ -1,5 +1,6 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
+use crate::chemotaxis_bias::ChemotaxisBias;
 use crate::constants::{BoundaryType, NeighborhoodType};
 use crate::io::io_manager::{IoManager, MovieModule};
 #[cfg(feature = "movie-io")]
@@ -7,26 +8,16 @@ use crate::io::parameters::Parameters;
 use crate::my_cell::{CellType, MyCell};
 use crate::my_environment::MyEnvironment;
 use crate::pond::Pond;
-use crate::potts::Potts;
 use anyhow::bail;
-use cellulars::base::environment::Environment;
-use cellulars::constants::{CellIndex, FloatType};
-use cellulars::empty_cell::EmptyCell;
 use cellulars::io::read::parquet_reader::ParquetReader;
 use cellulars::io::read::read_trait::Read;
 use cellulars::io::write::image::movie_window::MovieWindow;
-use cellulars::positional::boundaries::Boundaries;
-use cellulars::positional::rect::Rect;
-use cellulars::prelude::{Alive, CellContainer, Cellular, Habitable, Pos};
-use cellulars::static_adhesion::StaticAdhesion;
-use cellulars::traits::step::Step;
+use cellulars::prelude::*;
 use rand::{make_rng, Rng, RngExt, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
-
-// TODO!: The backup functions should live in IoManager i think
 
 /// This is the master struct that runs the simulation in a [`Pond`] and manages IO through an [`IoManager`].
 pub struct Model {
@@ -234,20 +225,19 @@ impl Model {
         Ok(pond)
     }
 
-    fn make_potts(parameters: &Parameters) -> Potts {
-        Potts::builder()
-            .boltz_t(parameters.potts.boltz_t)
-            .size_lambda(parameters.potts.size_lambda)
-            .chemotaxis_mu(parameters.potts.chemotaxis_mu)
-            .enable_migration(parameters.cell.migrate)
-            .adhesion(
-                StaticAdhesion {
-                    cell_energy: parameters.potts.adhesion.cell_energy,
-                    medium_energy: parameters.potts.adhesion.medium_energy,
-                    solid_energy: parameters.potts.adhesion.solid_energy,
-                }
-            )
-            .build()
+    fn make_potts(parameters: &Parameters) -> EdgePotts<StaticAdhesion, ChemotaxisBias> {
+        EdgePotts {
+            adhesion: StaticAdhesion {
+                cell_energy: parameters.potts.adhesion.cell_energy,
+                medium_energy: parameters.potts.adhesion.medium_energy,
+                solid_energy: parameters.potts.adhesion.solid_energy,
+            },
+            bias: ChemotaxisBias {
+                chemotaxis_mu: parameters.potts.chemotaxis_mu,
+            },
+            boltz_t: parameters.potts.boltz_t,
+            size_lambda: parameters.potts.size_lambda,
+        }
     }
 
     fn make_env(parameters: &Parameters) -> MyEnvironment {

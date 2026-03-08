@@ -1,13 +1,7 @@
 //! Contains logic associated with [`MyCell`].
 
 use bon::Builder;
-use cellulars::base::cell::Cell;
-use cellulars::constants::FloatType;
-use cellulars::empty_cell::{Empty, EmptyCell};
-use cellulars::positional::boundaries::Boundary;
-use cellulars::positional::com::{Com, ShiftError};
-use cellulars::positional::pos::Pos;
-use cellulars::traits::cellular::{Alive, Cellular, HasCenter};
+use cellulars::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
@@ -15,16 +9,12 @@ use serde::{Deserialize, Serialize};
 pub struct MyCell {
     /// Area at which the cell divides.
     pub divide_area: u32,
-    
     /// Target area for newborns of this cell (see [`Alive::birth()`]).
     pub newborn_target_area: u32,
-    
     /// Current type of the cell.
     pub cell_type: CellType,
-    
     /// Inner base cell.
     pub cell: Cell,
-    
     /// Center of mass of the cell's perceived chemical concentration.
     chem_com: Com
 

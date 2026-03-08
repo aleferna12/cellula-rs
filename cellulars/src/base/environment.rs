@@ -1,12 +1,13 @@
 //! Contains logic associated with [`Environment`].
 
+use crate::constants::FloatType;
 use crate::empty_cell::Empty;
 use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::pos::{CastCoords, Pos};
-use crate::prelude::{Alive, CellContainer, Cellular, Edge, Habitable, HasCenter, Lattice,
+use crate::prelude::{Alive, CellContainer, Cellular, Edge, HasCenter, Lattice,
                      MooreNeighborhood, Neighborhood, RelCell, Spin, UnsafePeriodicBoundary};
-use crate::constants::FloatType;
+use crate::traits::habitable::{AsEnv, Spawn, TransferPosition};
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;
@@ -230,22 +231,12 @@ impl<C: Cellular + HasCenter, N: Neighborhood, B: ToLatticeBoundary> Environment
     }
 }
 
-impl<C, N, B> Habitable for Environment<C, N, B>
+impl<C, N, B> TransferPosition for Environment<C, N, B>
 where
     C: Cellular + Alive + HasCenter + Empty,
     N: Neighborhood,
     B: ToLatticeBoundary<Coord = FloatType> {
-    type Cell = C;
-
-    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
-        self
-    }
-
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
-        self
-    }
-
-    fn grant_position(
+    fn transfer_position(
         &mut self,
         pos: Pos<usize>,
         to: Spin
@@ -271,6 +262,24 @@ where
         // Executes the copy
         self.cell_lattice[pos] = to;
         self.update_edges(pos)
+    }
+}
+
+impl<C, N, B> Spawn for Environment<C, N, B>
+where
+    C: Cellular + Alive + HasCenter + Empty,
+    N: Neighborhood,
+    B: ToLatticeBoundary<Coord = FloatType> {}
+
+impl<C, N: Neighborhood, B: ToLatticeBoundary> AsEnv for Environment<C, N, B> {
+    type Cell = C;
+
+    fn env(&self) -> &Environment<C, impl Neighborhood, impl ToLatticeBoundary> {
+        self
+    }
+
+    fn env_mut(&mut self) -> &mut Environment<C, impl Neighborhood, impl ToLatticeBoundary> {
+        self
     }
 }
 
@@ -326,7 +335,7 @@ where
 impl<C, N, B:ToLatticeBoundary> Eq for Environment<C, N, B>
 where C: Eq, N: Eq, B: Eq, B::LatticeBoundary: Eq {}
 
-/// Counts the number of changed cell-cell edges after modifying the environment with [Habitable::grant_position()].
+/// Counts the number of changed cell-cell edges after modifying the environment with [`TransferPosition::transfer_position()`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Copy)]
 pub struct EdgesUpdate {
     /// Number of cell-cell edges added by granting the position.

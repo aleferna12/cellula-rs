@@ -4,55 +4,68 @@ use crate::base::environment::{EdgesUpdate, Environment};
 use crate::cell_container::RelCell;
 use crate::empty_cell::{Empty, EmptyCell};
 use crate::positional::boundaries::ToLatticeBoundary;
-use crate::positional::neighborhood::Neighborhood;
 use crate::positional::pos::Pos;
+use crate::prelude::{Cellular, Neighborhood};
 use crate::spin::Spin;
-use crate::traits::cellular::Cellular;
 
-/// This trait asserts that a type is habitable,
-/// which is to say that it can contain active cells.
-///
-/// Overriding methods of this trait (especially [`Habitable::grant_position()`])
-/// allows for custom logic of how to update the simulation.
-pub trait Habitable {
-    /// Cell type of the environment associated with this trait.
-    type Cell: Cellular + Empty;
+/// Types that can be inhabited by cells, since they can be downcast to
+/// [`Environment`], where cells live, and know how to [`TransferPosition`] between cells.
+pub trait Habitable: TransferPosition + AsEnv {}
 
-    /// Returns a reference to the environment where cells live.
-    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;
+impl<H: TransferPosition + AsEnv<Cell = C>, C> Habitable for H {}
 
-    /// Returns a mutable reference to the environment  where cells live.
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;
-
-    /// Grants position `pos` to the entity represented by spin `to`.
+/// This trait asserts that a type can spawn cells.
+pub trait Spawn: Habitable
+where
+    Self::Cell: Cellular + Empty {
+    /// Spawns a cell by progressively granting `empty_cell` a series of `positions` with [`TransferPosition::transfer_position()`].
     ///
-    /// This method should be used whenever a position on the environment changes ownership.
+    /// # Panics
     ///
-    /// Assumes that `pos` is a valid position in the environment's lattice.
-    fn grant_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate;
-
-    /// Spawns a cell by progressively granting `empty_cell` a series of `positions` with [`Habitable::grant_position()`].
-    ///
-    /// Assumes that all `positions` are valid.
+    /// If any position in `positions` is not valid.
     fn spawn_cell(
         &mut self,
         empty_cell: EmptyCell<Self::Cell>,
-        positions: impl IntoIterator<Item = Pos<usize>>
+        positions: impl IntoIterator<Item=Pos<usize>>
     ) -> &RelCell<Self::Cell> {
         let cell_index = self.env_mut().cells.add(empty_cell).index;
         let new_spin = Spin::Some(cell_index);
         for pos in positions {
-            self.grant_position(pos, new_spin);
+            self.transfer_position(pos, new_spin);
         }
         &self.env().cells[cell_index]
     }
 
     /// Spawns a [`Spin::Solid`] at each position in `positions`.
     ///
-    /// Assumes that all `positions` are valid.
+    /// # Panics
+    ///
+    /// If any position in `positions` is not valid.
     fn spawn_solid(&mut self, positions: impl Iterator<Item = Pos<usize>>) {
         for pos in positions {
-            self.grant_position(pos, Spin::Solid);
+            self.transfer_position(pos, Spin::Solid);
         }
     }
+}
+
+/// Types that can transfer ownership of their positions between [`Spin`]s.
+pub trait TransferPosition {
+    /// Transfers ownership of position `pos` to the entity represented by spin `to`.
+    ///
+    /// # Panics
+    ///
+    /// If `pos` is not a valid position in the environment's lattice.
+    fn transfer_position(&mut self, pos: Pos<usize>, to: Spin) -> EdgesUpdate;
+}
+
+/// Types that can cheaply downcast to a reference to an [`Environment`].
+pub trait AsEnv {
+    /// Cell type of the environment.
+    type Cell;
+
+    /// Returns a reference to the environment where cells live.
+    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;
+
+    /// Returns a mutable reference to the environment where cells live.
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;
 }

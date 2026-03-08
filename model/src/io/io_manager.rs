@@ -42,16 +42,12 @@ const PAD_FILE_LEN: usize = {
 pub struct IoManager {
     /// Path to directory where data and images of the simulation are saved.
     pub outdir: PathBuf,
-    
     /// Period with which to save an image of the simulation.
     pub image_period: u32,
-    
     /// Period with which to save cell data.
     pub cells_period: u32,
-    
     /// Period with which to save the cell lattice.
     pub lattice_period: u32,
-    
     /// Used to update the simulation video when it's time.
     #[cfg(feature = "movie-io")]
     pub movie_module: Option<MovieModule>,

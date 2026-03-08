@@ -15,12 +15,12 @@ pub struct StaticAdhesion {
     pub solid_energy: FloatType
 }
 
-impl AdhesionSystem for StaticAdhesion {
+impl<C> AdhesionSystem<C> for StaticAdhesion {
     fn adhesion_energy(
         &self,
         spin1: Spin,
         spin2: Spin,
-        _: &(),
+        _: &C,
     ) -> FloatType {
         match (spin1, spin2) {
             (Spin::Some(c1), Spin::Some(c2)) => {

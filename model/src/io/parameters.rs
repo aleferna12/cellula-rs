@@ -98,7 +98,7 @@ pub struct CellParameters {
     pub update_period: u32,
 }
 
-/// Parameters for the cellular automata update algorithm (see [`potts`](crate::potts)).
+/// Parameters for the cellular automata update algorithm (see [`potts`](crate::my_potts)).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PottsParameters {

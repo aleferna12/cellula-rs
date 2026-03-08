@@ -5,8 +5,8 @@
 
 pub mod model;
 pub mod io;
-pub mod potts;
 pub mod constants;
 pub mod my_cell;
 pub mod my_environment;
 pub mod pond;
+pub mod chemotaxis_bias;
