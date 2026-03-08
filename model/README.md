@@ -35,19 +35,20 @@ Optionally a `LAYOUT_PNG` file can be used to specify cell positions and a
 
 For example, passing a template file with a migrating cell and a dividing cell together with this layout:
 
-![layout](https://github.com/aleferna12/cellulars-template/blob/main/tests/fixtures/squares_layout.png)
+<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/fixtures/squares_layout.png" width="200">
+squares_layout.png
+<div style="clear: both;"></div>
 
 initializes a simulation like this:
 
-Time step 0
-
-<img src="avatar.jpg" align="left" width="100" style="margin-right: 10px;">
-
-This is a paragraph of text with the image floating on the left. The text will wrap around the image, creating a mixed layout. This can be used for personal profiles or product introductions.
-
+<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000000.webp" width="200">
+time step 0
 <div style="clear: both;"></div>
 
-![layout_sim](https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000000.webp)
+<img src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000064.webp" width="200">
+time step 64
+<div style="clear: both;"></div>
+
 
 #### 2. Resume a simulation from backup
 
