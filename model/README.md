@@ -152,4 +152,4 @@ Plots can be benchmarked with:
 cargo bench --bench io_bench --profile fastest --no-default-features
 ```
 
-which is useful to identify plots taking longer than expected.
+which is useful to identify plots driving up execution time of the IO loop.
