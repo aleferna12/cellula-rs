@@ -144,7 +144,7 @@ impl IoManager {
         if !matches!(layout.color(), ColorType::L8 | ColorType::L16 | ColorType::La8 | ColorType::La16) {
             log::warn!("Layout file \"{layout_path:?}\" is not encoded in grayscale but will be converted");
         }
-        Ok(layout.resize_exact(pond_width as u32, pond_height as u32, FilterType::Nearest).into_luma8())
+        Ok(layout.resize_exact(pond_width as u32, pond_height as u32, FilterType::Nearest).flipv().into_luma8())
     }
 
     /// Given a path to the main folder of a simulation, resolve the path to the lattice file
