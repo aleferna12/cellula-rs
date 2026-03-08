@@ -25,7 +25,7 @@ impl MyCell {
     pub fn new_empty(target_area: u32, divide_area: u32, cell_type: CellType) -> EmptyCell<Self> {
         EmptyCell::new(Self {
             cell: Cell::new_empty(target_area).into_cell(),
-            chem_com: Com { pos: Pos::new(0., 0.), mass: 0 },
+            chem_com: Com { pos: Pos::new(0., 0.), mass: 0. },
             newborn_target_area: target_area,
             divide_area,
             cell_type,
@@ -33,7 +33,7 @@ impl MyCell {
     }
     
     /// Returns the total concentration of the chemical perceived by the cell.
-    pub fn chem_mass(&self) -> u32 {
+    pub fn chem_mass(&self) -> FloatType {
         self.chem_com.mass
     }
 
@@ -49,7 +49,7 @@ impl MyCell {
     }
 
     /// Adds or removes the chemical concentration `chem_at` at position `pos` from the cell.
-    pub fn shift_chem<B: Boundary<Coord = FloatType>>(&mut self, pos: Pos<usize>, chem_at: u32, adding: bool, boundary: &B) {
+    pub fn shift_chem<B: Boundary<Coord = FloatType>>(&mut self, pos: Pos<usize>, chem_at: FloatType, adding: bool, boundary: &B) {
         let shifted = self.chem_com.shift(
             Com { pos: pos.cast_as(), mass: chem_at },
             adding,
@@ -61,7 +61,7 @@ impl MyCell {
         }
     }
 
-    /// Updates parameters of the cell (called by [`Pond::step()`](cellulars::traits::step::Step::step())).
+    /// Updates parameters of the cell (called by [`Pond::step()`](Step::step())).
     pub fn update(&mut self) {
         if let CellType::Dividing = self.cell_type && self.target_area() < self.divide_area {
             let new_target_area = self.target_area() + 1;
@@ -118,7 +118,7 @@ impl Alive for MyCell {
         let mut basic_cell = self.cell.birth().into_cell();
         basic_cell.target_area = self.newborn_target_area;
         EmptyCell::new(Self {
-            chem_com: Com { pos: basic_cell.center(), mass: 0 },
+            chem_com: Com { pos: basic_cell.center(), mass: 0. },
             cell: basic_cell,
             ..self.clone()
         }).expect("failed to create empty cell")
@@ -176,18 +176,18 @@ mod tests {
         let mut cell = make_test_cell();
 
         // Add chem at (2, 3) with value 10
-        cell.shift_chem(Pos::new(2, 3), 10, true, &bound);
-        assert_eq!(cell.chem_com.mass, 10);
+        cell.shift_chem(Pos::new(2, 3), 10., true, &bound);
+        assert_eq!(cell.chem_com.mass, 10.);
         assert_eq!(cell.chem_com.pos, Pos::new(2., 3.));
 
         // Add chem at (4, 5) with value 10
-        cell.shift_chem(Pos::new(4, 5), 10, true, &bound);
-        assert_eq!(cell.chem_com.mass, 20);
+        cell.shift_chem(Pos::new(4, 5), 10., true, &bound);
+        assert_eq!(cell.chem_com.mass, 20.);
         assert_eq!(cell.chem_com.pos, Pos::new(3., 4.));
 
         // Remove chem from (2, 3)
-        cell.shift_chem(Pos::new(2, 3), 10, false, &bound);
-        assert_eq!(cell.chem_com.mass, 10);
+        cell.shift_chem(Pos::new(2, 3), 10., false, &bound);
+        assert_eq!(cell.chem_com.mass, 10.);
         assert_eq!(cell.chem_com.pos, Pos::new(4., 5.));
     }
 }

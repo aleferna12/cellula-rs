@@ -1,6 +1,5 @@
 //! Contains logic related to [`IoManager`].
 
-#[cfg(feature = "movie-io")]
 use crate::io::parameters::Parameters;
 use crate::my_cell::MyCell;
 use crate::my_environment::MyEnvironment;
@@ -282,6 +281,7 @@ impl IoManager {
     }
 }
 
+#[cfg(feature = "movie-io")]
 /// Groups together a movie window and its associated frame rate.
 pub struct MovieModule {
     /// Movie window used to display the simulation.

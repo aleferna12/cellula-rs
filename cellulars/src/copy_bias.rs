@@ -24,6 +24,7 @@ impl<C> CopyBias<C> for NoBias {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 /// Bias copies towards the source of a chemical stored in a [`Lattice<FloatType>`].
 pub struct ChemotaxisBias {
     /// Strength of the chemotaxis constraint on the energy functional.

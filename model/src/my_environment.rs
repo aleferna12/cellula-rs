@@ -6,12 +6,12 @@ use cellulars::prelude::*;
 use rand::RngExt;
 
 /// An environment that contains a chemical gradient and limits cell growth to [`MyEnvironment::max_cells`].
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct MyEnvironment {
     /// Inner [`Environment`].
     pub env: Environment<MyCell, NeighborhoodType, BoundaryType>,
     /// Lattice containing the chemical gradient.
-    pub chem_lattice: Lattice<u32>,
+    pub chem_lattice: Lattice<FloatType>,
     /// Scaler used to determine the radius of search for cell positions starting from its center.
     pub cell_search_scaler: FloatType,
     /// Maximum number of cells supported in the environment.
@@ -41,7 +41,7 @@ impl MyEnvironment {
     pub fn make_chem_gradient(&mut self) {
         for i in 0..self.env.width() {
             for j in 0..self.env.height() {
-                self.chem_lattice[(i, j).into()] = j.try_into().expect("lattice is too big");
+                self.chem_lattice[(i, j).into()] = j as FloatType;
             }
         }
     }

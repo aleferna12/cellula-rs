@@ -41,7 +41,7 @@ fn main() -> Result<(), minifb::Error> {
                 solid_energy: 10.,
             },
             bias: Biases {
-                chem_lambda: 50.,
+                chem_bias: ChemotaxisBias { lambda: 50. },
             }
         },
         rng: Default::default(),
@@ -134,13 +134,13 @@ impl TransferPosition for ChemEnvironment {
     }
 }
 
-pub struct Biases {
-    chem_lambda: f64
+struct Biases {
+    chem_bias: ChemotaxisBias
 }
 
 impl CopyBias<ChemEnvironment> for Biases {
     fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f64 {
-        -ChemotaxisBias { lambda: self.chem_lambda }.bias(pos_source, pos_target, &env.current_chem)
+        -self.chem_bias.bias(pos_source, pos_target, &env.current_chem)
     }
 }
 

@@ -114,7 +114,7 @@ dividing-color = "#045a8d"
 # With which color to plot the line where cells will divide
 division-axis-color = "#00eeee"
 # Length of the drawn division axis line
-division-axis-length = 8
+division-axis-length = 10
 
 [io.movie]
 # Whether the real-time movie should be shown or not.
@@ -126,4 +126,4 @@ width = 320
 # Height of the movie window.
 height = 320
 # How many MCS to skip between the displayed frames.
-frame-period = 100
+frame-period = 10

@@ -1,9 +1,10 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
-use crate::chemotaxis_bias::ChemotaxisBias;
+use crate::biases::Biases;
 use crate::constants::{BoundaryType, NeighborhoodType};
-use crate::io::io_manager::{IoManager, MovieModule};
+use crate::io::io_manager::IoManager;
 #[cfg(feature = "movie-io")]
+use crate::io::io_manager::MovieModule;
 use crate::io::parameters::Parameters;
 use crate::my_cell::{CellType, MyCell};
 use crate::my_environment::MyEnvironment;
@@ -11,6 +12,7 @@ use crate::pond::Pond;
 use anyhow::bail;
 use cellulars::io::read::parquet_reader::ParquetReader;
 use cellulars::io::read::read_trait::Read;
+#[cfg(feature = "movie-io")]
 use cellulars::io::write::image::movie_window::MovieWindow;
 use cellulars::prelude::*;
 use rand::{make_rng, Rng, RngExt, SeedableRng};
@@ -157,6 +159,7 @@ impl Model {
             log::info!("Not displaying movie since movie parameters were omitted");
             None
         };
+        #[cfg(feature = "movie-io")]
         let io = io_builder.maybe_movie_module(movie_module).build();
 
         log::info!("Creating output directories and copy of parameter file");
@@ -225,15 +228,17 @@ impl Model {
         Ok(pond)
     }
 
-    fn make_potts(parameters: &Parameters) -> EdgePotts<StaticAdhesion, ChemotaxisBias> {
+    fn make_potts(parameters: &Parameters) -> EdgePotts<StaticAdhesion, Biases> {
         EdgePotts {
             adhesion: StaticAdhesion {
                 cell_energy: parameters.potts.adhesion.cell_energy,
                 medium_energy: parameters.potts.adhesion.medium_energy,
                 solid_energy: parameters.potts.adhesion.solid_energy,
             },
-            bias: ChemotaxisBias {
-                chemotaxis_mu: parameters.potts.chemotaxis_mu,
+            bias: Biases {
+                chem_bias: ChemotaxisBias {
+                    lambda: parameters.potts.chemotaxis_mu
+                },
             },
             boltz_t: parameters.potts.boltz_t,
             size_lambda: parameters.potts.size_lambda,

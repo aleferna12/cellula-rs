@@ -31,7 +31,7 @@ impl Cell {
         center: Pos<FloatType>
     ) -> Self {
         Self {
-            com: Com { pos: center, mass: area },
+            com: Com { pos: center, mass: area as FloatType },
             target_area
         }
     }
@@ -48,7 +48,7 @@ impl Cellular for Cell {
     }
 
     fn area(&self) -> u32 {
-        self.com.mass
+        self.com.mass.round() as u32
     }
 
     fn shift_position(
@@ -58,7 +58,7 @@ impl Cellular for Cell {
         boundary: &impl Boundary<Coord = FloatType>
     ) -> Result<(), ShiftError> {
         let shifted = self.com.shift(
-            Com { pos: pos.cast_as(), mass: 1 },
+            Com { pos: pos.cast_as(), mass: 1. },
             adding,
             boundary
         );
@@ -85,7 +85,7 @@ impl Alive for Cell {
 
     fn birth(&self) -> EmptyCell<Cell> {
         let mut newborn = self.clone();
-        newborn.com.mass = 0;
+        newborn.com.mass = 0.;
         EmptyCell::new_unchecked(newborn)
     }
 }
@@ -104,7 +104,7 @@ impl Empty for Cell {
     fn empty_default() -> EmptyCell<Self> {
         EmptyCell::new_unchecked(Self {
             target_area: 0,
-            com: Com { pos: Pos::new(0., 0.), mass: 0 }
+            com: Com { pos: Pos::new(0., 0.), mass: 0. }
         })
     }
 

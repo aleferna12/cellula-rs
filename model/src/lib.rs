@@ -9,4 +9,4 @@ pub mod constants;
 pub mod my_cell;
 pub mod my_environment;
 pub mod pond;
-pub mod chemotaxis_bias;
+pub mod biases;
