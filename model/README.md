@@ -39,7 +39,15 @@ For example, passing a template file with a migrating cell and a dividing cell t
 
 initializes a simulation like this:
 
-![layout_sim]()
+Time step 0
+
+<img src="avatar.jpg" align="left" width="100" style="margin-right: 10px;">
+
+This is a paragraph of text with the image floating on the left. The text will wrap around the image, creating a mixed layout. This can be used for personal profiles or product introductions.
+
+<div style="clear: both;"></div>
+
+![layout_sim](https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000000.webp)
 
 #### 2. Resume a simulation from backup
 
