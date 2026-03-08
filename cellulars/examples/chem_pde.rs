@@ -140,7 +140,7 @@ struct Biases {
 
 impl CopyBias<ChemEnvironment> for Biases {
     fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f64 {
-        -self.chem_bias.bias(pos_source, pos_target, &env.current_chem)
+        self.chem_bias.bias(pos_source, pos_target, &env.current_chem)
     }
 }
 
