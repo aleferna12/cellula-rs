@@ -44,7 +44,12 @@ initializes a simulation like this:
 
 <img alt="squares were replaced by cells" src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000000.webp" width="200" align="left">
 time step 0 
-red = migrating, blue = dividing, black = solid object
+<br/>
+red = migrating
+<br/>
+blue = dividing
+<br/>
+black = solid object
 <br clear="all">
 
 <img alt="cells grew" src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000064.webp" width="200" align="left">
