@@ -37,6 +37,7 @@ fn test_plots() -> anyhow::Result<()> {
 fn test_templates() -> anyhow::Result<()> {
     let mut params = make_test_parameters()?;
     params.io.outdir = "tests/out/templates/".to_string();
+    params.cell.starting_cells = 6;
 
     let mut model = Model::new_from_parameters(params, Some("tests/fixtures/mig_div_templates.parquet".to_string()))?;
     model.run_for(512);
