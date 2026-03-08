@@ -43,12 +43,9 @@ squares_layout.png
 initializes a simulation like this:
 
 <img alt="squares were replaced by cells" src="https://github.com/aleferna12/cellulars-template/blob/main/tests/out/layout_template/images/0000000000.webp" width="200" align="left">
-time step 0 
-<br/>
-red = migrating
-<br/>
-blue = dividing
-<br/>
+time step 0<br>
+red = migrating<br>
+blue = dividing<br>
 black = solid object
 <br clear="all">
 
