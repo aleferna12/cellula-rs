@@ -1,6 +1,9 @@
 This is the template repo for the [cellulars](https://github.com/aleferna12/cellula-rs)
 project.
 
+To reduce boilerplate when starting a new cellulars project, 
+we implement several quality of life features that are described below.
+
 ### Installation
 
 Either click "Use this template" in the top-right corner of the page, 
@@ -107,3 +110,17 @@ Examples for how to use cellulars can be found in the
 [examples folder](https://github.com/aleferna12/cellula-rs/tree/master/cellulars/examples).
 
 ### Profiles
+
+Three profiles are available:
+
+1. dev (default)
+2. release
+3. fastest
+
+It's recommended to run the code with at least `release` for better performance:
+
+```commandline
+cargo run --profile release -- run config/1_cell.toml
+```
+
+Using `fastest` can further enhance performance, but at a pretty large cost in compilation time. 

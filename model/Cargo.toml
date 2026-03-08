@@ -15,6 +15,16 @@ movie-io = ["cellulars/movie-io"]
 fixed-boundary = []
 von-neumann = []
 
+[profile.fastest]
+inherits = "release"
+# These flags can drive up compilation time quite significantly,
+# but they do have a measurable effect on performance
+lto = "fat"
+codegen-units = 1
+
+[profile.fastest.package.cellulars]
+codegen-units = 1
+
 [[bench]]
 name = "main"
 harness = false
