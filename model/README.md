@@ -124,3 +124,32 @@ cargo run --profile release -- run config/1_cell.toml
 ```
 
 Using `fastest` can further enhance performance, but at a pretty large cost in compilation time. 
+
+### Benchmarks
+
+#### 1. Model benchmarks
+
+There are several [config files](https://github.com/aleferna12/cellulars-template/tree/main/benches/fixtures) 
+aimed at benchmarking the model included in this project.
+
+To run a benchmark, use:
+
+```commandline
+cargo bench --bench model_bench --profile fastest --no-default-features -- <BENCH_FILE>/<DURATION>mcs
+```
+
+which will run a criterion benchmark of the model with parameters `BENCH_FILE` for `DURATION` time steps 
+(where `DURATION` is one of 1, 1000, or 10000).
+
+You can also run all benchmarks by omitting the arguments after `--`, 
+but be aware this will take a second to run even if using the `fastest` profile.
+
+#### 2. IO benchmarks
+
+Plots can be benchmarked with:
+
+```commandline
+cargo bench --bench io_bench --profile fastest --no-default-features
+```
+
+which is useful to identify plots taking longer than expected.
