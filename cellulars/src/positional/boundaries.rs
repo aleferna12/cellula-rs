@@ -48,6 +48,8 @@ pub trait Boundary {
     }
 
     /// Calculates the minimum displacement between two positions by taking into account boundary conditions.
+    /// 
+    /// For a fixed boundary, this is equivalent to `(pos2.x - pos1.x, pos2.y - pos1.y)`.
     fn displacement(&self, pos1: Pos<Self::Coord>, pos2: Pos<Self::Coord>) -> (Self::Coord, Self::Coord);
 }
 
