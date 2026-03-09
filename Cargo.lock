@@ -580,7 +580,7 @@ dependencies = [
 
 [[package]]
 name = "cellulars"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "arrow",
  "criterion",
