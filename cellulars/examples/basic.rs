@@ -29,7 +29,7 @@ fn main() -> Result<(), minifb::Error> {
     env.spawn_cell(Cell::new_empty(cell_rect.area() as u32), cell_rect.iter_positions());
 
     // Initialize the Potts algorithm used to update the environment
-    let potts = EdgePotts {
+    let mut potts = EdgePotts {
         boltz_t: 10.,
         size_lambda: 10.,
         adhesion: StaticAdhesion {

@@ -13,7 +13,7 @@ use std::f64::consts::E;
 pub trait Potts<H> {
     /// Executes a Monte Carlo step of the simulation by updating `hab`.
     fn step(
-        &self,
+        &mut self,
         hab: &mut H,
         rng: &mut impl RngExt
     );
@@ -165,7 +165,7 @@ where
     B: CopyBias<H>,
     H: Habitable<Cell = C>,
     C: Cellular {
-    fn step(&self, hab: &mut H, rng: &mut impl RngExt) {
+    fn step(&mut self, hab: &mut H, rng: &mut impl RngExt) {
         let mut to_visit = 2. * hab.env().edge_book.len() as FloatType / hab.env().neighborhood.n_neighs() as FloatType;
         while 0. < to_visit {
             let edge_i = hab.env().edge_book.random_index(rng);
