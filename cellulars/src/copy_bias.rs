@@ -1,6 +1,15 @@
 //! Contains different copy biases applied during a [`Potts`](crate::potts::Potts) step.
 
-// TODO!: PerimeterBias, ActBias
+/*
+ TODO!: PerimeterBias, ActBias
+    For PerBias:
+        Best way I can think to implement this would be through a new trait TrackPerimeter which can be implemented
+        for cells. Methods are perimeter() and possibly delta_perimeter() -> Option<i32>.
+        This last method is needed if we care to implement the optimization where the cells neighbors dont need to
+        be iterated ove both in copy_bias() and in transfer_position(). Maybe there is a way to prevent this double
+        iterations for other operations besides calculating the perimeter? Like storing a Vec<Pos<usize>> in cells
+        or something of sorts (although a Vec is most def too slow).
+ */
 
 use crate::constants::FloatType;
 use crate::lattice::Lattice;
