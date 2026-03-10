@@ -1,4 +1,4 @@
-//! Bundle of traits used to build behavior on composite ypes.
+//! Bundle of traits used to build behavior on composite types.
 
 pub mod adhesion_system;
 pub mod cellular;
