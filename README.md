@@ -33,7 +33,7 @@ The simplest CPM possible looks like this:
 ```rust
 fn main() {
     // Initialize periodic boundary conditions
-    let boundary = UnsafePeriodicBoundary::new(Rect::new(
+    let boundary = FastPeriodicBoundary::new(Rect::new(
         Pos::new(0., 0.),
         Pos::new(100., 100.)
     ));

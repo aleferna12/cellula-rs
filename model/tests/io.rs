@@ -3,7 +3,7 @@ use cellulars::cell_container;
 use cellulars::empty_cell::EmptyCell;
 use cellulars::io::write::parquet_writer::ParquetWriter;
 use cellulars::io::write::write_trait::Write;
-use cellulars::prelude::{Cellular, Pos, Rect, UnsafePeriodicBoundary};
+use cellulars::prelude::{Cellular, Pos, Rect, FastPeriodicBoundary};
 use model::my_cell::{CellType, MyCell};
 use std::fs::File;
 use cellulars::io::read::parquet_reader::ParquetReader;
@@ -15,7 +15,7 @@ fn test_cells_io() {
     cell.shift_position(
         Pos::new(0, 0),
         true,
-        &UnsafePeriodicBoundary::new(Rect::new(
+        &FastPeriodicBoundary::new(Rect::new(
             Pos::new(0., 0.),
             Pos::new(10., 10.)
         ))).unwrap();

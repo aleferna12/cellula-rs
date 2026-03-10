@@ -10,7 +10,7 @@ const SIDE: usize = 100;
 
 fn main() -> Result<(), minifb::Error> {
     // Initialize periodic boundary conditions
-    let boundary = UnsafePeriodicBoundary::new(Rect::new(
+    let boundary = FastPeriodicBoundary::new(Rect::new(
         Pos::new(0., 0.),
         Pos::new(W as f64, H as f64)
     ));

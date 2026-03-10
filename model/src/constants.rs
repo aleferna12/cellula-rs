@@ -4,7 +4,7 @@ use cellulars::constants::FloatType;
 #[cfg(feature = "fixed-boundary")]
 use cellulars::positional::boundaries::FixedBoundary;
 #[cfg(not(feature = "fixed-boundary"))]
-use cellulars::positional::boundaries::UnsafePeriodicBoundary;
+use cellulars::positional::boundaries::FastPeriodicBoundary;
 #[cfg(not(feature = "von-neumann"))]
 use cellulars::positional::neighborhood::MooreNeighborhood;
 #[cfg(feature = "von-neumann")]
@@ -12,10 +12,10 @@ use cellulars::positional::neighborhood::VonNeumannNeighborhood;
 
 /// Boundary type of the environment.
 ///
-/// [`FixedBoundary`] is ~18% faster than [`UnsafePeriodicBoundary`]
+/// [`FixedBoundary`] is ~18% faster than [`FastPeriodicBoundary`]
 /// (in total run time).
 #[cfg(not(feature = "fixed-boundary"))]
-pub type BoundaryType = UnsafePeriodicBoundary<FloatType>;
+pub type BoundaryType = FastPeriodicBoundary<FloatType>;
 #[cfg(feature = "fixed-boundary")]
 pub type BoundaryType = FixedBoundary<FloatType>;
 

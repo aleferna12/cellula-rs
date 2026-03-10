@@ -242,7 +242,7 @@ impl<T: Default + Clone> From<Rect<usize>> for Lattice<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::positional::boundaries::{ToLatticeBoundary, UnsafePeriodicBoundary};
+    use crate::positional::boundaries::{ToLatticeBoundary, FastPeriodicBoundary};
     use crate::positional::neighborhood::MooreNeighborhood;
     use crate::positional::pos::{CastCoords, Pos};
     use crate::positional::rect::Rect;
@@ -280,7 +280,7 @@ mod tests {
             &1,
             Pos::new(5, 5),
             5,
-            &UnsafePeriodicBoundary::new(rect).to_lattice_boundary()
+            &FastPeriodicBoundary::new(rect).to_lattice_boundary()
         ).collect::<Vec<_>>();
         assert_eq!(outline.len(), 3);
     }
@@ -296,7 +296,7 @@ mod tests {
             &1,
             Pos::new(5, 5),
             5,
-            &UnsafePeriodicBoundary::new(rect).to_lattice_boundary(),
+            &FastPeriodicBoundary::new(rect).to_lattice_boundary(),
             &MooreNeighborhood::new(1)
         );
         assert_eq!(outline.len(), 12);

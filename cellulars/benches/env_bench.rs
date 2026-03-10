@@ -1,7 +1,7 @@
-use cellulars::base::cell::Cell;
-use cellulars::base::environment::Environment;
+use cellulars::cell::Cell;
+use cellulars::environment::Environment;
 use cellulars::constants::FloatType;
-use cellulars::positional::boundaries::{Boundaries, Boundary, UnsafePeriodicBoundary};
+use cellulars::positional::boundaries::{Boundaries, Boundary, FastPeriodicBoundary};
 use cellulars::positional::edge::Edge;
 use cellulars::positional::neighborhood::MooreNeighborhood;
 use cellulars::positional::pos::Pos;
@@ -16,10 +16,10 @@ use std::cmp::min;
 use std::default::Default;
 use std::hint::black_box;
 
-fn empty_env(width: FloatType, height: FloatType) -> Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>> {
+fn empty_env(width: FloatType, height: FloatType) -> Environment<Cell, MooreNeighborhood, FastPeriodicBoundary<FloatType>> {
     Environment::new_empty(
         MooreNeighborhood::new(1),
-        Boundaries::new(UnsafePeriodicBoundary::new(Rect::new(
+        Boundaries::new(FastPeriodicBoundary::new(Rect::new(
             (0., 0.).into(),
             (width, height).into()
         )))
@@ -27,7 +27,7 @@ fn empty_env(width: FloatType, height: FloatType) -> Environment<Cell, MooreNeig
 }
 
 fn random_neighbor(
-    env: &Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
+    env: &Environment<Cell, MooreNeighborhood, FastPeriodicBoundary<FloatType>>,
     p: Pos<usize>,
     neigh_r: u8,
     rng: &mut impl RngExt
@@ -47,7 +47,7 @@ fn random_neighbor(
 }
 
 fn add_random_edge(
-    env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
+    env: &mut Environment<Cell, MooreNeighborhood, FastPeriodicBoundary<FloatType>>,
     rng: &mut impl RngExt
 ) -> bool {
     let p1 = env.cell_lattice.random_pos(rng);
@@ -57,7 +57,7 @@ fn add_random_edge(
 
 fn replace_random_edges(
     n_edges: usize,
-    env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>,
+    env: &mut Environment<Cell, MooreNeighborhood, FastPeriodicBoundary<FloatType>>,
     rng: &mut impl RngExt
 ) {
     for _ in 0..n_edges {
@@ -90,7 +90,7 @@ fn bench_env(c: &mut Criterion) {
     });
     
     let pos_usize: [Pos<isize>; 2] = [Pos::new(20, 20), Pos::new(-20, -20)];
-    let lat_bound = UnsafePeriodicBoundary::new(Rect::new((0, 0).into(), (40, 40).into()));
+    let lat_bound = FastPeriodicBoundary::new(Rect::new((0, 0).into(), (40, 40).into()));
     c.bench_function("unsafe_periodic_boundary_usize", |b| {
         b.iter(
             || {
@@ -100,7 +100,7 @@ fn bench_env(c: &mut Criterion) {
     });
 
     let pos_usize: [Pos<FloatType>; 2] = [Pos::new(20., 20.), Pos::new(-20., -20.)];
-    let lat_bound = UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (40., 40.).into()));
+    let lat_bound = FastPeriodicBoundary::new(Rect::new((0., 0.).into(), (40., 40.).into()));
     c.bench_function("unsafe_periodic_boundary_f32", |b| {
         b.iter(
             || {

@@ -137,11 +137,11 @@ pub enum CellType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cellulars::positional::boundaries::UnsafePeriodicBoundary;
+    use cellulars::positional::boundaries::FastPeriodicBoundary;
     use cellulars::positional::rect::Rect;
 
-    fn make_unsafe_boundary() -> UnsafePeriodicBoundary<FloatType> {
-        UnsafePeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
+    fn make_unsafe_boundary() -> FastPeriodicBoundary<FloatType> {
+        FastPeriodicBoundary::new(Rect::new((0., 0.).into(), (100., 100.).into()))
     }
     
     fn make_test_cell() -> MyCell {

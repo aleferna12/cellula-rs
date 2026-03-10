@@ -12,7 +12,7 @@ const SIDE: usize = 50;
 
 fn main() -> Result<(), minifb::Error> {
     // Initialize fixed boundary conditions so that the cell can collide with the wall
-    let boundary = UnsafePeriodicBoundary::new(Rect::new(
+    let boundary = FastPeriodicBoundary::new(Rect::new(
         Pos::new(0., 0.),
         Pos::new(W as f64, H as f64)
     ));
@@ -75,7 +75,7 @@ fn main() -> Result<(), minifb::Error> {
 }
 
 struct Biases {
-    dir: DirectionBias<UnsafePeriodicBoundary<FloatType>>
+    dir: DirectionBias<FastPeriodicBoundary<FloatType>>
 }
 
 impl CopyBias<Environment<Cell>> for Biases {

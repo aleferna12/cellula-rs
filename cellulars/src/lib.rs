@@ -22,7 +22,8 @@ pub mod symmetric_table;
 pub mod constants;
 pub mod spin;
 pub mod traits;
-pub mod base;
+pub mod cell;
+pub mod environment;
 #[cfg(any(feature = "data-io", feature = "image-io"))]
 pub mod io;
 pub mod prelude;

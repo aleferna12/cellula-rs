@@ -182,27 +182,32 @@ impl ToLatticeBoundary for SafePeriodicBoundary<FloatType> {
     }
 }
 
-/// This type can only validate positions that are at most one [UnsafePeriodicBoundary::rect]
+/// Fast implementation of periodic boundary conditions.
+///
+/// This type can only validate positions that are at most one [`FastPeriodicBoundary::rect`]
 /// away from the boundaries (in either x or y direction).
+/// This is safe for internal use
+/// (will never fail when passed to [`Environment`](crate::base::environment::Environment), for example),
+/// but be mindful when using it in your code.
+///
+/// For a safer, albeit slower implementation, check out [`SafePeriodicBoundary`].
 ///
 /// <div class="warning">
-///
 /// Only use when you are confident that all input positions are close to the boundary.
-///
 /// </div>
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct UnsafePeriodicBoundary<T> {
+pub struct FastPeriodicBoundary<T> {
     rect: Rect<T>
 }
 
-impl<T> UnsafePeriodicBoundary<T> {
+impl<T> FastPeriodicBoundary<T> {
     /// Makes a new boundary with size determined by `rect`.
     pub fn new(rect: Rect<T>) -> Self {
         Self { rect }
     }
 }
 
-impl<T> Boundary for UnsafePeriodicBoundary<T>
+impl<T> Boundary for FastPeriodicBoundary<T>
 where
     T: Num + Copy + Euclid + From<u8> + PartialOrd {
     type Coord = T;
@@ -220,7 +225,7 @@ where
     }
 }
 
-impl<T> PeriodicBoundary for UnsafePeriodicBoundary<T>
+impl<T> PeriodicBoundary for FastPeriodicBoundary<T>
 where
     T: Num + Copy + Euclid + From<u8> + PartialOrd {
     fn wrap_scalar(val: T, min: T, max: T) -> T {
@@ -234,11 +239,11 @@ where
     }
 }
 
-impl ToLatticeBoundary for UnsafePeriodicBoundary<FloatType> {
-    type LatticeBoundary = UnsafePeriodicBoundary<isize>;
+impl ToLatticeBoundary for FastPeriodicBoundary<FloatType> {
+    type LatticeBoundary = FastPeriodicBoundary<isize>;
 
-    fn to_lattice_boundary(&self) -> UnsafePeriodicBoundary<isize> {
-        UnsafePeriodicBoundary::new(self.rect.cast_coords())
+    fn to_lattice_boundary(&self) -> FastPeriodicBoundary<isize> {
+        FastPeriodicBoundary::new(self.rect.cast_coords())
     }
 }
 
@@ -295,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_unsafe_periodic_valid() {
-        let unsafe_per = UnsafePeriodicBoundary::new(rect_10x10());
+        let unsafe_per = FastPeriodicBoundary::new(rect_10x10());
 
         // Near bounds: valid
         assert_eq!(unsafe_per.valid_pos(Pos::new(10, 0)), Some(Pos::new(0, 0)));
@@ -317,13 +322,13 @@ mod tests {
 
     #[test]
     fn test_unsafe_periodic_wrap_scalar() {
-        let wrap = UnsafePeriodicBoundary::<isize>::wrap_scalar(11, 0, 10);
+        let wrap = FastPeriodicBoundary::<isize>::wrap_scalar(11, 0, 10);
         assert_eq!(wrap, 1);
 
-        let wrap_neg = UnsafePeriodicBoundary::<isize>::wrap_scalar(-1, 0, 10);
+        let wrap_neg = FastPeriodicBoundary::<isize>::wrap_scalar(-1, 0, 10);
         assert_eq!(wrap_neg, 9);
 
-        let in_bounds = UnsafePeriodicBoundary::<isize>::wrap_scalar(5, 0, 10);
+        let in_bounds = FastPeriodicBoundary::<isize>::wrap_scalar(5, 0, 10);
         assert_eq!(in_bounds, 5);
     }
 }

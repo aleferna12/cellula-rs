@@ -1,13 +1,8 @@
 //! Contains logic associated with [`Environment`].
 
-use crate::constants::FloatType;
-use crate::empty_cell::Empty;
-use crate::positional::boundaries::{Boundaries, Boundary, ToLatticeBoundary};
 use crate::positional::edge_book::EdgeBook;
-use crate::positional::pos::{CastCoords, Pos};
-use crate::prelude::{Alive, CellContainer, Cellular, Edge, HasCenter, Lattice,
-                     MooreNeighborhood, Neighborhood, RelCell, Spin, UnsafePeriodicBoundary};
-use crate::traits::habitable::{AsEnv, Spawn, TransferPosition};
+use crate::positional::pos::CastCoords;
+use crate::prelude::{Alive, AsEnv, Boundaries, Boundary, CellContainer, Cellular, Edge, Empty, FastPeriodicBoundary, FloatType, HasCenter, Lattice, MooreNeighborhood, Neighborhood, Pos, RelCell, Spawn, Spin, ToLatticeBoundary, TransferPosition};
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;
@@ -19,7 +14,7 @@ use std::f64::consts::PI;
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
 // If adding fields, remember to also change those!!!
 /// An environment where cells are spatially and relationally localized.
-pub struct Environment<C, N = MooreNeighborhood, B: ToLatticeBoundary = UnsafePeriodicBoundary<FloatType>> {
+pub struct Environment<C, N = MooreNeighborhood, B: ToLatticeBoundary = FastPeriodicBoundary<FloatType>> {
     /// Boundaries of the environment.
     ///
     /// These are used to validate that a position can be used to access information in the environment.
@@ -360,28 +355,28 @@ fn valid_neighbors(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::base::cell::Cell;
+    use crate::cell::Cell;
     use crate::cell_container::RelCell;
     use crate::empty_cell::Empty;
-    use crate::positional::boundaries::UnsafePeriodicBoundary;
+    use crate::positional::boundaries::FastPeriodicBoundary;
     use crate::positional::neighborhood::MooreNeighborhood;
     use crate::positional::pos::Pos;
     use crate::positional::rect::Rect;
 
-    fn make_test_env() -> Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>> {
+    fn make_test_env() -> Environment<Cell, MooreNeighborhood, FastPeriodicBoundary<FloatType>> {
         let rect = Rect::new(
             (0., 0.,).into(),
             (10., 10.).into()
         );
         Environment::new_empty(
             MooreNeighborhood::new(1),
-            Boundaries::new(UnsafePeriodicBoundary::new(rect.clone()))
+            Boundaries::new(FastPeriodicBoundary::new(rect.clone()))
         )
     }
 
     fn add_cell(
         positions: &[Pos<usize>],
-        env: &mut Environment<Cell, MooreNeighborhood, UnsafePeriodicBoundary<FloatType>>
+        env: &mut Environment<Cell, MooreNeighborhood, FastPeriodicBoundary<FloatType>>
     ) -> RelCell<Cell> {
         let mut empty = Cell::empty_default().into_cell();
         empty.target_area = 2;

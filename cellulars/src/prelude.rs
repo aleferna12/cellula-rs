@@ -1,17 +1,17 @@
 //! Prelude containing commonly used items.
 
-pub use crate::base::cell::Cell;
-pub use crate::base::environment::{EdgesUpdate, Environment};
+pub use crate::cell::Cell;
+pub use crate::environment::{EdgesUpdate, Environment};
 pub use crate::cell_container;
 pub use crate::cell_container::{CellContainer, RelCell};
 pub use crate::constants::{CellIndex, FloatType};
 pub use crate::empty_cell::{Empty, EmptyCell};
 pub use crate::lattice::Lattice;
-pub use crate::positional::boundaries::{Boundaries, Boundary, FixedBoundary, ToLatticeBoundary, UnsafePeriodicBoundary};
+pub use crate::positional::boundaries::{Boundaries, Boundary, FixedBoundary, ToLatticeBoundary, FastPeriodicBoundary};
 pub use crate::positional::com::{Com, ShiftError};
 pub use crate::positional::edge::Edge;
 pub use crate::positional::neighborhood::{MooreNeighborhood, Neighborhood, VonNeumannNeighborhood};
-pub use crate::positional::pos::Pos;
+pub use crate::positional::pos::{Pos, CastCoords};
 pub use crate::positional::rect::Rect;
 pub use crate::spin::Spin;
 pub use crate::static_adhesion::StaticAdhesion;
