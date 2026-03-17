@@ -82,7 +82,7 @@ To start with a template for a model that includes a CLI interface,
 automatic IO managing, parameter parsing, and other quality of life features, head over to the
 [model template page](https://github.com/aleferna12/cellulars-template) and follow installation instructions there.
 
-#### 2: Add it as a dependency (recommended for experimentation/mixed project)
+#### 2: Add it as a dependency (recommended for mixed/embedded project)
 
 This will include only library code. Just add cellulars as a dependency to your cargo project with:
 
@@ -100,3 +100,11 @@ at `cellulars/` and the model code at `model/`):
 ```commandline
 git clone https://github.com/aleferna12/cellula-rs <MY_PROJECT_NAME>
 ```
+
+Then run:
+
+```commandline
+cargo run --example basic
+```
+
+to check everything is working.
