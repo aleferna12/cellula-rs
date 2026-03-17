@@ -15,7 +15,7 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
 
 #[test]
 fn test_run() -> anyhow::Result<()> {
-    for plot in [PT::Act, PT::Center, PT::ChemCenter, PT::Area] {
+    for plot in [PT::Act, PT::Center, PT::ChemCenter, PT::Area, PT::RelChem] {
         let mut params = make_test_parameters()?;
         params.io.outdir = format!("tests/plots/{plot:?}");
         params.io.plot.order = vec![PT::Chem, PT::Spin, plot, PT::Border].into();

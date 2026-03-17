@@ -184,6 +184,7 @@ impl IoManager {
                         row[cols["chem_center_y"]].try_extract::<f32>()?,
                     ),
                     chem_mass: row[cols["chem_mass"]].try_extract::<u32>()?,
+                    neighbors: HashSet::new(),
                     genome: BitGenome::new(
                         row[cols["ligands"]].try_extract::<u64>()?,
                         row[cols["receptors"]].try_extract::<u64>()?,
@@ -318,6 +319,7 @@ impl IoManager {
         env: &mut MyEnvironment
     ) -> anyhow::Result<()> {
         if time_step.is_multiple_of(self.cells_period) {
+            env.update_neighbours();
             let mut celldf = env
                 .to_dataframe()
                 .with_context(|| "failed to make data frame from cells")?;
@@ -470,14 +472,6 @@ trait ToDataFrame {
 impl ToDataFrame for MyEnvironment {
     fn to_dataframe(&self) -> PolarsResult<DataFrame> {
         let valid = self.cells.iter().filter(|cell| cell.is_valid()).collect::<Box<_>>();
-        let neighmap = self.cell_lattice.neighbour_map();
-        let neighs = valid.iter().map(|cell| {
-            neighmap[&Spin::Some(cell.index)]
-                .iter()
-                .map(|v| spin_to_str(*v))
-                .collect::<Box<[String]>>()
-                .join(" ")
-        }).collect::<Box<[String]>>();
         df!(
             "index" => valid.iter().map(|cell| cell.index).collect::<Box<_>>(),
             "ancestor" => valid.iter().map(|cell| cell.ancestor).collect::<Box<_>>(),
@@ -492,7 +486,9 @@ impl ToDataFrame for MyEnvironment {
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Box<_>>(),
             "ligands" => valid.iter().map(|cell| cell.genome.ligands()).collect::<Box<_>>(),
             "receptors" => valid.iter().map(|cell| cell.genome.receptors()).collect::<Box<_>>(),
-            "neighbors" => neighs
+            "neighbors" => valid.iter().map(|cell| cell.neighbors.iter().map(|v| spin_to_str(*v)).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),
+            "med_neighbor" => valid.iter().map(|cell| cell.neighbors.contains(&Spin::Medium)).collect::<Box<_>>(),
+            "solid_neighbor" => valid.iter().map(|cell| cell.neighbors.contains(&Spin::Solid)).collect::<Box<_>>(),
         )
     }
 }

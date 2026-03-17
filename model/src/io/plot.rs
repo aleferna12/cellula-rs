@@ -3,7 +3,7 @@
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
 use crate::my_environment::MyEnvironment;
-use cellulars_lib::basic_cell::Cellular;
+use cellulars_lib::basic_cell::{Alive, Cellular};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::neighbourhood::Neighbourhood;
@@ -159,6 +159,59 @@ impl Plot for BorderPlot {
 pub struct CellTypePlot {
     pub mig_color: Srgb<u8>,
     pub div_color: Srgb<u8>
+}
+
+pub struct RelChemPlot {
+    pub min_color: Lchuv,
+    pub max_color: Lchuv,
+}
+
+impl Plot for RelChemPlot {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        let mut min = env.max_chem as f32;
+        let mut max = 0.;
+        for cell in env.cells.iter() {
+            // Depending on the freq with which we write cell data the neighs might be a bit outdated
+            if !cell.is_alive() {
+                continue;
+            }
+            let cell_chem = cell.chem_mass as f32 / cell.area as f32;
+            if cell_chem < min {
+                min = cell_chem;
+            }
+            if cell_chem > max {
+                max = cell_chem;
+            }
+        }
+        for pos in env.cell_lattice.iter_positions() {
+            let Spin::Some(cell_index) = env.cell_lattice[pos] else {
+                continue;
+            };
+            let cell = env.cells.get_cell(cell_index);
+            let cell_chem = cell.chem_mass as f32 / cell.area as f32;
+            let color = self.lerp(cell_chem, min, max);
+            match color {
+                Ok(c) => image.put_pixel(
+                    pos.x as u32,
+                    pos.y as u32,
+                    srgb_to_rgba(Srgb::from_linear(c.into_color()))
+                ),
+                Err(e) => log::warn!(
+                    "Failed to plot relative chem concentration for pos `{pos:?}` with error `{e:?}`"
+                )
+            };
+        }
+    }
+}
+
+impl ContinuousPlot for RelChemPlot {
+    fn min_color(&self) -> Lchuv {
+        self.min_color
+    }
+
+    fn max_color(&self) -> Lchuv {
+        self.max_color
+    }
 }
 
 pub struct AreaPlot {
@@ -328,7 +381,11 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                 PlotType::Act => Box::new(ActPlot {
                     min_color: srgb_to_lchuv(hex_to_srgb(&params.act_min_color)?),
                     max_color: srgb_to_lchuv(hex_to_srgb(&params.act_max_color)?)
-                })
+                }),
+                PlotType::RelChem => Box::new(RelChemPlot {
+                    min_color: srgb_to_lchuv(hex_to_srgb(&params.rel_chem_min_color)?),
+                    max_color: srgb_to_lchuv(hex_to_srgb(&params.rel_chem_max_color)?)
+                }),
             };
             plots.push(plot);
         }

@@ -135,6 +135,10 @@ chem-max-color = "#ffffff"
 act-min-color = "#ff00ff"
 # With which color to plot the maximum value for the act in the environment.
 act-max-color = "#ffff00"
+# With which color to plot the minimum value for the relative chemical concentration in the environment.
+rel-chem-min-color = "#ee00ee"
+# With which color to plot the maximum value for the relative chemical concentration in the environment.
+rel-chem-max-color = "#eeee00"
 
 [io.movie]
 # Whether the real-time movie should be shown or not.

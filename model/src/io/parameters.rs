@@ -225,7 +225,9 @@ pub struct PlotParameters {
     pub chem_min_color: String,
     pub chem_max_color: String,
     pub act_min_color: String,
-    pub act_max_color: String
+    pub act_max_color: String,
+    pub rel_chem_min_color: String,
+    pub rel_chem_max_color: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, EnumIter, Debug)]
@@ -237,7 +239,8 @@ pub enum PlotType {
     Border,
     Area,
     Chem,
-    Act
+    Act,
+    RelChem
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

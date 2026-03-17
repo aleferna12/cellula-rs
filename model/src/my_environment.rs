@@ -95,6 +95,17 @@ impl MyEnvironment {
         self.max_chem - Self::distance(pos, chem_center).round() as u32
     }
 
+    pub fn update_neighbours(&mut self) {
+        let neighmap = self.cell_lattice.neighbour_map();
+        for (spin, neighs) in neighmap {
+            let Spin::Some(cell_index) = spin else {
+                continue;
+            };
+            let cell = self.cells.get_cell_mut(cell_index);
+            cell.neighbors = neighs;
+        }
+    }
+
     fn make_chem_gradient(&mut self, chem_center: Pos<usize>) {
         for pos in self.chem_lattice.iter_positions() {
             let new_chem = self.chem_signal(pos, chem_center);

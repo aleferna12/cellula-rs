@@ -118,23 +118,27 @@ solid-color = "#000000"
 # Ommit to make the medium transparent.
 # medium-color = "#ffffff"
 # With which color to plot the centers of cells.
-center-color = "#00ff00"
+center-color = "#00ee00"
 # With which color to plot the border of cells.
 border-color = "#000000"
 # With which color to plot the perceived center of chem of cells.
-chem-center-color = "#00ff00"
+chem-center-color = "#00ee00"
 # With which color to plot the minimum area in the cell population.
-area-min-color = "#ff00ff"
+area-min-color = "#ee00ee"
 # With which color to plot the maximum area in the cell population.
-area-max-color = "#ffff00"
+area-max-color = "#eeee00"
 # With which color to plot the minimum value for the chem in the environment.
 chem-min-color = "#000000"
 # With which color to plot the maximum value for the chem in the environment.
 chem-max-color = "#ffffff"
 # With which color to plot the minimum value for the act in the environment.
-act-min-color = "#ff00ff"
+act-min-color = "#ee00ee"
 # With which color to plot the maximum value for the act in the environment.
-act-max-color = "#ffff00"
+act-max-color = "#eeee00"
+# With which color to plot the minimum value for the relative chemical concentration in the environment.
+rel-chem-min-color = "#ee00ee"
+# With which color to plot the maximum value for the relative chemical concentration in the environment.
+rel-chem-max-color = "#eeee00"
 
 [io.movie]
 # Whether the real-time movie should be shown or not.
