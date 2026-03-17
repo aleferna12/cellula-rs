@@ -1,30 +1,26 @@
-## Cellulars: a fast and extensible implementation of the Cellular Potts Model
+## Cellulars: a fast and extensible implementation of the Cellular Potts Model in Rust
 
-If you want full control over simulation code, this library is for you¹.
+If you want full control over simulation code at no performance cost, this library is for you.
 Due to Rust's incredibly flexible type system, modifying cell behavior using cellulars is easy and intuitive, 
 while adding 0 overhead in execution time. 
 
-Besides, cellulars was made to be really fast. 
+Cellulars was made to be really fast. 
 It currently runs on a single thread and achieves high performance using algorithmic optimizations of the
 Monte Carlo sampling method used traditionally for CPM.
 In the near future, the main step function will be parallelized for an even larger speed-up (stay tuned).
 
 Features currently include:
-- Total control over the Hamiltonian functional (C).
+- Easily add terms to the Hamiltonian functional with no performance cost (C).
 - The Environment API makes it easy to design hybrid models that might require complex data structures (C).
 - Plotting API to display information about the simulation (C).
 - Real-time movie inspection of the simulation (C).
 - Implementations of multiple boundary and neighborhood conditions (C).
 - Write data about the simulation to use for analyses (C).
 - Read simulation templates from image files (M).
-- Robust backup system to restore simulations (M).
+- Robust backup system to restore simulations at the atomic scale (M).
 
 **C**: Features included in the cellulars lib.
 **M**: Features included in the [model template](https://github.com/aleferna12/cellulars-template).
-
-¹ There are also alternative implementations of the CPM for users who are not as comfortable in Rust and prefer an
-out-of-the-box approach
-(check out [Morpheus](https://morpheus.gitlab.io/) and [Artistoo](https://artistoo.net/), for example).
 
 ### Getting started:
 
