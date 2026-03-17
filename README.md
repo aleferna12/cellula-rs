@@ -10,13 +10,12 @@ Monte Carlo sampling method used traditionally for CPM.
 In the near future, the main step function will be parallelized for an even larger speed-up (stay tuned).
 
 Features currently include:
-- Easily add terms to the Hamiltonian functional with no performance cost (C).
-- The Environment API makes it easy to design hybrid models that might require complex data structures (C).
+- Flexible and performant implementation of CPM (C).    
 - Plotting API to display information about the simulation (C).
 - Real-time movie inspection of the simulation (C).
 - Implementations of multiple boundary and neighborhood conditions (C).
-- Write data about the simulation to use for analyses (C).
-- Read simulation templates from image files (M).
+- IO library to write data about the simulation in real time (C).
+- Reader to construct simulations from templates (M).
 - Robust backup system to restore simulations at the atomic scale (M).
 
 **C**: Features included in the cellulars lib.
