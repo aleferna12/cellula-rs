@@ -185,6 +185,8 @@ impl IoManager {
                     ),
                     chem_mass: row[cols["chem_mass"]].try_extract::<u32>()?,
                     neighbors: HashSet::new(),
+                    tot_act: 0,
+                    tot_kact: 0.,
                     genome: BitGenome::new(
                         row[cols["ligands"]].try_extract::<u64>()?,
                         row[cols["receptors"]].try_extract::<u64>()?,
@@ -320,6 +322,7 @@ impl IoManager {
     ) -> anyhow::Result<()> {
         if time_step.is_multiple_of(self.cells_period) {
             env.update_neighbours();
+            env.update_act();
             let mut celldf = env
                 .to_dataframe()
                 .with_context(|| "failed to make data frame from cells")?;
@@ -489,6 +492,8 @@ impl ToDataFrame for MyEnvironment {
             "neighbors" => valid.iter().map(|cell| cell.neighbors.iter().map(|v| spin_to_str(*v)).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),
             "med_neighbor" => valid.iter().map(|cell| cell.neighbors.contains(&Spin::Medium)).collect::<Box<_>>(),
             "solid_neighbor" => valid.iter().map(|cell| cell.neighbors.contains(&Spin::Solid)).collect::<Box<_>>(),
+            "tot_act" => valid.iter().map(|cell| cell.tot_act).collect::<Box<_>>(),
+            "tot_kact" => valid.iter().map(|cell| cell.tot_kact).collect::<Box<_>>(),
         )
     }
 }

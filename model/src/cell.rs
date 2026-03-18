@@ -19,7 +19,11 @@ pub struct Cell {
     pub genome: BitGenome,
     pub ancestor: Option<CellIndex>,
     // This is only updated before saving data, so may contain outdated information
-    pub neighbors: HashSet<Spin>
+    pub neighbors: HashSet<Spin>,
+    // This is only updated before saving data, so may contain outdated information
+    pub tot_act: u32,
+    // This is only updated before saving data, so may contain outdated information
+    pub tot_kact: f64,
 }
 
 impl Cell {
@@ -33,6 +37,8 @@ impl Cell {
             perimeter: 0,
             ancestor: None,
             neighbors: HashSet::new(),
+            tot_act: 0,
+            tot_kact: 0.,
             target_perimeter,
             genome
         }

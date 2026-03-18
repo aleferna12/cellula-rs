@@ -106,6 +106,33 @@ impl MyEnvironment {
         }
     }
 
+    pub fn update_act(&mut self) {
+        let mut act_pairs = vec![];
+        for cell in self.cells.iter() {
+            let mut act = 0;
+            let mut kact = 0.;
+            for pos in self.search_cell_box(cell, self.cell_search_scaler) {
+                let mut local_act = self.act_lattice[pos] as u64;
+                let mut owned_neighs = 0;
+                act += local_act;
+                for neigh in self.valid_neighbours(pos) {
+                    if self.cell_lattice[neigh] != self.cell_lattice[pos] {
+                        continue;
+                    }
+                    local_act *= self.act_lattice[neigh] as u64;
+                    owned_neighs += 1;
+                }
+                kact += (local_act as f64).powf(1. / owned_neighs as f64);
+            }
+            act_pairs.push((cell.index, (act, kact)));
+        }
+        for (index, (act, kact)) in act_pairs {
+            let cell = self.cells.get_cell_mut(index);
+            cell.tot_act = act as u32;
+            cell.tot_kact = kact;
+        }
+    }
+
     fn make_chem_gradient(&mut self, chem_center: Pos<usize>) {
         for pos in self.chem_lattice.iter_positions() {
             let new_chem = self.chem_signal(pos, chem_center);
