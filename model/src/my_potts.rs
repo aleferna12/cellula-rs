@@ -10,7 +10,6 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
-use rand_distr::num_traits::Pow;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
