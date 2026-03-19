@@ -1,3 +1,4 @@
+use std::f64::consts::E;
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
 use bon::bon;
@@ -112,23 +113,23 @@ impl MyEnvironment {
             let mut act = 0;
             let mut kact = 0.;
             for pos in self.search_cell_box(cell, self.cell_search_scaler) {
-                let mut local_act = self.act_lattice[pos] as u64;
+                act += self.act_lattice[pos];
+                let mut local_act = (self.act_lattice[pos] as f64).ln();
                 let mut owned_neighs = 0;
-                act += local_act;
                 for neigh in self.valid_neighbours(pos) {
                     if self.cell_lattice[neigh] != self.cell_lattice[pos] {
                         continue;
                     }
-                    local_act *= self.act_lattice[neigh] as u64;
+                    local_act += (self.act_lattice[neigh] as f64).ln();
                     owned_neighs += 1;
                 }
-                kact += (local_act as f64).powf(1. / owned_neighs as f64);
+                kact += E.powf(local_act / owned_neighs as f64);
             }
             act_pairs.push((cell.index, (act, kact)));
         }
         for (index, (act, kact)) in act_pairs {
             let cell = self.cells.get_cell_mut(index);
-            cell.tot_act = act as u32;
+            cell.tot_act = act;
             cell.tot_kact = kact;
         }
     }

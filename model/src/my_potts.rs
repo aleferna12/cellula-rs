@@ -1,3 +1,4 @@
+use std::f64::consts::E;
 use crate::bit_adhesion::BitAdhesion;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
@@ -55,16 +56,13 @@ impl MyPotts {
             .valid_neighbours(pos)
             .filter(|&pos| env.cell_lattice[pos] == cell_spin)
             .fold(
-                // Use f64 throughout the calculation to prevent overflow
-                // We can alternatively sum logs instead of calculating the product
-                // This is a bit more costly though
-                (1, env.act_lattice[pos] as f64),
+                (1, (env.act_lattice[pos] as f64).ln()),
                 |(count, product), pos2| {
                     let act = env.act_lattice[pos2];
-                    (count + 1, product * act as f64)
+                    (count + 1, product + (act as f64).ln())
                 }
             );
-        let act = product.pow(1. / count as f64) as f32;
+        let act = E.powf(product / count as f64) as f32;
         if !cfg!(feature = "chem-polarization") {
             return act;
         }
