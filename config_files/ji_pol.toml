@@ -49,7 +49,7 @@ info-period = 50_000
 [io.data]
 cells-period = 1_000
 cells-write-period = 100_000
-lattice-period = 25_000
+lattice-period = 100_000
 
 [io.movie]
 show = false
@@ -69,3 +69,5 @@ chem-min-color = "#000000"
 chem-max-color = "#ffffff"
 act-min-color = "#ff00ff"
 act-max-color = "#ffff00"
+rel-chem-min-color = "#ff00ff"
+rel-chem-max-color = "#ffff00"
