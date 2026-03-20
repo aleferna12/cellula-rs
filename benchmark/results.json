@@ -1,0 +1,36 @@
+{
+  "results": [
+    {
+      "command": "target/fastest/benchmark",
+      "mean": 16.298253270580002,
+      "stddev": null,
+      "median": 16.298253270580002,
+      "user": 16.271031,
+      "system": 0.01491702,
+      "min": 16.298253270580002,
+      "max": 16.298253270580002,
+      "times": [
+        16.298253270580002
+      ],
+      "exit_codes": [
+        0
+      ]
+    },
+    {
+      "command": "morpheus --file benchmark/fixtures/morpheus.xml",
+      "mean": 52.31265132658,
+      "stddev": null,
+      "median": 52.31265132658,
+      "user": 270.534963,
+      "system": 891.77022402,
+      "min": 52.31265132658,
+      "max": 52.31265132658,
+      "times": [
+        52.31265132658
+      ],
+      "exit_codes": [
+        0
+      ]
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 [workspace]
-members = ["cellulars", "model"]
+members = ["benchmark","cellulars", "model"]
 resolver = "3"
 
 # If changing there remember to also change model/Cargo.toml to update the template repo

@@ -39,15 +39,15 @@ impl<A, B> EdgePotts<A, B> {
         &self,
         spin_source: Spin,
         spin_target: Spin,
-        env: &H,
+        hab: &H,
     ) -> FloatType {
         let mut delta_h = 0.;
         if let Spin::Some(cell_index) = spin_source {
-            let rel_cell = &env.env().cells[cell_index];
+            let rel_cell = &hab.env().cells[cell_index];
             delta_h += self.size_energy_diff(true, rel_cell.cell.area(), rel_cell.cell.target_area());
         }
         if let Spin::Some(cell_index) = spin_target {
-            let rel_cell = &env.env().cells[cell_index];
+            let rel_cell = &hab.env().cells[cell_index];
             delta_h += self.size_energy_diff(false, rel_cell.cell.area(), rel_cell.cell.target_area());
         }
         delta_h
@@ -71,11 +71,11 @@ impl<A, B> EdgePotts<A, B> {
         spin_source: Spin,
         spin_target: Spin,
         neigh_spins: impl IntoIterator<Item = Spin>,
-        env: &H,
+        hab: &H,
     ) -> FloatType
     where A: AdhesionSystem<H> {
-        self.delta_hamiltonian_size(spin_source, spin_target, env)
-            + self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, env)
+        self.delta_hamiltonian_size(spin_source, spin_target, hab)
+            + self.delta_hamiltonian_adhesion(spin_source, spin_target, neigh_spins, hab)
     }
 
     /// Returns the energy differential associated with adhesion if `spin_source` were to be copied into `spin_target`.
@@ -84,7 +84,7 @@ impl<A, B> EdgePotts<A, B> {
         spin_source: Spin,
         spin_target: Spin,
         neigh_spins: impl IntoIterator<Item = Spin>,
-        env: &H,
+        hab: &H,
     ) -> FloatType
     where
         A: AdhesionSystem<H> {
@@ -93,12 +93,12 @@ impl<A, B> EdgePotts<A, B> {
             energy -= self.adhesion.adhesion_energy(
                 spin_target,
                 neigh,
-                env
+                hab
             );
             energy += self.adhesion.adhesion_energy(
                 spin_source,
                 neigh,
-                env
+                hab
             );
         }
         energy

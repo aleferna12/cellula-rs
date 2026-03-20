@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<MorpheusModel version="4">
+    <Description>
+        <Title>Cell growth and division</Title>
+        <Details>
+            Cells increase their target volume every 50 MCS and divide when their volume reaches twice the initial target volume.
+        </Details>
+    </Description>
+    <Global>
+        <Constant symbol="init_target_vol" value="100"/>
+        <Constant symbol="growth_increment" value="1"/>
+        <Constant symbol="growth_interval" value="32"/>
+        <Constant symbol="div_threshold" value="200"/>
+        <Constant symbol="max_population" value="2000"/>
+    </Global>
+    <Space>
+        <Lattice class="square">
+            <Size symbol="size" value="1000 1000 0"/>
+            <BoundaryConditions>
+                <Condition type="periodic" boundary="x"/>
+                <Condition type="periodic" boundary="y"/>
+            </BoundaryConditions>
+            <Neighborhood>
+                <Order>1</Order>
+            </Neighborhood>
+        </Lattice>
+        <SpaceSymbol symbol="l"/>
+    </Space>
+    <Time>
+        <StartTime value="0"/>
+        <StopTime value="1000000"/>
+        <StopCondition>
+            <Condition>celltype.cell.size >= max_population</Condition>
+        </StopCondition>
+        <TimeSymbol symbol="t"/>
+    </Time>
+    <CellTypes>
+        <CellType name="medium" class="medium"/>
+        <CellType name="cell" class="biological">
+            <Property symbol="target_vol" value="init_target_vol"/>
+            <VolumeConstraint target="target_vol" strength="4"/>
+            <System solver="euler" time-step="growth_interval">
+                <Rule symbol-ref="target_vol">
+                    <Expression>target_vol + growth_increment</Expression>
+                </Rule>
+            </System>
+            <CellDivision division-plane="random">
+                <Condition>cell.volume >= div_threshold</Condition>
+                <Triggers>
+                    <Rule symbol-ref="target_vol">
+                        <Expression>init_target_vol</Expression>
+                    </Rule>
+                </Triggers>
+            </CellDivision>
+        </CellType>
+    </CellTypes>
+    <CPM>
+        <Interaction>
+            <Contact type2="medium" type1="cell" value="10"/>
+            <Contact type2="cell" type1="cell" value="10"/>
+            <Contact type2="medium" type1="medium" value="0"/>
+        </Interaction>
+        <MonteCarloSampler stepper="edgelist">
+            <MCSDuration value="1"/>
+            <Neighborhood>
+                <Order>1</Order>
+            </Neighborhood>
+            <MetropolisKinetics temperature="10"/>
+        </MonteCarloSampler>
+        <ShapeSurface scaling="classic">
+            <Neighborhood>
+                <Order>1</Order>
+            </Neighborhood>
+        </ShapeSurface>
+    </CPM>
+    <CellPopulations>
+        <Population type="cell" size="1">
+            <InitCellObjects mode="order">
+                <Arrangement repetitions="1, 1, 1" displacements="0, 0, 0">
+                    <Box origin="500, 500, 0" size="10, 10, 0"/>
+                </Arrangement>
+            </InitCellObjects>
+        </Population>
+    </CellPopulations>
+    <Analysis>
+        <Gnuplotter time-step="1000" decorate="true">
+            <Plot>
+                <Cells value="cell.id"/>
+            </Plot>
+            <Terminal name="png"/>
+        </Gnuplotter>
+        <Logger time-step="10000" name="cell_stats">
+            <Input>
+                <Symbol symbol-ref="cell.volume"/>
+                <Symbol symbol-ref="target_vol"/>
+                <Symbol symbol-ref="cell.id"/>
+            </Input>
+            <Output>
+                <TextOutput file-separation="time"/>
+            </Output>
+        </Logger>
+    </Analysis>
+</MorpheusModel>
