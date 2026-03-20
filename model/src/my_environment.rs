@@ -133,6 +133,13 @@ impl MyEnvironment {
             cell.tot_kact = kact;
         }
     }
+    
+    pub fn reset_act(&mut self) {
+        for cell in self.cells.iter_mut() {
+            cell.tot_act = 0;
+            cell.tot_kact = 0.;
+        }
+    }
 
     fn make_chem_gradient(&mut self, chem_center: Pos<usize>) {
         for pos in self.chem_lattice.iter_positions() {

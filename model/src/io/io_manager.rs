@@ -330,6 +330,7 @@ impl IoManager {
                 .with_column(Series::new("time".into(), vec![time_step; celldf.height()]))
                 .with_context(|| "failed to add time column to cell data frame")?;
             self.celldfs.push(celldf.lazy());
+            env.reset_act();
         }
 
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
