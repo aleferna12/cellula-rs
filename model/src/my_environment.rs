@@ -115,7 +115,7 @@ impl MyEnvironment {
             for pos in self.search_cell_box(cell, self.cell_search_scaler) {
                 act += self.act_lattice[pos];
                 let mut local_act = (self.act_lattice[pos] as f64).ln();
-                let mut owned_neighs = 0;
+                let mut owned_neighs = 1;
                 for neigh in self.valid_neighbours(pos) {
                     if self.cell_lattice[neigh] != self.cell_lattice[pos] {
                         continue;
