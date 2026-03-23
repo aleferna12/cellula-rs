@@ -11,11 +11,11 @@
         <Constant symbol="growth_increment" value="1"/>
         <Constant symbol="growth_interval" value="32"/>
         <Constant symbol="div_threshold" value="200"/>
-        <Constant symbol="max_population" value="2000"/>
+        <Constant symbol="max_population" value="100"/>
     </Global>
     <Space>
         <Lattice class="square">
-            <Size symbol="size" value="1000 1000 0"/>
+            <Size symbol="size" value="lat_size lat_size 0"/>
             <BoundaryConditions>
                 <Condition type="periodic" boundary="x"/>
                 <Condition type="periodic" boundary="y"/>
@@ -77,13 +77,13 @@
         <Population type="cell" size="1">
             <InitCellObjects mode="order">
                 <Arrangement repetitions="1, 1, 1" displacements="0, 0, 0">
-                    <Box origin="500, 500, 0" size="10, 10, 0"/>
+                    <Box origin="size.x/2, size.y/2, 0" size="10, 10, 0"/>
                 </Arrangement>
             </InitCellObjects>
         </Population>
     </CellPopulations>
     <Analysis>
-        <Gnuplotter time-step="1000" decorate="true">
+        <Gnuplotter time-step="10000" decorate="true">
             <Plot>
                 <Cells value="cell.id"/>
             </Plot>

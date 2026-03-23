@@ -8,3 +8,4 @@ cellulars = { path = "../cellulars" }
 image = "0.25.10"
 rand = "0.10.0"
 rand_xoshiro = "0.8.0"
+serde = { version = "1.0.228", features = ["derive"] }

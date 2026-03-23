@@ -1,26 +1,42 @@
+use std::env::args;
+use std::fs::{create_dir_all, File};
 use cellulars::io::write::image::plot::{BorderPlot, Plot, SpinPlot};
 use cellulars::prelude::*;
 use image::RgbaImage;
 use rand::{RngExt, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
+use cellulars::io::write::parquet_writer::ParquetWriter;
+use cellulars::io::write::write_trait::Write;
+use serde::{Deserialize, Serialize};
 
-const W: usize = 1000;
-const H: usize = 1000;
-const SIDE: u32 = 10;
+const CELL_SIDE: u32 = 10;
 const GROWTH_PERIOD: u32 = 32;
-const SAVE_PERIOD: u32 = 1_000;
-const MAX_POP: u32 = 2000;
+const SAVE_PERIOD: u32 = 10_000;
 
 pub fn main() {
+    let args = args().collect::<Box<[_]>>();
+    let max_pop = args
+        .get(1)
+        .expect("not enough arguments (expected two)")
+        .parse::<u32>()
+        .expect("failed to parse argument #1 into a `u32`");
+    let lat_size: usize = args
+        .get(2)
+        .expect("not enough arguments (expected two)")
+        .parse()
+        .expect("failed to parse argument #2 into a `usize`");
+    let run_dir = format!("benchmark/out/cellulars/{max_pop}/{lat_size}");
+    create_dir_all(&run_dir).expect(&format!("failed to create sim dir at: {run_dir}"));
+
     let mut pond = Pond {
         env: Environment::new(
             cell_container![],
-            Lattice::new(W, H),
+            Lattice::new(lat_size, lat_size),
             MooreNeighborhood::new(1),
             Boundaries::new(FastPeriodicBoundary::new(
                 Rect::new(
                     Pos::new(0., 0.),
-                    Pos::new(W as f64, H as f64),
+                    Pos::new(lat_size as f64, lat_size as f64),
                 )
             ))
         ),
@@ -40,12 +56,12 @@ pub fn main() {
     };
 
     let cell_rect = Rect::new(
-        Pos::new(W / 2, H / 2),
-        Pos::new(W / 2 + SIDE as usize, H / 2 + SIDE as usize),
+        Pos::new(lat_size / 2, lat_size / 2),
+        Pos::new(lat_size / 2 + CELL_SIDE as usize, lat_size / 2 + CELL_SIDE as usize),
     );
-    pond.env.spawn_cell(DividingCell::new_empty(SIDE * SIDE), cell_rect.iter_positions());
+    pond.env.spawn_cell(DividingCell::new_empty(CELL_SIDE * CELL_SIDE), cell_rect.iter_positions());
 
-    let mut image = RgbaImage::new(W as u32, H as u32);
+    let mut image = RgbaImage::new(lat_size as u32, lat_size as u32);
     let spin_plot = SpinPlot {
         solid_color: Default::default(),
         medium_color: None
@@ -55,15 +71,22 @@ pub fn main() {
     };
 
     for step in 0..1_000_000u32 {
-        if pond.env.cells.n_cells() >= MAX_POP {
+        if pond.env.cells.n_cells() >= max_pop {
             println!("Population size reached {} on time step {step}", pond.env.cells.n_cells());
             break;
         }
         if step.is_multiple_of(SAVE_PERIOD) {
             println!("{step}: {} cells", pond.env.cells.n_cells());
+
+            let writer = File::create(format!("{run_dir}/data{step}.parquet"))
+                .expect("failed to open output file");
+            ParquetWriter { writer, overwrites: vec![] }
+                .write(&pond.env.cells)
+                .expect("failed to write cells");
+
             spin_plot.plot(&mut pond.env, &mut image);
             border_plot.plot(&mut pond.env, &mut image);
-            let res = image.save(format!("benchmark/out/cellulars/{step}.png"));
+            let res = image.save(format!("{run_dir}/img{step}.png"));
             if let Err(e) = res {
                 println!("Failed to save image with error: {e}");
             };
@@ -74,6 +97,7 @@ pub fn main() {
     println!("Reached end of simulation");
 }
 
+#[derive(Serialize, Deserialize)]
 struct DividingCell {
     newborn_target_area: u32,
     cell: Cell
@@ -182,7 +206,7 @@ impl Step for Pond {
         let mut to_divide = vec![];
         for rel_cell in self.env.cells.iter_non_empty() {
             // If they have grown enough, it's time to divide!
-            if rel_cell.cell.cell.area() > SIDE * SIDE * 2 {
+            if rel_cell.cell.cell.area() > CELL_SIDE * CELL_SIDE * 2 {
                 to_divide.push(rel_cell.index);
             }
         }

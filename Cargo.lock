@@ -448,6 +448,7 @@ dependencies = [
  "image",
  "rand 0.10.0",
  "rand_xoshiro",
+ "serde",
 ]
 
 [[package]]
