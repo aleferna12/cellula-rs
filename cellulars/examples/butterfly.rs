@@ -6,7 +6,7 @@ use rand::rngs::ThreadRng;
 
 const W: usize = 500;
 const H: usize = 500;
-const SIDE: usize = 210;
+const SIDE: usize = 215;
 
 fn main() -> Result<(), minifb::Error> {
     // Initialize periodic boundary conditions
@@ -46,7 +46,7 @@ fn main() -> Result<(), minifb::Error> {
             medium_energy: 10.,
             solid_energy: 10.
         },
-        bias: Biases { shape_lambda: 100. }
+        bias: Biases { shape_lambda: 10. }
     };
     let mut rng = ThreadRng::default();
     let spin_plot = SpinPlot {
