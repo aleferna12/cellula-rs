@@ -1,14 +1,14 @@
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
-| `morpheus --file benchmark/fixtures/dyn/morpheus_1000.xml --outdir benchmark/out/morpheus/64/1000 --set max_population=64` | 2.511 ± 0.070 | 2.435 | 2.629 | 5.01 ± 1.93 |
-| `target/fastest/benchmark 64 1000` | 0.501 ± 0.192 | 0.439 | 1.049 | 1.00 |
-| `morpheus --file benchmark/fixtures/dyn/morpheus_1000.xml --outdir benchmark/out/morpheus/128/1000 --set max_population=128` | 4.267 ± 0.135 | 4.095 | 4.571 | 8.51 ± 3.28 |
-| `target/fastest/benchmark 128 1000` | 0.828 ± 0.005 | 0.820 | 0.836 | 1.65 ± 0.63 |
-| `morpheus --file benchmark/fixtures/dyn/morpheus_1000.xml --outdir benchmark/out/morpheus/256/1000 --set max_population=256` | 7.604 ± 0.150 | 7.398 | 7.827 | 15.17 ± 5.83 |
-| `target/fastest/benchmark 256 1000` | 1.581 ± 0.012 | 1.567 | 1.612 | 3.15 ± 1.21 |
-| `morpheus --file benchmark/fixtures/dyn/morpheus_1000.xml --outdir benchmark/out/morpheus/512/1000 --set max_population=512` | 14.097 ± 0.363 | 13.570 | 14.839 | 28.12 ± 10.82 |
-| `target/fastest/benchmark 512 1000` | 3.108 ± 0.046 | 3.043 | 3.211 | 6.20 ± 2.38 |
-| `morpheus --file benchmark/fixtures/dyn/morpheus_1000.xml --outdir benchmark/out/morpheus/1024/1000 --set max_population=1024` | 63.682 ± 40.304 | 26.599 | 129.021 | 127.01 ± 94.02 |
-| `target/fastest/benchmark 1024 1000` | 7.796 ± 1.042 | 6.902 | 10.662 | 15.55 ± 6.32 |
-| `morpheus --file benchmark/fixtures/dyn/morpheus_1000.xml --outdir benchmark/out/morpheus/2048/1000 --set max_population=2048` | 149.659 ± 17.502 | 128.871 | 173.127 | 298.49 ± 119.79 |
-| `target/fastest/benchmark 2048 1000` | 15.328 ± 0.876 | 14.470 | 17.017 | 30.57 ± 11.87 |
+| `morpheus --file benchmark/fixtures/dyn/morpheus_500.xml --outdir benchmark/out/morpheus/32/500 --set max_population=32` | 2.194 ± 0.085 | 2.141 | 2.548 | 8.45 ± 0.34 |
+| `target/fastest/benchmark 32 500` | 0.260 ± 0.003 | 0.255 | 0.267 | 1.00 |
+| `morpheus --file benchmark/fixtures/dyn/morpheus_500.xml --outdir benchmark/out/morpheus/64/500 --set max_population=64` | 2.970 ± 0.029 | 2.924 | 3.051 | 11.44 ± 0.18 |
+| `target/fastest/benchmark 64 500` | 0.494 ± 0.004 | 0.488 | 0.502 | 1.90 ± 0.03 |
+| `morpheus --file benchmark/fixtures/dyn/morpheus_500.xml --outdir benchmark/out/morpheus/128/500 --set max_population=128` | 4.398 ± 0.062 | 4.337 | 4.571 | 16.93 ± 0.31 |
+| `target/fastest/benchmark 128 500` | 0.949 ± 0.010 | 0.929 | 0.971 | 3.65 ± 0.06 |
+| `morpheus --file benchmark/fixtures/dyn/morpheus_500.xml --outdir benchmark/out/morpheus/256/500 --set max_population=256` | 7.232 ± 0.174 | 7.047 | 7.599 | 27.84 ± 0.75 |
+| `target/fastest/benchmark 256 500` | 1.827 ± 0.022 | 1.801 | 1.894 | 7.03 ± 0.12 |
+| `morpheus --file benchmark/fixtures/dyn/morpheus_500.xml --outdir benchmark/out/morpheus/512/500 --set max_population=512` | 13.987 ± 0.762 | 12.691 | 14.983 | 53.86 ± 3.01 |
+| `target/fastest/benchmark 512 500` | 3.628 ± 0.121 | 3.526 | 3.997 | 13.97 ± 0.50 |
+| `morpheus --file benchmark/fixtures/dyn/morpheus_500.xml --outdir benchmark/out/morpheus/1024/500 --set max_population=1024` | 28.672 ± 1.912 | 25.826 | 32.755 | 110.40 ± 7.48 |
+| `target/fastest/benchmark 1024 500` | 7.494 ± 0.180 | 7.270 | 7.843 | 28.85 ± 0.77 |

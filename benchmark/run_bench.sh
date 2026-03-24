@@ -22,7 +22,7 @@ hyperfine \
   --parameter-list size "$lat_sizes" \
   --export-markdown benchmark/results.md \
   --export-json benchmark/results.json \
-  'morpheus --file benchmark/fixtures/dyn/morpheus_{size}.xml --outdir benchmark/out/morpheus/{max_pop}/{size} --set max_population={max_pop}' \
+  'OMP_NUM_THREADS=32 morpheus --file benchmark/fixtures/dyn/morpheus_{size}.xml --outdir benchmark/out/morpheus/{max_pop}/{size} --set max_population={max_pop}' \
   'target/fastest/benchmark {max_pop} {size}'
 
 echo plotting results

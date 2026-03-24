@@ -108,3 +108,16 @@ cargo run --example basic
 ```
 
 to check everything is working.
+
+### Benchmarks:
+
+<iframe 
+src="https://github.com/aleferna12/cellula-rs/blob/master/benchmark/results.html" 
+width="100%" 
+height="400px" 
+title="Embedded HTML Demo" sandbox="allow-scripts">
+</iframe>
+
+This benchmark was run on Ubuntu 24.04 machine using the x86_64 instruction set with a 
+13th Gen Intel® Core™ i9-13900K × 32 processor. The [Morpheus](https://morpheus.gitlab.io/) example was run using 32
+threads.
