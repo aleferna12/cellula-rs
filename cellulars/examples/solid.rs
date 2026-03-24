@@ -11,7 +11,6 @@ const H: usize = 400;
 const SIDE: usize = 50;
 
 fn main() -> Result<(), minifb::Error> {
-    // Initialize fixed boundary conditions so that the cell can collide with the wall
     let boundary = FastPeriodicBoundary::new(Rect::new(
         Pos::new(0., 0.),
         Pos::new(W as f64, H as f64)
@@ -31,11 +30,16 @@ fn main() -> Result<(), minifb::Error> {
     env.spawn_cell(Cell::new_empty(cell_rect.area() as u32), cell_rect.iter_positions());
 
     // Spawn the object against which the cell will collide
-    let solid_rect = Rect::new(
-        Pos::new(W - 10, 0),
-        Pos::new(W, H)
+    let top_wall = Rect::new(
+        Pos::new(2 * W / 3, 0),
+        Pos::new(2 * W / 3 + 10, H / 2 - 8)
     );
-    env.spawn_solid(solid_rect.iter_positions());
+    let bot_wall = Rect::new(
+        Pos::new(2 * W / 3, H / 2 + 8),
+        Pos::new(2 * W / 3 + 10, H)
+    );
+    env.spawn_solid(top_wall.iter_positions());
+    env.spawn_solid(bot_wall.iter_positions());
 
     // Initialize the Potts algorithm used to update the environment
     let mut potts = EdgePotts {
