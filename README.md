@@ -9,8 +9,7 @@ It currently runs on a single thread and achieves high performance using algorit
 Monte Carlo sampling method used traditionally for CPM.
 In the near future, the main step function will be parallelized for an even larger speed-up (stay tuned).
 
-Features currently include:
-- Flexible and performant implementation of CPM (C).    
+Features currently include:   
 - Plotting API to display information about the simulation (C).
 - Real-time movie inspection of the simulation (C).
 - Implementations of multiple boundary and neighborhood conditions (C).
