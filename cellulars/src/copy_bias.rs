@@ -38,7 +38,7 @@ impl<C> CopyBias<C> for NoBias {
 pub struct ChemotaxisBias {
     /// Strength of the chemotaxis constraint on the energy functional.
     pub lambda: FloatType,
-    pub dir_params: DirectionalOptions
+    pub dir_options: DirectionalOptions
 }
 
 impl CopyBias<ChemContext<'_>> for ChemotaxisBias {
@@ -47,7 +47,7 @@ impl CopyBias<ChemContext<'_>> for ChemotaxisBias {
             context.cell_lattice[pos_source],
             context.cell_lattice[pos_target],
             -self.lambda * (context.chem_lattice[pos_target] - context.chem_lattice[pos_source]),
-            &self.dir_params
+            &self.dir_options
         )
     }
 }
@@ -65,7 +65,7 @@ pub struct DirectionBias<B> {
     pub lambda: FloatType,
     /// Boundary conditions used to evaluate directionality.
     pub boundary: B,
-    pub dir_params: DirectionalOptions
+    pub dir_options: DirectionalOptions
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -88,7 +88,7 @@ impl<B: Boundary<Coord = FloatType>> CopyBias<DirectionContext<'_>> for Directio
             context.cell_lattice[pos_source],
             context.cell_lattice[pos_target],
             -self.lambda * (context.angle - angle_pos).cos(),
-            &self.dir_params
+            &self.dir_options
         )
     }
 }

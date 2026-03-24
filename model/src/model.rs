@@ -237,7 +237,12 @@ impl Model {
             },
             bias: Biases {
                 chem_bias: ChemotaxisBias {
-                    lambda: parameters.potts.chemotaxis_mu
+                    lambda: parameters.potts.chemotaxis_mu,
+                    dir_options: DirectionalOptions {
+                        protrusions: true,
+                        retractions: true,
+                        contact_inhibition: false,
+                    }
                 },
             },
             boltz_t: parameters.potts.boltz_t,

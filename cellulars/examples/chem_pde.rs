@@ -43,7 +43,7 @@ fn main() -> Result<(), minifb::Error> {
             bias: Biases {
                 chem_bias: ChemotaxisBias {
                     lambda: 50.,
-                    dir_params: DirectionalOptions {
+                    dir_options: DirectionalOptions {
                         protrusions: true,
                         retractions: true,
                         contact_inhibition: false

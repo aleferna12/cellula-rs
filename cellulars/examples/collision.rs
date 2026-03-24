@@ -50,7 +50,7 @@ fn main() -> Result<(), minifb::Error> {
             dir: DirectionBias {
                 // Crank this value up to see some wacky physics
                 lambda: 10.,
-                dir_params: DirectionalOptions {
+                dir_options: DirectionalOptions {
                     protrusions: true,
                     retractions: true,
                     contact_inhibition: false
