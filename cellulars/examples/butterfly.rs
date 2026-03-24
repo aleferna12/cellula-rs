@@ -14,7 +14,7 @@ fn main() -> Result<(), minifb::Error> {
         Pos::new(0., 0.),
         Pos::new(W as f64, H as f64)
     ));
-    let img = ImageReader::open("static/butterfly.png")
+    let img = ImageReader::open("data/butterfly.png")
         .expect("failed to open img file")
         .decode()
         .expect("failed to decode img")
