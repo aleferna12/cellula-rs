@@ -115,9 +115,7 @@ Execution time (wall-clock time) against [Morpheus](https://morpheus.gitlab.io/)
 
 ![benchmark](https://github.com/aleferna12/cellula-rs/blob/master/benchmark/results.svg)
 
-Summary:
-
-Cellulars was on average ~4 times faster:
+In summary, cellulars was on average ~4 times faster:
 
 | Command   | Mean [s] | Min [s] | Max [s] |
 |:----------|---:|---:|---:|
