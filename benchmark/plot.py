@@ -15,9 +15,11 @@ for run in results:
         stats[param].append(run["parameters"][param])
     stats["mean"].append(run["mean"])
     stats["stddev"].append(run["stddev"])
-    command = run["command"].split(" ")[0]
-    if command.startswith("target"):
+    command = run["command"]
+    if "target/fastest" in command:
         command = "cellulars"
+    elif "morpheus" in command:
+        command = "morpheus"
     stats["framework"].append(command)
 
 fig = px.line(

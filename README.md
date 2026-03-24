@@ -111,8 +111,19 @@ to check everything is working.
 
 ### Benchmarks:
 
+Execution time (wall-clock time) against [Morpheus](https://morpheus.gitlab.io/). Lower is better.
+
 ![benchmark](https://github.com/aleferna12/cellula-rs/blob/master/benchmark/results.svg)
 
-This benchmark was run on Ubuntu 24.04 machine using the x86_64 instruction set with a 
-13th Gen Intel® Core™ i9-13900K × 32 processor. The [Morpheus](https://morpheus.gitlab.io/) example was run using 32
+Summary:
+
+Cellulars was on average ~4 times faster:
+
+| Command   | Mean [s] | Min [s] | Max [s] |
+|:----------|---:|---:|---:|
+| cellulars | 7.494 ± 0.180 | 7.270 | 7.843 |
+| morpheus  | 28.672 ± 1.912 | 25.826 | 32.755 |
+
+This benchmark was run on an Ubuntu 24.04 machine with a 
+13th Gen Intel® Core™ i9-13900K × 32 processor. The Morpheus example was run using 32
 threads.
