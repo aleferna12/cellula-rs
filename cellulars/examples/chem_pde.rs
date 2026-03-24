@@ -41,7 +41,14 @@ fn main() -> Result<(), minifb::Error> {
                 solid_energy: 10.,
             },
             bias: Biases {
-                chem_bias: ChemotaxisBias { lambda: 50. },
+                chem_bias: ChemotaxisBias {
+                    lambda: 50.,
+                    dir_params: DirectionalOptions {
+                        protrusions: true,
+                        retractions: true,
+                        contact_inhibition: false
+                    }
+                },
             }
         },
         rng: Default::default(),
@@ -140,7 +147,13 @@ struct Biases {
 
 impl CopyBias<ChemEnvironment> for Biases {
     fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &ChemEnvironment) -> f64 {
-        self.chem_bias.bias(pos_source, pos_target, &env.current_chem)
+        self.chem_bias.bias(
+            pos_source,
+            pos_target,
+            &ChemContext {
+                cell_lattice: &env.env.cell_lattice,
+                chem_lattice: &env.current_chem
+            })
     }
 }
 

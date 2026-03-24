@@ -16,7 +16,7 @@ pub use crate::positional::rect::Rect;
 pub use crate::spin::Spin;
 pub use crate::static_adhesion::StaticAdhesion;
 pub use crate::symmetric_table::SymmetricTable;
-pub use crate::copy_bias::{CopyBias, NoBias, ChemotaxisBias};
+pub use crate::copy_bias::{CopyBias, NoBias, ChemotaxisBias, ChemContext, DirectionBias, DirectionContext, DirectionalOptions};
 pub use crate::potts::{Potts, EdgePotts};
 pub use crate::traits::adhesion_system::AdhesionSystem;
 pub use crate::traits::cellular::{Alive, Cellular, HasCenter};

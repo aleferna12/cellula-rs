@@ -13,7 +13,7 @@
 
 use crate::constants::FloatType;
 use crate::lattice::Lattice;
-use crate::prelude::{Boundary, Pos};
+use crate::prelude::{Boundary, Pos, Spin};
 
 /// Defines a bias in the energy functional.
 pub trait CopyBias<C> {
@@ -37,13 +37,25 @@ impl<C> CopyBias<C> for NoBias {
 /// Bias copies towards the source of a chemical stored in a [`Lattice<FloatType>`].
 pub struct ChemotaxisBias {
     /// Strength of the chemotaxis constraint on the energy functional.
-    pub lambda: FloatType
+    pub lambda: FloatType,
+    pub dir_params: DirectionalOptions
 }
 
-impl CopyBias<Lattice<FloatType>> for ChemotaxisBias {
-    fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, chem_lattice: &Lattice<FloatType>) -> FloatType {
-        -self.lambda * (chem_lattice[pos_target] - chem_lattice[pos_source])
+impl CopyBias<ChemContext<'_>> for ChemotaxisBias {
+    fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, context: &ChemContext) -> FloatType {
+        directional_bias(
+            context.cell_lattice[pos_source],
+            context.cell_lattice[pos_target],
+            -self.lambda * (context.chem_lattice[pos_target] - context.chem_lattice[pos_source]),
+            &self.dir_params
+        )
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ChemContext<'a> {
+    pub cell_lattice: &'a Lattice<Spin>,
+    pub chem_lattice: &'a Lattice<FloatType>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -51,7 +63,15 @@ impl CopyBias<Lattice<FloatType>> for ChemotaxisBias {
 pub struct DirectionBias<B> {
     /// Strength of the chemotaxis constraint on the energy functional.
     pub lambda: FloatType,
-    pub boundary: B
+    /// Boundary conditions used to evaluate directionality.
+    pub boundary: B,
+    pub dir_params: DirectionalOptions
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DirectionContext<'a> {
+    pub cell_lattice: &'a Lattice<Spin>,
+    pub angle: FloatType,
 }
 
 impl<B: Boundary<Coord = FloatType>> DirectionBias<B> {
@@ -61,9 +81,46 @@ impl<B: Boundary<Coord = FloatType>> DirectionBias<B> {
     }
 }
 
-impl<B: Boundary<Coord = FloatType>> CopyBias<FloatType> for DirectionBias<B> {
-    fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, angle: &FloatType) -> FloatType {
+impl<B: Boundary<Coord = FloatType>> CopyBias<DirectionContext<'_>> for DirectionBias<B> {
+    fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, context: &DirectionContext<'_>) -> FloatType {
         let angle_pos = self.angle_from_positions(pos_source.cast_as(), pos_target.cast_as());
-        -self.lambda * (angle - angle_pos).cos()
+        directional_bias(
+            context.cell_lattice[pos_source],
+            context.cell_lattice[pos_target],
+            -self.lambda * (context.angle - angle_pos).cos(),
+            &self.dir_params
+        )
     }
+}
+
+/// Parameters determining how to handle directional biases. 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DirectionalOptions {
+    /// Whether cell protrusions count towards the energy functional.
+    pub protrusions: bool,
+    /// Whether cell retractions count towards the energy functional.
+    pub retractions: bool,
+    /// Whether cell protrusions/retractions should be discarded if the target position is not the medium.
+    pub contact_inhibition: bool,
+}
+
+fn directional_bias(
+    spin_source: Spin,
+    spin_target: Spin,
+    energy_diff: FloatType,
+    dir_params: &DirectionalOptions
+) -> FloatType {
+    if dir_params.contact_inhibition
+        && !matches!(spin_source, Spin::Medium)
+        && !matches!(spin_target, Spin::Medium) {
+        return 0.;
+    }
+    let mut energy = 0.;
+    if dir_params.protrusions && matches!(spin_source, Spin::Some(_)) {
+        energy += energy_diff;
+    }
+    if dir_params.retractions && matches!(spin_target, Spin::Some(_)) {
+        energy += energy_diff;
+    }
+    energy
 }

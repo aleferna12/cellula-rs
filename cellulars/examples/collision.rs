@@ -50,6 +50,11 @@ fn main() -> Result<(), minifb::Error> {
             dir: DirectionBias {
                 // Crank this value up to see some wacky physics
                 lambda: 10.,
+                dir_params: DirectionalOptions {
+                    protrusions: true,
+                    retractions: true,
+                    contact_inhibition: false
+                },
                 boundary,
             }
         }
@@ -79,8 +84,14 @@ struct Biases {
 }
 
 impl CopyBias<Environment<Cell>> for Biases {
-    fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, _context: &Environment<Cell>) -> FloatType {
+    fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, context: &Environment<Cell>) -> FloatType {
         // The cell is commited to going to the right
-        self.dir.bias(pos_source, pos_target, &0.0f64.to_radians())
+        self.dir.bias(
+            pos_source,
+            pos_target,
+            &DirectionContext{
+                cell_lattice: &context.cell_lattice,
+                angle: 0.0f64.to_radians()
+            })
     }
 }
