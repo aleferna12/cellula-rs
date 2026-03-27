@@ -169,9 +169,7 @@ fn filter_neighs(
         return None;
     };
     Some(neighborhood.neighbours(pos.to_isize()).filter_map(move |neigh| {
-        let Some(valid_neigh) = bound.valid_pos(neigh) else {
-            return None;
-        };
+        let valid_neigh = bound.valid_pos(neigh)?;
         let neigh_spin = clat[valid_neigh.to_usize()];
         if let Spin::Some(neighbor_index) = neigh_spin && cell_index == neighbor_index {
             return None;
