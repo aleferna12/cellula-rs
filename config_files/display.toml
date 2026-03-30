@@ -42,7 +42,7 @@ gene-energy = 0.0
 [io]
 outdir = "runs/display"
 replace-outdir = true
-image-period = 1_000
+image-period = 100
 image-format = "webp"
 info-period = 50_000
 
@@ -66,7 +66,7 @@ area-min-color = "#ff00ff"
 area-max-color = "#ffff00"
 chem-min-color = "#000000"
 chem-max-color = "#ffffff"
-act-min-color = "#298D80"
-act-max-color = "#FA9F6A"
-rel-chem-min-color = "#ee00ee"
-rel-chem-max-color = "#eeee00"
+act-min-color = "#245668"
+act-max-color = "#edef5d"
+rel-chem-min-color = "#fcde9c"
+rel-chem-max-color = "#4b2991"
