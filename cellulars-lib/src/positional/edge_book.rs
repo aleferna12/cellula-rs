@@ -38,6 +38,10 @@ impl EdgeBook {
     pub fn random_index(&self, rng: &mut impl Rng) -> usize {
         rng.random_range(0..self.edge_set.len())
     }
+    
+    pub fn iter(&self) -> impl Iterator<Item=&Edge> {
+        self.edge_set.iter()
+    }
 }
 
 impl Default for EdgeBook {

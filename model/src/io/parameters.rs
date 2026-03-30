@@ -228,6 +228,8 @@ pub struct PlotParameters {
     pub act_max_color: String,
     pub rel_chem_min_color: String,
     pub rel_chem_max_color: String,
+    #[serde(default = "param_defaults::zero")]
+    pub rel_chem_time_step: u32
 }
 
 #[derive(Serialize, Deserialize, Clone, EnumIter, Debug)]
@@ -247,6 +249,7 @@ pub enum PlotType {
 mod param_defaults {
     pub fn false_flag() -> bool { false }
     pub fn true_flag() -> bool { true }
+    pub fn zero() -> u32 { 0 }
     pub fn webp() -> String { "webp".to_string() }
 }
 

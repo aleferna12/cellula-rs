@@ -153,7 +153,11 @@ pub fn neighbour_map(
     clat: PyDataFrame
 ) -> PyResult<HashMap<String, Vec<String>>> {
     let clat = into_spin_lat(clat).map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let nmap = clat.neighbour_map();
+    let rect = Rect::new(
+        clat.rect.min.to_isize(),
+        clat.rect.max.to_isize()
+    );
+    let nmap = clat.neighbour_map(&FixedBoundary::new(rect));
     Ok(HashMap::from_iter(nmap.into_iter().map(|(k, v)| {
         (spin_to_str(k), v.into_iter().map(|v| v.to_string()).collect())
     })))

@@ -1,6 +1,6 @@
 //! Contains logic associated with [Lattice].
 
-use crate::positional::boundaries::{Boundary, FixedBoundary};
+use crate::positional::boundaries::Boundary;
 use crate::positional::neighbourhood::{MooreNeighbourhood, Neighbourhood};
 use crate::positional::pos::Pos;
 use crate::positional::rect::Rect;
@@ -221,18 +221,14 @@ impl<T> IndexMut<Pos<usize>> for Lattice<T> {
 }
 
 impl Lattice<Spin> {
-    pub fn neighbour_map(&self) -> HashMap<Spin, HashSet<Spin>> {
+    pub fn neighbour_map(&self, boundary: &impl Boundary<Coord=isize>) -> HashMap<Spin, HashSet<Spin>> {
         let mut neigh_map = HashMap::new();
         let neighborhood = MooreNeighbourhood::new(1);
-        let bound = FixedBoundary::new(Rect::new(
-            self.rect.min.to_isize(),
-            self.rect.max.to_isize()
-        ));
         for pos in self.iter_positions() {
             let spin = self[pos];
             let entry = neigh_map.entry(spin).or_insert_with(HashSet::new);
             for neigh in neighborhood.neighbours(pos.to_isize()) {
-                let Some(valid_neigh) = bound.valid_pos(neigh) else {
+                let Some(valid_neigh) = boundary.valid_pos(neigh) else {
                     continue;
                 };
                 let lat_neigh = valid_neigh.to_usize();

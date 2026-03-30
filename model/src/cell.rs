@@ -1,12 +1,12 @@
-use std::collections::HashSet;
+use crate::evolution::bit_genome::BitGenome;
 use crate::evolution::selector::Fit;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
-use std::ops::{Deref, DerefMut};
 use cellulars_lib::spin::Spin;
-use crate::evolution::bit_genome::BitGenome;
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug)]
 pub struct Cell {
@@ -19,11 +19,13 @@ pub struct Cell {
     pub genome: BitGenome,
     pub ancestor: Option<CellIndex>,
     // This is only updated before saving data, so may contain outdated information
-    pub neighbors: HashSet<Spin>,
+    pub neighbors: HashMap<Spin, u32>,
     // This is only updated before saving data, so may contain outdated information
     pub tot_act: u32,
     // This is only updated before saving data, so may contain outdated information
     pub tot_kact: f64,
+    // This is only updated before saving data, so may contain outdated information
+    pub rel_chem: f32,
 }
 
 impl Cell {
@@ -36,9 +38,10 @@ impl Cell {
             delta_perimeter: None,
             perimeter: 0,
             ancestor: None,
-            neighbors: HashSet::new(),
+            neighbors: HashMap::new(),
             tot_act: 0,
             tot_kact: 0.,
+            rel_chem: 0.0,
             target_perimeter,
             genome
         }

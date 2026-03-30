@@ -164,6 +164,7 @@ pub struct CellTypePlot {
 pub struct RelChemPlot {
     pub min_color: Lchuv,
     pub max_color: Lchuv,
+    pub frozen: bool,
 }
 
 impl Plot for RelChemPlot {
@@ -189,7 +190,11 @@ impl Plot for RelChemPlot {
             };
             let cell = env.cells.get_cell(cell_index);
             let cell_chem = cell.chem_mass as f32 / cell.area as f32;
-            let color = self.lerp(cell_chem, min, max);
+            let color = if self.frozen {
+                self.lerp(cell.rel_chem, 0., 1.)
+            } else {
+                self.lerp(cell_chem, min, max)
+            };
             match color {
                 Ok(c) => image.put_pixel(
                     pos.x as u32,
@@ -384,7 +389,8 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                 }),
                 PlotType::RelChem => Box::new(RelChemPlot {
                     min_color: srgb_to_lchuv(hex_to_srgb(&params.rel_chem_min_color)?),
-                    max_color: srgb_to_lchuv(hex_to_srgb(&params.rel_chem_max_color)?)
+                    max_color: srgb_to_lchuv(hex_to_srgb(&params.rel_chem_max_color)?),
+                    frozen: params.rel_chem_time_step != 0
                 }),
             };
             plots.push(plot);

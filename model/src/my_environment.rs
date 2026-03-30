@@ -96,14 +96,44 @@ impl MyEnvironment {
         self.max_chem - Self::distance(pos, chem_center).round() as u32
     }
 
-    pub fn update_neighbours(&mut self) {
-        let neighmap = self.cell_lattice.neighbour_map();
-        for (spin, neighs) in neighmap {
-            let Spin::Some(cell_index) = spin else {
+    pub fn update_rel_chem(&mut self) {
+        let mut min = f32::INFINITY;
+        let mut max = 0.;
+        for rel_cell in self.env.cells.iter() {
+            if !rel_cell.is_valid() {
                 continue;
-            };
-            let cell = self.cells.get_cell_mut(cell_index);
-            cell.neighbors = neighs;
+            }
+            let cell_chem = rel_cell.cell.chem_mass as f32 / rel_cell.cell.area as f32;
+            if cell_chem < min {
+                min = cell_chem;
+            }
+            if cell_chem > max {
+                max = cell_chem;
+            }
+        }
+        for rel_cell in self.env.cells.iter_mut() {
+            let cell_chem = rel_cell.cell.chem_mass as f32 / rel_cell.cell.area as f32;
+            rel_cell.rel_chem = (cell_chem - min) / (max - min);
+        }
+    }
+
+    pub fn update_neighbours(&mut self) {
+        for rel_cell in self.cells.iter_mut() {
+            rel_cell.neighbors.clear();
+        }
+        for edge in self.env.edge_book.iter().cloned() {
+            let spin1: Spin = self.cell_lattice[edge.p1];
+            let spin2: Spin = self.cell_lattice[edge.p2];
+            if let Spin::Some(cell_index) = spin1 {
+                let rel_cell = self.env.cells.get_cell_mut(cell_index);
+                let entry = rel_cell.neighbors.entry(spin2).or_insert(0);
+                *entry += 1;
+            }
+            if let Spin::Some(cell_index) = spin2 {
+                let rel_cell = self.env.cells.get_cell_mut(cell_index);
+                let entry = rel_cell.neighbors.entry(spin1).or_insert(0);
+                *entry += 1;
+            }
         }
     }
 

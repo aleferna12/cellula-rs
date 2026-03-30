@@ -29,6 +29,7 @@ pub struct Model {
     pub io: IoManager,
     pub rng: Xoshiro256StarStar,
     pub info_period: u32,
+    pub rel_chem_time_step: u32,
     time_steps: u32
 }
 
@@ -51,7 +52,8 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             rng,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps
+            time_steps: parameters.general.time_steps,
+            rel_chem_time_step: parameters.io.plot.rel_chem_time_step,
         })
     }
 
@@ -74,7 +76,8 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             rng,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps
+            time_steps: parameters.general.time_steps,
+            rel_chem_time_step: parameters.io.plot.rel_chem_time_step,
         })
     }
 
@@ -103,6 +106,7 @@ impl Model {
             io: Self::setup_io(&parameters, seed)?,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
+            rel_chem_time_step: parameters.io.plot.rel_chem_time_step,
             pond,
             rng,
         })
@@ -450,6 +454,9 @@ impl Model {
 
 impl Step for Model {
     fn step(&mut self) {
+        if self.pond.time_step == self.rel_chem_time_step {
+            self.pond.env.update_rel_chem();
+        }
         if self.pond.time_step.is_multiple_of(self.info_period) {
             self.log_info();
         }
