@@ -197,7 +197,9 @@ pub struct IoParameters {
 pub struct DataParameters {
     pub cells_period: u32,
     pub cells_write_period: Option<u32>,
-    pub lattice_period: u32
+    pub lattice_period: u32,
+    #[serde(default = "param_defaults::zero")]
+    pub act_period: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

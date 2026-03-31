@@ -25,6 +25,7 @@ static CELLS_PATH: &str = "cells";
 static CELL_LATTICES_PATH: &str = "lattices";
 static CHEM_LATTICES_PATH: &str = "chem_lattices";
 static ACT_LATTICES_PATH: &str = "act_lattices";
+static ACT_CONTACTS_PATH: &str = "act_contacts";
 static CONFIG_COPY_PATH: &str = "config.toml";
 const PAD_FILE_LEN: usize = {
     let mut n = u32::MAX;
@@ -46,6 +47,7 @@ pub struct IoManager {
     cells_period: u32,
     cells_write_period: u32,
     lattices_period: u32,
+    act_contacts_period: u32,
     #[builder(default)]
     celldfs: Vec<LazyFrame>,
 }
@@ -68,7 +70,8 @@ impl IoManager {
         std::fs::create_dir(self.outdir.join(CELLS_PATH))?;
         std::fs::create_dir(self.outdir.join(CELL_LATTICES_PATH))?;
         std::fs::create_dir(self.outdir.join(CHEM_LATTICES_PATH))?;
-        std::fs::create_dir(self.outdir.join(ACT_LATTICES_PATH))
+        std::fs::create_dir(self.outdir.join(ACT_LATTICES_PATH))?;
+        std::fs::create_dir(self.outdir.join(ACT_CONTACTS_PATH))
     }
 
     pub fn create_parameters_file(&self, parameters: &Parameters) -> anyhow::Result<()> {
@@ -374,7 +377,53 @@ impl IoManager {
                 .join(&file_name);
             Self::write_lattice_u32(act_lat_file_path.as_path(), &env.act_lattice)?;
         }
+
+        if time_step.is_multiple_of(self.act_contacts_period) {
+            let file_name = format!("{}.parquet", Self::pad_time_step(time_step));
+            let file_path = self.outdir
+                .join(ACT_CONTACTS_PATH)
+                .join(&file_name);
+
+            let (spins, neighs, acts, kacts) = Self::act_contacts(env);
+            let mut actdf = df![
+                "spin" => spins,
+                "neigh" => neighs,
+                "act" => acts,
+                "kact" => kacts,
+            ]?;
+
+            let file = std::fs::File::create(file_path)?;
+            ParquetWriter::new(file).finish(&mut actdf)?;
+        }
         Ok(())
+    }
+
+    fn act_contacts(
+        env: &MyEnvironment,
+    ) -> (Vec<String>, Vec<String>, Vec<u32>, Vec<f64>) {
+        let mut spins = Vec::new();
+        let mut neighs = Vec::new();
+        let mut acts = Vec::new();
+        let mut kacts = Vec::new();
+        for edge in env.edge_book.iter() {
+            let mut spin1 = env.cell_lattice[edge.p1];
+            let mut spin2 = env.cell_lattice[edge.p2];
+            if !matches!(spin1, Spin::Some(_)) {
+                std::mem::swap(&mut spin1, &mut spin2);
+            }
+            spins.push(spin_to_str(spin1));
+            neighs.push(spin_to_str(spin2));
+            acts.push(env.act_lattice[edge.p1]);
+            kacts.push(env.kact(edge.p1));
+
+            if let Spin::Some(_) = spin2 {
+                spins.push(spin_to_str(spin2));
+                neighs.push(spin_to_str(spin1));
+                acts.push(env.act_lattice[edge.p2]);
+                kacts.push(env.kact(edge.p2));
+            }
+        }
+        (spins, neighs, acts, kacts)
     }
 
     // Experimented with:

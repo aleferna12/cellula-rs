@@ -9,6 +9,7 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
     params.io.data.cells_period = 512;
     params.io.data.cells_write_period = Some(params.io.data.cells_period);
     params.io.data.lattice_period = params.io.data.cells_period;
+    params.io.data.act_period = params.io.data.cells_period;
     params.io.movie.show = false;
     Ok(params)
 }

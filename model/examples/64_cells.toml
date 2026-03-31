@@ -100,6 +100,8 @@ image-format = "webp"
 cells-period = 2048
 # Period (in MCS) with which to save a parquet file containing the cell lattice.
 lattice-period = 4096
+# Period (in MCS) with which to save a parquet file containing the act at cells contacts.
+act-period = 2048
 
 [io.plot]
 # Defines which plots to make and in what order.
