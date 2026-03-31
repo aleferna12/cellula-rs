@@ -99,7 +99,8 @@ mod tests {
                     recep,
                     0.,
                     8
-                ).unwrap()
+                ).unwrap(),
+                false
             );
             let index1 = cells.push(cell.clone()).index;
             let index2 = cells.push(cell).index;
@@ -123,12 +124,14 @@ mod tests {
             let cell1 = Cell::new_empty(
                 0,
                 0,
-                BitGenome::new_random(0., 8, &mut rng).unwrap()
+                BitGenome::new_random(0., 8, &mut rng).unwrap(),
+                false
             );
             let cell2 = Cell::new_empty(
                 0,
                 0,
-                BitGenome::new_random(0., 8, &mut rng).unwrap()
+                BitGenome::new_random(0., 8, &mut rng).unwrap(),
+                false
             );
             let index1 = cells.push(cell1).index;
             let index2 = cells.push(cell2).index;

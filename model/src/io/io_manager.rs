@@ -155,6 +155,7 @@ impl IoManager {
                     0.,
                     1
                 ).unwrap(),
+                false,
             ));
         }
 
@@ -187,6 +188,7 @@ impl IoManager {
                         row[cols["chem_center_y"]].try_extract::<f32>()?,
                     ),
                     chem_mass: row[cols["chem_mass"]].try_extract::<u32>()?,
+                    inert: false,
                     neighbors: HashMap::new(),
                     tot_act: 0,
                     tot_kact: 0.,

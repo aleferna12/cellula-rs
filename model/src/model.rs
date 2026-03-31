@@ -317,7 +317,8 @@ impl Model {
                 parameters.cell.genome.mutation_rate,
                 parameters.cell.genome.length,
                 rng,
-            ).ok_or(anyhow!("invalid `parameters.cell.genome.length`"))?
+            ).ok_or(anyhow!("invalid `parameters.cell.genome.length`"))?,
+            rng.random_bool(0.2)
         ))
     }
 

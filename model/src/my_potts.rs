@@ -50,6 +50,10 @@ impl MyPotts {
         let Spin::Some(cell_index) = cell_spin else {
             return 0.;
         };
+        let rel_cell = env.cells.get_cell(cell_index);
+        if rel_cell.inert {
+            return 0.;
+        }
 
         let (count, product) = env
             .valid_neighbours(pos)

@@ -18,6 +18,7 @@ pub struct Cell {
     pub target_perimeter: u32,
     pub genome: BitGenome,
     pub ancestor: Option<CellIndex>,
+    pub inert: bool,
     // This is only updated before saving data, so may contain outdated information
     pub neighbors: HashMap<Spin, u32>,
     // This is only updated before saving data, so may contain outdated information
@@ -30,7 +31,7 @@ pub struct Cell {
 
 impl Cell {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new_empty(target_area: u32, target_perimeter: u32, genome: BitGenome) -> Self {
+    pub fn new_empty(target_area: u32, target_perimeter: u32, genome: BitGenome, inert: bool) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
@@ -42,6 +43,7 @@ impl Cell {
             tot_act: 0,
             tot_kact: 0.,
             rel_chem: 0.0,
+            inert,
             target_perimeter,
             genome
         }
@@ -160,6 +162,7 @@ mod tests {
             100,
             250,
             BitGenome::new(0, 0, 0., 1).unwrap(),
+            false,
         )
     }
 

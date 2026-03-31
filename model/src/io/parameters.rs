@@ -244,7 +244,8 @@ pub enum PlotType {
     Area,
     Chem,
     Act,
-    RelChem
+    RelChem,
+    Inert
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

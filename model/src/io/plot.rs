@@ -156,9 +156,27 @@ impl Plot for BorderPlot {
     }
 }
 
-pub struct CellTypePlot {
-    pub mig_color: Srgb<u8>,
-    pub div_color: Srgb<u8>
+pub struct InertPlot {
+    pub active_color: Srgb<u8>,
+    pub inert_color: Srgb<u8>
+}
+
+impl Plot for InertPlot {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        for pos in env.cell_lattice.iter_positions() {
+            let spin = env.cell_lattice[pos];
+            let Spin::Some(cell_index) = spin else {
+                continue;
+            };
+            let rel_cell = env.cells.get_cell(cell_index);
+            let color = if rel_cell.inert {
+                self.inert_color
+            } else {
+                self.active_color
+            };
+            image.put_pixel(pos.x as u32, pos.y as u32, srgb_to_rgba(color));
+        }
+    }
 }
 
 pub struct RelChemPlot {
@@ -276,6 +294,7 @@ pub struct ChemPlot {
 }
 
 impl Plot for ChemPlot {
+    //noinspection DuplicatedCode
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let lat = &env.chem_lattice;
         for pos in lat.iter_positions() {
@@ -313,6 +332,7 @@ pub struct ActPlot {
 }
 
 impl Plot for ActPlot {
+    //noinspection DuplicatedCode
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let lat = &env.act_lattice;
         for pos in lat.iter_positions() {
@@ -392,6 +412,11 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                     max_color: srgb_to_lchuv(hex_to_srgb(&params.rel_chem_max_color)?),
                     frozen: params.rel_chem_time_step != 0
                 }),
+                PlotType::Inert => Box::new(InertPlot {
+                    active_color: Srgb::new(0, 255, 0),
+                    inert_color: Srgb::new(255, 0, 255)
+                })
+
             };
             plots.push(plot);
         }

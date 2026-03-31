@@ -52,12 +52,12 @@ lattice-period = 200_000
 
 [io.movie]
 show = true
-width = 1200
-height = 1200
+width = 800
+height = 800
 frame-period = 1
 
 [io.plot]
-order = ["chem", "spin", "act"]
+order = ["chem", "spin", "inert", "border"]
 solid-color = "#000000"
 center-color = "#0000ff"
 chem-center-color = "#00ff00"
