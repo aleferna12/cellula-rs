@@ -413,8 +413,8 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                     frozen: params.rel_chem_time_step != 0
                 }),
                 PlotType::Inert => Box::new(InertPlot {
-                    active_color: Srgb::new(0, 255, 0),
-                    inert_color: Srgb::new(255, 0, 255)
+                    active_color: hex_to_srgb("#b30000")?,
+                    inert_color: hex_to_srgb("#045a8d")?
                 })
 
             };
