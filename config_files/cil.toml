@@ -1,6 +1,6 @@
 # This is a copy of the parameters used in the simulation
 [general]
-time-steps = 5_000_000
+time-steps = 1_000_000
 
 [pond]
 width = 500
@@ -31,8 +31,8 @@ size-lambda = 50.0
 perimeter-lambda = 2.0
 chemotaxis-min = 0.5
 act-max = 20
-# This was halfed to simulate the cluster at the mean chem concentration
-act-lambda = 150.0
+# This was changed to simulate the cluster at the mean chem concentration
+act-lambda = 150
 
 [potts.adhesion]
 cell-energy = 8.0
@@ -48,8 +48,9 @@ image-format = "webp"
 info-period = 50_000
 
 [io.data]
-cells-period = 50_000
-lattice-period = 50_000
+cells-period = 100_000
+lattice-period = 100_000
+act-period = 10_000
 
 [io.movie]
 show = false
@@ -69,3 +70,5 @@ chem-min-color = "#000000"
 chem-max-color = "#ffffff"
 act-min-color = "#ff00ff"
 act-max-color = "#ffff00"
+rel-chem-min-color = "#fcde9c"
+rel-chem-max-color = "#4b2991"
