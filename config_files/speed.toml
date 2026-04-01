@@ -1,6 +1,6 @@
 # This is a copy of the parameters used in the simulation
 [general]
-time-steps = 8_000_000
+time-steps = 5_000_000
 
 [pond]
 width = 500
