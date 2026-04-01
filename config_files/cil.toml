@@ -50,7 +50,7 @@ info-period = 50_000
 [io.data]
 cells-period = 100_000
 lattice-period = 100_000
-act-period = 10_000
+act-period = 50_000
 
 [io.movie]
 show = false
