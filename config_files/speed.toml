@@ -47,7 +47,7 @@ image-format = "webp"
 info-period = 50_000
 
 [io.data]
-cells-period = 100_000
+cells-period = 50_000
 lattice-period = 200_000
 
 [io.movie]
