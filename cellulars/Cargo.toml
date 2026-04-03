@@ -1,6 +1,6 @@
 [package]
 name = "cellulars"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2024"
 description = "A very fast, extensible CPM implementation."
 license = "LGPL-3.0-only"
@@ -37,20 +37,20 @@ name = "env_bench"
 harness = false
 
 [dependencies]
-arrow = { version = "58.0.0", default-features = false, features = [], optional = true }
-image = { version = "0.25.9", default-features = false, features = ["webp", "rayon"], optional = true }
-imageproc = { version = "0.26.1", default-features = false, features = ["fft", "rayon"], optional = true }
-indexmap = "2.9.0"
-log = { version =  "0.4.27", optional = true }
-minifb = { version = "0.28.0", optional = true }
-num = "0.4.3"
-palette = { version = "0.7.6", default-features = false, features = ["std", "approx"], optional = true }
-parquet = { version = "58.0.0", default-features = false, features = ["base64", "zstd", "arrow", "simdutf8"], optional = true }
-rand = "0.10.0"
-serde = { version = "1.0.228", optional = true }
-serde_arrow = { version = "0.14.0", features = ["arrow-58"], optional = true }
-thiserror = "2.0.12"
+indexmap = "^2.9"
+num = "^0.4"
+rand = "^0.10"
+thiserror = "^2.0"
+arrow = { version = "^58.0", default-features = false, features = [], optional = true }
+image = { version = "^0.25", default-features = false, features = ["webp", "rayon"], optional = true }
+imageproc = { version = "^0.26", default-features = false, features = ["fft", "rayon"], optional = true }
+log = { version =  "^0.4", optional = true }
+minifb = { version = "^0.28", optional = true }
+palette = { version = "^0.7", default-features = false, features = ["std", "approx"], optional = true }
+parquet = { version = "^58.0", default-features = false, features = ["base64", "zstd", "arrow", "simdutf8"], optional = true }
+serde = { version = "^1.0", optional = true }
+serde_arrow = { version = "^0.14", features = ["arrow-58"], optional = true }
 
 [dev-dependencies]
-criterion = { version = "0.8.1", features = ["html_reports"] }
-rand_xoshiro = "0.8.0"
+criterion = { version = "^0.8", features = ["html_reports"] }
+rand_xoshiro = "^0.8"
