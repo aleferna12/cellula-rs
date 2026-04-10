@@ -81,7 +81,7 @@ impl Model {
         })
     }
 
-    /// Initialises the model from a previous state.
+    /// Initializes the model from a previous state.
     ///
     /// `sim_path` should point to the main folder of a simulation, while `time_step` specifies which files from this
     /// folder will be reloaded.
