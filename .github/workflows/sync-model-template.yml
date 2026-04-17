@@ -1,7 +1,7 @@
 name: Sync model in template repo
 
 on:
-  workflow_call:
+  workflow_dispatch:
   push:
     branches:
       - master
