@@ -8,6 +8,3 @@ inherits = "release"
 # but they do have a measurable effect on performance
 lto = "fat"
 codegen-units = 1
-
-[profile.fastest.package.cellulars]
-codegen-units = 1
