@@ -5,7 +5,7 @@ edition = "2024"
 description = "A very fast, extensible CPM implementation."
 
 [features]
-default = ["fixed-boundary", "chem-polarization"]
+default = ["fixed-boundary", "chem-polarization", "static-adhesion"]
 fixed-boundary = []
 static-adhesion = []
 chem-polarization = []

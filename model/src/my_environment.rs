@@ -1,5 +1,5 @@
 use std::f64::consts::E;
-use crate::cell::Cell;
+use crate::cell::{Cell, Lineage};
 use crate::constants::{BoundaryType, EPSILON};
 use bon::bon;
 use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
@@ -267,6 +267,23 @@ impl MyEnvironment {
         )
     }
 
+    pub fn count_lineages(&self) -> LineageCounts {
+        let mut lincounts = LineageCounts {
+            unicellular: 0,
+            multicellular: 0,
+        };
+        for cell in self.cells.iter() {
+            if !cell.is_alive() {
+                continue;
+            }
+            match cell.lineage {
+                Lineage::Unicellular => lincounts.unicellular += 1,
+                Lineage::Multicellular => lincounts.multicellular += 1,
+            }
+        }
+        lincounts
+    }
+
     pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<Cell> {
         let mom = self
             .env
@@ -520,4 +537,9 @@ impl Habitable for MyEnvironment {
 pub struct SplitLine {
     pub slope: f32,
     pub intercept: f32,
+}
+
+pub struct LineageCounts {
+    pub unicellular: u32,
+    pub multicellular: u32
 }

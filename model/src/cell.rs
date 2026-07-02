@@ -26,6 +26,7 @@ pub struct Cell {
     pub tot_kact: f64,
     // This is only updated before saving data, so may contain outdated information
     pub rel_chem: f32,
+    pub lineage: Lineage
 }
 
 impl Cell {
@@ -42,6 +43,7 @@ impl Cell {
             tot_act: 0,
             tot_kact: 0.,
             rel_chem: 0.0,
+            lineage: Lineage::Unicellular,
             target_perimeter,
             genome
         }
@@ -142,6 +144,29 @@ impl Fit for FitCell<'_> {
         let avg_chem = self.cell.chem_mass as f32 / self.cell.area as f32;
         let ratio = self.half_fit / avg_chem;
         1. / (1. + ratio * ratio)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum Lineage {
+    Unicellular,
+    Multicellular
+}
+
+impl Lineage {
+    pub fn from_str(lineage: &str) -> Option<Lineage> {
+        Some(match lineage { 
+            "uni" => Lineage::Unicellular,
+            "mul" => Lineage::Multicellular,
+            _ => return None
+        })
+    }
+    
+    pub fn to_string(&self) -> String {
+        match self {
+            Lineage::Unicellular => "uni".into(),
+            Lineage::Multicellular => "mul".into()
+        }
     }
 }
 

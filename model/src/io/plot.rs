@@ -16,6 +16,7 @@ use rand_distr::num_traits::AsPrimitive;
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
+use crate::cell::Lineage;
 
 pub trait Plot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage);
@@ -154,11 +155,6 @@ impl Plot for BorderPlot {
             }
         }
     }
-}
-
-pub struct CellTypePlot {
-    pub mig_color: Srgb<u8>,
-    pub div_color: Srgb<u8>
 }
 
 pub struct RelChemPlot {
@@ -352,6 +348,32 @@ pub fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
     Rgba::from(arr)
 }
 
+pub struct LineagePlot {
+    pub uni_color: Srgb<u8>,
+    pub mul_color: Srgb<u8>
+}
+
+impl Plot for LineagePlot {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        let lat = &env.cell_lattice;
+        for pos in lat.iter_positions() {
+            let Spin::Some(cell_index) = lat[pos] else {
+                continue;
+            };
+            let cell = env.cells.get_cell(cell_index);
+            let color = match cell.lineage {
+                Lineage::Unicellular => self.uni_color,
+                Lineage::Multicellular => self.mul_color,
+            };
+            image.put_pixel(
+                pos.x as u32,
+                pos.y as u32,
+                srgb_to_rgba(color)
+            );
+        }
+    }
+}
+
 impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
     type Error = HexError;
 
@@ -391,6 +413,10 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                     min_color: srgb_to_lchuv(hex_to_srgb(&params.rel_chem_min_color)?),
                     max_color: srgb_to_lchuv(hex_to_srgb(&params.rel_chem_max_color)?),
                     frozen: params.rel_chem_time_step != 0
+                }),
+                PlotType::Lineage => Box::new(LineagePlot {
+                    uni_color: hex_to_srgb(&params.rel_chem_min_color)?,
+                    mul_color: hex_to_srgb(&params.rel_chem_max_color)?
                 }),
             };
             plots.push(plot);

@@ -1,3 +1,4 @@
+use std::process::exit;
 use crate::cell::FitCell;
 use crate::evolution::genome::Genome;
 use crate::evolution::selector::{Selector, WeightedSelection};
@@ -8,6 +9,7 @@ use cellulars_lib::basic_cell::Cellular;
 use cellulars_lib::potts::Potts;
 use cellulars_lib::step::Step;
 use indexmap::IndexMap;
+use log::info;
 use rand_xoshiro::Xoshiro256StarStar;
 
 #[derive(Clone, Builder)]
@@ -107,6 +109,16 @@ impl Pond {
 
 impl Step for Pond {
     fn step(&mut self) {
+        let lincounts = self.env.count_lineages();
+        if lincounts.unicellular == 0 {
+            info!("Multicellulars won");
+            exit(0);
+        }
+        if lincounts.multicellular == 0 {
+            info!("Unicellulars won");
+            exit(0);
+        }
+
         self.potts.step(&mut self.env, &mut self.rng);
         if self.time_step > 0 && self.time_step.is_multiple_of(self.season_duration) {
             if self.enable_division {

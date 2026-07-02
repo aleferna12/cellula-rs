@@ -139,6 +139,7 @@ pub struct PondParameters {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct CellParameters {
     pub starting_cells: CellIndex,
+    pub n_mul: u8,
     pub max_cells: CellIndex,
     pub search_radius: f32,
     pub starting_area: u32,
@@ -146,7 +147,7 @@ pub struct CellParameters {
     pub target_perimeter: u32,
     #[serde(default = "param_defaults::true_flag")]
     pub divide: bool,
-    pub genome: GenomeParameters,
+    pub genome: GenomeParameters
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -231,7 +232,9 @@ pub struct PlotParameters {
     pub rel_chem_min_color: String,
     pub rel_chem_max_color: String,
     #[serde(default = "param_defaults::zero")]
-    pub rel_chem_time_step: u32
+    pub rel_chem_time_step: u32,
+    pub uni_color: String,
+    pub mul_color: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, EnumIter, Debug)]
@@ -244,7 +247,8 @@ pub enum PlotType {
     Area,
     Chem,
     Act,
-    RelChem
+    RelChem,
+    Lineage
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

@@ -1,4 +1,4 @@
-use crate::cell::Cell;
+use crate::cell::{Cell, Lineage};
 use crate::evolution::bit_genome::BitGenome;
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
@@ -154,7 +154,7 @@ impl IoManager {
                     0,
                     0.,
                     1
-                ).unwrap(),
+                ).unwrap()
             ));
         }
 
@@ -197,6 +197,11 @@ impl IoManager {
                         mut_rate,
                         genome_length
                     ).ok_or(anyhow!("invalid `genome_length`"))?,
+                    lineage: Lineage::from_str(
+                        row[cols["lineage"]]
+                            .get_str()
+                            .ok_or(anyhow!("invalid `lineage`"))?
+                    ).ok_or(anyhow!("invalid `lineage`"))?,
                 }
             });
         }
@@ -546,6 +551,7 @@ impl ToDataFrame for MyEnvironment {
             "solid_neighbor" => valid.iter().map(|cell| cell.neighbors.contains_key(&Spin::Solid)).collect::<Box<_>>(),
             "tot_act" => valid.iter().map(|cell| cell.tot_act).collect::<Box<_>>(),
             "tot_kact" => valid.iter().map(|cell| cell.tot_kact).collect::<Box<_>>(),
+            "lineage" => valid.iter().map(|cell| cell.lineage.to_string()).collect::<Box<[String]>>(),
         )
     }
 }

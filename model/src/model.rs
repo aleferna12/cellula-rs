@@ -1,5 +1,5 @@
-use crate::bit_adhesion::BitAdhesion;
-use crate::cell::Cell;
+use crate::comp_adhesion::CompAdhesion;
+use crate::cell::{Cell, Lineage};
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::evolution::bit_genome::BitGenome;
 use crate::io::io_manager::IoManager;
@@ -159,7 +159,7 @@ impl Model {
             .size_lambda(parameters.potts.size_lambda)
             .perimeter_lambda(parameters.potts.perimeter_lambda)
             .act_lambda(parameters.potts.act_lambda)
-            .adhesion(BitAdhesion { 
+            .adhesion(CompAdhesion { 
                 static_adhesion: StaticAdhesion {
                     cell_energy: parameters.potts.adhesion.cell_energy,
                     medium_energy: parameters.potts.adhesion.medium_energy,
@@ -337,6 +337,34 @@ impl Model {
             parameters.cell.genome.mutation_rate,
             parameters.cell.genome.length
         )?;
+
+        let cluster_corner = Pos::new(
+            pond.env.cell_lattice.rect.width() / 2,
+            pond.env.cell_lattice.rect.height() / 2
+        );
+        let rows = parameters.cell.n_mul.isqrt();
+        let cell_side = parameters.cell.starting_area.isqrt() as usize;
+        'outer: for i in 0..rows {
+            for j in 0..rows + 1 {
+                let spawned_mul = i * rows + j;
+                if spawned_mul >= parameters.cell.n_mul {
+                    break 'outer;
+                }
+                let cellx = cluster_corner.x + i as usize * cell_side;
+                let celly = cluster_corner.y + j as usize * cell_side;
+                let cell_rect = Rect::new(
+                    Pos::new(cellx, celly).to_isize(),
+                    Pos::new(cellx + cell_side, celly + cell_side).to_isize(),
+                );
+                let cell_index = pond.env.spawn_cell_checked(
+                    Self::empty_cell_from_parameters(parameters, rng)?,
+                    cell_rect.iter_positions()
+                ).index;
+                let rel_cell = pond.env.cells.get_cell_mut(cell_index);
+                rel_cell.lineage = Lineage::Multicellular;
+            }
+        }
+
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
         while pond.env.cells.n_valid() < parameters.cell.starting_cells && pond.env.can_add_cell() {

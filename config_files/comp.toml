@@ -1,28 +1,28 @@
 # This is a copy of the parameters used in the simulation
 [general]
-time-steps = 1_000_000
+time-steps = 200_000_000
 
 [pond]
 width = 500
 height = 500
 enclose = true
 neigh-r = 1
-season-duration = 0
+season-duration = 2_000_000
 # 250 lattice-lengths away from center of gradient
 half-fitness = 457
 reproduction-steps = 50
 
 [cell]
 starting-cells = 100
-max-cells = 10000
+max-cells = 1024
 search-radius = 4.0
 starting-area = 200
 target-area = 200
 target-perimeter = 180
-divide = false
+divide = true
 
 [cell.genome]
-mutation-rate = 0.01
+mutation-rate = 0.0
 length = 8
 
 [potts]
@@ -34,30 +34,33 @@ act-max = 20
 act-lambda = 200.0
 
 [potts.adhesion]
+# This determines adhesion between "unicellular" cells and unicellular-multicellular cells
+# Adhesion between "multicellular" cells is always gamma = 12
 cell-energy = 20.0
 medium-energy = 20.0
 solid-energy = 20.0
+# This was disabled
 gene-energy = 0.0
 
 [io]
-outdir = "runs/display"
-replace-outdir = true
-image-period = 100
+outdir = "runs/test"
+replace-outdir = false
+image-period = 50_000
 image-format = "webp"
-info-period = 50_000
+info-period = 10_000
 
 [io.data]
-cells-period = 100_000
-lattice-period = 200_000
+cells-period = 10_000
+lattice-period = 20_000
 
 [io.movie]
-show = true
-width = 1200
-height = 1200
+show = false
+width = 320
+height = 320
 frame-period = 1
 
 [io.plot]
-order = ["chem", "spin", "act"]
+order = ["chem", "spin", "lineage", "border"]
 solid-color = "#000000"
 center-color = "#0000ff"
 chem-center-color = "#00ff00"
@@ -66,7 +69,9 @@ area-min-color = "#ff00ff"
 area-max-color = "#ffff00"
 chem-min-color = "#000000"
 chem-max-color = "#ffffff"
-act-min-color = "#245668" #298d80 blue
-act-max-color = "#edef5d" #fa9f6a yellow
+act-min-color = "#ff00ff"
+act-max-color = "#ffff00"
 rel-chem-min-color = "#fcde9c"
 rel-chem-max-color = "#4b2991"
+uni-color = "#fcde9c"
+mul-color = "#4b2991"

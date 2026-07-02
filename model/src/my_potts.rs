@@ -1,5 +1,5 @@
 use std::f64::consts::E;
-use crate::bit_adhesion::BitAdhesion;
+use crate::comp_adhesion::CompAdhesion;
 use crate::my_environment::MyEnvironment;
 use bon::Builder;
 use cellulars_lib::adhesion::AdhesionSystem;
@@ -23,7 +23,7 @@ pub struct MyPotts {
     /// Minimum chemotaxis bias when cell experiences a chem. concentration = 0.
     #[builder(with = |min: f32| { if min > 1. { panic!("`min` must be between 0 and 1") } else { min } } )]
     pub chemotaxis_min: f32,
-    pub adhesion: BitAdhesion
+    pub adhesion: CompAdhesion
 }
 
 impl MyPotts {
