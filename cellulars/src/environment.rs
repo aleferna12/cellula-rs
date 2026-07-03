@@ -248,7 +248,7 @@ where
             let _shifted = from_rel_cell.cell.shift_position(pos, false, &self.bounds.boundary);
             #[cfg(feature = "log")]
             if let Err(e) = _shifted {
-                log::warn!("Failed to shift center of mass or target spin: {e}")
+                log::warn!("Failed to shift center of mass of target spin: {e}")
             };
             if from_rel_cell.cell.area() == 0 {
                 from_rel_cell.cell.apoptosis();
