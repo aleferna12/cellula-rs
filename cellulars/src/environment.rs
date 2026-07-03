@@ -2,7 +2,9 @@
 
 use crate::positional::edge_book::EdgeBook;
 use crate::positional::pos::CastCoords;
-use crate::prelude::{Alive, AsEnv, Boundaries, Boundary, CellContainer, Cellular, Edge, Empty, FastPeriodicBoundary, FloatType, HasCenter, Lattice, MooreNeighborhood, Neighborhood, Pos, RelCell, Spawn, Spin, ToLatticeBoundary, TransferPosition};
+use crate::prelude::{Alive, AsEnv, Boundaries, Boundary, CellContainer, Cellular, Edge, Empty, FastPeriodicBoundary, 
+                     FloatType, HasCenter, Lattice, MooreNeighborhood, Neighborhood, Pos, RelCell, Spawn, Spin, 
+                     ToLatticeBoundary, TransferPosition};
 use core::fmt;
 use std::cmp::max;
 use std::collections::HashSet;
@@ -10,6 +12,7 @@ use std::collections::HashSet;
 use std::f32::consts::PI;
 #[cfg(feature = "f64")]
 use std::f64::consts::PI;
+use std::fmt::Debug;
 
 // Has manual implementations for PartialEq, Debug and Clone (needed due to ToLatticeBoundary)
 // If adding fields, remember to also change those!!!
@@ -40,7 +43,7 @@ impl<C, N, B: ToLatticeBoundary<Coord = FloatType>> Environment<C, N, B> {
             edge_book: EdgeBook::new(),
             cells: CellContainer::new(),
             bounds,
-            neighborhood
+            neighborhood,
         }
     }
 }
@@ -76,6 +79,56 @@ impl<C, N, B: ToLatticeBoundary> Environment<C, N, B> {
     pub fn valid_neighbors(&self, pos: Pos<usize>) -> impl Iterator<Item = Pos<usize>>
     where N: Neighborhood {
         valid_neighbors(&self.bounds.lattice_boundary, &self.neighborhood, pos)
+    }
+}
+
+impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
+    /// Removes all cells from the environment and returns it to a clean state.
+    pub fn wipe_out(&mut self) {
+        self.cells.wipe_out();
+        self.cell_lattice.iter_values_mut().for_each(|value| {
+            if let Spin::Some(_) = value {
+                *value = Spin::Medium;
+            }
+        });
+        self.edge_book.clear();
+    }
+
+    /// Updates the edges around the position `pos` and counts how many were added/removed.
+    pub fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
+        let mut removed = 0;
+        let mut added = 0;
+        let spin = self.cell_lattice[pos];
+        let valid_neighs = valid_neighbors(
+            &self.bounds.lattice_boundary,
+            &self.neighborhood,
+            pos
+        );
+        for neigh in valid_neighs {
+            let edge = Edge::new(pos, neigh);
+            let spin_neigh = self.cell_lattice[neigh];
+            // The order of these if statements matter A LOT, dont mess with it
+            if spin == spin_neigh {
+                if self.edge_book.remove(&edge) {
+                    removed += 1;
+                }
+                continue;
+            }
+            match (spin, spin_neigh) {
+                (Spin::Some(_), _) | (_, Spin::Some(_)) => {
+                    if self.edge_book.insert(edge) {
+                        added += 1;
+                    }
+                },
+                (Spin::Medium, Spin::Solid) | (Spin::Solid, Spin::Medium) => {
+                    if self.edge_book.remove(&edge) {
+                        removed += 1;
+                    }
+                },
+                _ => panic!("inconsistent edges")
+            }
+        }
+        EdgesUpdate { added, removed }
     }
 }
 
@@ -176,54 +229,6 @@ impl<C: Cellular + HasCenter, N: Neighborhood, B: ToLatticeBoundary> Environment
             .map(|pos| self.cell_lattice[pos]);
         HashSet::from_iter(outline)
     }
-
-    /// Removes all cells from the environment and returns it to a clean state.
-    pub fn wipe_out(&mut self) {
-        self.cells.wipe_out();
-        self.cell_lattice.iter_values_mut().for_each(|value| {
-            if let Spin::Some(_) = value {
-                *value = Spin::Medium;
-            }
-        });
-        self.edge_book.clear();
-    }
-
-    /// Updates the edges around the position `pos` and counts how many were added/removed.
-    pub fn update_edges(&mut self, pos: Pos<usize>) -> EdgesUpdate {
-        let mut removed = 0;
-        let mut added = 0;
-        let spin = self.cell_lattice[pos];
-        let valid_neighs = valid_neighbors(
-            &self.bounds.lattice_boundary,
-            &self.neighborhood,
-            pos
-        );
-        for neigh in valid_neighs {
-            let edge = Edge::new(pos, neigh);
-            let spin_neigh = self.cell_lattice[neigh];
-            // The order of these if statements matter A LOT, dont mess with it
-            if spin == spin_neigh {
-                if self.edge_book.remove(&edge) {
-                    removed += 1;
-                }
-                continue;
-            }
-            match (spin, spin_neigh) {
-                (Spin::Some(_), _) | (_, Spin::Some(_)) => {
-                    if self.edge_book.insert(edge) {
-                        added += 1;
-                    }
-                },
-                (Spin::Medium, Spin::Solid) | (Spin::Solid, Spin::Medium) => {
-                    if self.edge_book.remove(&edge) {
-                        removed += 1;
-                    }
-                },
-                _ => panic!("inconsistent edges")
-            }
-        }
-        EdgesUpdate { added, removed }
-    }
 }
 
 impl<C, N, B> TransferPosition for Environment<C, N, B>
@@ -266,14 +271,15 @@ where
     N: Neighborhood,
     B: ToLatticeBoundary<Coord = FloatType> {}
 
-impl<C, N: Neighborhood, B: ToLatticeBoundary> AsEnv for Environment<C, N, B> {
+impl<C, N: Neighborhood, B: ToLatticeBoundary<Coord = FloatType>> AsEnv for Environment<C, N, B> {
     type Cell = C;
+    type Coord = FloatType;
 
-    fn env(&self) -> &Environment<C, impl Neighborhood, impl ToLatticeBoundary> {
+    fn env(&self) -> &Environment<C, impl Neighborhood, impl ToLatticeBoundary<Coord = FloatType>> {
         self
     }
 
-    fn env_mut(&mut self) -> &mut Environment<C, impl Neighborhood, impl ToLatticeBoundary> {
+    fn env_mut(&mut self) -> &mut Environment<C, impl Neighborhood, impl ToLatticeBoundary<Coord = FloatType>> {
         self
     }
 }
@@ -285,7 +291,7 @@ where
     B: Clone,
     B::LatticeBoundary: Clone {
     fn clone(&self) -> Self {
-        Environment {
+        Self {
             bounds: self.bounds.clone(),
             cells: self.cells.clone(),
             cell_lattice: self.cell_lattice.clone(),
@@ -295,12 +301,12 @@ where
     }
 }
 
-impl<C, N, B:ToLatticeBoundary> fmt::Debug for Environment<C, N, B>
+impl<C, N, B:ToLatticeBoundary> Debug for Environment<C, N, B>
 where
-    C: fmt::Debug,
-    N: fmt::Debug,
-    B: fmt::Debug,
-    B::LatticeBoundary: fmt::Debug {
+    C: Debug,
+    N: Debug,
+    B: Debug,
+    B::LatticeBoundary: Debug {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Environment")
             .field("bounds", &self.bounds)
@@ -370,7 +376,7 @@ pub mod tests {
         );
         Environment::new_empty(
             MooreNeighborhood::new(1),
-            Boundaries::new(FastPeriodicBoundary::new(rect.clone()))
+            Boundaries::new(FastPeriodicBoundary::new(rect.clone())),
         )
     }
 

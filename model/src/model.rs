@@ -196,7 +196,7 @@ impl Model {
         let maybe_templates_box = Self::read_cell_templates(maybe_templates_path)?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
-        while pond.env.env.cells.n_non_empty() < parameters.cell.starting_cells {
+        while pond.env.env().cells.n_non_empty() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
                 None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
                 Some(templates_it) => templates_it
@@ -217,7 +217,7 @@ impl Model {
             } else if spawn_attempts > parameters.cell.starting_cells * 20 {
                 log::error!(
                     "Only {} cells were initialized out of {} cells requested",
-                    pond.env.env.cells.n_non_empty(),
+                    pond.env.env().cells.n_non_empty(),
                     parameters.cell.starting_cells);
                 break;
             }
@@ -252,14 +252,16 @@ impl Model {
 
     fn make_env(parameters: &Parameters) -> MyEnvironment {
         MyEnvironment::new(
-            Environment::new_empty(
-                NeighborhoodType::new(parameters.pond.neigh_r),
-                Boundaries::new(BoundaryType::new(Rect::new(
-                    (0., 0.).into(),
-                    (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
-                )))
+            NeighEnvironment::new(
+                Environment::new_empty(
+                    NeighborhoodType::new(parameters.pond.neigh_r),
+                    Boundaries::new(BoundaryType::new(Rect::new(
+                        (0., 0.).into(),
+                        (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
+                    ))),
+                ),
+                parameters.cell.max_cells
             ),
-            parameters.cell.max_cells,
             parameters.cell.search_radius
         )
     }
@@ -348,7 +350,7 @@ impl Model {
                 .remove(&luma)
                 .expect("missing luma key");
             for positions in cell_positions.values() {
-                if pond.env.env.cells.n_non_empty() >= parameters.cell.starting_cells {
+                if pond.env.env().cells.n_non_empty() >= parameters.cell.starting_cells {
                     not_spawned += 1;
                     continue;
                 }
@@ -392,21 +394,24 @@ impl Model {
         if lattice.width() != parameters.pond.width || lattice.height() != parameters.pond.height {
             bail!("pond width and height specified in the parameters do not match those of the back up file");
         }
-
+        
         let cells = IoManager::read_cells(sim_path, time_step)?;
-
         let mut env = MyEnvironment::new(
-            Environment::new(
-                cells,
-                lattice,
-                NeighborhoodType::new(parameters.pond.neigh_r),
-                Boundaries::new(BoundaryType::new(rect)),
+            NeighEnvironment::new(
+                Environment::new(
+                    cells,
+                    lattice,
+                    NeighborhoodType::new(parameters.pond.neigh_r),
+                    Boundaries::new(BoundaryType::new(rect))
+                ),
+                parameters.cell.max_cells
             ),
-            parameters.cell.max_cells,
             parameters.cell.search_radius
         );
-        for pos in env.env.cell_lattice.iter_positions() {
-            env.env.update_edges(pos);
+        for pos in env.env().cell_lattice.iter_positions() {
+            // TODO!: FIX THIS
+            // env.env.update_neighbors(pos);
+            env.env_mut().update_edges(pos);
         }
 
         let pond = Pond::builder()
@@ -422,7 +427,7 @@ impl Model {
 
     fn log_info(&self) {
         log::info!("Time step {}:", self.pond.time_step());
-        let non_empty = self.pond.env.env.cells.n_non_empty();
+        let non_empty = self.pond.env.env().cells.n_non_empty();
         log::info!("\t{non_empty} cells");
     }
 }

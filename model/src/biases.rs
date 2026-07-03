@@ -9,14 +9,14 @@ pub struct Biases {
 
 impl CopyBias<MyEnvironment> for Biases {
     fn bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, context: &MyEnvironment) -> FloatType {
-        let spin = context.env.cell_lattice[pos_source];
+        let spin = context.env().cell_lattice[pos_source];
         if let Spin::Some(cell_index) = spin
-            && let CellType::Migrating =  context.env.cells[cell_index].cell.cell_type {
+            && let CellType::Migrating =  context.env().cells[cell_index].cell.cell_type {
             self.chem_bias.bias(
                 pos_source, 
                 pos_target, 
                 &ChemContext {
-                    cell_lattice: &context.env.cell_lattice,
+                    cell_lattice: &context.env().cell_lattice,
                     chem_lattice: &context.chem_lattice
                 })
         } else {

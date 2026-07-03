@@ -25,11 +25,19 @@ name = "basic"
 required-features = ["f64", "movie-io"]
 
 [[example]]
-name = "division"
+name = "butterfly"
 required-features = ["f64", "movie-io"]
 
 [[example]]
 name = "chem_pde"
+required-features = ["f64", "movie-io"]
+
+[[example]]
+name = "division"
+required-features = ["f64", "movie-io"]
+
+[[example]]
+name = "solid"
 required-features = ["f64", "movie-io"]
 
 [[bench]]
@@ -42,7 +50,7 @@ num = "^0.4"
 rand = "^0.10"
 thiserror = "^2.0"
 arrow = { version = "^58.0", default-features = false, features = [], optional = true }
-image = { version = "^0.25", default-features = false, features = ["webp", "rayon"], optional = true }
+image = { version = "^0.25", default-features = false, features = ["webp", "png", "rayon"], optional = true }
 imageproc = { version = "^0.26", default-features = false, features = ["fft", "rayon"], optional = true }
 log = { version =  "^0.4", optional = true }
 minifb = { version = "^0.28", optional = true }

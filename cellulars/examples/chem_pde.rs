@@ -125,12 +125,13 @@ impl ChemEnvironment {
 
 impl AsEnv for ChemEnvironment {
     type Cell = Cell;
+    type Coord = FloatType;
 
-    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
+    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary<Coord = Self::Coord>> {
         &self.env
     }
 
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary<Coord = Self::Coord>> {
         &mut self.env
     }
 }

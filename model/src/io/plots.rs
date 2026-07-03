@@ -7,8 +7,8 @@ use anyhow::{anyhow, bail};
 use cellulars::constants::FloatType;
 use cellulars::empty_cell::Empty;
 use cellulars::io::write::image::lerper::Lerper;
-use cellulars::io::write::image::plot::{srgba_to_rgba, AreaPlot, BorderPlot, CenterPlot, Plot, SpinPlot};
-use cellulars::prelude::{Boundary, FixedBoundary, HasCenter, Pos};
+use cellulars::io::write::image::plot::{srgba_to_rgba, AreaPlot, BorderPlot, CenterPlot, NeighborsPlot, Plot, SpinPlot};
+use cellulars::prelude::{AsEnv, Boundary, FixedBoundary, HasCenter, Pos};
 use cellulars::spin::Spin;
 use image::RgbaImage;
 use imageproc::drawing::draw_cross_mut;
@@ -24,7 +24,7 @@ pub struct ChemCenterPlot {
 impl Plot<MyEnvironment> for ChemCenterPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let color = srgba_to_rgba(self.color);
-        for rel_cell in env.env.cells.iter() {
+        for rel_cell in env.env().cells.iter() {
             if rel_cell.cell.is_empty() {
                 continue;
             }
@@ -47,10 +47,10 @@ pub struct CellTypePlot {
 
 impl Plot<MyEnvironment> for CellTypePlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
-        for pos in env.env.cell_lattice.iter_positions() {
-            let spin = env.env.cell_lattice[pos];
+        for pos in env.env().cell_lattice.iter_positions() {
+            let spin = env.env().cell_lattice[pos];
             if let Spin::Some(cell_index) = spin {
-                let rel_cell = &env.env.cells[cell_index];
+                let rel_cell = &env.env().cells[cell_index];
                 let color = match rel_cell.cell.cell_type {
                     CellType::Migrating => self.mig_color,
                     CellType::Dividing => self.div_color
@@ -101,10 +101,10 @@ pub struct DivisionAxisPlot {
 impl Plot<MyEnvironment> for DivisionAxisPlot {
     fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
         let color = srgba_to_rgba(self.color);
-        for rel_cell in env.env.cells.iter() {
+        for rel_cell in env.env().cells.iter() {
             let div_axis = env.find_division_axis(rel_cell);
             let center = rel_cell.cell.center();
-            let fixed_bound = FixedBoundary::new(env.env.bounds.boundary.rect().clone());
+            let fixed_bound = FixedBoundary::new(env.env().bounds.boundary.rect().clone());
 
             for t in -self.length / 2..self.length / 2 {
                 let x = center.x + div_axis.0 * t as FloatType;
@@ -162,6 +162,12 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot<MyEnvironment>>]> {
                 PlotType::DivisionAxis => Box::new(DivisionAxisPlot {
                     color: hex_to_srgba(&params.division_axis_color)?,
                     length: params.division_axis_length
+                }),
+                PlotType::Neighbors => Box::new(NeighborsPlot {
+                    lerper: Lerper {
+                        min_color: srgba_to_oklab(hex_to_srgba(&params.neighbors_min_color)?),
+                        max_color: srgba_to_oklab(hex_to_srgba(&params.neighbors_max_color)?),
+                    }
                 })
             };
             plots.push(plot);

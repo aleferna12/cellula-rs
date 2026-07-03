@@ -4,43 +4,44 @@ use crate::constants::{BoundaryType, NeighborhoodType, EPSILON};
 use crate::my_cell::MyCell;
 use cellulars::prelude::*;
 use rand::RngExt;
+use cellulars::traits::track_neighbors::TrackNeighbors;
 
 /// An environment that contains a chemical gradient and limits cell growth to [`MyEnvironment::max_cells`].
 #[derive(Debug, Clone)]
 pub struct MyEnvironment {
-    /// Inner [`Environment`].
-    pub env: Environment<MyCell, NeighborhoodType, BoundaryType>,
+    /// Inner [`NeighEnvironment`].
+    pub env: NeighEnvironment<MyCell, NeighborhoodType, BoundaryType>,
     /// Lattice containing the chemical gradient.
     pub chem_lattice: Lattice<FloatType>,
     /// Scaler used to determine the radius of search for cell positions starting from its center.
     pub cell_search_scaler: FloatType,
-    /// Maximum number of cells supported in the environment.
-    pub max_cells: CellIndex,
     population_exploded: bool
 }
 
 impl MyEnvironment {
     /// Make a new [`MyEnvironment`] from an existing [`Environment`].
     pub fn new(
-        env: Environment<MyCell, NeighborhoodType, BoundaryType>,
-        max_cells: CellIndex,
+        env: NeighEnvironment<MyCell, NeighborhoodType, BoundaryType>,
         cell_search_scaler: FloatType
     ) -> Self {
         let mut env_ = Self {
-            chem_lattice: Lattice::from(env.cell_lattice.rect.clone()),
+            chem_lattice: Lattice::from(env.env().cell_lattice.rect.clone()),
             env,
             cell_search_scaler,
-            max_cells,
             population_exploded: false
         };
         env_.make_chem_gradient();
         env_
     }
+    
+    pub fn max_cells(&self) -> CellIndex {
+        self.env.max_cells()
+    }
 
     /// Creates a chemical gradient spanning from the top to the bottom of the environment.
     pub fn make_chem_gradient(&mut self) {
-        for i in 0..self.env.width() {
-            for j in 0..self.env.height() {
+        for i in 0..self.env().width() {
+            for j in 0..self.env().height() {
                 self.chem_lattice[(i, j).into()] = j as FloatType;
             }
         }
@@ -48,13 +49,13 @@ impl MyEnvironment {
 
     /// Returns whether the environment supports additional cells based on [`MyEnvironment::max_cells`].
     pub fn can_add_cell(&mut self) -> bool {
-        if self.env.cells.n_non_empty() < self.max_cells {
+        if self.env().cells.n_non_empty() < self.max_cells() {
             return true;
         }
         if !self.population_exploded {
             log::warn!(
                         "Population exceeded maximum threshold `max-cells={}` during cell division",
-                        {self.max_cells}
+                        {self.max_cells()}
                     );
             log::warn!("This warning will be suppressed from now on");
             self.population_exploded = true;
@@ -72,7 +73,7 @@ impl MyEnvironment {
         rng: &mut impl RngExt,
     ) -> &RelCell<MyCell> {
         let pos_isize = self
-            .env
+            .env()
             .cell_lattice
             .random_pos(rng)
             .cast_as::<isize>();
@@ -89,15 +90,15 @@ impl MyEnvironment {
 
     /// Divides a cell along its minor axis.
     pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<MyCell> {
-        let rel_mom = &self.env.cells[mom_index];
+        let rel_mom = &self.env().cells[mom_index];
         let div_axis = self.find_division_axis(rel_mom);
         let normal = (-div_axis.1, div_axis.0);
         let new_positions: Box<_> = self
-            .env
+            .env()
             .search_cell_box(rel_mom, self.cell_search_scaler)
             .into_iter()
             .filter(|pos| {
-                let (dx, dy) = self.env.bounds.boundary.displacement(
+                let (dx, dy) = self.env().bounds.boundary.displacement(
                     pos.cast_as(),
                     rel_mom.cell.center()
                 );
@@ -107,21 +108,21 @@ impl MyEnvironment {
         
         let newborn_ta = rel_mom.cell.newborn_target_area;
         let newborn = rel_mom.cell.birth();
-        let new_index = self.env.cells.add(newborn).index;
+        let new_index = self.env_mut().cells.add(newborn).index;
         for pos in new_positions {
             self.transfer_position(
                 pos,
                 Spin::Some(new_index),
             );
         }
-        self.env.cells[mom_index].cell.cell.target_area = newborn_ta;
-        &self.env.cells[new_index]
+        self.env_mut().cells[mom_index].cell.cell.target_area = newborn_ta;
+        &self.env().cells[new_index]
     }
 
     /// Checks which cells should divide and executes cell divisions.
     pub fn reproduce(&mut self) {
         let mut divide = vec![];
-        for rel_cell in self.env.cells.iter() {
+        for rel_cell in self.env().cells.iter() {
             if !rel_cell.cell.is_alive() {
                 continue;
             }
@@ -145,8 +146,8 @@ impl MyEnvironment {
         let mut sum_yy = 0.0;
         let mut sum_xy = 0.0;
 
-        for p in &self.env.search_cell_box(rel_cell, self.cell_search_scaler) {
-            let (dx, dy) = self.env.bounds.boundary.displacement(
+        for p in &self.env().search_cell_box(rel_cell, self.cell_search_scaler) {
+            let (dx, dy) = self.env().bounds.boundary.displacement(
                 p.cast_as(),
                 rel_cell.cell.center()
             );
@@ -190,7 +191,7 @@ impl MyEnvironment {
 
     /// Removes all cells from the environment and restore it to a clean state.
     pub fn wipe_out(&mut self) {
-        self.env.wipe_out();
+        self.env_mut().wipe_out();
     }
 
     /// Creates a border of [`Spin::Solid`] around the environment.
@@ -203,23 +204,23 @@ impl MyEnvironment {
     ) {
         let mut border_positions = Vec::<Pos<usize>>::new();
         if bottom {
-            for x in 0..self.env.width() {
+            for x in 0..self.env().width() {
                 border_positions.push((x, 0).into());
             }
         }
         if top {
-            for x in (0..self.env.width() - 1).rev() {
-                border_positions.push((x, self.env.height() - 1).into());
+            for x in (0..self.env().width() - 1).rev() {
+                border_positions.push((x, self.env().height() - 1).into());
             }
         }
         if left {
-            for y in (1..self.env.height() - 1).rev() {
+            for y in (1..self.env().height() - 1).rev() {
                 border_positions.push((0, y).into());
             }
         }
         if right {
-            for y in 1..self.env.height() {
-                border_positions.push((self.env.width() - 1, y).into());
+            for y in 1..self.env().height() {
+                border_positions.push((self.env().width() - 1, y).into());
             }
         }
 
@@ -234,9 +235,9 @@ impl MyEnvironment {
         positions: impl IntoIterator<Item = Pos<isize>>
     ) -> &RelCell<MyCell> {
         let med_positions = positions.into_iter().filter_map(|pos| {
-            let valid_pos = self.env.bounds.lattice_boundary.valid_pos(pos)?;
+            let valid_pos = self.env().bounds.lattice_boundary.valid_pos(pos)?;
             let lat_pos = valid_pos.cast_as();
-            if !matches!(self.env.cell_lattice[lat_pos], Spin::Medium) {
+            if !matches!(self.env().cell_lattice[lat_pos], Spin::Medium) {
                 return None;
             }
             Some(lat_pos)
@@ -253,11 +254,11 @@ impl TransferPosition for MyEnvironment {
     ) -> EdgesUpdate {
         let chem_at_pos = self.chem_lattice[pos];
         if let Spin::Some(index) = to {
-            self.env.cells[index].cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
+            self.env.env.cells[index].cell.shift_chem(pos, chem_at_pos, true, &self.env.env.bounds.boundary);
         }
-        if let Spin::Some(index) = self.env.cell_lattice[pos] {
-            let from_rel_cell = &mut self.env.cells[index];
-            from_rel_cell.cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
+        if let Spin::Some(index) = self.env().cell_lattice[pos] {
+            let from_rel_cell = &mut self.env.env.cells[index];
+            from_rel_cell.cell.shift_chem(pos, chem_at_pos, false, &self.env.env.bounds.boundary);
             // If the copy kills the cell
             if from_rel_cell.cell.area() == 0 {
                 from_rel_cell.cell.apoptosis();
@@ -267,15 +268,22 @@ impl TransferPosition for MyEnvironment {
     }
 }
 
+impl TrackNeighbors for MyEnvironment {
+    fn neighbor_contacts(&self, spin1: Spin, spin2: Spin) -> Option<u32> {
+        self.env.neighbor_contacts(spin1, spin2)
+    }
+}
+
 impl AsEnv for MyEnvironment {
     type Cell = MyCell;
+    type Coord = FloatType;
 
-    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
-        &self.env
+    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary<Coord = Self::Coord>> {
+        self.env.env()
     }
 
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary> {
-        &mut self.env
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary<Coord = Self::Coord>> {
+        self.env.env_mut()
     }
 }
 

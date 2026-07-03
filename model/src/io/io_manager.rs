@@ -13,7 +13,7 @@ use cellulars::io::write::image::plot::Plot;
 use cellulars::io::write::parquet_writer::ParquetWriter;
 use cellulars::io::write::write_trait::Write;
 use cellulars::lattice::Lattice;
-use cellulars::prelude::CellContainer;
+use cellulars::prelude::{AsEnv, CellContainer};
 use cellulars::spin::Spin;
 use image::imageops::{flip_vertical_in_place, FilterType};
 use image::{ColorType, GrayImage, ImageReader, RgbaImage};
@@ -181,14 +181,14 @@ impl IoManager {
             let file_path = self.outdir
                 .join(CELLS_PATH)
                 .join(format!("{time_str}.parquet"));
-            ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(&env.env.cells)?;
+            ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(&env.env().cells)?;
         }
 
         if time_step.is_multiple_of(self.lattice_period) {
             let file_path = self.outdir
                 .join(LATTICES_PATH)
                 .join(format!("{time_str}.parquet"));
-            ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(&env.env.cell_lattice)?;
+            ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(&env.env().cell_lattice)?;
         }
         Ok(())
     }
@@ -242,8 +242,8 @@ impl IoManager {
         env: &MyEnvironment
     ) -> RgbaImage {
         let mut image = RgbaImage::new(
-            env.env.width() as u32,
-            env.env.height() as u32
+            env.env().width() as u32,
+            env.env().height() as u32
         );
         for plot in &self.plots {
             plot.plot(env, &mut image);

@@ -21,6 +21,20 @@ impl<T> SymmetricTable<T> {
         let end = end.unwrap_or(self.length);
         (start..end).flat_map(move |i| (i..end).map(move |j| (i, j)))
     }
+    
+    pub fn get(&self, index: (usize, usize)) -> Option<&T> {
+        if index.0 >= self.length || index.1 >= self.length {
+            return None;
+        }
+        Some(&self[index])
+    }
+    
+    pub fn get_mut(&mut self, index: (usize, usize)) -> Option<&mut T> {
+        if index.0 >= self.length || index.1 >= self.length {
+            return None;
+        }
+        Some(&mut self[index])
+    }
 
     fn flat_index(&self, i: usize, j: usize) -> usize {
         let (i, j) = if i > j { (j, i) } else { (i, j) };

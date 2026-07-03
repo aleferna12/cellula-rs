@@ -2,6 +2,7 @@
 
 pub use crate::cell::Cell;
 pub use crate::environment::{EdgesUpdate, Environment};
+pub use crate::neigh_environment::NeighEnvironment;
 pub use crate::cell_container;
 pub use crate::cell_container::{CellContainer, RelCell};
 pub use crate::constants::{CellIndex, FloatType};

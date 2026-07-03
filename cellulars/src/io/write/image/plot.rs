@@ -4,12 +4,13 @@
 
 use crate::constants::{CellIndex, FloatType};
 use crate::empty_cell::Empty;
-use crate::io::write::image::lerper::Lerper;
-use crate::prelude::{Cellular, Habitable, HasCenter, Spin};
+use crate::io::write::image::lerper::{LerpError, Lerper};
+use crate::prelude::{Cellular, Habitable, HasCenter, Pos, Spin};
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
 use palette::{IntoColor, Mix, Srgba};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use crate::traits::track_neighbors::TrackNeighbors;
 
 /// A trait to plot information about the simulation.
 pub trait Plot<P> {
@@ -143,17 +144,50 @@ where
                 let color = self.lerper.lerp(
                     (rel_cell.cell.area() as FloatType - min as FloatType) / (max as FloatType - min as FloatType),
                 );
-                match color {
-                    Ok(c) => image.put_pixel(
-                        pos.x as u32,
-                        pos.y as u32,
-                        srgba_to_rgba(c.into_color())
-                    ),
-                    Err(_e) => {
-                        #[cfg(feature = "log")]
-                        log::warn!("Failed to plot area for pos `{pos:?}` with error `{_e:?}`")
+                put_pixel_or_log_error(pos, image, color, "area");
+            }
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug, Eq, Hash)]
+pub struct NeighborsPlot<C> {
+    pub lerper: Lerper<C>
+}
+
+impl<H, C> Plot<H> for NeighborsPlot<C>
+where
+    H: Habitable + TrackNeighbors,
+    H::Cell: Cellular + Empty,
+    C: Mix<Scalar = FloatType> + Clone + IntoColor<Srgba<FloatType>> {
+    fn plot(&self, env: &H, image: &mut RgbaImage) {
+        let mut max = 0;
+        let mut neigh_array = vec![0u32; env.env().cells.n_non_empty() as usize].into_boxed_slice();
+        for rel_cell1 in env.env().cells.iter_non_empty() {
+            let mut neighs = 0u32; 
+            for rel_cell2 in env.env().cells.iter_non_empty() {
+                let contacts = env.neighbor_contacts(
+                    Spin::Some(rel_cell1.index),
+                    Spin::Some(rel_cell2.index)
+                );
+                if let Some(c) =  contacts {
+                    if c > 0 {
+                        neighs += 1;
                     }
-                };
+                }
+            }
+            neigh_array[rel_cell1.index as usize] = neighs;
+            if neighs > max {
+                max = neighs;
+            }
+        }
+
+        for pos in env.env().cell_lattice.iter_positions() {
+            if let Spin::Some(cell_index) = env.env().cell_lattice[pos] {
+                let color = self.lerper.lerp(
+                    (neigh_array[cell_index as usize] as FloatType) / max as FloatType,
+                );
+                put_pixel_or_log_error(pos, image, color, "number of neighbors");
             }
         }
     }
@@ -163,6 +197,25 @@ where
 pub fn srgba_to_rgba(srgba: Srgba<FloatType>) -> Rgba<u8> {
     let srgba_u8 = srgba.into_format();
     Rgba([srgba_u8.red, srgba_u8.green, srgba_u8.blue, srgba_u8.alpha])
+}
+
+fn put_pixel_or_log_error(
+    pos: Pos<usize>,
+    image: &mut RgbaImage, 
+    color: Result<impl IntoColor<Srgba<FloatType>>, LerpError>,
+    _plot_as_str: &str
+) {
+    match color {
+        Ok(c) => image.put_pixel(
+            pos.x as u32,
+            pos.y as u32,
+            srgba_to_rgba(c.into_color())
+        ),
+        Err(_e) => {
+            #[cfg(feature = "log")]
+            log::warn!("Failed to plot {_plot_as_str} for pos `{pos:?}` with error `{_e:?}`")
+        }
+    };
 }
 
 #[cfg(test)]

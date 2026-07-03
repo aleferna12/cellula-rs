@@ -12,7 +12,7 @@ use crate::spin::Spin;
 /// [`Environment`], where cells live, and know how to [`TransferPosition`] between cells.
 pub trait Habitable: TransferPosition + AsEnv {}
 
-impl<H: TransferPosition + AsEnv<Cell = C>, C> Habitable for H {}
+impl<H: TransferPosition + AsEnv> Habitable for H {}
 
 /// This trait asserts that a type can spawn cells.
 pub trait Spawn: Habitable
@@ -62,10 +62,12 @@ pub trait TransferPosition {
 pub trait AsEnv {
     /// Cell type of the environment.
     type Cell;
+    
+    type Coord;
 
     /// Returns a reference to the environment where cells live.
-    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;
+    fn env(&self) -> &Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary<Coord = Self::Coord>>;
 
     /// Returns a mutable reference to the environment where cells live.
-    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary>;
+    fn env_mut(&mut self) -> &mut Environment<Self::Cell, impl Neighborhood, impl ToLatticeBoundary<Coord = Self::Coord>>;
 }
