@@ -111,11 +111,15 @@ impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
             if spin == spin_neigh {
                 if self.edge_book.remove(&edge) {
                     removed += 1;
+                } else {
+                    panic!("failed to remove edge")
                 }
                 continue;
             }
             match (spin, spin_neigh) {
                 (Spin::Some(_), _) | (_, Spin::Some(_)) => {
+                    // Unlike removing edges, this operation is allowed to fail when the spin being replaced != spin_neigh
+                    // I benchmarked using an if statement to skip these hash function calls but performance was the same
                     if self.edge_book.insert(edge) {
                         added += 1;
                     }
@@ -123,6 +127,8 @@ impl<C: Cellular, N: Neighborhood, B: ToLatticeBoundary> Environment<C, N, B> {
                 (Spin::Medium, Spin::Solid) | (Spin::Solid, Spin::Medium) => {
                     if self.edge_book.remove(&edge) {
                         removed += 1;
+                    } else {
+                        panic!("failed to remove edge")
                     }
                 },
                 _ => panic!("inconsistent edges")
