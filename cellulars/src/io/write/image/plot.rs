@@ -161,6 +161,7 @@ where
     H::Cell: Cellular + Empty,
     C: Mix<Scalar = FloatType> + Clone + IntoColor<Srgba<FloatType>> {
     fn plot(&self, env: &H, image: &mut RgbaImage) {
+        let mut min = u32::MAX;
         let mut max = 0;
         let mut neigh_array = vec![0u32; env.env().cells.n_non_empty() as usize].into_boxed_slice();
         for rel_cell1 in env.env().cells.iter_non_empty() {
@@ -177,6 +178,9 @@ where
                 }
             }
             neigh_array[rel_cell1.index as usize] = neighs;
+            if neighs < min {
+                min = neighs;
+            }
             if neighs > max {
                 max = neighs;
             }
@@ -185,7 +189,7 @@ where
         for pos in env.env().cell_lattice.iter_positions() {
             if let Spin::Some(cell_index) = env.env().cell_lattice[pos] {
                 let color = self.lerper.lerp(
-                    (neigh_array[cell_index as usize] as FloatType) / max as FloatType,
+                    (neigh_array[cell_index as usize] as FloatType - min as FloatType) / (max as FloatType - min as FloatType),
                 );
                 put_pixel_or_log_error(pos, image, color, "number of neighbors");
             }

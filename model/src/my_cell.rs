@@ -5,7 +5,7 @@ use cellulars::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// A cell that can track a chemical concentration and migrate towards its source.
-#[derive(Clone, Debug, Serialize, Deserialize, Builder)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Builder)]
 pub struct MyCell {
     /// Area at which the cell divides.
     pub divide_area: u32,
@@ -126,7 +126,7 @@ impl Alive for MyCell {
 }
 
 /// A cell is either migrating or dividing.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum CellType {
     /// A cell that is migrating.
     Migrating,

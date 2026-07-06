@@ -16,8 +16,24 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
 }
 
 #[test]
+fn test_backup() -> anyhow::Result<()> {
+    let mut params = make_test_parameters()?;
+    params.io.outdir = "tests/out/backup".into();
+    let mut model = Model::new_from_parameters(params.clone(), None)?;
+    model.run_for(512);
+    let env = model.pond.env.clone();
+    model.step();
+
+    let sim_dir = params.io.outdir.clone();
+    params.io.outdir += "/resumed/";
+    let res_model = Model::new_from_backup(params, sim_dir, 512)?;
+    assert_eq!(env, res_model.pond.env);
+    Ok(())
+}
+
+#[test]
 fn test_plots() -> anyhow::Result<()> {
-    for plot in [PT::CellType, PT::Area, PT::Center, PT::ChemCenter] {
+    for plot in [PT::CellType, PT::Area, PT::Center, PT::ChemCenter, PT::Neighbors] {
         let mut params = make_test_parameters()?;
         params.io.outdir = format!("tests/out/plots/{plot:?}");
         params.io.plot.order = vec![PT::Chem, PT::Spin, plot, PT::Border].into();

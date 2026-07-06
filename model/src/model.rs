@@ -35,7 +35,7 @@ pub struct Model {
 }
 
 impl Model {
-    /// Initialises a brand-new model from some `parameters`.
+    /// Initializes a brand-new model from some `parameters`.
     pub fn new_from_parameters(
         parameters: Parameters,
         maybe_templates_path: Option<String>,
@@ -252,17 +252,15 @@ impl Model {
 
     fn make_env(parameters: &Parameters) -> MyEnvironment {
         MyEnvironment::new(
-            NeighEnvironment::new(
-                Environment::new_empty(
-                    NeighborhoodType::new(parameters.pond.neigh_r),
-                    Boundaries::new(BoundaryType::new(Rect::new(
-                        (0., 0.).into(),
-                        (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
-                    ))),
-                ),
-                parameters.cell.max_cells
+            Environment::new_empty(
+                NeighborhoodType::new(parameters.pond.neigh_r),
+                Boundaries::new(BoundaryType::new(Rect::new(
+                    (0., 0.).into(),
+                    (parameters.pond.width as FloatType, parameters.pond.height as FloatType).into(),
+                ))),
             ),
-            parameters.cell.search_radius
+            parameters.cell.search_radius,
+            parameters.cell.max_cells
         )
     }
 
@@ -397,20 +395,17 @@ impl Model {
         
         let cells = IoManager::read_cells(sim_path, time_step)?;
         let mut env = MyEnvironment::new(
-            NeighEnvironment::new(
-                Environment::new(
-                    cells,
-                    lattice,
-                    NeighborhoodType::new(parameters.pond.neigh_r),
-                    Boundaries::new(BoundaryType::new(rect))
-                ),
-                parameters.cell.max_cells
+            Environment::new(
+                cells,
+                lattice,
+                NeighborhoodType::new(parameters.pond.neigh_r),
+                Boundaries::new(BoundaryType::new(rect))
             ),
-            parameters.cell.search_radius
+            parameters.cell.search_radius,
+            parameters.cell.max_cells
         );
+        env.neigh_tracker.initialize_from_env(&env.env);
         for pos in env.env().cell_lattice.iter_positions() {
-            // TODO!: FIX THIS
-            // env.env.update_neighbors(pos);
             env.env_mut().update_edges(pos);
         }
 

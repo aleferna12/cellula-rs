@@ -6,11 +6,12 @@ use cellulars::prelude::*;
 use rand::RngExt;
 use cellulars::traits::track_neighbors::TrackNeighbors;
 
-/// An environment that contains a chemical gradient and limits cell growth to [`MyEnvironment::max_cells`].
-#[derive(Debug, Clone)]
+/// An environment that contains a chemical gradient, tracks neighbors, and limits cell growth.
+#[derive(Debug, Clone, PartialEq)]
 pub struct MyEnvironment {
-    /// Inner [`NeighEnvironment`].
-    pub env: NeighEnvironment<MyCell, NeighborhoodType, BoundaryType>,
+    /// Inner [`Environment`].
+    pub env: Environment<MyCell, NeighborhoodType, BoundaryType>,
+    pub neigh_tracker: NeighborTracker,
     /// Lattice containing the chemical gradient.
     pub chem_lattice: Lattice<FloatType>,
     /// Scaler used to determine the radius of search for cell positions starting from its center.
@@ -21,10 +22,12 @@ pub struct MyEnvironment {
 impl MyEnvironment {
     /// Make a new [`MyEnvironment`] from an existing [`Environment`].
     pub fn new(
-        env: NeighEnvironment<MyCell, NeighborhoodType, BoundaryType>,
-        cell_search_scaler: FloatType
+        env: Environment<MyCell, NeighborhoodType, BoundaryType>,
+        cell_search_scaler: FloatType,
+        max_cells: CellIndex
     ) -> Self {
         let mut env_ = Self {
+            neigh_tracker: NeighborTracker::new(max_cells),
             chem_lattice: Lattice::from(env.env().cell_lattice.rect.clone()),
             env,
             cell_search_scaler,
@@ -34,8 +37,9 @@ impl MyEnvironment {
         env_
     }
     
+    /// Returns the maximum number of cells allowed in the environment.
     pub fn max_cells(&self) -> CellIndex {
-        self.env.max_cells()
+        self.neigh_tracker.max_cells()
     }
 
     /// Creates a chemical gradient spanning from the top to the bottom of the environment.
@@ -254,23 +258,24 @@ impl TransferPosition for MyEnvironment {
     ) -> EdgesUpdate {
         let chem_at_pos = self.chem_lattice[pos];
         if let Spin::Some(index) = to {
-            self.env.env.cells[index].cell.shift_chem(pos, chem_at_pos, true, &self.env.env.bounds.boundary);
+            self.env.cells[index].cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
         }
         if let Spin::Some(index) = self.env().cell_lattice[pos] {
-            let from_rel_cell = &mut self.env.env.cells[index];
-            from_rel_cell.cell.shift_chem(pos, chem_at_pos, false, &self.env.env.bounds.boundary);
+            let from_rel_cell = &mut self.env.cells[index];
+            from_rel_cell.cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
             // If the copy kills the cell
             if from_rel_cell.cell.area() == 0 {
                 from_rel_cell.cell.apoptosis();
             }
         }
+        self.neigh_tracker.update_neighbors(&self.env, pos, to);
         self.env.transfer_position(pos, to)
     }
 }
 
 impl TrackNeighbors for MyEnvironment {
     fn neighbor_contacts(&self, spin1: Spin, spin2: Spin) -> Option<u32> {
-        self.env.neighbor_contacts(spin1, spin2)
+        self.neigh_tracker.neighbor_contacts(spin1, spin2)
     }
 }
 

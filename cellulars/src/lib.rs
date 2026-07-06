@@ -30,4 +30,4 @@ pub mod prelude;
 pub mod empty_cell;
 pub mod copy_bias;
 pub mod potts;
-pub mod neigh_environment;
+pub mod neighbor_tracker;
