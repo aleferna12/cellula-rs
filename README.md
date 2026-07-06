@@ -9,10 +9,11 @@ It currently runs on a single thread and achieves high performance using algorit
 Monte Carlo sampling method used traditionally for CPM.
 In the near future, the main step function will be parallelized for an even larger speed-up (stay tuned).
 
-Features currently include:   
+Features currently include:
+- Implementations of multiple boundary and neighborhood conditions (C).
+- Tracking cell neighbors and contact lengths (C).
 - Plotting API to display information about the simulation (C).
 - Real-time movie inspection of the simulation (C).
-- Implementations of multiple boundary and neighborhood conditions (C).
 - IO library to write data about the simulation in real time (C).
 - Reader to construct simulations from templates (M).
 - Robust backup system to restore simulations at the atomic scale (M).
