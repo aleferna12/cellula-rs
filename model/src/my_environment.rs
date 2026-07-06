@@ -14,6 +14,8 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use rand::Rng;
 use std::ops::{Deref, DerefMut};
+use cellulars_lib::adhesion::AdhesionSystem;
+use crate::bit_adhesion::BitAdhesion;
 
 #[derive(Clone)]
 pub struct MyEnvironment {
@@ -117,24 +119,36 @@ impl MyEnvironment {
         }
     }
 
-    pub fn update_neighbours(&mut self) {
+    pub fn update_neighbours(&mut self, adh: &BitAdhesion) {
         for rel_cell in self.cells.iter_mut() {
             rel_cell.neighbors.clear();
         }
-        for edge in self.env.edge_book.iter().cloned() {
+        for edge in self.env.edge_book.clone().iter() {
             let spin1: Spin = self.cell_lattice[edge.p1];
             let spin2: Spin = self.cell_lattice[edge.p2];
             if let Spin::Some(cell_index) = spin1 {
-                let rel_cell = self.env.cells.get_cell_mut(cell_index);
-                let entry = rel_cell.neighbors.entry(spin2).or_insert(0);
-                *entry += 1;
+                self.add_contact(cell_index, spin2, adh);
             }
             if let Spin::Some(cell_index) = spin2 {
-                let rel_cell = self.env.cells.get_cell_mut(cell_index);
-                let entry = rel_cell.neighbors.entry(spin1).or_insert(0);
-                *entry += 1;
+                self.add_contact(cell_index, spin1, adh);
             }
         }
+    }
+
+    fn add_contact(&mut self, ci: CellIndex, other: Spin, adh: &BitAdhesion) {
+        let gamma = match other {
+            Spin::Some(_) => {
+                let energy = adh.adhesion_energy(Spin::Some(ci), other, &self.env().cells);
+                adh.static_adhesion.medium_energy - energy / 2.
+            },
+            _ => 0.
+        };
+        let rel_cell = self.env.cells.get_cell_mut(ci);
+        let entry = rel_cell.neighbors.entry(other).or_insert((
+            0,
+            gamma
+        ));
+        entry.0 += 1;
     }
 
     pub fn update_act(&mut self) {
