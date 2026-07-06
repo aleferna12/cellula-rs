@@ -59,3 +59,5 @@ migrating-color = "#b30000"
 dividing-color = "#045a8d"
 division-axis-color = "#00eeee"
 division-axis-length = 8
+neighbors-min-color = "#ee00ee"
+neighbors-max-color = "#eeee00"
