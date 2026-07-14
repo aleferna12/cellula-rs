@@ -12,7 +12,7 @@ use crate::cell::{Cell, Lineage};
 /// 100% complimentary give `max_bit_energy / 2`.
 #[derive(Clone)]
 pub struct CompAdhesion {
-    pub gene_energy: f32,
+    pub mul_energy: f32,
     pub static_adhesion: StaticAdhesion
 }
 
@@ -34,9 +34,8 @@ impl AdhesionSystem for CompAdhesion {
                     let lin1 = &context.get_cell(c1).lineage;
                     let lin2 = &context.get_cell(c2).lineage;
                     match (lin1, lin2) {
-                        // Such that gamma = 12
-                        (Lineage::Multicellular, Lineage::Multicellular) => 16.,
-                        _ => self.static_adhesion.adhesion_energy(spin1, spin2, &())
+                        (Lineage::Multicellular, Lineage::Multicellular) => 2. * self.mul_energy,
+                        _ => 2. * self.static_adhesion.cell_energy
                     }
                 }
             }
@@ -60,7 +59,7 @@ mod tests {
                 medium_energy: 16.,
                 solid_energy: 16.,
             },
-            gene_energy: 16.,
+            mul_energy: 16.,
         }
     }
 

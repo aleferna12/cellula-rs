@@ -35,12 +35,11 @@ act-lambda = 200.0
 
 [potts.adhesion]
 # This determines adhesion between "unicellular" cells and unicellular-multicellular cells
-# Adhesion between "multicellular" cells is always gamma = 12
+# Adhesion between "multicellular" cells is determined by mul-energy
 cell-energy = 20.0
+mul-energy = 8
 medium-energy = 20.0
 solid-energy = 20.0
-# This was disabled
-gene-energy = 0.0
 
 [io]
 outdir = "runs/test"

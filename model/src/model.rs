@@ -165,7 +165,7 @@ impl Model {
                     medium_energy: parameters.potts.adhesion.medium_energy,
                     solid_energy: parameters.potts.adhesion.solid_energy,
                 },
-                gene_energy: parameters.potts.adhesion.gene_energy,
+                mul_energy: parameters.potts.adhesion.mul_energy,
             })
             .chemotaxis_min(parameters.potts.chemotaxis_min)
             .build()
