@@ -19,7 +19,7 @@ pub struct Cell {
     pub genome: BitGenome,
     pub ancestor: Option<CellIndex>,
     // This is only updated before saving data, so may contain outdated information
-    pub neighbors: HashMap<Spin, u32>,
+    pub neighbors: HashMap<Spin, (u32, f32)>,
     // This is only updated before saving data, so may contain outdated information
     pub tot_act: u32,
     // This is only updated before saving data, so may contain outdated information

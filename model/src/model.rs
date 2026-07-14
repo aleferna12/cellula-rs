@@ -43,18 +43,20 @@ impl Model {
 
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
-        Ok(Self {
+        let model = Self {
             pond: Self::make_new_pond(
                 &parameters,
                 &mut rng,
                 maybe_template_path
             )?,
-            io: Self::setup_io(&parameters, seed)?,
+            io: Self::make_io(&parameters)?,
             rng,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             rel_chem_time_step: parameters.io.plot.rel_chem_time_step,
-        })
+        };
+        model.setup_directories(&parameters, seed)?;
+        Ok(model)
     }
 
     /// Makes a new model from a layout file.
@@ -71,14 +73,16 @@ impl Model {
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         let pond = Self::read_layout_pond(&parameters, layout_path, &mut rng, maybe_templates_path)?;
-        Ok(Self {
+        let model = Self {
             pond,
-            io: Self::setup_io(&parameters, seed)?,
+            io: Self::make_io(&parameters)?,
             rng,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             rel_chem_time_step: parameters.io.plot.rel_chem_time_step,
-        })
+        };
+        model.setup_directories(&parameters, seed)?;
+        Ok(model)
     }
 
     /// Initializes the model from a previous state.
@@ -102,17 +106,35 @@ impl Model {
             sim_path,
             time_step
         )?;
-        Ok(Self {
-            io: Self::setup_io(&parameters, seed)?,
+        let model = Self {
+            io: Self::make_io(&parameters)?,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             rel_chem_time_step: parameters.io.plot.rel_chem_time_step,
             pond,
             rng,
-        })
+        };
+        let sim_path_can = std::fs::canonicalize(sim_path)?;
+        let par_path_can = std::fs::canonicalize(&parameters.io.outdir)?;
+        if sim_path_can != par_path_can {
+            model.setup_directories(&parameters, seed)?;
+        }
+        Ok(model)
     }
 
-    fn setup_io(parameters: &Parameters, new_seed: u64) -> anyhow::Result<IoManager> {
+    fn setup_directories(&self, parameters: &Parameters, seed: u64) -> anyhow::Result<()> {
+        log::info!("Creating output directories and copy of parameter file");
+        if parameters.io.replace_outdir {
+            log::info!("Cleaning contents of '{}'", self.io.outdir.display());
+        }
+        self.io.create_directories(parameters.io.replace_outdir)?;
+        let mut params_new_seed = parameters.clone();
+        params_new_seed.general.seed = seed.into();
+        self.io.create_parameters_file(&params_new_seed)?;
+        Ok(())
+    }
+
+    fn make_io(parameters: &Parameters) -> anyhow::Result<IoManager> {
         let movie_maker = if parameters.io.movie.show {
             match MovieMaker::new(
                 parameters.io.movie.width,
@@ -141,15 +163,6 @@ impl Model {
             .plots(parameters.io.plot.clone().try_into()?)
             .maybe_movie_maker(movie_maker)
             .build();
-
-        log::info!("Creating output directories and copy of parameter file");
-        if parameters.io.replace_outdir {
-            log::info!("Cleaning contents of '{}'", io.outdir.display());
-        }
-        io.create_directories(parameters.io.replace_outdir)?;
-        let mut params_new_seed = parameters.clone();
-        params_new_seed.general.seed = new_seed.into();
-        io.create_parameters_file(&params_new_seed)?;
         Ok(io)
     }
 
@@ -492,7 +505,8 @@ impl Step for Model {
 
         let saved = self.io.write_if_time(
             self.pond.time_step,
-            &mut self.pond.env
+            &mut self.pond.env,
+            &self.pond.potts.adhesion
         );
         if let Err(e) = saved {
             log::warn!("Failed to save data at time step {} with error `{e}`", self.pond.time_step)

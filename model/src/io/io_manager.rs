@@ -19,6 +19,7 @@ use polars::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::path::{Path, PathBuf};
+use crate::bit_adhesion::BitAdhesion;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -318,19 +319,21 @@ impl IoManager {
     pub fn write_if_time(
         &mut self,
         time_step: u32,
-        env: &mut MyEnvironment
+        env: &mut MyEnvironment,
+        adh: &BitAdhesion
     ) -> anyhow::Result<()> {
-        self.write_data_if_time(time_step, env)?;
+        self.write_data_if_time(time_step, env, adh)?;
         self.write_image_if_time(time_step, env)
     }
 
     fn write_data_if_time(
         &mut self,
         time_step: u32,
-        env: &mut MyEnvironment
+        env: &mut MyEnvironment,
+        adh: &BitAdhesion
     ) -> anyhow::Result<()> {
         if time_step.is_multiple_of(self.cells_period) {
-            env.update_neighbours();
+            env.update_neighbours(adh);
             env.update_act();
             let mut celldf = env
                 .to_dataframe()
@@ -546,7 +549,8 @@ impl ToDataFrame for MyEnvironment {
             "ligands" => valid.iter().map(|cell| cell.genome.ligands()).collect::<Box<_>>(),
             "receptors" => valid.iter().map(|cell| cell.genome.receptors()).collect::<Box<_>>(),
             "neighbors" => valid.iter().map(|cell| cell.neighbors.keys().map(|v| spin_to_str(*v)).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),
-            "neighbor_contacts" => valid.iter().map(|cell| cell.neighbors.values().map(|v| v.to_string()).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),
+            "neighbor_contacts" => valid.iter().map(|cell| cell.neighbors.values().map(|v| v.0.to_string()).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),
+            "neighbor_gammas" => valid.iter().map(|cell| cell.neighbors.values().map(|v| v.1.to_string()).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),
             "med_neighbor" => valid.iter().map(|cell| cell.neighbors.contains_key(&Spin::Medium)).collect::<Box<_>>(),
             "solid_neighbor" => valid.iter().map(|cell| cell.neighbors.contains_key(&Spin::Solid)).collect::<Box<_>>(),
             "tot_act" => valid.iter().map(|cell| cell.tot_act).collect::<Box<_>>(),
