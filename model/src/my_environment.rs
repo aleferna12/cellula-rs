@@ -15,7 +15,7 @@ use cellulars_lib::spin::Spin;
 use rand::Rng;
 use std::ops::{Deref, DerefMut};
 use cellulars_lib::adhesion::AdhesionSystem;
-use crate::bit_adhesion::BitAdhesion;
+use crate::comp_adhesion::CompAdhesion;
 
 #[derive(Clone)]
 pub struct MyEnvironment {
@@ -119,7 +119,7 @@ impl MyEnvironment {
         }
     }
 
-    pub fn update_neighbours(&mut self, adh: &BitAdhesion) {
+    pub fn update_neighbours(&mut self, adh: &CompAdhesion) {
         for rel_cell in self.cells.iter_mut() {
             rel_cell.neighbors.clear();
         }
@@ -135,7 +135,7 @@ impl MyEnvironment {
         }
     }
 
-    fn add_contact(&mut self, ci: CellIndex, other: Spin, adh: &BitAdhesion) {
+    fn add_contact(&mut self, ci: CellIndex, other: Spin, adh: &CompAdhesion) {
         let gamma = match other {
             Spin::Some(_) => {
                 let energy = adh.adhesion_energy(Spin::Some(ci), other, &self.env().cells);

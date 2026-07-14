@@ -19,7 +19,7 @@ use polars::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::path::{Path, PathBuf};
-use crate::bit_adhesion::BitAdhesion;
+use crate::comp_adhesion::CompAdhesion;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -320,7 +320,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         env: &mut MyEnvironment,
-        adh: &BitAdhesion
+        adh: &CompAdhesion
     ) -> anyhow::Result<()> {
         self.write_data_if_time(time_step, env, adh)?;
         self.write_image_if_time(time_step, env)
@@ -330,7 +330,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         env: &mut MyEnvironment,
-        adh: &BitAdhesion
+        adh: &CompAdhesion
     ) -> anyhow::Result<()> {
         if time_step.is_multiple_of(self.cells_period) {
             env.update_neighbours(adh);
