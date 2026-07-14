@@ -351,27 +351,40 @@ impl Model {
             parameters.cell.genome.length
         )?;
 
-        let cluster_corner = Pos::new(
-            pond.env.cell_lattice.rect.width() / 2,
-            pond.env.cell_lattice.rect.height() / 2
-        );
-        let rows = parameters.cell.n_mul.isqrt();
-        let cell_side = parameters.cell.starting_area.isqrt() as usize;
-        'outer: for i in 0..rows {
-            for j in 0..rows + 1 {
-                let spawned_mul = i * rows + j;
-                if spawned_mul >= parameters.cell.n_mul {
-                    break 'outer;
+        if parameters.cell.mul_cluster {
+            let cluster_corner = Pos::new(
+                pond.env.cell_lattice.rect.width() / 2,
+                pond.env.cell_lattice.rect.height() / 2
+            );
+            let rows = parameters.cell.n_mul.isqrt();
+            let cell_side = parameters.cell.starting_area.isqrt() as usize;
+            'outer: for i in 0..rows {
+                for j in 0..rows + 1 {
+                    let spawned_mul = i * rows + j;
+                    if spawned_mul >= parameters.cell.n_mul {
+                        break 'outer;
+                    }
+                    let cellx = cluster_corner.x + i as usize * cell_side;
+                    let celly = cluster_corner.y + j as usize * cell_side;
+                    let cell_rect = Rect::new(
+                        Pos::new(cellx, celly).to_isize(),
+                        Pos::new(cellx + cell_side, celly + cell_side).to_isize(),
+                    );
+                    let cell_index = pond.env.spawn_cell_checked(
+                        Self::empty_cell_from_parameters(parameters, rng)?,
+                        cell_rect.iter_positions()
+                    ).index;
+                    let rel_cell = pond.env.cells.get_cell_mut(cell_index);
+                    rel_cell.lineage = Lineage::Multicellular;
                 }
-                let cellx = cluster_corner.x + i as usize * cell_side;
-                let celly = cluster_corner.y + j as usize * cell_side;
-                let cell_rect = Rect::new(
-                    Pos::new(cellx, celly).to_isize(),
-                    Pos::new(cellx + cell_side, celly + cell_side).to_isize(),
-                );
-                let cell_index = pond.env.spawn_cell_checked(
-                    Self::empty_cell_from_parameters(parameters, rng)?,
-                    cell_rect.iter_positions()
+            }
+        } else {
+            while pond.env.cells.n_valid() < parameters.cell.n_mul as CellIndex  {
+                let cell = Self::empty_cell_from_parameters(parameters, rng)?;
+                let cell_index = pond.env.spawn_cell_random(
+                    cell.birth(),
+                    parameters.cell.starting_area,
+                    &mut pond.rng
                 ).index;
                 let rel_cell = pond.env.cells.get_cell_mut(cell_index);
                 rel_cell.lineage = Lineage::Multicellular;

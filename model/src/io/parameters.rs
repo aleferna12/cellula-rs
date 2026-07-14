@@ -140,6 +140,7 @@ pub struct PondParameters {
 pub struct CellParameters {
     pub starting_cells: CellIndex,
     pub n_mul: u8,
+    pub mul_cluster: bool,
     pub max_cells: CellIndex,
     pub search_radius: f32,
     pub starting_area: u32,
