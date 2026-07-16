@@ -103,6 +103,10 @@ impl Pond {
             }
         }
     }
+    
+    pub fn mutate(&mut self) {
+        
+    }
 }
 
 impl Step for Pond {

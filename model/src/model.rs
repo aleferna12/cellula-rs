@@ -1,5 +1,5 @@
-use crate::bit_adhesion::BitAdhesion;
-use crate::cell::Cell;
+use crate::simple_adhesion::SimpleAdhesion;
+use crate::cell::{Cell, SimpleGenome};
 use crate::constants::{BoundaryType, NeighbourhoodType};
 use crate::evolution::bit_genome::BitGenome;
 use crate::io::io_manager::IoManager;
@@ -114,9 +114,7 @@ impl Model {
             pond,
             rng,
         };
-        let sim_path_can = std::fs::canonicalize(sim_path)?;
-        let par_path_can = std::fs::canonicalize(&parameters.io.outdir)?;
-        if sim_path_can != par_path_can {
+        if parameters.io.outdir.is_empty() || &parameters.io.outdir == sim_path {
             model.setup_directories(&parameters, seed)?;
         }
         Ok(model)
@@ -172,13 +170,12 @@ impl Model {
             .size_lambda(parameters.potts.size_lambda)
             .perimeter_lambda(parameters.potts.perimeter_lambda)
             .act_lambda(parameters.potts.act_lambda)
-            .adhesion(BitAdhesion { 
+            .adhesion(SimpleAdhesion {
                 static_adhesion: StaticAdhesion {
                     cell_energy: parameters.potts.adhesion.cell_energy,
                     medium_energy: parameters.potts.adhesion.medium_energy,
                     solid_energy: parameters.potts.adhesion.solid_energy,
                 },
-                gene_energy: parameters.potts.adhesion.gene_energy,
             })
             .chemotaxis_min(parameters.potts.chemotaxis_min)
             .build()
@@ -223,12 +220,12 @@ impl Model {
     fn templates_path_to_box(
         maybe_templates_path: Option<String>,
         mut_rate: f32,
-        genome_len: u8
+        mut_std: f32
     ) -> anyhow::Result<Option<Box<[Cell]>>> {
         maybe_templates_path.map(|path| {
             // This is required to obtain a clonable iterator that we can cycle over
             // TODO!: why do cells not save mut rate and genome len?
-            let templates_cells = IoManager::read_cells(path, mut_rate, genome_len)?
+            let templates_cells = IoManager::read_cells(path, mut_rate, mut_std)?
                 .into_iter()
                 .map(|rel_cell| rel_cell.cell)
                 .collect::<Box<[_]>>();
@@ -292,7 +289,7 @@ impl Model {
         let maybe_templates_box = Self::templates_path_to_box(
             maybe_templates_path,
             parameters.cell.genome.mutation_rate,
-            parameters.cell.genome.length
+            parameters.cell.genome.mutation_std,
         )?;
         for (group_index, luma) in sorted_luma.into_iter().enumerate() {
             let cell_positions = luma_cell_positions
@@ -303,7 +300,7 @@ impl Model {
                     continue;
                 }
                 let cell = match &maybe_templates_box {
-                    None => Self::empty_cell_from_parameters(parameters, rng)?,
+                    None => Self::empty_cell_from_parameters(parameters)?,
                     Some(templates_box) => templates_box
                         .get(group_index)
                         .ok_or(anyhow::anyhow!("there were more groups in the layout than in the template"))?
@@ -320,17 +317,11 @@ impl Model {
     }
 
     fn empty_cell_from_parameters(
-        parameters: &Parameters,
-        rng: &mut impl Rng
-    ) -> anyhow::Result<Cell> {
+        parameters: &Parameters) -> anyhow::Result<Cell> {
         Ok(Cell::new_empty(
             parameters.cell.target_area,
             parameters.cell.target_perimeter,
-            BitGenome::new_random(
-                parameters.cell.genome.mutation_rate,
-                parameters.cell.genome.length,
-                rng,
-            ).ok_or(anyhow!("invalid `parameters.cell.genome.length`"))?
+            SimpleGenome::new(0., parameters.cell.genome.mutation_rate, parameters.cell.genome.mutation_std)
         ))
     }
 
@@ -348,13 +339,13 @@ impl Model {
         let maybe_templates_box = Self::templates_path_to_box(
             maybe_templates_path,
             parameters.cell.genome.mutation_rate,
-            parameters.cell.genome.length
+            parameters.cell.genome.mutation_std
         )?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
         while pond.env.cells.n_valid() < parameters.cell.starting_cells && pond.env.can_add_cell() {
             let cell = match &mut maybe_templates_it {
-                None => Self::empty_cell_from_parameters(parameters, rng)?,
+                None => Self::empty_cell_from_parameters(parameters)?,
                 Some(templates_it) => templates_it
                     .next()
                     .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))?
@@ -396,7 +387,7 @@ impl Model {
         let cells = IoManager::read_cells(
             IoManager::resolve_cells_path(sim_path, time_step),
             parameters.cell.genome.mutation_rate,
-            parameters.cell.genome.length
+            parameters.cell.genome.mutation_std
         )?;
 
         let rect = Rect::new(

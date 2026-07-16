@@ -1,4 +1,4 @@
-use crate::evolution::bit_genome::BitGenome;
+use rand_distr::Distribution;
 use crate::evolution::selector::Fit;
 use cellulars_lib::basic_cell::{shifted_com, Alive, BasicCell, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
@@ -7,6 +7,8 @@ use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::spin::Spin;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
+use rand::Rng;
+use rand_distr::Normal;
 
 #[derive(Clone, Debug)]
 pub struct Cell {
@@ -16,7 +18,7 @@ pub struct Cell {
     pub delta_perimeter: Option<i32>,
     pub perimeter: u32,
     pub target_perimeter: u32,
-    pub genome: BitGenome,
+    pub genome: SimpleGenome,
     pub ancestor: Option<CellIndex>,
     // This is only updated before saving data, so may contain outdated information
     pub neighbors: HashMap<Spin, (u32, f32)>,
@@ -34,7 +36,7 @@ pub struct Cell {
 
 impl Cell {
     /// Initialises an empty migrating `Cell` to be filled progressively with `shift_position()`.
-    pub fn new_empty(target_area: u32, target_perimeter: u32, genome: BitGenome) -> Self {
+    pub fn new_empty(target_area: u32, target_perimeter: u32, genome: SimpleGenome) -> Self {
         Self {
             basic_cell: BasicCell::new_empty(target_area),
             chem_center: Pos::new(0., 0.),
@@ -151,6 +153,26 @@ impl Fit for FitCell<'_> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct SimpleGenome {
+    pub val: f32,
+    pub mut_rate: f32,
+    pub mut_std: f32
+}
+
+impl SimpleGenome {
+    pub fn new(val: f32, mut_rate: f32, mut_std: f32) -> Self {
+        Self { val, mut_rate, mut_std}
+    }
+
+    pub fn attempt_mutate(&mut self, rng: &mut impl Rng) {
+        if rng.random_bool(self.mut_rate as f64) {
+            let normal = Normal::new(self.val, self.mut_std).unwrap();
+            self.val = normal.sample(rng).clamp(-10., 10.);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,7 +187,7 @@ mod tests {
         Cell::new_empty(
             100,
             250,
-            BitGenome::new(0, 0, 0., 1).unwrap(),
+            SimpleGenome::new(0., 0.1, 0.1),
         )
     }
 

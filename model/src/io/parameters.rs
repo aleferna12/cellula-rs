@@ -104,8 +104,12 @@ impl Parameters {
             anyhow::bail!("`enclose` must be `true` when the `fixed-boundary` feature is enabled")
         }
         #[cfg(not(feature = "static-adhesion"))]
-        if self.cell.genome.length < 1 || self.cell.genome.length > 64 {
-            anyhow::bail!("`cell.genome.length` must be between 1 and 64")
+        if self.cell.genome.mutation_rate < 0. || self.cell.genome.mutation_rate > 1. {
+            anyhow::bail!("`cell.genome.mutation_rate` must be between 0 and 1")
+        }
+        #[cfg(not(feature = "static-adhesion"))]
+        if self.cell.genome.mutation_std < 0. || self.cell.genome.mutation_std > 1. {
+            anyhow::bail!("`cell.genome.mutation_std` must be between 0 and 1")
         }
 
         if let Some(write_period) = self.io.data.cells_write_period && write_period < self.io.data.cells_period {
@@ -153,7 +157,7 @@ pub struct CellParameters {
 #[serde(rename_all = "kebab-case")]
 pub struct GenomeParameters {
     pub mutation_rate: f32,
-    pub length: u8,
+    pub mutation_std: f32
 }
 
 #[derive(Serialize, Deserialize, Clone)]

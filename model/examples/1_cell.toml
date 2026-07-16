@@ -48,10 +48,10 @@ divide = true
 [cell.genome]
 # Number of regulatory genes in the cell's GRN.
 n-regulatory = 2
-# Mutation rate for each GRN parameter.
+# Mutation rate for the trait.
 mutation-rate = 0.01
-# Number of ligands and receptors in the genome (total size is double this parameter).
-length = 8
+# Mutation standard deviation for the trait.
+mutation-std = 0.01
 
 [potts]
 # Boltzmann temperature.

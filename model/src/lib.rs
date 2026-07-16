@@ -6,4 +6,4 @@ pub mod constants;
 pub mod cell;
 pub mod my_environment;
 pub mod evolution;
-pub mod bit_adhesion;
+pub mod simple_adhesion;

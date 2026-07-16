@@ -1,10 +1,9 @@
-use crate::cell::Cell;
-use crate::evolution::bit_genome::BitGenome;
+use crate::cell::{Cell, SimpleGenome};
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
 use crate::io::plot::Plot;
 use crate::my_environment::MyEnvironment;
-use anyhow::{anyhow, bail, Context};
+use anyhow::{bail, Context};
 use bon::Builder;
 use cellulars_lib::basic_cell::{BasicCell, Cellular, RelCell};
 use cellulars_lib::cell_container::CellContainer;
@@ -19,7 +18,7 @@ use polars::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::path::{Path, PathBuf};
-use crate::bit_adhesion::BitAdhesion;
+use crate::simple_adhesion::SimpleAdhesion;
 
 static IMAGES_PATH: &str = "images";
 static CELLS_PATH: &str = "cells";
@@ -142,7 +141,7 @@ impl IoManager {
     fn make_cells_from_data(
         celldf: DataFrame,
         mut_rate: f32,
-        genome_length: u8
+        mut_std: f32
     ) -> anyhow::Result<CellContainer<Cell>> {
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
@@ -150,12 +149,7 @@ impl IoManager {
             cells.push(Cell::new_empty(
                 0,
                 0,
-                BitGenome::new(
-                    0,
-                    0,
-                    0.,
-                    1
-                ).unwrap(),
+                SimpleGenome::new(0., 0., 0.,)
             ));
         }
 
@@ -194,12 +188,11 @@ impl IoManager {
                     act_center: Pos::new(0., 0.,),
                     kact_center: Pos::new(0., 0.),
                     rel_chem: 0.0,
-                    genome: BitGenome::new(
-                        row[cols["ligands"]].try_extract::<u64>()?,
-                        row[cols["receptors"]].try_extract::<u64>()?,
+                    genome: SimpleGenome::new(
+                        row[cols["genome_val"]].try_extract::<f32>()?,
                         mut_rate,
-                        genome_length
-                    ).ok_or(anyhow!("invalid `genome_length`"))?,
+                        mut_std
+                    )
                 }
             });
         }
@@ -209,12 +202,12 @@ impl IoManager {
     pub fn read_cells(
         cells_path: impl AsRef<Path>,
         mut_rate: f32,
-        genome_length: u8
+        mut_std: f32
     ) -> anyhow::Result<CellContainer<Cell>> {
         let cells_path = cells_path.as_ref();
         let file = std::fs::File::open(cells_path).context(format!("while opening {}", cells_path.display()))?;
         let celldf = ParquetReader::new(file).finish()?;
-        Self::make_cells_from_data(celldf, mut_rate, genome_length)
+        Self::make_cells_from_data(celldf, mut_rate, mut_std)
     }
 
     pub fn resolve_parameters_path(sim_path: impl AsRef<Path>) -> PathBuf {
@@ -317,7 +310,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         env: &mut MyEnvironment,
-        adh: &BitAdhesion
+        adh: &SimpleAdhesion
     ) -> anyhow::Result<()> {
         self.write_data_if_time(time_step, env, adh)?;
         self.write_image_if_time(time_step, env)
@@ -327,7 +320,7 @@ impl IoManager {
         &mut self,
         time_step: u32,
         env: &mut MyEnvironment,
-        adh: &BitAdhesion
+        adh: &SimpleAdhesion
     ) -> anyhow::Result<()> {
         if time_step.is_multiple_of(self.cells_period) {
             env.update_neighbours(adh);
@@ -543,8 +536,7 @@ impl ToDataFrame for MyEnvironment {
             "chem_center_x" => valid.iter().map(|cell| cell.chem_center.x).collect::<Box<_>>(),
             "chem_center_y" => valid.iter().map(|cell| cell.chem_center.y).collect::<Box<_>>(),
             "chem_mass" => valid.iter().map(|cell| cell.chem_mass).collect::<Box<_>>(),
-            "ligands" => valid.iter().map(|cell| cell.genome.ligands()).collect::<Box<_>>(),
-            "receptors" => valid.iter().map(|cell| cell.genome.receptors()).collect::<Box<_>>(),
+            "genome_val" => valid.iter().map(|cell| cell.genome.val).collect::<Box<_>>(),
             "neighbors" => valid.iter().map(|cell| cell.neighbors.keys().map(|v| spin_to_str(*v)).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),
             "neighbor_contacts" => valid.iter().map(|cell| cell.neighbors.values().map(|v| v.0.to_string()).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),
             "neighbor_gammas" => valid.iter().map(|cell| cell.neighbors.values().map(|v| v.1.to_string()).collect::<Box<[String]>>().join(" ")).collect::<Box<[String]>>(),

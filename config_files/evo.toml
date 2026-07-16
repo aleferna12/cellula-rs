@@ -22,8 +22,10 @@ target-perimeter = 180
 divide = true
 
 [cell.genome]
+# Mutation rate for the trait.
 mutation-rate = 0.01
-length = 8
+# Mutation standard deviation for the trait.
+mutation-std = 0.01
 
 [potts]
 boltz-t = 20.0

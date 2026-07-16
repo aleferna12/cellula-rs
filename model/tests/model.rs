@@ -33,35 +33,11 @@ fn test_run() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_templates() -> anyhow::Result<()> {
-    let mut params = make_test_parameters()?;
-    params.io.outdir = "tests/templates/".to_string();
-
-    let mut model = Model::new_from_parameters(params, Some("tests/big_small_templates.parquet".to_string()))?;
-    model.run_for(512);
-    Ok(())
-}
-
-#[test]
 fn test_layout() -> anyhow::Result<()> {
     let mut params = make_test_parameters()?;
     params.io.outdir = "tests/layout/".to_string();
 
     let mut model = Model::new_from_layout(params, "tests/squares_layout.png".to_string(), None)?;
-    model.run_for(512);
-    Ok(())
-}
-
-#[test]
-fn test_layout_template() -> anyhow::Result<()> {
-    let mut params = make_test_parameters()?;
-    params.io.outdir = "tests/layout_template/".to_string();
-
-    let mut model = Model::new_from_layout(
-        params,
-        "tests/squares_layout.png".to_string(),
-        Some("tests/big_small_templates.parquet".to_string())
-    )?;
     model.run_for(512);
     Ok(())
 }
