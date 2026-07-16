@@ -2,7 +2,7 @@ use std::f64::consts::E;
 use crate::cell::Cell;
 use crate::constants::{BoundaryType, EPSILON};
 use bon::bon;
-use cellulars_lib::basic_cell::{Alive, Cellular, RelCell};
+use cellulars_lib::basic_cell::{shifted_com, Alive, Cellular, RelCell};
 use cellulars_lib::constants::CellIndex;
 use cellulars_lib::environment::{EdgesUpdate, Environment};
 use cellulars_lib::habitable::Habitable;
@@ -156,16 +156,43 @@ impl MyEnvironment {
         for cell in self.cells.iter() {
             let mut act = 0;
             let mut kact = 0.;
+            let mut act_center = cell.center;
+            let mut kact_center = cell.center;
             for pos in self.search_cell_box(cell, self.cell_search_scaler) {
                 act += self.act_lattice[pos];
-                kact += self.kact(pos);
+                let local_kact = self.kact(pos);
+                kact += local_kact;
+                act_center = shifted_com(
+                    act_center,
+                    pos,
+                    act as f32,
+                    self.act_lattice[pos] as f32,
+                    1,
+                    &self.bounds.boundary
+                ).unwrap_or_else(|e| {
+                    log::warn!("Failed to shift act: {}", e);
+                    act_center
+                });
+                kact_center = shifted_com(
+                    kact_center,
+                    pos,
+                    kact as f32,
+                    local_kact as f32,
+                    1,
+                    &self.bounds.boundary
+                ).unwrap_or_else(|e| {
+                    log::warn!("Failed to shift kact: {}", e);
+                    kact_center
+                });
             }
-            act_pairs.push((cell.index, (act, kact)));
+            act_pairs.push((cell.index, (act, kact, act_center, kact_center)));
         }
-        for (index, (act, kact)) in act_pairs {
+        for (index, (act, kact, act_center, kact_center)) in act_pairs {
             let cell = self.cells.get_cell_mut(index);
             cell.tot_act = act;
             cell.tot_kact = kact;
+            cell.act_center = act_center;
+            cell.kact_center = kact_center;
         }
     }
 

@@ -191,6 +191,8 @@ impl IoManager {
                     neighbors: HashMap::new(),
                     tot_act: 0,
                     tot_kact: 0.,
+                    act_center: Pos::new(0., 0.,),
+                    kact_center: Pos::new(0., 0.),
                     rel_chem: 0.0,
                     genome: BitGenome::new(
                         row[cols["ligands"]].try_extract::<u64>()?,
@@ -550,6 +552,10 @@ impl ToDataFrame for MyEnvironment {
             "solid_neighbor" => valid.iter().map(|cell| cell.neighbors.contains_key(&Spin::Solid)).collect::<Box<_>>(),
             "tot_act" => valid.iter().map(|cell| cell.tot_act).collect::<Box<_>>(),
             "tot_kact" => valid.iter().map(|cell| cell.tot_kact).collect::<Box<_>>(),
+            "act_center_x" => valid.iter().map(|cell| cell.act_center.x).collect::<Box<_>>(),
+            "act_center_y" => valid.iter().map(|cell| cell.act_center.y).collect::<Box<_>>(),
+            "kact_center_x" => valid.iter().map(|cell| cell.kact_center.x).collect::<Box<_>>(),
+            "kact_center_y" => valid.iter().map(|cell| cell.kact_center.y).collect::<Box<_>>(),
         )
     }
 }

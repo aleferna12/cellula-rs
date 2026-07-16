@@ -25,6 +25,10 @@ pub struct Cell {
     // This is only updated before saving data, so may contain outdated information
     pub tot_kact: f64,
     // This is only updated before saving data, so may contain outdated information
+    pub act_center: Pos<f32>,
+    // This is only updated before saving data, so may contain outdated information
+    pub kact_center: Pos<f32>,
+    // This is only updated before saving data, so may contain outdated information
     pub rel_chem: f32,
 }
 
@@ -41,6 +45,8 @@ impl Cell {
             neighbors: HashMap::new(),
             tot_act: 0,
             tot_kact: 0.,
+            act_center: Pos::new(0., 0.),
+            kact_center: Pos::new(0., 0.),
             rel_chem: 0.0,
             target_perimeter,
             genome
