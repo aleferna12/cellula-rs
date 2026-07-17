@@ -120,9 +120,9 @@ impl Model {
             Err(_) => Self::create_file_tree(&io, &parameters, seed)?
         }
         Ok(Self {
-            io,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
+            io,
             pond,
             rng,
         })
