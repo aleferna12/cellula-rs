@@ -75,6 +75,7 @@ fn test_layout() -> anyhow::Result<()> {
 fn test_layout_template() -> anyhow::Result<()> {
     let mut params = make_test_parameters()?;
     params.io.outdir = "tests/out/layout_template/".to_string();
+    params.io.plot.order = vec![PT::Chem, PT::Spin, PT::CellType, PT::Border].into();
     params.cell.starting_cells = 128;
 
     let mut model = Model::new_from_layout(
