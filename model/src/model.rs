@@ -18,6 +18,7 @@ use cellulars::prelude::*;
 use rand::{make_rng, Rng, RngExt, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
 use std::path::Path;
 
@@ -44,13 +45,15 @@ impl Model {
 
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
+        let io = Self::make_io(&parameters)?;
+        Self::create_file_tree(&io, &parameters, seed)?;
         Ok(Self {
             pond: Self::make_new_pond(
                 &parameters,
                 &mut rng,
                 maybe_templates_path
             )?,
-            io: Self::setup_io(&parameters, seed)?,
+            io,
             rng,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps
@@ -71,9 +74,11 @@ impl Model {
         let seed = Self::determine_seed(parameters.general.seed);
         let mut rng = Xoshiro256StarStar::seed_from_u64(seed);
         let pond = Self::read_layout_pond(&parameters, layout_path, &mut rng, maybe_templates_path)?;
+        let io= Self::make_io(&parameters)?;
+        Self::create_file_tree(&io, &parameters, seed)?;
         Ok(Self {
             pond,
-            io: Self::setup_io(&parameters, seed)?,
+            io,
             rng,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps
@@ -101,8 +106,21 @@ impl Model {
             sim_path,
             time_step
         )?;
+        let io= Self::make_io(&parameters)?;
+        match fs::canonicalize(&parameters.io.outdir) {
+            // Path exists
+            Ok(canon_outdir) => {
+                let canon_sim_path = fs::canonicalize(sim_path)?;
+                // Because maybe replace_dir is true
+                if canon_outdir != canon_sim_path {
+                    Self::create_file_tree(&io, &parameters, seed)?;
+                }
+            }
+            // Path does not exist
+            Err(_) => Self::create_file_tree(&io, &parameters, seed)?
+        }
         Ok(Self {
-            io: Self::setup_io(&parameters, seed)?,
+            io: Self::make_io(&parameters)?,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             pond,
@@ -120,7 +138,7 @@ impl Model {
         log::info!("Finished after {} time steps", self.time_steps);
     }
 
-    fn setup_io(parameters: &Parameters, new_seed: u64) -> anyhow::Result<IoManager> {
+    fn make_io(parameters: &Parameters) -> anyhow::Result<IoManager> {
         #[cfg(not(feature = "movie-io"))]
         if parameters.io.movie.is_some() {
             log::info!("Not displaying movie since feature flag `movie` was not set");
@@ -166,11 +184,14 @@ impl Model {
         if parameters.io.replace_outdir {
             log::info!("Cleaning contents of '{}'", io.outdir.display());
         }
+        Ok(io)
+    }
+
+    fn create_file_tree(io: &IoManager, parameters: &Parameters, seed: u64) -> anyhow::Result<()> {
         io.create_directories(parameters.io.replace_outdir)?;
         let mut params_new_seed = parameters.clone();
-        params_new_seed.general.seed = new_seed.into();
-        io.create_parameters_file(&params_new_seed)?;
-        Ok(io)
+        params_new_seed.general.seed = seed.into();
+        io.create_parameters_file(&params_new_seed)
     }
 
     fn make_empty_pond(parameters: &Parameters, rng: &mut Xoshiro256StarStar) -> Pond {
