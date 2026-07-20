@@ -23,9 +23,9 @@ divide = true
 
 [cell.genome]
 # Mutation rate for the trait.
-mutation-rate = 0.01
+mutation-rate = 0.1
 # Mutation standard deviation for the trait.
-mutation-std = 0.01
+mutation-std = 0.1
 
 [potts]
 boltz-t = 20.0
