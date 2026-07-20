@@ -466,7 +466,7 @@ impl IoManager {
     fn write_image_if_time(
         &mut self,
         time_step: u32, 
-        env: &MyEnvironment
+        env: &mut MyEnvironment
     ) -> anyhow::Result<()> {
         // There might be a way to use LazyCell here but i got tired of fighting the borrow checker
         let mut frame = None;
@@ -510,8 +510,9 @@ impl IoManager {
 
     pub fn make_simulation_image(
         &self, 
-        env: &MyEnvironment
+        env: &mut MyEnvironment
     ) -> RgbaImage {
+        env.update_act();
         let mut image = RgbaImage::new(
             env.width() as u32,
             env.height() as u32 

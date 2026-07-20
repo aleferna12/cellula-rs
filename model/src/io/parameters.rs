@@ -221,6 +221,8 @@ pub struct PlotParameters {
     pub medium_color: Option<String>,
     pub center_color: String,
     pub chem_center_color: String,
+    #[serde(default = "param_defaults::red")]
+    pub kact_center_color: String,
     pub border_color: String,
     pub area_min_color: String,
     pub area_max_color: String,
@@ -240,6 +242,7 @@ pub enum PlotType {
     Spin,
     Center,
     ChemCenter,
+    KactCenter,
     Border,
     Area,
     Chem,
@@ -253,6 +256,7 @@ mod param_defaults {
     pub fn true_flag() -> bool { true }
     pub fn zero() -> u32 { 0 }
     pub fn webp() -> String { "webp".to_string() }
+    pub fn red() -> String { "#ff0000".to_string() }
 }
 
 #[cfg(test)]

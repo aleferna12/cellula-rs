@@ -124,6 +124,27 @@ impl Plot for ChemCenterPlot {
     }
 }
 
+pub struct KactCenterPlot {
+    pub color: Srgb<u8>
+}
+
+impl Plot for KactCenterPlot {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        for cell in env.cells.iter() {
+            if !cell.is_valid() {
+                continue;
+            }
+            let center = env.bounds.lattice_boundary.valid_pos(Pos::new(
+                cell.kact_center.x as isize,
+                cell.kact_center.y as isize,
+            ));
+            if let Some(pos) = center {
+                draw_cross_mut(image, srgb_to_rgba(self.color), pos.x as i32, pos.y as i32);
+            }
+        }
+    }
+}
+
 pub struct BorderPlot {
     pub color: Srgb<u8>
 }
@@ -371,6 +392,9 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                 }),
                 PlotType::ChemCenter => Box::new(ChemCenterPlot {
                     color: hex_to_srgb(&params.chem_center_color)?
+                }),
+                PlotType::KactCenter => Box::new(KactCenterPlot {
+                    color: hex_to_srgb(&params.kact_center_color)?
                 }),
                 PlotType::Area => Box::new(AreaPlot{
                     min_color: srgb_to_lchuv(hex_to_srgb(&params.area_min_color)?),
