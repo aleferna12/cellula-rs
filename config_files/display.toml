@@ -57,15 +57,15 @@ height = 1200
 frame-period = 1
 
 [io.plot]
-order = ["chem", "spin", "act"]
+order = ["chem", "spin", "act", "border"]
 solid-color = "#000000"
 center-color = "#0000ff"
 chem-center-color = "#00ff00"
 border-color = "#000000"
 area-min-color = "#ff00ff"
 area-max-color = "#ffff00"
-chem-min-color = "#000000"
-chem-max-color = "#ffffff"
+chem-min-color = "#ffffff"
+chem-max-color = "#000000"
 act-min-color = "#298d80" # blue
 act-max-color = "#fa9f6a" # yellow
 rel-chem-min-color = "#fcde9c"
