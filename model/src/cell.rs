@@ -168,7 +168,7 @@ impl SimpleGenome {
     pub fn attempt_mutate(&mut self, rng: &mut impl Rng) {
         if rng.random_bool(self.mut_rate as f64) {
             let normal = Normal::new(self.val, self.mut_std).unwrap();
-            self.val = normal.sample(rng).clamp(-10., 10.);
+            self.val = normal.sample(rng).clamp(-16., 16.);
         }
     }
 }
