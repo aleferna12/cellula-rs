@@ -44,6 +44,8 @@ target-perimeter = 120
 # Set to `false` to disable division.
 # [default = true]
 divide = true
+n-mul = 32
+mul-cluster = false
 
 [cell.genome]
 # Number of regulatory genes in the cell's GRN.
@@ -78,7 +80,7 @@ medium-energy = 16.0
 # Adhesion energy at cell-solid interfaces.
 solid-energy = 16.0
 # Adhesion energy contribution from the cells' adhesion genes.
-gene-energy = 16.0
+mul-energy = 8.0
 
 [io]
 # Output directory for files.
@@ -141,6 +143,10 @@ act-max-color = "#ffff00"
 rel-chem-min-color = "#ee00ee"
 # With which color to plot the maximum value for the relative chemical concentration in the environment.
 rel-chem-max-color = "#eeee00"
+# With which color to plot the maximum value for the relative chemical concentration in the environment.
+uni-color = "#eeee00"
+# With which color to plot the maximum value for the relative chemical concentration in the environment.
+mul-color = "#ee0e00"
 
 [io.movie]
 # Whether the real-time movie should be shown or not.

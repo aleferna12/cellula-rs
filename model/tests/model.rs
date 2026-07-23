@@ -1,3 +1,4 @@
+use std::fs;
 use cellulars_lib::step::Step;
 use model::io::parameters::{Parameters, PlotType as PT};
 use model::model::Model;
@@ -16,7 +17,7 @@ fn make_test_parameters() -> anyhow::Result<Parameters> {
 
 #[test]
 fn test_run() -> anyhow::Result<()> {
-    for plot in [PT::Act, PT::Center, PT::ChemCenter, PT::Area, PT::RelChem] {
+    for plot in [PT::Act, PT::Center, PT::ChemCenter, PT::Area, PT::RelChem, PT::Lineage] {
         let mut params = make_test_parameters()?;
         params.io.outdir = format!("tests/plots/{plot:?}");
         params.io.plot.order = vec![PT::Chem, PT::Spin, plot, PT::Border].into();
@@ -26,6 +27,7 @@ fn test_run() -> anyhow::Result<()> {
 
         let sim_dir = params.io.outdir.clone();
         params.io.outdir += "/resumed/";
+        fs::create_dir_all(&params.io.outdir)?;
         let mut res_model = Model::new_from_backup(params, sim_dir, 512)?;
         res_model.run_for(128);
     }
