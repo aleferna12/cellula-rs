@@ -321,7 +321,7 @@ impl Model {
         Ok(Cell::new_empty(
             parameters.cell.target_area,
             parameters.cell.target_perimeter,
-            SimpleGenome::new(-16., parameters.cell.genome.mutation_rate, parameters.cell.genome.mutation_std)
+            SimpleGenome::new(0., parameters.cell.genome.mutation_rate, parameters.cell.genome.mutation_std)
         ))
     }
 
