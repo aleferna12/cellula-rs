@@ -26,7 +26,7 @@ pub fn main() {
         .parse()
         .expect("failed to parse argument #2 into a `usize`");
     let run_dir = format!("benchmark/out/cellulars/{max_pop}/{lat_size}");
-    create_dir_all(&run_dir).expect(&format!("failed to create sim dir at: {run_dir}"));
+    create_dir_all(&run_dir).unwrap_or_else(|_| panic!("failed to create sim dir at: {run_dir}"));
 
     let mut pond = Pond {
         env: Environment::new(
@@ -84,8 +84,8 @@ pub fn main() {
                 .write(&pond.env.cells)
                 .expect("failed to write cells");
 
-            spin_plot.plot(&mut pond.env, &mut image);
-            border_plot.plot(&mut pond.env, &mut image);
+            spin_plot.plot(&pond.env, &mut image);
+            border_plot.plot(&pond.env, &mut image);
             let res = image.save(format!("{run_dir}/img{step}.png"));
             if let Err(e) = res {
                 println!("Failed to save image with error: {e}");

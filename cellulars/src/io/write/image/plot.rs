@@ -171,10 +171,8 @@ where
                     Spin::Some(rel_cell1.index),
                     Spin::Some(rel_cell2.index)
                 );
-                if let Some(c) =  contacts {
-                    if c > 0 {
-                        neighs += 1;
-                    }
+                if let Some(c) =  contacts && c > 0 {
+                    neighs += 1;
                 }
             }
             neigh_array[rel_cell1.index as usize] = neighs;
