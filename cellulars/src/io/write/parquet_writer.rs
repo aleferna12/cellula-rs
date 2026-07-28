@@ -123,8 +123,8 @@ where
     T: Clone,
     A: Array + 'static {
     let batch = RecordBatch::try_from_iter(
-        (0..data.width()).map(move |j| {
-            let vec: Vec<T> = (0..data.height()).map(|i| {
+        (0..data.height()).map(move |j| {
+            let vec: Vec<T> = (0..data.width()).map(|i| {
                 data[Pos::new(i, j)].clone()
             }).collect();
             let arr = vec.map_into();
