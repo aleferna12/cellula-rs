@@ -12,17 +12,12 @@ use crate::biases::Biases;
 #[derive(Debug, Clone)]
 pub struct Pond {
     pub env: MyEnvironment,
-
     pub potts: EdgePotts<StaticAdhesion, Biases>,
-
     pub rng: Xoshiro256StarStar,
-
     /// Period with which the cells' [`MyCell::update()`](crate::my_cell::MyCell::update()) method should be called.
     pub update_period: u32,
-
     /// Whether cell division is enabled.
     pub division_enabled: bool,
-
     time_step: u32
 }
 
