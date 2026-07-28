@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 def read_celldfs(top_path, levels=["replica", "energy"], low_memory=False):
-    df = pl.read_parquet(Path(top_path) / "**" / "cells" / "*.parquet", include_file_paths="file_path", low_memory=low_memory)
+    df = pl.scan_parquet(Path(top_path) / "**" / "cells" / "*.parquet", include_file_paths="file_path", low_memory=low_memory)
     df = df.with_columns(path_list=pl.col("file_path").str.split("/"))
 
     if levels:

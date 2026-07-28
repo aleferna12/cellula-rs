@@ -23,7 +23,7 @@ divide = true
 
 [cell.genome]
 # Mutation rate for the trait.
-mutation-rate = 0.5
+mutation-rate = 1
 # Mutation standard deviation for the trait.
 mutation-std = 1
 
