@@ -25,7 +25,7 @@ divide = true
 # Mutation rate for the trait.
 mutation-rate = 1
 # Mutation standard deviation for the trait.
-mutation-std = 1
+mutation-std = 3
 
 [potts]
 boltz-t = 20.0
