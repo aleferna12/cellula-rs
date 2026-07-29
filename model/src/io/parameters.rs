@@ -108,8 +108,8 @@ impl Parameters {
             anyhow::bail!("`cell.genome.mutation_rate` must be between 0 and 1")
         }
         #[cfg(not(feature = "static-adhesion"))]
-        if self.cell.genome.mutation_std < 0. || self.cell.genome.mutation_std > 1. {
-            anyhow::bail!("`cell.genome.mutation_std` must be between 0 and 1")
+        if self.cell.genome.mutation_std < 0. {
+            anyhow::bail!("`cell.genome.mutation_std` must be larger than 0")
         }
 
         if let Some(write_period) = self.io.data.cells_write_period && write_period < self.io.data.cells_period {
