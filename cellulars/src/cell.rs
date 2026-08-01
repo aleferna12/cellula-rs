@@ -57,6 +57,11 @@ impl Cellular for Cell {
         adding: bool,
         boundary: &impl Boundary<Coord = FloatType>
     ) -> Result<(), ShiftError> {
+        // Allow shift_position to kill the cell
+        if self.area() == 1 && !adding {
+            self.com.mass = 0.;
+            return Ok(());
+        }
         let shifted = self.com.shift(
             Com { pos: pos.cast_as(), mass: 1. },
             adding,

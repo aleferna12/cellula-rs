@@ -3,6 +3,7 @@
 use bon::Builder;
 use cellulars::prelude::*;
 use serde::{Deserialize, Serialize};
+use crate::constants::EPSILON;
 
 /// A cell that can track a chemical concentration and migrate towards its source.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Builder)]
@@ -50,6 +51,10 @@ impl MyCell {
 
     /// Adds or removes the chemical concentration `chem_at` at position `pos` from the cell.
     pub fn shift_chem<B: Boundary<Coord = FloatType>>(&mut self, pos: Pos<usize>, chem_at: FloatType, adding: bool, boundary: &B) {
+        if (self.chem_mass() - chem_at) < EPSILON && !adding {
+            self.chem_com.mass = 0.;
+            return;
+        }
         let shifted = self.chem_com.shift(
             Com { pos: pos.cast_as(), mass: chem_at },
             adding,
