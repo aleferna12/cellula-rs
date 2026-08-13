@@ -9,7 +9,7 @@ def read_celldfs(top_path, levels=["replica", "energy"], low_memory=False, conca
     else:
         search_path = top_path / "**" / "cells" / "*.parquet"
     method = pl.scan_parquet if scan else pl.read_parquet
-    df = pl.read_parquet(search_path, include_file_paths="file_path", low_memory=low_memory)
+    df = method(search_path, include_file_paths="file_path", low_memory=low_memory)
     df = df.with_columns(path_list=pl.col("file_path").str.split("/"))
 
     if levels:
