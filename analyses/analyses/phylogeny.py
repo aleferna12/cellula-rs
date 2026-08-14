@@ -1,4 +1,5 @@
 import polars as pl
+import numpy as np
 from ete3 import Tree
 
 
@@ -36,7 +37,7 @@ def matrix(celldf, season_duration):
 
 
 def trees(phy_matrix):
-    prev_time = "0"
+    prev_time = str(np.array(phy_matrix.columns).astype(int).min())
     nodes = [None] * phy_matrix[prev_time].n_unique()
     for x in phy_matrix[prev_time].unique():
         t = Tree(name=str(x))
