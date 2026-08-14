@@ -58,7 +58,6 @@ impl NeighborTracker {
         success
     }
 
-
     pub fn initialize_from_env<C, N: Neighborhood, B: ToLatticeBoundary>(
         &mut self,
         env: &Environment<C, N, B>
@@ -148,5 +147,6 @@ mod tests {
         nt.update_neighbors(&env, Pos::new(0, 1), Spin::Some(1));
         env.transfer_position(Pos::new(0, 1), Spin::Some(1));
         assert_eq!(nt.neighbor_contacts(Spin::Some(0), Spin::Some(1)), Some(1));
+        assert_eq!(nt.neighbor_contacts(Spin::Some(1), Spin::Some(1)), Some(0));
     }
 }

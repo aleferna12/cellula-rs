@@ -38,7 +38,7 @@ impl<T> SymmetricTable<T> {
 
     fn flat_index(&self, i: usize, j: usize) -> usize {
         let (i, j) = if i > j { (j, i) } else { (i, j) };
-        i * (2 * self.length - i - 1) / 2 + j - i
+        i * (2 * self.length - i + 1) / 2 + (j - i)
     }
 }
 
@@ -74,6 +74,7 @@ impl<T> IndexMut<(usize, usize)> for SymmetricTable<T> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
     use super::*;
 
     #[test]
@@ -100,5 +101,18 @@ mod tests {
             (3, 3),
         ];
         assert_eq!(pairs, expected);
+    }
+    
+    #[test]
+    fn test_unique_indexes() {
+        let table: SymmetricTable<u8> = SymmetricTable::new(10);
+        let mut set = HashSet::new();
+        for i in 0..table.length() {
+            for j in i..table.length() {
+                let flat_index = table.flat_index(i, j);
+                assert!(!set.contains(&flat_index));
+                set.insert(flat_index);
+            }
+        }
     }
 }
