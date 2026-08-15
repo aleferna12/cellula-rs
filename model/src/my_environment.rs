@@ -508,7 +508,7 @@ impl Habitable for MyEnvironment {
             to_cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
             to_cell.delta_perimeter = None;
-            self.act_lattice[pos] = self.act_max;
+            // self.act_lattice[pos] = self.act_max;
         } else {
             self.act_lattice[pos] = 0;
         }
