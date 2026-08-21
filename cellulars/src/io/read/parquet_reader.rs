@@ -241,5 +241,6 @@ mod impls {
         (u32, UInt32Array),
         (u64, UInt64Array),
         (f32, Float32Array),
+        (f64, Float64Array),
     ];
 }
