@@ -73,7 +73,7 @@ impl NeighborTracker {
             }
         }
         // Every position is counted twice, so we divide by two
-        for index in self.neigh_table.iter_index_pairs(None, None).collect::<Box<_>>() {
+        for index in self.neigh_table.iter_index_pairs().collect::<Box<_>>() {
             self.neigh_table[index] /= 2;
         }
         for index in 0..self.max_cells() {

@@ -16,10 +16,9 @@ impl<T> SymmetricTable<T> {
     }
 
     /// Iterates over all unique pairs of indexes that can be used for the table.
-    pub fn iter_index_pairs(&self, start: Option<usize>, end: Option<usize>) -> impl Iterator<Item = (usize, usize)> {
-        let start = start.unwrap_or(0);
-        let end = end.unwrap_or(self.length);
-        (start..end).flat_map(move |i| (i..end).map(move |j| (i, j)))
+    pub fn iter_index_pairs(&self) -> impl Iterator<Item = (usize, usize)> + use<T> {
+        let length = self.length;
+        (0..length).flat_map(move |i| (i..length).map(move |j| (i, j)))
     }
     
     pub fn get(&self, index: (usize, usize)) -> Option<&T> {
@@ -94,8 +93,9 @@ mod tests {
     #[test]
     fn test_iter_pairs_produces_correct_pairs() {
         let table: SymmetricTable<u8> = SymmetricTable::new(4);
-        let pairs: Vec<(usize, usize)> = table.iter_index_pairs(Some(1), Some(4)).collect();
+        let pairs: Vec<(usize, usize)> = table.iter_index_pairs().collect();
         let expected = vec![
+            (0, 0), (0, 1), (0, 2), (0, 3),
             (1, 1), (1, 2), (1, 3),
             (2, 2), (2, 3),
             (3, 3),
