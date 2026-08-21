@@ -15,7 +15,7 @@ use cellulars::io::write::write_trait::Write;
 use cellulars::lattice::Lattice;
 use cellulars::prelude::{AsEnv, CellContainer};
 use cellulars::spin::Spin;
-use image::imageops::{flip_vertical_in_place, FilterType};
+use image::imageops::{FilterType, flip_vertical_in_place};
 use image::{ColorType, GrayImage, ImageReader, RgbaImage};
 use std::collections::HashSet;
 use std::fs::File;
@@ -169,26 +169,49 @@ impl IoManager {
         self.write_image_if_time(time_step, env)
     }
 
+    pub fn write_cells(&self, time_step: u32, cells: &CellContainer<MyCell>) -> anyhow::Result<()> {
+        let time_str = Self::pad_time_step(time_step);
+        let file_path = self.outdir
+            .join(CELLS_PATH)
+            .join(format!("{time_str}.parquet"));
+        ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(cells)?;
+        Ok(())
+    }
+
+    pub fn write_cell_lattice(&self, time_step: u32, cell_lattice: &Lattice<Spin>) -> anyhow::Result<()> {
+        let time_str = Self::pad_time_step(time_step);
+        let file_path = self.outdir
+            .join(LATTICES_PATH)
+            .join(format!("{time_str}.parquet"));
+        ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(cell_lattice)?;
+        Ok(())
+    }
+    
+    pub fn write_image(&self, time_step: u32, frame: &RgbaImage) -> anyhow::Result<()> {
+        frame.save(
+            &self.outdir
+                .join(IMAGES_PATH)
+                .join(format!(
+                    "{}.webp",
+                    Self::pad_time_step(time_step),
+                ))
+        )?;
+        Ok(())
+    }
+
     fn write_data_if_time(
         &self,
         time_step: u32,
         env: &MyEnvironment
     ) -> anyhow::Result<()> {
-        let time_str = Self::pad_time_step(time_step);
         // We might eventually want to buffer the dataframes into an Option<Vec<DF>>
         // and write it less frequently if the volume of files become a problem
         if time_step.is_multiple_of(self.cells_period) {
-            let file_path = self.outdir
-                .join(CELLS_PATH)
-                .join(format!("{time_str}.parquet"));
-            ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(&env.env().cells)?;
+            self.write_cells(time_step, &env.env.cells)?;
         }
 
         if time_step.is_multiple_of(self.lattice_period) {
-            let file_path = self.outdir
-                .join(LATTICES_PATH)
-                .join(format!("{time_str}.parquet"));
-            ParquetWriter { writer: File::create(file_path)?, overwrites: vec![] }.write(&env.env().cell_lattice)?;
+            self.write_cell_lattice(time_step, &env.env.cell_lattice)?;
         }
         Ok(())
     }
@@ -199,7 +222,7 @@ impl IoManager {
         env: &MyEnvironment
     ) -> anyhow::Result<()> {
         // This looks like it should be a LazyCell but that doesnt work (i tried)
-        let mut frame = None;
+        let mut maybe_frame = None;
 
         #[cfg(feature = "movie-io")]
         let movie_update = if let Some(mm) = &self.movie_module {
@@ -209,29 +232,21 @@ impl IoManager {
         };
         #[cfg(feature = "movie-io")]
         if movie_update {
-            frame = Some(self.make_simulation_image(env));
+            let frame = self.make_simulation_image(env);
             let mm = self.movie_module.as_mut().unwrap();
             let resized = image::imageops::resize(
-                frame.as_ref().unwrap(),
+                &frame,
                 mm.movie_window.width.try_into()?,
                 mm.movie_window.height.try_into()?,
                 image::imageops::Nearest,
             );
-            mm.movie_window.update(&resized)?
+            mm.movie_window.update(&resized)?;
+            maybe_frame = Some(frame);
         }
 
         if time_step.is_multiple_of(self.image_period) {
-            if frame.is_none() {
-                frame = Some(self.make_simulation_image(env));
-            }
-            frame.unwrap().save(
-                &self.outdir
-                    .join(IMAGES_PATH)
-                    .join(format!(
-                        "{}.webp",
-                        Self::pad_time_step(time_step),
-                    ))
-            )?;
+            let frame = maybe_frame.unwrap_or(self.make_simulation_image(env));
+            self.write_image(time_step, &frame)?;
         }
         Ok(())
     }

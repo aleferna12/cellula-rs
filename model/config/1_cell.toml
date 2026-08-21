@@ -69,6 +69,9 @@ replace-outdir = true
 info-period = 2048
 # Period (in MCS) with which to save an image of the simulation.
 image-period = 2048
+# Whether to write data at the last time step of the simulation.
+# [default = true]
+write-last = true
 
 [io.data]
 # Period (in MCS) with which to save the cell attributes as a parquet file.

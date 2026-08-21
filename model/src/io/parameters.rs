@@ -126,6 +126,8 @@ pub struct IoParameters {
     pub replace_outdir: bool,
     pub image_period: u32,
     pub info_period: u32,
+    #[serde(default = "param_defaults::true_flag")]
+    pub write_last: bool,
     pub data: DataParameters,
     pub plot: PlotParameters,
     pub movie: Option<MovieParameters>,

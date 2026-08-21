@@ -38,6 +38,5 @@ fn main() -> anyhow::Result<()> {
         }
     };
     model.run();
-    model.goodbye();
     Ok(())
 }

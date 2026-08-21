@@ -26,8 +26,10 @@ fn test_backup() -> anyhow::Result<()> {
 
     let sim_dir = params.io.outdir.clone();
     params.io.outdir += "/resumed/";
-    let res_model = Model::new_from_backup(params, sim_dir, 512)?;
+    params.general.time_steps = 1;
+    let mut res_model = Model::new_from_backup(params, sim_dir, 512)?;
     assert_eq!(env, res_model.pond.env);
+    res_model.run();
     Ok(())
 }
 

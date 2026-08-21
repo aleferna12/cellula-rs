@@ -32,6 +32,7 @@ pub struct Model {
     pub rng: Xoshiro256StarStar,
     /// Period with which information is logged.
     pub info_period: u32,
+    pub write_last: bool,
     time_steps: u32
 }
 
@@ -56,7 +57,8 @@ impl Model {
             io,
             rng,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps
+            time_steps: parameters.general.time_steps,
+            write_last: parameters.io.write_last,
         })
     }
 
@@ -81,7 +83,8 @@ impl Model {
             io,
             rng,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps
+            time_steps: parameters.general.time_steps,
+            write_last: parameters.io.write_last,
         })
     }
 
@@ -122,6 +125,7 @@ impl Model {
         Ok(Self {
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
+            write_last: parameters.io.write_last,
             io,
             pond,
             rng,
@@ -131,11 +135,33 @@ impl Model {
     /// Runs the model for the number of time-steps specified when creating the model.
     pub fn run(&mut self) {
         self.run_for(self.time_steps);
+        if self.write_last {
+            self.write_last();
+        }
+        self.goodbye();
     }
 
     /// Logs some information at end of the simulation.
-    pub fn goodbye(&self) {
+    fn goodbye(&self) {
         log::info!("Finished after {} time steps", self.time_steps);
+    }
+
+    fn write_last(&self) {
+        let saved_cells = self.io.write_cells(
+            self.pond.time_step(),
+            &self.pond.env.env.cells
+        );
+        let saved_lat = self.io.write_cell_lattice(
+            self.pond.time_step(),
+            &self.pond.env.env.cell_lattice
+        );
+        let saved_image = self.io.write_image(
+            self.pond.time_step(),
+            &self.io.make_simulation_image(&self.pond.env)
+        );
+        if saved_cells.is_err() || saved_lat.is_err() || saved_image.is_err() {
+            log::warn!("Failed to save data at the end of the simulation");
+        }
     }
 
     fn make_io(parameters: &Parameters) -> anyhow::Result<IoManager> {
