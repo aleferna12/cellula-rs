@@ -26,15 +26,13 @@ impl MyEnvironment {
         cell_search_scaler: FloatType,
         max_cells: CellIndex
     ) -> Self {
-        let mut env_ = Self {
+        Self {
             neigh_tracker: NeighborTracker::new(max_cells),
             chem_lattice: Lattice::from(env.env().cell_lattice.rect.clone()),
             env,
             cell_search_scaler,
             population_exploded: false
-        };
-        env_.make_chem_gradient();
-        env_
+        }
     }
     
     /// Returns the maximum number of cells allowed in the environment.

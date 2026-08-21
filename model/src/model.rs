@@ -238,6 +238,8 @@ impl Model {
     ) -> anyhow::Result<Pond> {
         log::info!("Making pond");
         let mut pond = Self::make_empty_pond(parameters, rng);
+        // Must be done before adding cells
+        pond.env.make_chem_gradient();
 
         // Obtains an iterator over cell templates if a templates_path is present
         let maybe_templates_box = Self::read_cell_templates(maybe_templates_path)?;
@@ -269,6 +271,7 @@ impl Model {
                 break;
             }
         }
+
         if parameters.pond.enclose {
             pond.env.make_border(true, true, true, true);
         }
@@ -387,8 +390,11 @@ impl Model {
         let mut sorted_luma: Vec<_> = luma_cell_positions.keys().copied().collect();
         sorted_luma.sort();
 
-        let mut not_spawned = 0;
         let mut pond = Self::make_empty_pond(parameters, rng);
+        // Must be done before adding cells
+        pond.env.make_chem_gradient();
+
+        let mut not_spawned = 0;
         let maybe_templates_box = Self::read_cell_templates(maybe_templates_path)?;
         for (group_index, luma) in sorted_luma.into_iter().enumerate() {
             let cell_positions = luma_cell_positions
@@ -451,20 +457,22 @@ impl Model {
             parameters.cell.search_radius,
             parameters.cell.max_cells
         );
+        // The gradient is not restored from backup
+        // We would need env.corner information for that
+        env.make_chem_gradient();
         env.neigh_tracker.initialize_from_env(&env.env);
         for pos in env.env().cell_lattice.iter_positions() {
             env.env_mut().update_edges(pos);
         }
 
-        let pond = Pond::builder()
-                .env(env)
-                .potts(Self::make_potts(parameters))
-                .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
-                .time_step(time_step)
-                .update_period(parameters.cell.update_period)
-                .division_enabled(parameters.cell.divide)
-                .build();
-        Ok(pond)
+        Ok(Pond::builder()
+            .env(env)
+            .potts(Self::make_potts(parameters))
+            .rng(Xoshiro256StarStar::seed_from_u64(rng.next_u64()))
+            .time_step(time_step)
+            .update_period(parameters.cell.update_period)
+            .division_enabled(parameters.cell.divide)
+            .build())
     }
 
     fn log_info(&self) {
