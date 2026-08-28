@@ -36,8 +36,9 @@ impl<T> SymmetricTable<T> {
     }
 
     fn flat_index(&self, i: usize, j: usize) -> usize {
+        assert!(i < self.length && j < self.length, "index out of bounds");
         let (i, j) = if i > j { (j, i) } else { (i, j) };
-        i * (2 * self.length - i + 1) / 2 + (j - i)
+        i * (2 * self.length - i + 1) / 2 + j - i
     }
 }
 
