@@ -39,7 +39,7 @@ target-area = 1200
 # (a lone lattice site has a perimeter of 8 in a Moore neighbourhood of radius 1).
 # Only matters if `potts.perimeter-lambda` is non-zero.
 # [default = 0]
-target-perimeter = 450
+target-perimeter = 368
 # For how many MCS a cell keeps pushing in the same direction before realigning itself with the
 # direction it actually travelled since the last realignment.
 # Longer durations make cells turn more slowly (and migrate more persistently).
