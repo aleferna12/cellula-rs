@@ -9,6 +9,7 @@ TODO!:
 
 pub mod lattice;
 pub mod positional;
+pub mod perimeter_constraint;
 pub mod static_adhesion;
 pub mod cell_container;
 pub mod symmetric_table;

@@ -37,6 +37,18 @@ search-radius = 3.0
 starting-area = 200
 # Target cell area.
 target-area = 200
+# Target cell perimeter, measured in units of the environment's neighbourhood
+# (a lone lattice site has a perimeter of 8 in a Moore neighbourhood of radius 1).
+# Estimation for a compact cell: 12 * target-area ** 0.5 - 4
+# Only matters if `potts.perimeter-lambda` is non-zero.
+# [default = 0]
+target-perimeter = 170
+# For how many MCS a cell keeps pushing in the same direction before realigning itself with the
+# direction it actually travelled since the last realignment.
+# Longer durations make cells turn more slowly (and migrate more persistently).
+# Zero disables persistent migration.
+# [default = 0]
+persistence-duration = 50
 # Cell area before division.
 div-area = 128
 # Set to `false` to disable division.
@@ -54,8 +66,17 @@ update-period = 32
 boltz-t = 16.0
 # Scaler constant for area deviation penalties.
 size-lambda = 1.0
+# Scaler constant for perimeter deviation penalties.
+# Keeps cells compact and discourages the long protrusions that migration biases create.
+# Zero disables the perimeter constraint.
+# [default = 0]
+perimeter-lambda = 0.5
 # Scaler constant for chemotaxis bias.
 chemotaxis-mu = 4.0
+# Scaler constant for persistent migration bias.
+# Zero disables persistent migration.
+# [default = 0]
+persistence-mu = 2.0
 
 [potts.adhesion]
 # Adhesion energy at cell-cell interfaces.

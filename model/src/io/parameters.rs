@@ -158,6 +158,10 @@ pub struct CellParameters {
     pub search_radius: FloatType,
     pub starting_area: u32,
     pub target_area: u32,
+    #[serde(default = "param_defaults::zero_u32")]
+    pub target_perimeter: u32,
+    #[serde(default = "param_defaults::zero_u32")]
+    pub persistence_duration: u32,
     pub div_area: u32,
     #[serde(default = "param_defaults::true_flag")]
     pub divide: bool,
@@ -172,7 +176,11 @@ pub struct CellParameters {
 pub struct PottsParameters {
     pub boltz_t: FloatType,
     pub size_lambda: FloatType,
+    #[serde(default = "param_defaults::zero_float")]
+    pub perimeter_lambda: FloatType,
     pub chemotaxis_mu: FloatType,
+    #[serde(default = "param_defaults::zero_float")]
+    pub persistence_mu: FloatType,
     pub adhesion: AdhesionParameters
 }
 
@@ -278,7 +286,11 @@ pub enum PlotType {
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending
 mod param_defaults {
+    use cellulars_lib::constants::FloatType;
+
     pub fn false_flag() -> bool { false }
+    pub fn zero_u32() -> u32 { 0 }
+    pub fn zero_float() -> FloatType { 0. }
     pub fn true_flag() -> bool { true }
     pub fn webp() -> String { "webp".to_string() }
 }
@@ -290,6 +302,7 @@ mod tests {
     #[test]
     fn test_parse() -> anyhow::Result<()> {
         Parameters::parse("examples/64_cells.toml")?;
+        Parameters::parse("../config_files/default.toml")?;
         Ok(())
     }
 }

@@ -13,6 +13,7 @@ use crate::potts::Potts;
 use cellulars_lib::base::environment::Environment;
 use cellulars_lib::base::pond::Pond;
 use cellulars_lib::constants::FloatType;
+use cellulars_lib::perimeter_constraint::PerimeterConstraint;
 use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::pos::CastCoords;
 use cellulars_lib::positional::rect::Rect;
@@ -196,7 +197,9 @@ impl Model {
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
             .chemotaxis_mu(parameters.potts.chemotaxis_mu)
+            .persistence_mu(parameters.potts.persistence_mu)
             .enable_migration(parameters.cell.migrate)
+            .perimeter(PerimeterConstraint { lambda: parameters.potts.perimeter_lambda })
             .adhesion(
                 StaticAdhesion {
                     cell_energy: parameters.potts.adhesion.cell_energy,
@@ -270,7 +273,9 @@ impl Model {
     fn empty_cell_from_parameters(parameters: &Parameters) -> EmptyCell<MyCell> {
         MyCell::new_empty(
             parameters.cell.target_area,
+            parameters.cell.target_perimeter,
             parameters.cell.div_area,
+            parameters.cell.persistence_duration,
             CellType::Migrating
         )
     }
@@ -317,6 +322,8 @@ impl Model {
         if parameters.pond.enclose {
             pond.env_mut().make_border(true, true, true, true);
         }
+        let Pond { env, rng, .. } = &mut pond.pond;
+        env.init_migration(rng);
         Ok(pond)
     }
 
@@ -398,6 +405,8 @@ impl Model {
         if parameters.pond.enclose {
             pond.env_mut().make_border(true, true, true, true);
         }
+        let Pond { env, rng, .. } = &mut pond.pond;
+        env.init_migration(rng);
         Ok(pond)
     }
 
@@ -441,6 +450,10 @@ impl Model {
         for pos in env.env.cell_lattice.iter_positions() {
             env.env.update_edges(pos);
         }
+        // The cells and the lattice are read from separate files, so the perimeters the cells were tracking
+        // when the back-up was written are re-measured instead of stored
+        env.restore_perimeters();
+        env.init_migration(rng);
 
         let pond = MyPond::new(
             Pond::new(

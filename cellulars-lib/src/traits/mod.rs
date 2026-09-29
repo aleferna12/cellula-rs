@@ -5,3 +5,4 @@ pub mod cellular;
 pub mod habitable;
 pub mod potts_algorithm;
 pub mod step;
+pub mod track_perimeter;

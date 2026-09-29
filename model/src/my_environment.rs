@@ -13,6 +13,7 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::{Alive, Cellular, EmptyCell};
 use cellulars_lib::traits::habitable::Habitable;
+use cellulars_lib::traits::track_perimeter::{measure_perimeters, perimeter_deltas, TrackPerimeter};
 use image::RgbaImage;
 use rand::Rng;
 
@@ -165,7 +166,10 @@ impl MyEnvironment {
     }
 
     /// Forces a cell to execute cell division.
-    pub fn divide_cell(&mut self, mom_index: CellIndex) -> &RelCell<MyCell> {
+    ///
+    /// Both the mother and the newborn come out of the division pointing in a new random direction,
+    /// as in [Colizzi, 2020](https://doi.org/10.7554/eLife.56349).
+    pub fn divide_cell(&mut self, mom_index: CellIndex, rng: &mut impl Rng) -> &RelCell<MyCell> {
         let rel_mom = &self.env.cells[mom_index];
         // TODO!: This searches cell positions twice (once to find div axis).
         let div_axis = self.find_division_axis(rel_mom, self.cell_search_scaler);
@@ -189,6 +193,8 @@ impl MyEnvironment {
             );
         }
         self.env.cells[mom_index].cell.cell.target_area = newborn_ta;
+        self.env.cells[mom_index].cell.randomize_direction(rng);
+        self.env.cells[new_index].cell.randomize_direction(rng);
         &self.env.cells[new_index]
     }
 
@@ -197,7 +203,7 @@ impl MyEnvironment {
     // we need thorough testing of self.divide_cells to make this change, and the performance
     // gain is minimal (although the ergonomic gains are significant)
     /// Checks which cells should divide and executes cell divisions.
-    pub fn reproduce(&mut self) {
+    pub fn reproduce(&mut self, rng: &mut impl Rng) {
         let mut divide = vec![];
         for rel_cell in self.env.cells.iter() {
             if !rel_cell.cell.is_alive() {
@@ -214,7 +220,7 @@ impl MyEnvironment {
             }
 
             let mom = &self.env.cells[cell_index];
-            self.divide_cell(mom.index);
+            self.divide_cell(mom.index, rng);
         }
     }
 
@@ -275,6 +281,49 @@ impl MyEnvironment {
         let intercept = rel_cell.cell.center().y - slope * rel_cell.cell.center().x;
 
         SplitLine { slope, intercept }
+    }
+
+    /// Points every cell that does not have a migration direction yet in a random direction
+    /// (see [`MyCell::has_direction()`]).
+    ///
+    /// Must be called after the cells have been given their positions, since a cell's direction is
+    /// tracked relative to its center.
+    ///
+    /// Ports `Dish::InitCellMigration()` of [Colizzi, 2020](https://doi.org/10.7554/eLife.56349).
+    pub fn init_migration(&mut self, rng: &mut impl Rng) {
+        for rel_cell in self.env.cells.iter_mut() {
+            if rel_cell.cell.has_direction() {
+                continue;
+            }
+            rel_cell.cell.randomize_direction(rng);
+        }
+    }
+
+    /// Advances the persistence clock of every living cell, which slowly turns them towards the direction
+    /// they are actually travelling (see [`MyCell::update_persistence()`]).
+    ///
+    /// Ports `Dish::CellMigration()` of [Colizzi, 2020](https://doi.org/10.7554/eLife.56349).
+    pub fn update_persistence(&mut self) {
+        let boundary = &self.env.bounds.boundary;
+        for rel_cell in self.env.cells.iter_mut() {
+            if !rel_cell.cell.is_alive() {
+                continue;
+            }
+            rel_cell.cell.update_persistence(boundary);
+        }
+    }
+
+    /// Re-measures the perimeter of every cell straight from the cell lattice.
+    ///
+    /// Perimeters are otherwise maintained incrementally by [`MyEnvironment::grant_position()`], so this is
+    /// only needed when the cells and the lattice are loaded separately (when resuming a run, for instance).
+    pub fn restore_perimeters(&mut self) {
+        let perimeters = measure_perimeters(&self.env);
+        for rel_cell in self.env.cells.iter_mut() {
+            let measured = perimeters[rel_cell.index as usize] as i32;
+            let tracked = rel_cell.cell.perimeter() as i32;
+            rel_cell.cell.shift_perimeter(measured - tracked);
+        }
     }
 
     /// Removes all cells from the environment and restore it to a clean state.
@@ -351,15 +400,19 @@ impl Habitable for MyEnvironment {
         to: Spin
     ) -> EdgesUpdate {
         let chem_at_pos = self.chem_lattice[pos];
+        // Must be measured before the lattice is updated below
+        let perim_deltas = perimeter_deltas(&self.env, pos, to);
         if let Spin::Some(index) = to {
             let to_rel_cell = &mut self.env.cells[index];
             to_rel_cell.cell.shift_position(pos, true, &self.env.bounds.boundary);
             to_rel_cell.cell.shift_chem(pos, chem_at_pos, true, &self.env.bounds.boundary);
+            to_rel_cell.cell.shift_perimeter(perim_deltas.source);
         }
         if let Spin::Some(index) = self.env.cell_lattice[pos] {
             let from_rel_cell = &mut self.env.cells[index];
             from_rel_cell.cell.shift_position(pos, false, &self.env.bounds.boundary);
             from_rel_cell.cell.shift_chem(pos, chem_at_pos, false, &self.env.bounds.boundary);
+            from_rel_cell.cell.shift_perimeter(perim_deltas.target);
             // If the copy kills the cell
             if from_rel_cell.cell.area() == 0 {
                 from_rel_cell.cell.apoptosis();

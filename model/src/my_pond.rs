@@ -63,14 +63,20 @@ impl MyPond {
 
 impl Step for MyPond {
     fn step(&mut self) {
-        if self.pond.time_step.is_multiple_of(self.update_period) {
-            self.env_mut().env.cells
+        let time_step = self.pond.time_step;
+        // Destructured so that the environment can be updated with the pond's own rng
+        let Pond { env, rng, .. } = &mut self.pond;
+        if time_step.is_multiple_of(self.update_period) {
+            env.env.cells
                 .iter_mut()
                 .for_each(|rel_cell| rel_cell.cell.update());
             if self.division_enabled {
-                self.env_mut().reproduce();
+                env.reproduce(rng);
             }
         }
+        // Colizzi 2020 turns cells towards their realized direction of motion every time-step,
+        // right before the CA is updated
+        env.update_persistence();
         // TODO!: parameterize
         // if self.pond.time_step.is_multiple_of(self.target_move_period) {
         //     let center = self.env().target_center.cast_as();
