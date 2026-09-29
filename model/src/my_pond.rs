@@ -4,8 +4,6 @@ use crate::potts::Potts;
 use cellulars_lib::base::pond::Pond;
 use cellulars_lib::traits::step::Step;
 use rand_xoshiro::Xoshiro256StarStar;
-use cellulars_lib::positional::boundaries::Boundary;
-use cellulars_lib::prelude::Pos;
 use crate::my_environment::MyEnvironment;
 
 /// A pond is responsible for updating an [`Environment`](crate::my_environment::MyEnvironment) using the [`Potts`] algorithm.

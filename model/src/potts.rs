@@ -8,10 +8,10 @@ use cellulars_lib::perimeter_constraint::PerimeterConstraint;
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::positional::pos::Pos;
 use cellulars_lib::spin::Spin;
-use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::adhesion_system::AdhesionSystem;
 use cellulars_lib::traits::cellular::Cellular;
 use cellulars_lib::traits::potts_algorithm::PottsAlgorithm;
+use crate::pairwise_adhesion::PairwiseAdhesion;
 
 // This could be a module but it's convenient to be able to access the relevant parameters
 // Also we might eventually want to implement multiple CA choices, in which case I can "easily" make CA a trait 
@@ -30,14 +30,14 @@ pub struct Potts {
     /// Whether we allow cell migration.
     pub enable_migration: bool,
     /// Adhesion system used in [`Potts::delta_hamiltonian_adhesion()`].
-    pub adhesion: StaticAdhesion,
+    pub adhesion: PairwiseAdhesion,
     /// Penalty applied to deviations from the cells' target perimeter.
     pub perimeter: PerimeterConstraint
 }
 
 impl Potts {
     /// Returns the energy differential associated with the chemotaxis of the cell that owns `pos_source`.
-    fn chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> FloatType {
+    fn _chemotaxis_bias(&self, pos_source: Pos<usize>, pos_target: Pos<usize>, env: &MyEnvironment) -> FloatType {
         if !self.enable_migration {
             return 0.
         }

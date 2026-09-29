@@ -2,6 +2,7 @@ use rand::Rng;
 use cellulars_lib::constants::FloatType;
 use cellulars_lib::prelude::{AdhesionSystem, CellIndex, Spin, SymmetricTable};
 
+#[derive(Clone)]
 pub struct PairwiseAdhesion {
     medium_energy: FloatType,
     solid_energy: FloatType,
@@ -9,7 +10,7 @@ pub struct PairwiseAdhesion {
 }
 
 impl PairwiseAdhesion {
-    fn new(medium_energy: FloatType, solid_energy: FloatType, max_cells: CellIndex) -> Self {
+    pub fn new(medium_energy: FloatType, solid_energy: FloatType, max_cells: CellIndex) -> Self {
         Self {
             medium_energy,
             solid_energy,
@@ -17,7 +18,7 @@ impl PairwiseAdhesion {
         }
     }
 
-    fn randomize_cell_energies(&mut self, min_energy: FloatType, max_energy: FloatType, rng: &mut impl Rng) {
+    pub fn randomize_cell_energies(&mut self, min_energy: FloatType, max_energy: FloatType, rng: &mut impl Rng) {
         for (i, j) in self.adh_table.iter_index_pairs(None, None) {
             self.adh_table[(i, j)] = rng.random_range(min_energy..=max_energy);
         }
@@ -25,11 +26,18 @@ impl PairwiseAdhesion {
 }
 
 impl<C> AdhesionSystem<C> for PairwiseAdhesion {
-    fn adhesion_energy(&self, spin1: Spin, spin2: Spin, context: &C) -> FloatType {
+    fn adhesion_energy(&self, spin1: Spin, spin2: Spin, _context: &C) -> FloatType {
         match (spin1, spin2) {
-            (Spin::Some(c1), Spin::Some(c2)) => 2. * self.adh_table[(c1 as usize, c2 as usize)],
-            (Spin::Medium, _) | (_, Spin::Medium) => self.medium_energy,
-            (Spin::Solid, _)  | (_, Spin::Solid) => self.solid_energy,
+            (Spin::Some(c1), Spin::Some(c2)) => {
+                if c1 == c2 {
+                    0.
+                } else {
+                    2. * self.adh_table[(c1 as usize, c2 as usize)]
+                }
+            },
+            (Spin::Some(_), Spin::Medium) | (Spin::Medium, Spin::Some(_)) => self.medium_energy,
+            (Spin::Some(_), Spin::Solid) | (Spin::Solid, Spin::Some(_)) => self.solid_energy,
+            _ => 0.
         }
     }
 }

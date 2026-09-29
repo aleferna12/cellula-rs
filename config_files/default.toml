@@ -23,7 +23,7 @@ target-move-period = 0
 
 [cell]
 # Number of starting cells in the environment.
-starting-cells = 1
+starting-cells = 30
 # Maximum number of cells allowed in the environment.
 # Cell division is prevented if it would cause the cell population to exceed this threshold.
 max-cells = 1024
@@ -32,14 +32,14 @@ max-cells = 1024
 # all cell postitions could be found.
 search-radius = 3.0
 # Starting cell area.
-starting-area = 1200
+starting-area = 1000
 # Target cell area.
-target-area = 1200
+target-area = 1000
 # Target cell perimeter, measured in units of the environment's neighbourhood
 # (a lone lattice site has a perimeter of 8 in a Moore neighbourhood of radius 1).
 # Only matters if `potts.perimeter-lambda` is non-zero.
 # [default = 0]
-target-perimeter = 368
+target-perimeter = 450
 # For how many MCS a cell keeps pushing in the same direction before realigning itself with the
 # direction it actually travelled since the last realignment.
 # Longer durations make cells turn more slowly (and migrate more persistently).
@@ -67,17 +67,17 @@ size-lambda = 1.0
 # Keeps cells compact and discourages the long protrusions that migration biases create.
 # Zero disables the perimeter constraint.
 # [default = 0]
-perimeter-lambda = 0.5
+perimeter-lambda = 0
 # Scaler constant for chemotaxis bias.
 chemotaxis-mu = 2.0
 # Scaler constant for persistent migration bias.
 # Zero disables persistent migration.
 # [default = 0]
-persistence-mu = 2.0
+persistence-mu = 4.0
 
 [potts.adhesion]
 # Adhesion energy at cell-cell interfaces.
-cell-energy = 18.0
+cell-energy = 16.0
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16.0
 # Adhesion energy at cell-solid interfaces.
@@ -115,12 +115,12 @@ lattice-period = 4096
 #   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "area":         Plots the relative area of cells.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["spin", "cell-type", "border"]
+order = ["spin", "area", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
 # Ommit to make the medium transparent.
-medium-color = "#ffffff"
+# medium-color = "#ffffff"
 # With which color to plot the centers of cells.
 center-color = "#00ff00"
 # With which color to plot the perceived center of chem of cells.
@@ -128,9 +128,9 @@ chem-center-color = "#00ff00"
 # With which color to plot the border of cells.
 border-color = "#000000"
 # With which color to plot the minimum area in the cell population.
-area-min-color = "#ff00ff"
+area-min-color = "#aad060"
 # With which color to plot the maximum area in the cell population.
-area-max-color = "#ffff00"
+area-max-color = "#004468"
 # With which color to plot the minimum value for the chem in the environment.
 chem-min-color = "#ffffff"
 # With which color to plot the maximum value for the chem in the environment.

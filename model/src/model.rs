@@ -18,17 +18,17 @@ use cellulars_lib::positional::boundaries::Boundaries;
 use cellulars_lib::positional::pos::CastCoords;
 use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos, Spin};
-use cellulars_lib::static_adhesion::StaticAdhesion;
 use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
 use polars::polars_utils::itertools::Itertools;
-use rand::{RngCore, SeedableRng};
+use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
-use std::path::Path;
-use std::time::{Duration, Instant};
+use std::f64::consts::PI;
+use std::path::{Path, PathBuf};
 use image::{ImageReader, RgbaImage};
 use image::imageops::flip_vertical_in_place;
+use crate::pairwise_adhesion::PairwiseAdhesion;
 
 /// This is the master struct that runs the simulation in a [`MyPond`] and manages IO through an [`IoManager`].
 pub struct Model {
@@ -177,9 +177,10 @@ impl Model {
             .plots(parameters.io.plot.clone().try_into()?)
             .maybe_kinect_listener(kinect_listener);
         #[cfg(feature = "movie")]
-        let io = io_builder.maybe_movie_maker(movie_maker).build();
+        let mut io = io_builder.maybe_movie_maker(movie_maker).build();
         #[cfg(not(feature = "movie"))]
-        let io = io_builder.build();
+        let mut io = io_builder.build();
+        io.load_bg(&PathBuf::from("bg.png"))?;
 
         log::info!("Creating output directories and copy of parameter file");
         if parameters.io.replace_outdir {
@@ -192,7 +193,17 @@ impl Model {
         Ok(io)
     }
 
-    fn make_potts(parameters: &Parameters) -> Potts {
+    fn make_potts(parameters: &Parameters, rng: &mut impl Rng) -> Potts {
+        let mut adh = PairwiseAdhesion::new(
+            parameters.potts.adhesion.medium_energy,
+            parameters.potts.adhesion.solid_energy,
+            parameters.cell.max_cells
+        );
+        adh.randomize_cell_energies(
+            parameters.potts.adhesion.cell_energy * 0.25,
+            parameters.potts.adhesion.cell_energy * 16.,
+            rng
+        );
         Potts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
@@ -200,13 +211,7 @@ impl Model {
             .persistence_mu(parameters.potts.persistence_mu)
             .enable_migration(parameters.cell.migrate)
             .perimeter(PerimeterConstraint { lambda: parameters.potts.perimeter_lambda })
-            .adhesion(
-                StaticAdhesion {
-                    cell_energy: parameters.potts.adhesion.cell_energy,
-                    medium_energy: parameters.potts.adhesion.medium_energy,
-                    solid_energy: parameters.potts.adhesion.solid_energy,
-                }
-            )
+            .adhesion(adh)
             .build()
     }
 
@@ -230,10 +235,8 @@ impl Model {
     }
 
     fn read_target_image(path: &str) -> RgbaImage {
-        let mut img = ImageReader::open(path).expect(&format!(
-            "failed to open {}",
-            path
-        )).decode().expect("failed to decode target image").into_rgba8();
+        let mut img = ImageReader::open(path).unwrap_or_else(|_| panic!("failed to open {}",
+            path)).decode().expect("failed to decode target image").into_rgba8();
         flip_vertical_in_place(&mut img);
         img
     }
@@ -247,7 +250,7 @@ impl Model {
         MyPond::new(
             Pond::new(
                 Self::make_env(parameters),
-                Self::make_potts(parameters),
+                Self::make_potts(parameters, rng),
                 Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
                 0
             ),
@@ -270,12 +273,16 @@ impl Model {
         }).transpose()
     }
 
-    fn empty_cell_from_parameters(parameters: &Parameters) -> EmptyCell<MyCell> {
+    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl Rng) -> EmptyCell<MyCell> {
+        let area = parameters.cell.target_area as FloatType * rng.random_range(0.25..2.);
+        // Estimated from the biophys paper
+        let per = 3. * 2. * PI * (area / PI).sqrt() * rng.random_range(1.0..1.25);
+        let pers = parameters.cell.persistence_duration as FloatType * rng.random_range(0.5..2.);
         MyCell::new_empty(
-            parameters.cell.target_area,
-            parameters.cell.target_perimeter,
+            area as u32,
+            per as u32,
             parameters.cell.div_area,
-            parameters.cell.persistence_duration,
+            pers as u32,
             CellType::Migrating
         )
     }
@@ -295,12 +302,16 @@ impl Model {
         let mut spawn_attempts = 0;
         while pond.env().env.cells.n_non_empty() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
-                None => Self::empty_cell_from_parameters(parameters).into_cell(),
+                None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
                 Some(templates_it) => templates_it
                     .next()
                     .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))?
             };
-            let cell_area = if cell.area() == 0 { parameters.cell.starting_area } else { cell.area() };
+            let cell_area = if cell.area() == 0 {
+                parameters.cell.starting_area
+            } else {
+                cell.area()
+            };
             pond.pond.env.spawn_cell_random(
                 cell.birth(),
                 cell_area,
@@ -389,7 +400,7 @@ impl Model {
                     continue;
                 }
                 let cell = match &maybe_templates_box {
-                    None => Self::empty_cell_from_parameters(parameters).into_cell(),
+                    None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
                     Some(templates_box) => templates_box
                         .get(group_index)
                         .ok_or(anyhow::anyhow!("there were more groups in the layout than in the template"))?
@@ -458,7 +469,7 @@ impl Model {
         let pond = MyPond::new(
             Pond::new(
                 env,
-                Self::make_potts(parameters),
+                Self::make_potts(parameters, rng),
                 Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
                 time_step
             ),

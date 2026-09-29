@@ -21,7 +21,7 @@ use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
 use cellulars_lib::traits::track_perimeter::TrackPerimeter;
 use image::imageops::{flip_vertical_in_place, FilterType};
-use image::{ColorType, GrayImage, ImageReader, RgbaImage};
+use image::{open, ColorType, GrayImage, ImageReader, RgbaImage};
 use num_traits::NumCast;
 use polars::frame::row::Row;
 use polars::polars_utils::float::IsFloat;
@@ -56,6 +56,7 @@ pub struct IoManager {
     #[cfg(feature = "movie")]
     pub movie_maker: Option<MovieMaker>,
     pub kinect_listener: Option<KinectListener>,
+    pub bg: Option<RgbaImage>,
     plots: Box<[Box<dyn Plot>]>,
     image_period: u32,
     cells_period: u32,
@@ -95,6 +96,11 @@ impl IoManager {
                 toml::to_string(parameters)?
             )
         )?;
+        Ok(())
+    }
+
+    pub fn load_bg(&mut self, path: &Path) -> anyhow::Result<()> {
+        self.bg = Some(open(path)?.into_rgba8());
         Ok(())
     }
 
@@ -390,10 +396,13 @@ impl IoManager {
         &self, 
         env: &MyEnvironment
     ) -> RgbaImage {
-        let mut image = RgbaImage::new(
-            env.env.width() as u32,
-            env.env.height() as u32
-        );
+        let mut image = match &self.bg {
+            Some(bg) => bg.clone(),
+            _ => RgbaImage::new(
+                env.env.width() as u32,
+                env.env.height() as u32
+            )
+        };
         for plot in &self.plots {
             plot.plot(env, &mut image);
         }
