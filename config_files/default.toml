@@ -23,7 +23,7 @@ target-move-period = 0
 
 [cell]
 # Number of starting cells in the environment.
-starting-cells = 100
+starting-cells = 1
 # Maximum number of cells allowed in the environment.
 # Cell division is prevented if it would cause the cell population to exceed this threshold.
 max-cells = 1024
@@ -32,17 +32,17 @@ max-cells = 1024
 # all cell postitions could be found.
 search-radius = 3.0
 # Starting cell area.
-starting-area = 100
+starting-area = 1200
 # Target cell area.
-target-area = 100
+target-area = 1200
 # Cell area before division.
-div-area = 128
+div-area = 900000000
 # Set to `false` to disable division.
 # [default = true]
 divide = false
 # Set to `false` to disable migration.
 # [default = true]
-migrate = true
+migrate = false
 # Period (in MCS) with which the cell is updated.
 update-period = 32
 
@@ -57,7 +57,7 @@ chemotaxis-mu = 2.0
 
 [potts.adhesion]
 # Adhesion energy at cell-cell interfaces.
-cell-energy = 16.0
+cell-energy = 18.0
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16.0
 # Adhesion energy at cell-solid interfaces.
@@ -95,12 +95,12 @@ lattice-period = 4096
 #   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "area":         Plots the relative area of cells.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["chem", "spin", "target", "cell-type", "border"]
+order = ["spin", "cell-type", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
 # Ommit to make the medium transparent.
-# medium-color = "#ffffff"
+medium-color = "#ffffff"
 # With which color to plot the centers of cells.
 center-color = "#00ff00"
 # With which color to plot the perceived center of chem of cells.

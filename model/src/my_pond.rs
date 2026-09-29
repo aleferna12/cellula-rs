@@ -72,14 +72,14 @@ impl Step for MyPond {
             }
         }
         // TODO!: parameterize
-        if self.pond.time_step.is_multiple_of(self.target_move_period) {
-            let center = self.env().target_center.cast_as();
-            self.env_mut().target_center = self.env().env.bounds.lattice_boundary.valid_pos(Pos::new(
-                  center.x + 1,
-                  center.y,
-            )).unwrap().cast_as();
-            self.env_mut().update_chem_gradient();
-        }
+        // if self.pond.time_step.is_multiple_of(self.target_move_period) {
+        //     let center = self.env().target_center.cast_as();
+        //     self.env_mut().target_center = self.env().env.bounds.lattice_boundary.valid_pos(Pos::new(
+        //           center.x + 1,
+        //           center.y,
+        //     )).unwrap().cast_as();
+        //     self.env_mut().update_chem_gradient();
+        // }
         self.pond.step();
     }
 }

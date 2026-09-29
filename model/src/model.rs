@@ -25,6 +25,7 @@ use rand::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::path::Path;
+use std::time::{Duration, Instant};
 use image::{ImageReader, RgbaImage};
 use image::imageops::flip_vertical_in_place;
 
@@ -470,8 +471,6 @@ impl Model {
         let non_empty = self.my_pond.env().env.cells.n_non_empty();
         log::info!("\t{non_empty} cells");
     }
-
-
 }
 
 impl Step for Model {
@@ -500,7 +499,7 @@ impl Step for Model {
 
             kinect.draw_silhouette(self.my_pond.env_mut())
                 .expect("failed to draw silhouette from kinect");
-            self.my_pond.env_mut().draw_solid_target();
+            // self.my_pond.env_mut().draw_solid_target();
         }
 
         self.my_pond.step();
