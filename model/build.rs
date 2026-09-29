@@ -4,4 +4,7 @@ fn main() {
 
     // Tell Cargo which library to link
     println!("cargo:rustc-link-lib=dylib=kinect");
+
+    // Tell Cargo where to find lib at runtime
+    println!("cargo:rustc-link-arg=-Wl,-rpath,model/lib");
 }
