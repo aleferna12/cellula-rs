@@ -1,14 +1,16 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
-use crate::my_cell::{MyCell, CellType};
 use crate::constants::{BoundaryType, KinectNeighbourhoodType, NeighbourhoodType};
-use crate::my_environment::MyEnvironment;
 use crate::io::io_manager::IoManager;
 use crate::io::kinect_listener::KinectListener;
 #[cfg(feature = "movie")]
 use crate::io::movie_maker::MovieMaker;
 use crate::io::parameters::Parameters;
+use crate::my_cell::{CellType, MyCell};
+use crate::my_environment::MyEnvironment;
 use crate::my_pond::MyPond;
+use crate::pairwise_adhesion::PairwiseAdhesion;
+use crate::physics::Physics;
 use crate::potts::Potts;
 use cellulars_lib::base::environment::Environment;
 use cellulars_lib::base::pond::Pond;
@@ -20,27 +22,33 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos, Spin};
 use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
+use image::imageops::{crop_imm, flip_vertical, flip_vertical_in_place, resize, FilterType};
+use image::{open, ImageReader, Rgba, RgbaImage};
+use minifb::Key;
 use polars::polars_utils::itertools::Itertools;
 use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::f64::consts::PI;
 use std::path::{Path, PathBuf};
-use image::{ImageReader, RgbaImage};
-use image::imageops::flip_vertical_in_place;
-use crate::pairwise_adhesion::PairwiseAdhesion;
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 /// This is the master struct that runs the simulation in a [`MyPond`] and manages IO through an [`IoManager`].
 pub struct Model {
     /// Pond containing all cells and the model Potts algorithm.
     pub my_pond: MyPond,
+    pub physics: Physics,
     /// Instance responsible for managing IO for the model.
     pub io: IoManager,
     /// Unique random number generator of this model.
     pub rng: Xoshiro256StarStar,
     /// Period with which information is logged.
     pub info_period: u32,
-    time_steps: u32
+    time_steps: u32,
+    display_mode: DisplayMode,
+    last_mode_change: Instant,
+    macro_bg: RgbaImage,
 }
 
 impl Model {
@@ -60,9 +68,13 @@ impl Model {
                 maybe_templates_path
             )?,
             io: Self::setup_io(&parameters, seed)?,
+            physics: Physics::new(20., 5, &mut rng),
             rng,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps
+            time_steps: parameters.general.time_steps,
+            display_mode: DisplayMode::Macro,
+            last_mode_change: Instant::now(),
+            macro_bg: flip_vertical(&open("bg_macro.png")?.into_rgba8())
         })
     }
 
@@ -83,9 +95,13 @@ impl Model {
         Ok(Self {
             my_pond: pond,
             io: Self::setup_io(&parameters, seed)?,
+            physics: Physics::new(20., 5, &mut rng),
             rng,
             info_period: parameters.io.info_period,
-            time_steps: parameters.general.time_steps
+            time_steps: parameters.general.time_steps,
+            display_mode: DisplayMode::Macro,
+            last_mode_change: Instant::now(),
+            macro_bg: flip_vertical(&open("bg_macro.png")?.into_rgba8())
         })
     }
 
@@ -111,11 +127,15 @@ impl Model {
             time_step
         )?;
         Ok(Self {
+            physics: Physics::new(20., 5, &mut rng),
             io: Self::setup_io(&parameters, seed)?,
             info_period: parameters.io.info_period,
             time_steps: parameters.general.time_steps,
             my_pond: pond,
-            rng
+            rng,
+            display_mode: DisplayMode::Macro,
+            last_mode_change: Instant::now(),
+            macro_bg: flip_vertical(&open("bg_macro.png")?.into_rgba8())
         })
     }
 
@@ -495,20 +515,20 @@ impl Model {
         let non_empty = self.my_pond.env().env.cells.n_non_empty();
         log::info!("\t{non_empty} cells");
     }
-}
 
-impl Step for Model {
-    fn step(&mut self) {
+    fn cpm_step(&mut self, write: bool) {
         if self.my_pond.time_step().is_multiple_of(self.info_period) {
             self.log_info();
         }
 
-        let saved = self.io.write_if_time(
-            self.my_pond.time_step(),
-            self.my_pond.env()
-        );
-        if let Err(e) = saved {
-            log::warn!("Failed to save data at time step {} with error `{e}`", self.my_pond.time_step())
+        if write {
+            let saved = self.io.write_if_time(
+                self.my_pond.time_step(),
+                self.my_pond.env()
+            );
+            if let Err(e) = saved {
+                log::warn!("Failed to save data at time step {} with error `{e}`", self.my_pond.time_step())
+            }
         }
 
         // Draw silhouette
@@ -528,6 +548,95 @@ impl Step for Model {
 
         self.my_pond.step();
     }
+
+    fn physics_step(&mut self, write: bool) {
+        if write && self.my_pond.time_step().is_multiple_of(100) {
+            let img = self.physics_image();
+            if let Some(mm) = &mut self.io.movie_maker {
+                mm.update(&img).unwrap();
+            }
+        }
+
+        self.physics.step(&self.my_pond.pond.env.env.cell_lattice);
+    }
+
+    fn physics_image(&mut self) -> RgbaImage {
+        let mut img = self.macro_bg.clone();
+        for ball in &self.physics.balls {
+            for pos in ball.rectangle().iter_positions() {
+                if pos.y >= self.my_pond.pond.env.env.height() as u32 {
+                    continue;
+                }
+                let dist = (pos.x as FloatType - ball.center.x).hypot(pos.y as FloatType - ball.center.y);
+                if dist > ball.radius {
+                    continue;
+                }
+                let color = if dist < 17. { Rgba([128, 50, 50, 0]) } else { Rgba([0, 0, 0, 0]) };
+                img.put_pixel(pos.x, pos.y, color);
+            }
+            for pos in self.my_pond.pond.env.env.cell_lattice.iter_positions() {
+                if self.my_pond.pond.env.env.cell_lattice[pos] != Spin::Solid {
+                    continue;
+                }
+                img.put_pixel(pos.x as u32, pos.y as u32, Rgba([0, 0, 0, 0]));
+            }
+        }
+
+        flip_vertical_in_place(&mut img);
+        img
+    }
+
+    fn update_mode(&mut self) {
+        let now = Instant::now();
+        if let Some(mm) = &self.io.movie_maker
+            && mm.window.is_open()
+            && mm.window.is_key_released(Key::Space)
+            && (now - self.last_mode_change) > Duration::from_secs(5) {
+            if self.display_mode == DisplayMode::Macro {
+                self.zoom_in();
+                self.display_mode = DisplayMode::Micro;
+            } else {
+                self.display_mode = DisplayMode::Macro;
+            }
+            self.last_mode_change = now;
+        }
+    }
+
+    fn zoom_in(&mut self) {
+        let original = self.physics_image();
+        let cropx = (original.width() as FloatType * 0.01) as u32;
+        let cropy = (original.height() as FloatType * 0.01) as u32;
+        for i in 1..50 {
+            let mut img = crop_imm(
+                &original,
+                cropx * i,
+                cropy * i,
+                original.width() - 2 * cropx * i,
+                original.height() - 2 * cropy * i
+            ).to_image();
+            img = resize(&img, 512, 424, FilterType::Gaussian);
+            if let Some(mm) = &mut self.io.movie_maker {
+                mm.update(&img).unwrap();
+                sleep(Duration::from_millis(40));
+            }
+        }
+    }
+}
+
+impl Step for Model {
+    fn step(&mut self) {
+        self.update_mode();
+        // We run both steps all the time and hope the computer is fast enough lol
+        // This prevents cells being erased while we interact with the ball (the lazy way to do it)
+        self.physics_step(self.display_mode == DisplayMode::Macro);
+        self.cpm_step(self.display_mode == DisplayMode::Micro);
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum DisplayMode {
+    Micro,
+    Macro
 }
 
 #[cfg(test)]

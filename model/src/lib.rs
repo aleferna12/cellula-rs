@@ -12,3 +12,4 @@ pub mod my_cell;
 pub mod my_environment;
 pub mod kinect;
 pub mod pairwise_adhesion;
+pub mod physics;
