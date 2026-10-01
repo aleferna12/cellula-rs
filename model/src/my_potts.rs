@@ -69,7 +69,8 @@ impl MyPotts {
     }
 
     fn perimeter_energy_diff(&self, delta_perimeter: i32, perimeter: u32, target_perimeter: u32) -> f32 {
-        2. * self.perimeter_lambda * delta_perimeter as f32 * (perimeter as f32 - target_perimeter as f32) + self.perimeter_lambda
+        let dp = delta_perimeter as f32;
+        self.perimeter_lambda * dp * (2. * (perimeter as f32 - target_perimeter as f32) + dp)
     }
 
     fn delta_hamiltonian_perimeter(&self, spin_source: Spin, spin_target: Spin, env: &MyEnvironment) -> f32 {
