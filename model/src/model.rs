@@ -22,15 +22,15 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos, Spin};
 use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
-use image::imageops::{crop_imm, flip_vertical, flip_vertical_in_place, resize, FilterType};
-use image::{open, ImageReader, Rgba, RgbaImage};
+use image::imageops::{FilterType, crop_imm, flip_vertical_in_place, overlay, resize};
+use image::{ImageReader, Rgba, RgbaImage};
 use minifb::Key;
 use polars::polars_utils::itertools::Itertools;
 use rand::{Rng, RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::HashMap;
 use std::f64::consts::PI;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -48,7 +48,6 @@ pub struct Model {
     time_steps: u32,
     display_mode: DisplayMode,
     last_mode_change: Instant,
-    macro_bg: RgbaImage,
 }
 
 impl Model {
@@ -74,7 +73,6 @@ impl Model {
             time_steps: parameters.general.time_steps,
             display_mode: DisplayMode::Macro,
             last_mode_change: Instant::now(),
-            macro_bg: flip_vertical(&open("bg_macro.png")?.into_rgba8())
         })
     }
 
@@ -101,7 +99,6 @@ impl Model {
             time_steps: parameters.general.time_steps,
             display_mode: DisplayMode::Macro,
             last_mode_change: Instant::now(),
-            macro_bg: flip_vertical(&open("bg_macro.png")?.into_rgba8())
         })
     }
 
@@ -135,7 +132,6 @@ impl Model {
             rng,
             display_mode: DisplayMode::Macro,
             last_mode_change: Instant::now(),
-            macro_bg: flip_vertical(&open("bg_macro.png")?.into_rgba8())
         })
     }
 
@@ -195,12 +191,15 @@ impl Model {
             .cells_period(parameters.io.data.cells_period)
             .lattice_period(parameters.io.data.lattice_period)
             .plots(parameters.io.plot.clone().try_into()?)
+            .micro_bg(RgbaImage::new(512, 424))
+            .macro_bg(RgbaImage::new(512, 424))
+            .kinect_img(RgbaImage::new(512, 424))
             .maybe_kinect_listener(kinect_listener);
         #[cfg(feature = "movie")]
         let mut io = io_builder.maybe_movie_maker(movie_maker).build();
         #[cfg(not(feature = "movie"))]
         let mut io = io_builder.build();
-        io.load_bg(&PathBuf::from("bg.png"))?;
+        io.load_bgs();
 
         log::info!("Creating output directories and copy of parameter file");
         if parameters.io.replace_outdir {
@@ -541,7 +540,7 @@ impl Model {
                 }
             }
 
-            kinect.draw_silhouette(self.my_pond.env_mut())
+            self.io.kinect_img = kinect.draw_silhouette(self.my_pond.env_mut())
                 .expect("failed to draw silhouette from kinect");
             // self.my_pond.env_mut().draw_solid_target();
         }
@@ -561,7 +560,7 @@ impl Model {
     }
 
     fn physics_image(&mut self) -> RgbaImage {
-        let mut img = self.macro_bg.clone();
+        let mut img = self.io.macro_bg.clone();
         for ball in &self.physics.balls {
             for pos in ball.rectangle().iter_positions() {
                 if pos.y >= self.my_pond.pond.env.env.height() as u32 {
@@ -574,13 +573,8 @@ impl Model {
                 let color = if dist < 17. { Rgba([128, 50, 50, 0]) } else { Rgba([0, 0, 0, 0]) };
                 img.put_pixel(pos.x, pos.y, color);
             }
-            for pos in self.my_pond.pond.env.env.cell_lattice.iter_positions() {
-                if self.my_pond.pond.env.env.cell_lattice[pos] != Spin::Solid {
-                    continue;
-                }
-                img.put_pixel(pos.x as u32, pos.y as u32, Rgba([0, 0, 0, 0]));
-            }
         }
+        overlay(&mut img, &self.io.kinect_img, 0, 0);
 
         flip_vertical_in_place(&mut img);
         img
