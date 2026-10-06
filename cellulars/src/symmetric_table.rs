@@ -20,23 +20,39 @@ impl<T> SymmetricTable<T> {
         let length = self.length;
         (0..length).flat_map(move |i| (i..length).map(move |j| (i, j)))
     }
-    
-    pub fn get(&self, index: (usize, usize)) -> Option<&T> {
-        if index.0 >= self.length || index.1 >= self.length {
+
+    pub fn get(&self, (i, j): (usize, usize)) -> Option<&T> {
+        if !self.in_bounds(i, j) {
             return None;
         }
-        Some(&self[index])
-    }
-    
-    pub fn get_mut(&mut self, index: (usize, usize)) -> Option<&mut T> {
-        if index.0 >= self.length || index.1 >= self.length {
-            return None;
-        }
-        Some(&mut self[index])
+        let k = self.flat_index_unchecked(i, j);
+        self.array.get(k)
     }
 
+    pub fn get_mut(&mut self, (i, j): (usize, usize)) -> Option<&mut T> {
+        if !self.in_bounds(i, j) {
+            return None;
+        }
+        let k = self.flat_index_unchecked(i, j);
+        self.array.get_mut(k)
+    }
+
+    /// Returns `true` if `(i, j)` is a valid index into the table.
+    fn in_bounds(&self, i: usize, j: usize) -> bool {
+        i < self.length && j < self.length
+    }
+
+    /// Maps `(i, j)` to an index into `array`, panicking if either is out of bounds.
     fn flat_index(&self, i: usize, j: usize) -> usize {
-        assert!(i < self.length && j < self.length, "index out of bounds");
+        assert!(self.in_bounds(i, j), "index out of bounds");
+        self.flat_index_unchecked(i, j)
+    }
+
+    /// Maps `(i, j)` to an index into `array` without checking bounds.
+    ///
+    /// Callers must ensure `i < self.length` and `j < self.length`. Violating this
+    /// is not undefined behavior, but the result is meaningless and may underflow.
+    fn flat_index_unchecked(&self, i: usize, j: usize) -> usize {
         let (i, j) = if i > j { (j, i) } else { (i, j) };
         i * (2 * self.length - i + 1) / 2 + j - i
     }
@@ -48,7 +64,7 @@ impl<T: Default + Clone> SymmetricTable<T> {
         let size = length * (length + 1) / 2;
         Self {
             array: vec![T::default(); size].into_boxed_slice(),
-            length
+            length,
         }
     }
 
@@ -68,7 +84,8 @@ impl<T> Index<(usize, usize)> for SymmetricTable<T> {
 
 impl<T> IndexMut<(usize, usize)> for SymmetricTable<T> {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
-        &mut self.array[self.flat_index(index.0, index.1)]
+        let k = self.flat_index(index.0, index.1);
+        &mut self.array[k]
     }
 }
 
@@ -103,7 +120,7 @@ mod tests {
         ];
         assert_eq!(pairs, expected);
     }
-    
+
     #[test]
     fn test_unique_indexes() {
         let table: SymmetricTable<u8> = SymmetricTable::new(10);
