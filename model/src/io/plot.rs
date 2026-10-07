@@ -1,9 +1,10 @@
 //! Contains logic for plotting data about the simulation.
 
-use crate::my_cell::CellType;
-use crate::my_environment::MyEnvironment;
+use crate::constants::ADH_N;
 use crate::io::parameters::{PlotParameters, PlotType};
 use crate::io::plot::HexError::ParseU8Error;
+use crate::my_cell::CellType;
+use crate::my_environment::MyEnvironment;
 use cellulars_lib::constants::{CellIndex, FloatType};
 use cellulars_lib::positional::boundaries::Boundary;
 use cellulars_lib::prelude::Pos;
@@ -11,11 +12,10 @@ use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
-use palette::{FromColor, IntoColor, Lchuv, Luv, Mix, Srgb, WithAlpha};
+use palette::{FromColor, IntoColor, Lchuv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
-use crate::constants::ADH_N;
 
 /// A trait to plot information about the environment.
 pub trait Plot {
@@ -226,9 +226,9 @@ impl Plot for TargetPlot {
 /// Plots cell area.
 pub struct AreaPlot {
     /// Color used to display the smallest value of the plot.
-    pub min_color: Luv,
+    pub min_color: Lchuv,
     /// Color used to display the largest value of the plot.
-    pub max_color: Luv
+    pub max_color: Lchuv
 }
 
 impl Plot for AreaPlot {
@@ -280,9 +280,9 @@ impl ContinuousPlot for AreaPlot {
 /// Plots cell area.
 pub struct AdhPlot {
     /// Color used to display the smallest value of the plot.
-    pub min_color: Luv,
+    pub min_color: Lchuv,
     /// Color used to display the largest value of the plot.
-    pub max_color: Luv
+    pub max_color: Lchuv
 }
 
 impl Plot for AdhPlot {
@@ -301,7 +301,7 @@ impl Plot for AdhPlot {
                         pos.y as u32,
                         srgb_to_rgba(Srgb::from_linear(c.into_color()))
                     ),
-                    Err(e) => log::warn!("Failed to plot area for pos `{pos:?}` with error `{e:?}`")
+                    Err(e) => log::warn!("Failed to plot adh for pos `{pos:?}` with error `{e:?}`")
                 };
             }
         }
@@ -320,9 +320,9 @@ impl ContinuousPlot for AdhPlot {
 /// Plots the chemical lattice.
 pub struct ChemPlot {
     /// Color used to display the smallest value of the plot.
-    pub min_color: Luv,
+    pub min_color: Lchuv,
     /// Color used to display the largest value of the plot.
-    pub max_color: Luv
+    pub max_color: Lchuv
 }
 
 impl Plot for ChemPlot {
@@ -395,19 +395,19 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                     color: hex_to_srgb(&params.chem_center_color)?
                 }),
                 PlotType::Area => Box::new(AreaPlot {
-                    min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
+                    min_color: srgb_to_lchuv(hex_to_srgb(&params.area_min_color)?),
+                    max_color: srgb_to_lchuv(hex_to_srgb(&params.area_max_color)?),
                 }),
                 PlotType::Adh => Box::new(AdhPlot {
-                    min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
+                    min_color: srgb_to_lchuv(hex_to_srgb(&params.area_min_color)?),
+                    max_color: srgb_to_lchuv(hex_to_srgb(&params.area_max_color)?),
                 }),
                 PlotType::Border => Box::new(BorderPlot {
                     color: hex_to_srgb(&params.border_color)?
                 }),
                 PlotType::Chem => Box::new(ChemPlot {
-                    min_color: srgb_to_luv(hex_to_srgb(&params.chem_min_color)?),
-                    max_color: srgb_to_luv(hex_to_srgb(&params.chem_max_color)?)
+                    min_color: srgb_to_lchuv(hex_to_srgb(&params.chem_min_color)?),
+                    max_color: srgb_to_lchuv(hex_to_srgb(&params.chem_max_color)?)
                 }),
                 PlotType::CellType => Box::new(CellTypePlot {
                     mig_color: hex_to_srgb(&params.migrating_color)?,
@@ -421,9 +421,9 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
     }
 }
 
-/// Converts [`Srgb<u8>`] to [`Luv`].
-pub fn srgb_to_luv(srgb: Srgb<u8>) -> Luv {
-    Luv::from_color(srgb.into_linear::<f32>())
+/// Converts [`Srgb<u8>`] to [`Lchuv`].
+pub fn srgb_to_lchuv(srgb: Srgb<u8>) -> Lchuv {
+    Lchuv::from_color(srgb.into_linear::<f32>())
 }
 
 /// Parses a hex string as an [`Srgb<u8>`].
