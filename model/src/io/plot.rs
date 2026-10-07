@@ -11,10 +11,11 @@ use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
 use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_cross_mut;
-use palette::{FromColor, IntoColor, Luv, Mix, Srgb, WithAlpha};
+use palette::{FromColor, IntoColor, Lchuv, Luv, Mix, Srgb, WithAlpha};
 use std::fmt::Debug;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use thiserror::Error;
+use crate::constants::ADH_N;
 
 /// A trait to plot information about the environment.
 pub trait Plot {
@@ -25,11 +26,11 @@ pub trait Plot {
 /// [`Plot`]s that can display continuous variables.
 pub trait ContinuousPlot: Plot {
     /// Color for when `value == min`.
-    fn min_color(&self) -> Luv;
+    fn min_color(&self) -> Lchuv;
     /// Color for when `value == max`.
-    fn max_color(&self) -> Luv;
+    fn max_color(&self) -> Lchuv;
     /// Linearly interpolates `value` between `min` and `max`.
-    fn lerp(&self, value: FloatType, min: FloatType, max: FloatType) -> Result<Luv, LerpError> {
+    fn lerp(&self, value: FloatType, min: FloatType, max: FloatType) -> Result<Lchuv, LerpError> {
         if max < min {
             return Err(LerpError::NegativeRange);
         }
@@ -268,10 +269,50 @@ impl Plot for AreaPlot {
 }
 
 impl ContinuousPlot for AreaPlot {
-    fn min_color(&self) -> Luv {
+    fn min_color(&self) -> Lchuv {
         self.min_color
     }
-    fn max_color(&self) -> Luv {
+    fn max_color(&self) -> Lchuv {
+        self.max_color
+    }
+}
+
+/// Plots cell area.
+pub struct AdhPlot {
+    /// Color used to display the smallest value of the plot.
+    pub min_color: Luv,
+    /// Color used to display the largest value of the plot.
+    pub max_color: Luv
+}
+
+impl Plot for AdhPlot {
+    fn plot(&self, env: &MyEnvironment, image: &mut RgbaImage) {
+        for pos in env.env.cell_lattice.iter_positions() {
+            if let Spin::Some(cell_index) = env.env.cell_lattice[pos] {
+                let rel_cell = &env.env.cells[cell_index];
+                let color = self.lerp(
+                    rel_cell.cell.adh_id as FloatType,
+                    0.,
+                    (ADH_N - 1) as FloatType
+                );
+                match color {
+                    Ok(c) => image.put_pixel(
+                        pos.x as u32,
+                        pos.y as u32,
+                        srgb_to_rgba(Srgb::from_linear(c.into_color()))
+                    ),
+                    Err(e) => log::warn!("Failed to plot area for pos `{pos:?}` with error `{e:?}`")
+                };
+            }
+        }
+    }
+}
+
+impl ContinuousPlot for AdhPlot {
+    fn min_color(&self) -> Lchuv {
+        self.min_color
+    }
+    fn max_color(&self) -> Lchuv {
         self.max_color
     }
 }
@@ -318,11 +359,11 @@ impl Plot for ChemPlot {
 }
 
 impl ContinuousPlot for ChemPlot {
-    fn min_color(&self) -> Luv {
+    fn min_color(&self) -> Lchuv {
         self.min_color
     }
 
-    fn max_color(&self) -> Luv {
+    fn max_color(&self) -> Lchuv {
         self.max_color
     }
 }
@@ -353,7 +394,11 @@ impl TryFrom<PlotParameters> for Box<[Box<dyn Plot>]> {
                 PlotType::ChemCenter => Box::new(ChemCenterPlot {
                     color: hex_to_srgb(&params.chem_center_color)?
                 }),
-                PlotType::Area => Box::new(AreaPlot{
+                PlotType::Area => Box::new(AreaPlot {
+                    min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
+                    max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
+                }),
+                PlotType::Adh => Box::new(AdhPlot {
                     min_color: srgb_to_luv(hex_to_srgb(&params.area_min_color)?),
                     max_color: srgb_to_luv(hex_to_srgb(&params.area_max_color)?),
                 }),

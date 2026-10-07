@@ -31,3 +31,5 @@ pub type KinectNeighbourhoodType = MooreNeighbourhood;
 ///
 /// Used to compute cell division axis for example.
 pub const EPSILON: FloatType = 1e-6;
+
+pub const ADH_N: u8 = 8;

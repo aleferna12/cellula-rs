@@ -1,6 +1,6 @@
 //! Contains logic for creating and running the master [`Model`] struct.
 
-use crate::constants::{BoundaryType, KinectNeighbourhoodType, NeighbourhoodType};
+use crate::constants::{BoundaryType, KinectNeighbourhoodType, NeighbourhoodType, ADH_N};
 use crate::io::io_manager::IoManager;
 use crate::io::kinect_listener::KinectListener;
 #[cfg(feature = "movie")]
@@ -48,6 +48,7 @@ pub struct Model {
     time_steps: u32,
     display_mode: DisplayMode,
     last_mode_change: Instant,
+    parameters: Parameters
 }
 
 impl Model {
@@ -73,6 +74,7 @@ impl Model {
             time_steps: parameters.general.time_steps,
             display_mode: DisplayMode::Macro,
             last_mode_change: Instant::now(),
+            parameters,
         })
     }
 
@@ -99,6 +101,7 @@ impl Model {
             time_steps: parameters.general.time_steps,
             display_mode: DisplayMode::Macro,
             last_mode_change: Instant::now(),
+            parameters,
         })
     }
 
@@ -132,6 +135,7 @@ impl Model {
             rng,
             display_mode: DisplayMode::Macro,
             last_mode_change: Instant::now(),
+            parameters,
         })
     }
 
@@ -212,17 +216,13 @@ impl Model {
         Ok(io)
     }
 
-    fn make_potts(parameters: &Parameters, rng: &mut impl Rng) -> Potts {
-        let mut adh = PairwiseAdhesion::new(
-            parameters.potts.adhesion.medium_energy,
-            parameters.potts.adhesion.solid_energy,
-            parameters.cell.max_cells
-        );
-        adh.randomize_cell_energies(
-            parameters.potts.adhesion.cell_energy * 0.25,
-            parameters.potts.adhesion.cell_energy * 16.,
-            rng
-        );
+    fn make_potts(parameters: &Parameters) -> Potts {
+        let adh = PairwiseAdhesion {
+            medium_energy: parameters.potts.adhesion.medium_energy,
+            solid_energy: parameters.potts.adhesion.solid_energy,
+            adh_energy: 4.,
+            non_adh_energy: parameters.potts.adhesion.cell_energy,
+        };
         Potts::builder()
             .boltz_t(parameters.potts.boltz_t)
             .size_lambda(parameters.potts.size_lambda)
@@ -269,7 +269,7 @@ impl Model {
         MyPond::new(
             Pond::new(
                 Self::make_env(parameters),
-                Self::make_potts(parameters, rng),
+                Self::make_potts(parameters),
                 Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
                 0
             ),
@@ -292,8 +292,8 @@ impl Model {
         }).transpose()
     }
 
-    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl Rng) -> EmptyCell<MyCell> {
-        let area = parameters.cell.target_area as FloatType * rng.random_range(0.25..2.);
+    fn empty_cell_from_parameters(parameters: &Parameters, rng: &mut impl Rng, adh_id: u8) -> EmptyCell<MyCell> {
+        let area = parameters.cell.target_area as FloatType * rng.random_range(0.25..1.5);
         // Estimated from the biophys paper
         let per = 3. * 2. * PI * (area / PI).sqrt() * rng.random_range(1.0..1.25);
         let pers = parameters.cell.persistence_duration as FloatType * rng.random_range(0.5..2.);
@@ -302,7 +302,8 @@ impl Model {
             per as u32,
             parameters.cell.div_area,
             pers as u32,
-            CellType::Migrating
+            CellType::Migrating,
+            adh_id
         )
     }
 
@@ -319,9 +320,14 @@ impl Model {
         let maybe_templates_box = Self::templates_path_to_box(maybe_templates_path)?;
         let mut maybe_templates_it = maybe_templates_box.map(|templates_box| templates_box.into_iter().cycle());
         let mut spawn_attempts = 0;
+        let mut adh_id_counts = [8, 3, 3, 2, 1, 1, 1, 1];
+        assert_eq!(adh_id_counts.iter().sum::<u32>(), parameters.cell.starting_cells);
+        assert_eq!(adh_id_counts.len(), ADH_N as usize);
+        let mut adh_id = 0;
+
         while pond.env().env.cells.n_non_empty() < parameters.cell.starting_cells {
             let cell = match &mut maybe_templates_it {
-                None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
+                None => Self::empty_cell_from_parameters(parameters, rng, adh_id as u8).into_cell(),
                 Some(templates_it) => templates_it
                     .next()
                     .ok_or(anyhow::anyhow!("failed to obtain cell from template iterator"))?
@@ -337,6 +343,11 @@ impl Model {
                 &mut pond.pond.rng
             );
             spawn_attempts += 1;
+            let entry = &mut adh_id_counts[adh_id];
+            *entry -= 1;
+            if *entry == 0 {
+                adh_id += 1;
+            }
 
             if spawn_attempts == parameters.cell.starting_cells * 2 {
                 log::warn!("Parameters have led to high cell density and difficulties placing cells in the simulation");
@@ -419,7 +430,7 @@ impl Model {
                     continue;
                 }
                 let cell = match &maybe_templates_box {
-                    None => Self::empty_cell_from_parameters(parameters, rng).into_cell(),
+                    None => Self::empty_cell_from_parameters(parameters, rng, 0).into_cell(),
                     Some(templates_box) => templates_box
                         .get(group_index)
                         .ok_or(anyhow::anyhow!("there were more groups in the layout than in the template"))?
@@ -488,7 +499,7 @@ impl Model {
         let pond = MyPond::new(
             Pond::new(
                 env,
-                Self::make_potts(parameters, rng),
+                Self::make_potts(parameters),
                 Xoshiro256StarStar::seed_from_u64(rng.next_u64()),
                 time_step
             ),
@@ -589,6 +600,7 @@ impl Model {
             if self.display_mode == DisplayMode::Macro {
                 self.zoom_in();
                 self.display_mode = DisplayMode::Micro;
+                self.my_pond = Self::make_new_pond(&self.parameters, &mut self.rng, None).unwrap();
             } else {
                 self.display_mode = DisplayMode::Macro;
             }

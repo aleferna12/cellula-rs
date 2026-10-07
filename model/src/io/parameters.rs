@@ -281,7 +281,8 @@ pub enum PlotType {
     Area,
     /// Background chemical.
     Chem,
-    Target
+    Target,
+    Adh
 }
 
 // This is a workaround while https://github.com/serde-rs/serde/issues/368 is pending

@@ -126,23 +126,23 @@ impl PottsAlgorithm for Potts {
     }
 
     fn delta_hamiltonian_adhesion(
-        &self, 
-        spin_source: Spin, 
+        &self,
+        spin_source: Spin,
         spin_target: Spin,
         neigh_spin: impl IntoIterator<Item = Spin>,
-        _env: &Self::Environment
+        env: &Self::Environment
     ) -> FloatType {
         let mut energy = 0.;
         for neigh in neigh_spin {
             energy -= self.adhesion.adhesion_energy(
                 spin_target,
                 neigh,
-                &()
+                &env
             );
             energy += self.adhesion.adhesion_energy(
                 spin_source,
                 neigh,
-                &()
+                &env
             );
         }
         energy

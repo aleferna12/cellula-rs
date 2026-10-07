@@ -1,38 +1,29 @@
-use rand::Rng;
+use crate::my_environment::MyEnvironment;
 use cellulars_lib::constants::FloatType;
-use cellulars_lib::prelude::{AdhesionSystem, CellIndex, Spin, SymmetricTable};
+use cellulars_lib::prelude::{AdhesionSystem, Spin};
 
 #[derive(Clone)]
 pub struct PairwiseAdhesion {
-    medium_energy: FloatType,
-    solid_energy: FloatType,
-    adh_table: SymmetricTable<FloatType>,
+    pub medium_energy: FloatType,
+    pub solid_energy: FloatType,
+    pub adh_energy: FloatType,
+    pub non_adh_energy: FloatType,
 }
 
-impl PairwiseAdhesion {
-    pub fn new(medium_energy: FloatType, solid_energy: FloatType, max_cells: CellIndex) -> Self {
-        Self {
-            medium_energy,
-            solid_energy,
-            adh_table: SymmetricTable::new(max_cells as usize)
-        }
-    }
-
-    pub fn randomize_cell_energies(&mut self, min_energy: FloatType, max_energy: FloatType, rng: &mut impl Rng) {
-        for (i, j) in self.adh_table.iter_index_pairs(None, None) {
-            self.adh_table[(i, j)] = rng.random_range(min_energy..=max_energy);
-        }
-    }
-}
-
-impl<C> AdhesionSystem<C> for PairwiseAdhesion {
-    fn adhesion_energy(&self, spin1: Spin, spin2: Spin, _context: &C) -> FloatType {
+impl AdhesionSystem<MyEnvironment> for PairwiseAdhesion {
+    fn adhesion_energy(&self, spin1: Spin, spin2: Spin, context: &MyEnvironment) -> FloatType {
         match (spin1, spin2) {
             (Spin::Some(c1), Spin::Some(c2)) => {
                 if c1 == c2 {
                     0.
                 } else {
-                    2. * self.adh_table[(c1 as usize, c2 as usize)]
+                    let adh_id1 = context.env.cells[c1].cell.adh_id;
+                    let adh_id2 = context.env.cells[c2].cell.adh_id;
+                    2. * if adh_id1 == adh_id2 {
+                        self.adh_energy
+                    } else {
+                        self.non_adh_energy
+                    }
                 }
             },
             (Spin::Some(_), Spin::Medium) | (Spin::Medium, Spin::Some(_)) => self.medium_energy,

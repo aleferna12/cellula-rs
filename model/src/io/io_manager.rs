@@ -115,7 +115,7 @@ impl IoManager {
         let mut cells = CellContainer::new();
         // We need this to call replace on cells later
         for _ in 0..=last_index {
-            cells.push(MyCell::new_empty(0, 0, 0, 0, CellType::Migrating));
+            cells.push(MyCell::new_empty(0, 0, 0, 0, CellType::Migrating, 0));
         }
 
         for row_i in 0..celldf.height() {
@@ -155,6 +155,7 @@ impl IoManager {
                         Self::get_col_num_or(&row, "prev_center_y", &celldf, 0.)?,
                     ))
                     .cell_type(Self::get_col_str(&row, "cell_type", &celldf)?.try_into()?)
+                    .adh_id(0)
                     .build()
             });
         }

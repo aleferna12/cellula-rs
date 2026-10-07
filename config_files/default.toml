@@ -23,7 +23,7 @@ target-move-period = 0
 
 [cell]
 # Number of starting cells in the environment.
-starting-cells = 30
+starting-cells = 20
 # Maximum number of cells allowed in the environment.
 # Cell division is prevented if it would cause the cell population to exceed this threshold.
 max-cells = 1024
@@ -45,7 +45,7 @@ target-perimeter = 450
 # Longer durations make cells turn more slowly (and migrate more persistently).
 # Zero disables persistent migration.
 # [default = 0]
-persistence-duration = 500
+persistence-duration = 1000
 # Cell area before division.
 div-area = 900000000
 # Set to `false` to disable division.
@@ -73,11 +73,11 @@ chemotaxis-mu = 2.0
 # Scaler constant for persistent migration bias.
 # Zero disables persistent migration.
 # [default = 0]
-persistence-mu = 4.0
+persistence-mu = 2.0
 
 [potts.adhesion]
 # Adhesion energy at cell-cell interfaces.
-cell-energy = 16.0
+cell-energy = 20.0
 # Adhesion energy at cell-medium interfaces.
 medium-energy = 16.0
 # Adhesion energy at cell-solid interfaces.
@@ -115,7 +115,7 @@ lattice-period = 4096
 #   - "chem-center":  Plots the perceived center of the chem gradient.
 #   - "area":         Plots the relative area of cells.
 #   - "cell-type":    Plots the cell type of cells.
-order = ["spin", "area", "border"]
+order = ["spin", "adh", "border"]
 # With which color to plot solid objects.
 solid-color = "#000000"
 # With which color to plot the medium.
@@ -128,7 +128,7 @@ chem-center-color = "#00ff00"
 # With which color to plot the border of cells.
 border-color = "#000000"
 # With which color to plot the minimum area in the cell population.
-area-min-color = "#aad060"
+area-min-color = "#d9c356"
 # With which color to plot the maximum area in the cell population.
 area-max-color = "#004468"
 # With which color to plot the minimum value for the chem in the environment.

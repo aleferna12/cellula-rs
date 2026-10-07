@@ -50,7 +50,8 @@ pub struct MyCell {
     prev_center: Pos<FloatType>,
     /// Counts the time-steps elapsed since the last realignment of [`MyCell::target_vec()`].
     #[builder(default)]
-    persistence_time: u32
+    persistence_time: u32,
+    pub adh_id: u8
 }
 
 impl MyCell {
@@ -60,7 +61,8 @@ impl MyCell {
         target_perimeter: u32,
         divide_area: u32,
         persistence_duration: u32,
-        cell_type: CellType
+        cell_type: CellType,
+        adh_id: u8
     ) -> EmptyCell<Self> {
         EmptyCell::new(Self {
             cell: Cell::new_empty(target_area).into_cell(),
@@ -74,6 +76,7 @@ impl MyCell {
             persistence_duration,
             divide_area,
             cell_type,
+            adh_id
         }).expect("cell was not empty")
     }
     
@@ -276,6 +279,7 @@ mod tests {
             200,
             10,
             CellType::Migrating,
+            0
         ).into_cell()
     }
 
@@ -374,7 +378,14 @@ mod tests {
     #[test]
     fn test_zero_duration_disables_persistence() {
         let bound = make_unsafe_boundary();
-        let mut cell = MyCell::new_empty(100, 120, 200, 0, CellType::Migrating).into_cell();
+        let mut cell = MyCell::new_empty(
+            100, 
+            120, 
+            200, 
+            0, 
+            CellType::Migrating,
+            0
+        ).into_cell();
         cell.shift_position(Pos::new(10, 10), true, &bound);
         cell.target_vec = Pos::new(0., 1.);
 
