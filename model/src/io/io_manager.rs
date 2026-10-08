@@ -58,6 +58,7 @@ pub struct IoManager {
     pub kinect_listener: Option<KinectListener>,
     pub micro_bg: RgbaImage,
     pub macro_bg: RgbaImage,
+    pub ball_img: RgbaImage,
     pub kinect_img: RgbaImage,
     plots: Box<[Box<dyn Plot>]>,
     image_period: u32,
@@ -101,9 +102,10 @@ impl IoManager {
         Ok(())
     }
 
-    pub fn load_bgs(&mut self) {
+    pub fn load_imgs(&mut self) {
         self.micro_bg = flip_vertical(&open("./bg_micro.png").unwrap().into_rgba8());
         self.macro_bg = flip_vertical(&open("./bg_macro.png").unwrap().into_rgba8());
+        self.ball_img = flip_vertical(&open("./ball.png").unwrap().into_rgba8());
     }
 
     fn make_cells_from_data(celldf: DataFrame) -> anyhow::Result<CellContainer<MyCell>> {

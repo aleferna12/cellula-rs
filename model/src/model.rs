@@ -23,7 +23,7 @@ use cellulars_lib::prelude::{Alive, CellIndex, Cellular, Habitable, Pos, Spin};
 use cellulars_lib::traits::cellular::EmptyCell;
 use cellulars_lib::traits::step::Step;
 use image::imageops::{FilterType, crop_imm, flip_vertical_in_place, overlay, resize};
-use image::{ImageReader, Rgba, RgbaImage};
+use image::{ImageReader, RgbaImage};
 use minifb::Key;
 use polars::polars_utils::itertools::Itertools;
 use rand::{Rng, RngCore, SeedableRng};
@@ -198,12 +198,13 @@ impl Model {
             .micro_bg(RgbaImage::new(512, 424))
             .macro_bg(RgbaImage::new(512, 424))
             .kinect_img(RgbaImage::new(512, 424))
+            .ball_img(RgbaImage::new(40, 40))
             .maybe_kinect_listener(kinect_listener);
         #[cfg(feature = "movie")]
         let mut io = io_builder.maybe_movie_maker(movie_maker).build();
         #[cfg(not(feature = "movie"))]
         let mut io = io_builder.build();
-        io.load_bgs();
+        io.load_imgs();
 
         log::info!("Creating output directories and copy of parameter file");
         if parameters.io.replace_outdir {
@@ -573,17 +574,9 @@ impl Model {
     fn physics_image(&mut self) -> RgbaImage {
         let mut img = self.io.macro_bg.clone();
         for ball in &self.physics.balls {
-            for pos in ball.rectangle().iter_positions() {
-                if pos.y >= self.my_pond.pond.env.env.height() as u32 {
-                    continue;
-                }
-                let dist = (pos.x as FloatType - ball.center.x).hypot(pos.y as FloatType - ball.center.y);
-                if dist > ball.radius {
-                    continue;
-                }
-                let color = if dist < 17. { Rgba([128, 50, 50, 0]) } else { Rgba([0, 0, 0, 0]) };
-                img.put_pixel(pos.x, pos.y, color);
-            }
+            let x = (ball.center.x - ball.radius).floor() as i64;
+            let y = (ball.center.y - ball.radius).floor() as i64;
+            overlay(&mut img, &self.io.ball_img, x, y);
         }
         overlay(&mut img, &self.io.kinect_img, 0, 0);
 
