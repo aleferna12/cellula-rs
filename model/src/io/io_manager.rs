@@ -20,13 +20,14 @@ use cellulars_lib::positional::rect::Rect;
 use cellulars_lib::spin::Spin;
 use cellulars_lib::traits::cellular::Cellular;
 use cellulars_lib::traits::track_perimeter::TrackPerimeter;
-use image::imageops::{flip_vertical_in_place, FilterType, flip_vertical, overlay};
+use image::imageops::{flip_vertical_in_place, FilterType, flip_vertical, overlay, resize, flip_horizontal_in_place};
 use image::{open, ColorType, GrayImage, ImageReader, RgbaImage};
 use num_traits::NumCast;
 use polars::frame::row::Row;
 use polars::polars_utils::float::IsFloat;
 use polars::prelude::*;
 use std::collections::HashSet;
+use std::f64::consts::PI;
 use std::io;
 use std::path::{Path, PathBuf};
 use crate::io::kinect_listener::KinectListener;
@@ -60,6 +61,7 @@ pub struct IoManager {
     pub macro_bg: RgbaImage,
     pub ball_img: RgbaImage,
     pub kinect_img: RgbaImage,
+    pub eyes_img: RgbaImage,
     plots: Box<[Box<dyn Plot>]>,
     image_period: u32,
     cells_period: u32,
@@ -106,6 +108,7 @@ impl IoManager {
         self.micro_bg = flip_vertical(&open("./bg_micro.png").unwrap().into_rgba8());
         self.macro_bg = flip_vertical(&open("./bg_macro.png").unwrap().into_rgba8());
         self.ball_img = flip_vertical(&open("./ball.png").unwrap().into_rgba8());
+        self.eyes_img = flip_vertical(&open("./eyes.png").unwrap().into_rgba8());
     }
 
     fn make_cells_from_data(celldf: DataFrame) -> anyhow::Result<CellContainer<MyCell>> {
@@ -404,6 +407,33 @@ impl IoManager {
         let mut image = self.micro_bg.clone();
         for plot in &self.plots {
             plot.plot(env, &mut image);
+        }
+        for rel_cell in env.env.cells.iter() {
+            if rel_cell.cell.area() == 0 {
+                continue;
+            }
+            let rad = (rel_cell.cell.area() as f64 / PI).sqrt();
+            let ratio = rad * 0.05;
+            let width = (self.eyes_img.width() as f64 * ratio) as u32;
+            let height = (self.eyes_img.height() as f64 * ratio) as u32;
+            let eyes = resize(
+                &self.eyes_img,
+                width,
+                height,
+                FilterType::Lanczos3,
+            );
+            // This looked wird but maybe some tilt could be nice
+            // if rel_cell.index.is_multiple_of(2) {
+            //     flip_horizontal_in_place(&mut eyes);
+            // }
+            let x = rel_cell.cell.center().x as i64 - (width / 2) as i64;
+            let y = rel_cell.cell.center().y as i64 - (height / 2) as i64;
+            overlay(
+                &mut image,
+                &eyes,
+                x,
+                y
+            );
         }
         overlay(&mut image, &self.kinect_img, 0, 0);
         flip_vertical_in_place(&mut image);

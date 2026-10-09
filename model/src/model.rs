@@ -199,6 +199,7 @@ impl Model {
             .macro_bg(RgbaImage::new(512, 424))
             .kinect_img(RgbaImage::new(512, 424))
             .ball_img(RgbaImage::new(40, 40))
+            .eyes_img(RgbaImage::new(40, 20))
             .maybe_kinect_listener(kinect_listener);
         #[cfg(feature = "movie")]
         let mut io = io_builder.maybe_movie_maker(movie_maker).build();
@@ -589,7 +590,7 @@ impl Model {
         if let Some(mm) = &self.io.movie_maker
             && mm.window.is_open()
             && mm.window.is_key_released(Key::Space)
-            && (now - self.last_mode_change) > Duration::from_secs(5) {
+            && (now - self.last_mode_change) > Duration::from_secs(1) {
             if self.display_mode == DisplayMode::Macro {
                 self.zoom_in();
                 self.display_mode = DisplayMode::Micro;
