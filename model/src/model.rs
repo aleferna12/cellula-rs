@@ -363,6 +363,7 @@ impl Model {
             }
         }
         if parameters.pond.enclose {
+            dbg!(123);
             pond.env_mut().make_border(true, true, true, true);
         }
         let Pond { env, rng, .. } = &mut pond.pond;
@@ -556,6 +557,7 @@ impl Model {
             self.io.kinect_img = kinect.draw_silhouette(self.my_pond.env_mut())
                 .expect("failed to draw silhouette from kinect");
             // self.my_pond.env_mut().draw_solid_target();
+            self.my_pond.env_mut().make_border(true, true, true, true);
         }
 
         self.my_pond.step();
@@ -597,6 +599,11 @@ impl Model {
                 self.my_pond = Self::make_new_pond(&self.parameters, &mut self.rng, None).unwrap();
             } else {
                 self.display_mode = DisplayMode::Macro;
+                self.physics = Physics::new(
+                    40.,
+                    5,
+                    &mut self.rng
+                )
             }
             self.last_mode_change = now;
         }

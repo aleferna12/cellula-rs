@@ -1,6 +1,6 @@
 [general]
 # How many MCS the simulation will run for.
-time-steps = 1_000_000
+time-steps = 1_000_000_000
 # Seed for the RNG.
 # Omit to pick a random seed.
 seed = 1241254152
@@ -154,6 +154,6 @@ frame-period = 50
 
 [io.kinect]
 allow = true
-min-depth = 1000
-max-depth = 2500
+min-depth = 600
+max-depth = 1400
 frame-period = 100

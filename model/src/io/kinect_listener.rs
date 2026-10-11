@@ -71,7 +71,8 @@ impl KinectListener {
         data_arr: &[f32],
         lattice_boundary: &impl Boundary<Coord = isize>
     ) -> bool {
-        if !self.in_bounds(data_arr[Self::flat_depth_index(pos)]) {
+        let depth = data_arr[Self::flat_depth_index(pos)];
+        if !self.in_bounds(depth) || depth > self.max_depth {
             return false;
         }
         for neigh in self.neighbourhood.neighbours(pos.cast_as()) {

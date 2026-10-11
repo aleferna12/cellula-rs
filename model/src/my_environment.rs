@@ -360,7 +360,6 @@ impl MyEnvironment {
                 border_positions.push((self.env.width() - 1, y).into());
             }
         }
-
         self.spawn_solid(border_positions.into_iter());
     }
 
