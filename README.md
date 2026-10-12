@@ -16,7 +16,7 @@ Features currently include:
 - Real-time movie inspection of the simulation (C).
 - IO library to write data about the simulation in real time (C).
 - Reader to construct simulations from templates (M).
-- Robust backup system to restore simulations at the atomic scale (M).
+- Robust backup system to reliably resume simulations (M).
 
 **C**: Features included in the cellulars lib.
 **M**: Features included in the [model template](https://github.com/aleferna12/cellulars-template).
