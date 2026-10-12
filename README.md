@@ -1,3 +1,6 @@
+> This codebase was written by a human, with minimal use of AI.
+> To know more about why this is important, read our [HUMAN.md](HUMAN.md).
+
 ## Cellulars: a fast and extensible implementation of the Cellular Potts Model in Rust
 
 If you want full control over simulation code at no performance cost, this library is for you.
